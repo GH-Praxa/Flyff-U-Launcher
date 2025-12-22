@@ -1,8 +1,453 @@
-body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
-  margin: auto;
-  max-width: 38rem;
-  padding: 2rem;
+/* ---------- Global ---------- */
+:root{
+  --bg: #0b1220;
+  --panel: #0f1a33;
+  --panel2: #0d1830;
+  --stroke: #1b2b4d;
+  --text: #e6eefc;
+  --muted: #294093;
+  --blue: #2c6bff;
+  --blue2: #3b7bff;
+  --danger: #ff3b4f;
+  --shadow: 0 8px 30px rgba(0,0,0,0.35);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #2ecc71;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+#app{
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Basic UI ---------- */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--stroke);
+  background: linear-gradient(180deg, rgba(44,107,255,0.18), rgba(15,26,51,0));
+}
+
+.title{
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.spacer{ flex: 1; }
+
+.btn{
+  appearance: none;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  font-weight: 700;
+}
+
+.btn:hover{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(44,107,255,0.35);
+}
+
+.btn.primary{
+  background: rgba(44,107,255,0.18);
+  border-color: rgba(44,107,255,0.55);
+}
+
+.btn.primary:hover{
+  background: rgba(44,107,255,0.26);
+}
+
+.btn.danger{
+  background: rgba(255,59,79,0.12);
+  border-color: rgba(255,59,79,0.35);
+}
+
+.btn.danger:hover{
+  background: rgba(255,59,79,0.18);
+  border-color: rgba(255,59,79,0.55);
+}
+
+.input, .select{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  outline: none;
+}
+
+.input:focus, .select:focus{
+  border-color: rgba(44,107,255,0.6);
+  box-shadow: 0 0 0 3px rgba(44,107,255,0.15);
+}
+
+.muted{ color: var(--muted); }
+
+/* ---------- Launcher ---------- */
+#app.launcherRoot{
+  width: 100%;
+  height: 100%;
+  display:flex;
+  flex-direction: column;
+  overflow:hidden;
+}
+
+.layout{
+  flex: 1 1 auto;
+  display:flex;
+  min-height: 0;
+}
+
+.panel{
+  min-height: 0;
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+}
+
+.panel.left{
+  flex: 1 1 auto;
+  border-right: 1px solid var(--stroke);
+}
+
+.panel.right{
+  width: 360px;
+  flex: 0 0 auto;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+}
+
+.panelTitle{
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.list{
+  padding: 12px 14px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.card{
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.row{
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rowLeft{
+  display:flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rowName{
+  font-weight: 800;
+  white-space: nowrap;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.badge{
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.badge.subtle{
+  color: var(--muted);
+}
+
+.rowActions{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manage{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.manage.hidden{ display:none; }
+
+.manageGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.manageActions{
+  margin-top: 10px;
+  display:flex;
+  gap: 8px;
+}
+
+.clonePanel{
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255,255,255,0.08);
+}
+.clonePanel.hidden{ display:none; }
+
+.modeWrap{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.checkbox{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  color: var(--muted);
+  user-select: none;
+}
+
+.dragHandle{
+  cursor: grab;
+  color: var(--muted);
+  font-weight: 900;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.10);
+}
+
+.card.dragging { opacity: 0.6; }
+.card.dropBefore { box-shadow: 0 -2px 0 0 #2c6bff inset; }
+.card.dropAfter  { box-shadow: 0  2px 0 0 #2c6bff inset; }
+
+/* ---------- Session ---------- */
+#app.sessionRoot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#app.sessionRoot .tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--stroke);
+  background: linear-gradient(180deg, rgba(44,107,255,0.10), rgba(15,26,51,0));
+  position: relative;
+  z-index: 5;
+}
+
+/* Tabs wie Launcher-Buttons, aber farblich "blau/grün" */
+#app.sessionRoot .tabBtn{
+  width: 25ch;          /* ca. 25 Zeichen */
+  min-width: 25ch;
+  max-width: 25ch;
+
+  appearance: none;
+  border: 1px solid rgba(44,107,255,0.55);
+  background: rgba(44,107,255,0.14);
+  color: var(--text);
+
+  padding: 9px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  font-weight: 800;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  position: relative;              /* für close absolute */
+  padding-right: 32px;             /* Platz für X */
+}
+
+#app.sessionRoot .tabBtn:hover{
+  background: rgba(44,107,255,0.20);
+  border-color: rgba(44,107,255,0.75);
+}
+
+#app.sessionRoot .tabBtn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(44,107,255,0.18);
+}
+
+/* ✅ Aktiver Tab: grün + dezenter Glow */
+#app.sessionRoot .tabBtn.active{
+  background: rgba(46,204,113,0.16);
+  border-color: rgba(46,204,113,0.75);
+  box-shadow:
+    0 0 0 2px rgba(46,204,113,0.12),
+    0 10px 22px rgba(46,204,113,0.10);
+}
+
+/* Close Button */
+#app.sessionRoot .tabClose{
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  color: rgba(255,255,255,0.70);
+  font-weight: 900;
+  cursor: pointer;
+
+  padding: 0 7px;
+  border-radius: 8px;
+  line-height: 20px;
+
+  transition: 0.15s ease;
+}
+
+#app.sessionRoot .tabClose:hover{
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.95);
+}
+
+/* ✅ Plus: kleiner, blau und wie Button */
+#app.sessionRoot .tabBtn.plus{
+  margin-left: auto;
+
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+
+  padding: 9px 0;
+  justify-content: center;
+
+  border-color: rgba(44,107,255,0.65);
+  background: rgba(44,107,255,0.18);
+}
+
+#app.sessionRoot .tabBtn.plus:hover{
+  background: rgba(44,107,255,0.26);
+  border-color: rgba(44,107,255,0.85);
+}
+
+/* Dragn Drop */
+#app.sessionRoot .tabBtn.dragging {
+  opacity: 0.70;
+}
+
+#app.sessionRoot .tabBtn.dropBefore {
+  box-shadow: -2px 0 0 0 rgba(46,204,113,0.85) inset;
+}
+
+#app.sessionRoot .tabBtn.dropAfter {
+  box-shadow: 2px 0 0 0 rgba(44,107,255,0.95) inset;
+}
+
+#app.sessionRoot .content {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* ---------- Instance ---------- */
+#app.instanceRoot {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ---------- Picker Modal ---------- */
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 999999;
+}
+
+.modal{
+  width: min(520px, calc(100vw - 30px));
+  border: 1px solid var(--stroke);
+  background: rgba(15,26,51,0.96);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+
+.modalHeader{
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--stroke);
+  font-weight: 700;
+}
+
+.modalBody{
+  padding: 12px;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pickerList{
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pickerItem{
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pickerItem:hover{
+  border-color: rgba(44,107,255,0.35);
+  background: rgba(255,255,255,0.06);
+}
+
+.pickerEmpty{
+  color: var(--muted);
+  padding: 10px 0;
 }
