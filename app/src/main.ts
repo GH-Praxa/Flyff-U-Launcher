@@ -1,436 +1,237 @@
-import { app, BrowserWindow, BrowserView, ipcMain, session } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "path";
-import fs from "fs/promises";
+
+import { createViewLoader } from "./main/viewLoader";
+import { createProfilesStore } from "./main/profiles/store";
+import { createLauncherWindow } from "./main/windows/launcherWindow";
+import { createSessionWindowController } from "./main/windows/sessionWindow";
+import { createInstanceWindow } from "./main/windows/instanceWindow";
+import { createSessionTabsManager } from "./main/sessionTabs/manager";
+import { registerMainIpc } from "./main/ipc/registerMainIpc";
+
+import { createInstanceRegistry } from "./main/windows/instanceRegistry";
+import { createOverlayTargetController } from "./main/expOverlay/overlayTargetController";
+
+import { createRoiStore, type HudRois } from "./main/roi/roiStore";
+import { openRoiCalibratorWindow } from "./main/windows/roiCalibratorWindow";
+
+// ✅ neu
+import { createSidePanelController } from "./main/expOverlay/sidePanelController";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-type LaunchMode = "tabs" | "window";
-
-type Profile = {
-  id: string;
-  name: string;
-  createdAt: string;
-  job?: string;
-  launchMode: LaunchMode;
-};
-
-let launcherWindow: BrowserWindow | null = null;
-let sessionWindow: BrowserWindow | null = null;
-
-type ViewBounds = { x: number; y: number; width: number; height: number };
-
-const sessionViews = new Map<string, BrowserView>();
-let sessionActiveId: string | null = null;
-let sessionVisible = true;
-let sessionBounds: ViewBounds = { x: 0, y: 60, width: 1200, height: 700 };
-
-function hardenGameContents(wc: any) {
-  // Keine Popups
-  wc.setWindowOpenHandler(() => ({ action: "deny" }));
-}
-
-function applyActiveBrowserView() {
-  if (!sessionWindow || sessionWindow.isDestroyed()) return;
-
-  // Alles entfernen
-  for (const v of sessionWindow.getBrowserViews()) {
-    try {
-      sessionWindow.removeBrowserView(v);
-    } catch {}
-  }
-
-  if (!sessionVisible) return;
-  if (!sessionActiveId) return;
-
-  const view = sessionViews.get(sessionActiveId);
-  if (!view) return;
-
-  sessionWindow.addBrowserView(view);
-  view.setBounds(sessionBounds);
-  view.setAutoResize({ width: true, height: true });
-}
-
-function destroySessionView(profileId: string) {
-  const view = sessionViews.get(profileId);
-  if (!view) return;
-
-  if (sessionWindow && !sessionWindow.isDestroyed()) {
-    try {
-      sessionWindow.removeBrowserView(view);
-    } catch {}
-  }
-
-  try {
-    view.webContents.destroy();
-  } catch {}
-
-  sessionViews.delete(profileId);
-  if (sessionActiveId === profileId) sessionActiveId = null;
-}
-
 const FLYFF_URL = "https://universe.flyff.com/play";
 
-// ---------------- Utils ----------------
-function id() {
-  return Math.random().toString(36).slice(2, 10);
-}
+let launcherWindow: BrowserWindow | null = null;
+let overlayTarget: ReturnType<typeof createOverlayTargetController> | null = null;
 
-function profilesPath() {
-  return path.join(app.getPath("userData"), "profiles.json");
-}
+// ✅ neu
+let sidePanel: ReturnType<typeof createSidePanelController> | null = null;
 
-async function readProfiles(): Promise<Profile[]> {
-  try {
-    const raw = await fs.readFile(profilesPath(), "utf-8");
-    const parsed = JSON.parse(raw);
-    const list = Array.isArray(parsed) ? parsed : [];
+app.whenReady().then(async () => {
+  const preloadPath = path.join(__dirname, "preload.js");
+  console.log("userData:", app.getPath("userData"));
 
-    // Defaults / Migration
-    return list.map((p: any) => ({
-      id: String(p.id),
-      name: String(p.name ?? "Unnamed"),
-      createdAt: String(p.createdAt ?? new Date().toISOString()),
-      job: typeof p.job === "string" ? p.job : "",
-      launchMode: (p.launchMode === "window" || p.launchMode === "tabs") ? p.launchMode : "tabs",
-    }));
-  } catch {
-    return [];
-  }
-}
+  const loadView = createViewLoader({
+    devServerUrl: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+    rendererName: MAIN_WINDOW_VITE_NAME,
+    baseDir: __dirname,
+  });
 
-async function writeProfiles(profiles: Profile[]) {
-  await fs.writeFile(profilesPath(), JSON.stringify(profiles, null, 2), "utf-8");
-}
+  const profiles = createProfilesStore();
 
-// Clone helper: Storage/Cookies vom alten Profil ins neue kopieren (best effort)
-async function cloneProfileStorageAndCookies(sourceId: string, newId: string) {
-  const src = session.fromPartition(`persist:${sourceId}`);
-  const dst = session.fromPartition(`persist:${newId}`);
+  const sessionWindow = createSessionWindowController({
+    preloadPath,
+    loadView,
+  });
 
-  // Cookies klonen
-  try {
-    const cookies = await src.cookies.get({});
-    for (const c of cookies) {
-      const url =
-        (c.secure ? "https://" : "http://") +
-        (c.domain.startsWith(".") ? c.domain.slice(1) : c.domain) +
-        (c.path || "/");
-      await dst.cookies.set({
-        url,
-        name: c.name,
-        value: c.value,
-        domain: c.domain,
-        path: c.path,
-        secure: c.secure,
-        httpOnly: c.httpOnly,
-        sameSite: c.sameSite,
-        expirationDate: c.expirationDate,
+  const sessionTabs = createSessionTabsManager({
+    sessionWindow,
+    flyffUrl: FLYFF_URL,
+  });
+
+  sessionWindow.onClosed(() => sessionTabs.reset());
+
+  launcherWindow = createLauncherWindow({
+    preloadPath,
+    loadView,
+    onClosed: () => (launcherWindow = null),
+  });
+
+  const instances = createInstanceRegistry();
+  const roiStore = createRoiStore();
+
+  overlayTarget = createOverlayTargetController({
+    profiles,
+    roiStore,
+    sessionWindow,
+    sessionTabs,
+    instances,
+    pythonExe: process.env.FLYFF_OCR_PYTHON ?? "python",
+    intervalMs: 800,
+    debugEveryN: 5,
+  });
+
+  // ✅ neu: Sidepanel + Button Controller (hängt am Overlay-Target)
+  sidePanel = createSidePanelController({
+    profiles,
+    sessionWindow,
+    sessionTabs,
+    instances,
+    panelWidth: 420,
+    followIntervalMs: 80,
+  });
+
+  // initial
+  await overlayTarget.refreshFromStore();
+  await sidePanel.refreshFromStore();
+
+  // ✅ ROI Open: öffnet Calibrator über Game (Instance oder Tab)
+  async function roiOpen(profileId: string): Promise<boolean> {
+    // 1) Instance?
+    const inst = instances.get(profileId);
+    if (inst && !inst.isDestroyed()) {
+      inst.show();
+      inst.focus();
+
+      const [cw, ch] = inst.getContentSize();
+      const contentBounds = inst.getContentBounds(); // screen coords
+
+      const screenshot = await inst.webContents.capturePage({ x: 0, y: 0, width: cw, height: ch });
+      const existing = await roiStore.get(profileId);
+
+      const getFollowBounds = () => {
+        if (!inst || inst.isDestroyed()) return null;
+        const b = inst.getContentBounds();
+        return { x: b.x, y: b.y, width: b.width, height: b.height };
+      };
+
+      await openRoiCalibratorWindow({
+        profileId,
+        parent: inst,
+        bounds: { x: contentBounds.x, y: contentBounds.y, width: contentBounds.width, height: contentBounds.height },
+        screenshotPng: screenshot.toPNG(),
+        existing,
+        onSave: async (rois: HudRois) => {
+          await roiStore.set(profileId, rois);
+          await overlayTarget?.refreshFromStore();
+        },
+        follow: { getBounds: getFollowBounds, intervalMs: 80 },
       });
+
+      return true;
     }
-  } catch {}
 
-  // LocalStorage etc.: leider nicht sauber ohne DevTools Protocol / custom pipeline
-  // -> wir lassen es weg (best effort), Cookies reichen oft fürs Login.
-}
+    // 2) Tabs: ensure session window + tab aktivieren
+    const win = await sessionWindow.ensure();
+    win.show();
+    win.focus();
 
-// ---------------- Window creation ----------------
+    const view = sessionTabs.getViewByProfile(profileId);
 
-// Optional: Webview härten (Whitelist) – bleibt drin, aber Tabs nutzen jetzt BrowserView (kein <webview> nötig)
-function hardenWebviews(win: BrowserWindow) {
-  win.webContents.on("will-attach-webview", (event, webPreferences, params) => {
-    const src = params.src || "";
-    const allowed =
-      src === "" ||
-      src === "about:blank" ||
-      src.startsWith("https://universe.flyff.com/");
+    if (!view) {
+      await sessionTabs.open(profileId);
+    } else {
+      sessionTabs.switchTo(profileId);
+    }
 
-    if (!allowed) event.preventDefault();
+    await new Promise((r) => setTimeout(r, 200));
 
-    webPreferences.nodeIntegration = false;
-    webPreferences.contextIsolation = true;
+    const v2 = sessionTabs.getViewByProfile(profileId);
+    if (!v2) return false;
 
-    // keine fremden preloads erlauben
-    // @ts-ignore
-    delete webPreferences.preload;
-    // @ts-ignore
-    delete webPreferences.preloadURL;
-  });
-}
+    const viewBounds = sessionTabs.getBounds(); // content coords
+    const contentBounds = win.getContentBounds(); // screen coords
 
-function createLauncherWindow() {
-  launcherWindow = new BrowserWindow({
-    width: 980,
-    height: 640,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
+    const screenshot = await v2.webContents.capturePage();
+    const existing = await roiStore.get(profileId);
 
-  hardenWebviews(launcherWindow);
-  loadView(launcherWindow, "launcher").catch(console.error);
-  launcherWindow.on("closed", () => (launcherWindow = null));
-}
+    const getFollowBounds = () => {
+      const w = sessionWindow.get();
+      if (!w || w.isDestroyed()) return null;
 
-async function ensureSessionWindow() {
-  if (sessionWindow && !sessionWindow.isDestroyed()) return sessionWindow;
+      const vb = sessionTabs.getBounds();
+      const cb = w.getContentBounds();
 
-  sessionWindow = new BrowserWindow({
-    width: 1380,
-    height: 860,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
+      return {
+        x: cb.x + vb.x,
+        y: cb.y + vb.y,
+        width: vb.width,
+        height: vb.height,
+      };
+    };
 
-  sessionWindow.setMenuBarVisibility(false);
-  sessionWindow.setAutoHideMenuBar(true);
-  await loadView(sessionWindow, "session");
-  sessionWindow.on("closed", () => {
-    for (const id of [...sessionViews.keys()]) destroySessionView(id);
-    sessionViews.clear();
-    sessionActiveId = null;
-    sessionWindow = null;
-  });
-  return sessionWindow;
-}
-
-function createInstanceWindow(profileId: string) {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      partition: `persist:${profileId}`, // pro Profil eigene Cookies/Session
-    },
-  });
-
-  win.loadURL(FLYFF_URL).catch(console.error);
-  win.setMenuBarVisibility(false);
-  win.setAutoHideMenuBar(true);
-
-  return win;
-}
-
-// ---------------- View loader ----------------
-async function loadView(win: BrowserWindow, view: string, params: Record<string, string> = {}) {
-  const sp = new URLSearchParams({ view, ...params }).toString();
-
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    await win.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}?${sp}`);
-  } else {
-    await win.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
-      query: Object.fromEntries(new URLSearchParams(sp)),
+    await openRoiCalibratorWindow({
+      profileId,
+      parent: win,
+      bounds: {
+        x: contentBounds.x + viewBounds.x,
+        y: contentBounds.y + viewBounds.y,
+        width: viewBounds.width,
+        height: viewBounds.height,
+      },
+      screenshotPng: screenshot.toPNG(),
+      existing,
+      onSave: async (rois: HudRois) => {
+        await roiStore.set(profileId, rois);
+        await overlayTarget?.refreshFromStore();
+      },
+      follow: { getBounds: getFollowBounds, intervalMs: 80 },
     });
-  }
-}
 
-// ---------------- App lifecycle ----------------
-app.whenReady().then(() => {
-  createLauncherWindow();
+    return true;
+  }
+
+  registerMainIpc({
+    profiles,
+    sessionTabs,
+    sessionWindow,
+    loadView,
+
+    createInstanceWindow: (profileId) => {
+      const win = createInstanceWindow(profileId, { flyffUrl: FLYFF_URL });
+      instances.register(profileId, win);
+
+      // Overlay/Sidepanel neu einlesen (falls Target auf diese Instanz zeigt)
+      overlayTarget?.refreshFromStore().catch(() => {});
+      sidePanel?.refreshFromStore().catch(() => {});
+    },
+
+    // ✅ wichtig: wenn overlay target geändert wird, sollen beide refreshen
+    overlayTargetRefresh: async () => {
+      await overlayTarget?.refreshFromStore();
+      await sidePanel?.refreshFromStore();
+    },
+
+    roiOpen,
+    roiLoad: (profileId) => roiStore.get(profileId),
+    roiSave: async (profileId, rois) => {
+      await roiStore.set(profileId, rois);
+      await overlayTarget?.refreshFromStore();
+      return true;
+    },
+  });
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createLauncherWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      launcherWindow = createLauncherWindow({
+        preloadPath,
+        loadView,
+        onClosed: () => (launcherWindow = null),
+      });
+    }
   });
+});
+
+app.on("before-quit", () => {
+  overlayTarget?.stop();
+  overlayTarget = null;
+
+  sidePanel?.stop();
+  sidePanel = null;
 });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
-});
-
-// ---------------- IPC: Profiles ----------------
-ipcMain.handle("profiles:list", async () => readProfiles());
-
-ipcMain.handle("profiles:create", async (_e, name: string) => {
-  const profiles = await readProfiles();
-  const p: Profile = {
-    id: id(),
-    name,
-    createdAt: new Date().toISOString(),
-    job: "",
-    launchMode: "tabs",
-  };
-  profiles.push(p);
-  await writeProfiles(profiles);
-  return p;
-});
-
-ipcMain.handle("profiles:delete", async (_e, profileId: string) => {
-  const profiles = await readProfiles();
-  await writeProfiles(profiles.filter((p) => p.id !== profileId));
-  return true;
-});
-
-ipcMain.handle(
-  "profiles:update",
-  async (_e, patch: { id: string; name?: string; job?: string; launchMode?: "tabs" | "window" }) => {
-    const profiles = await readProfiles();
-    const idx = profiles.findIndex((p) => p.id === patch.id);
-    if (idx < 0) throw new Error("Profile not found");
-
-    const p = profiles[idx];
-    profiles[idx] = {
-      ...p,
-      name: typeof patch.name === "string" ? patch.name : p.name,
-      job: typeof patch.job === "string" ? patch.job : p.job,
-      launchMode: patch.launchMode ?? p.launchMode,
-    };
-
-    await writeProfiles(profiles);
-    return profiles[idx];
-  }
-);
-
-ipcMain.handle("profiles:reorder", async (_e, orderedIds: string[]) => {
-  const profiles = await readProfiles();
-
-  const byId = new Map(profiles.map((p) => [p.id, p]));
-  const next: Profile[] = [];
-
-  // in gewünschter Reihenfolge übernehmen
-  for (const id of orderedIds) {
-    const p = byId.get(id);
-    if (p) next.push(p);
-  }
-  // alle restlichen hinten anhängen
-  for (const p of profiles) {
-    if (!orderedIds.includes(p.id)) next.push(p);
-  }
-
-  await writeProfiles(next);
-  return true;
-});
-
-ipcMain.handle("profiles:clone", async (_e, payload: { sourceId: string; name: string }) => {
-  const { sourceId, name } = payload;
-  const profiles = await readProfiles();
-  const src = profiles.find((p) => p.id === sourceId);
-  if (!src) throw new Error("Source profile not found");
-
-  const newId = id();
-
-  // Storage + Cookies klonen (best effort)
-  await cloneProfileStorageAndCookies(sourceId, newId);
-
-  const clone: Profile = {
-    id: newId,
-    name: String(name ?? "").trim() || `${src.name} (Copy)`,
-    createdAt: new Date().toISOString(),
-    job: src.job ?? "",
-    launchMode: src.launchMode ?? "tabs",
-  };
-
-  // direkt nach dem Original einfügen
-  const srcIdx = profiles.findIndex((p) => p.id === sourceId);
-  const next = [...profiles];
-  next.splice(Math.max(0, srcIdx + 1), 0, clone);
-
-  await writeProfiles(next);
-  return clone;
-});
-
-// ---------------- IPC: Open ----------------
-ipcMain.handle("open:tab", async (_e, profileId: string) => {
-  const existed = !!(sessionWindow && !sessionWindow.isDestroyed());
-
-  const win = await ensureSessionWindow();
-
-  // wenn Session-Fenster neu ist / gerade lädt: Query-Param statt send
-  if (!existed || win.webContents.isLoading()) {
-    await loadView(win, "session", { openProfileId: profileId });
-  } else {
-    win.webContents.send("session:openTab", profileId);
-  }
-
-  win.show();
-  win.focus();
-  return true;
-});
-
-ipcMain.handle("open:window", async (_e, profileId: string) => {
-  createInstanceWindow(profileId);
-  return true;
-});
-
-ipcMain.handle("open:default", async (_e, profileId: string) => {
-  const profiles = await readProfiles();
-  const p = profiles.find((x) => x.id === profileId);
-  const mode = p?.launchMode ?? "tabs";
-
-  if (mode === "window") {
-    createInstanceWindow(profileId);
-    return true;
-  }
-
-  const existed = !!(sessionWindow && !sessionWindow.isDestroyed());
-  const win = await ensureSessionWindow();
-
-  if (!existed || win.webContents.isLoading()) {
-    await loadView(win, "session", { openProfileId: profileId });
-  } else {
-    win.webContents.send("session:openTab", profileId);
-  }
-
-  win.show();
-  win.focus();
-  return true;
-});
-
-// ---------------- IPC: Session Tabs (BrowserView) ----------------
-ipcMain.handle("sessionTabs:setBounds", async (_e, b: ViewBounds) => {
-  sessionBounds = b;
-  applyActiveBrowserView();
-  return true;
-});
-
-ipcMain.handle("sessionTabs:setVisible", async (_e, visible: boolean) => {
-  sessionVisible = !!visible;
-  applyActiveBrowserView();
-  return true;
-});
-
-ipcMain.handle("sessionTabs:open", async (_e, profileId: string) => {
-  const win = await ensureSessionWindow();
-
-  if (!sessionViews.has(profileId)) {
-    const view = new BrowserView({
-      webPreferences: {
-        partition: `persist:${profileId}`,
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
-    });
-
-    hardenGameContents(view.webContents);
-    sessionViews.set(profileId, view);
-
-    // Erst "leer", dann URL (Unity/WebGL mag das oft lieber)
-    view.webContents.loadURL("about:blank").catch(() => {});
-    view.webContents.loadURL(FLYFF_URL).catch(console.error);
-  }
-
-  sessionActiveId = profileId;
-  applyActiveBrowserView();
-
-  win.show();
-  win.focus();
-  return true;
-});
-
-ipcMain.handle("sessionTabs:switch", async (_e, profileId: string) => {
-  sessionActiveId = profileId;
-  applyActiveBrowserView();
-  return true;
-});
-
-ipcMain.handle("sessionTabs:close", async (_e, profileId: string) => {
-  destroySessionView(profileId);
-  applyActiveBrowserView();
-  return true;
 });

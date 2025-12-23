@@ -1,4 +1,9 @@
 import "./index.css";
+import aibattGold from "./assets/icons/aibatt_gold.png";
+import flyffuniverseIcon from "./assets/icons/flyffuniverse.png";
+import flyffipediaIcon from "./assets/icons/flyffipedia.png";
+import flyffulatorIcon from "./assets/icons/flyffulator.png"
+
 
 const FLYFF_URL = "https://universe.flyff.com/play";
 
@@ -8,6 +13,8 @@ type Profile = {
   createdAt: string;
   job?: string;
   launchMode: "tabs" | "window";
+  overlayTarget?: boolean;
+  overlayIconKey?: string;
 };
 
 function qs() {
@@ -62,10 +69,125 @@ async function renderLauncher(root: HTMLElement) {
   clear(root);
   root.className = "launcherRoot";
 
-  const header = el("div", "topbar");
-  header.append(el("div", "title", "FlyffU Launcher"), el("div", "spacer"));
 
-  const btnCreate = el("button", "btn primary", "Create Profile");
+
+  const header = el("div", "topbar");
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////             Flyff-Universe - Button
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// Button erstellen
+const btnFlyffuniverse = el("button", "btn primary") as HTMLButtonElement;
+btnFlyffuniverse.title = "Flyffuniverse öffnen";
+
+// Icon erstellen
+const flyffuniverseImg = document.createElement("img");
+flyffuniverseImg.src = flyffuniverseIcon;
+flyffuniverseImg.alt = "Flyffuniverse";
+flyffuniverseImg.style.width = "64x";  // Icon-Größe
+flyffuniverseImg.style.height = "32px"; // Icon-Größe
+
+// Button-Stil explizit setzen
+btnFlyffuniverse.style.width = "128px";
+btnFlyffuniverse.style.height = "32px";
+
+// Icon zum Button hinzufügen
+btnFlyffuniverse.append(flyffuniverseImg);
+
+btnFlyffuniverse.addEventListener("click", () => {
+  window.open(
+    "https://universe.flyff.com/",
+    "_blank",
+    "toolbar=no,location=no,status=no,menubar=no,width=1024,height=768"
+  );
+});
+
+// Button zum Header hinzufügen
+header.append(btnFlyffuniverse);
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////             Flyffipedia - Button
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// Button erstellen
+const btnFlyffipedia = el("button", "btn primary") as HTMLButtonElement;
+btnFlyffipedia.title = "Flyffipedia öffnen";
+
+// Icon erstellen
+const flyffipediaImg = document.createElement("img");
+flyffipediaImg.src = flyffipediaIcon;
+flyffipediaImg.alt = "Flyffipedia";
+flyffipediaImg.style.width = "64x";  // Icon-Größe
+flyffipediaImg.style.height = "32px"; // Icon-Größe
+
+// Button-Stil explizit setzen
+btnFlyffipedia.style.width = "128px";
+btnFlyffipedia.style.height = "32px";
+
+// Icon zum Button hinzufügen
+btnFlyffipedia.append(flyffipediaImg);
+
+btnFlyffipedia.addEventListener("click", () => {
+  window.open(
+    "https://flyffipedia.com/home",
+    "_blank",
+    "toolbar=no,location=no,status=no,menubar=no,width=1024,height=768"
+  );
+});
+
+// Button zum Header hinzufügen
+header.append(btnFlyffipedia);
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////             Flyffulator - Button
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+const btnFlyffulator = el("button", "btn primary pink-text") as HTMLButtonElement;
+btnFlyffulator.title = "Flyffulator öffnen";
+
+// Icon erstellen
+const flyffulatorImg = document.createElement("img");
+flyffulatorImg.src = flyffulatorIcon;
+flyffulatorImg.alt = "Flyffulator";
+flyffulatorImg.style.width = "32px";   // Korrigiert: "64x" → "32px"
+flyffulatorImg.style.height = "32px";  // Icon-Größe
+flyffulatorImg.style.marginRight = "0px"; // Abstand zwischen Icon und Text
+
+// Text für den Button
+const btnText = document.createElement("span");
+btnText.textContent = "lyffulator";
+
+// Button-Stil anpassen
+btnFlyffulator.style.display = "flex";
+btnFlyffulator.style.alignItems = "center";
+btnFlyffulator.style.justifyContent = "center";
+btnFlyffulator.style.padding = "8px 12px";
+btnFlyffulator.style.height = "40px";
+
+// Icon und Text zum Button hinzufügen
+btnFlyffulator.append(flyffulatorImg, btnText);
+
+// Klick-Event: Öffne Flyffulator in einem neuen Fenster
+btnFlyffulator.addEventListener("click", () => {
+  window.open(
+    "https://flyffulator.com/",
+    "_blank",
+    "toolbar=no,location=no,status=no,menubar=no,width=1024,height=768"
+  );
+});
+
+// Button zum Header hinzufügen
+header.append(btnFlyffulator);
+
+
+
+
+  header.append(el("div", "title", ""), el("div", "spacer"));
+
+  const btnCreate = el("button", "btn primary", "Neues Profil");
   header.append(btnCreate);
 
   const body = el("div", "layout");
@@ -83,8 +205,9 @@ async function renderLauncher(root: HTMLElement) {
   createGrid.append(createName);
 
   const createActions = el("div", "manageActions");
-  const btnAdd = el("button", "btn primary", "Add");
-  const btnCancel = el("button", "btn", "Cancel");
+  const btnAdd = el("button", "btn primary", "hinzufügen");
+  const btnCancel = el("button", "btn", "schließen");
+  const btnDel = el("button", "btn danger", "Löschen");
   createActions.append(btnAdd, btnCancel);
 
   createPanel.append(createGrid, createActions);
@@ -103,12 +226,12 @@ async function renderLauncher(root: HTMLElement) {
       profiles = await window.api.profilesList();
     } catch (e) {
       console.error(e);
-      list.append(el("div", "muted", "Fehler beim Laden der Profile. Siehe Konsole (Ctrl+Shift+I)."));
+      list.append(el("div", "muted", "Fehler beim Laden der Profile."));
       return;
     }
 
     if (profiles.length === 0) {
-      list.append(el("div", "muted", "Noch keine Profile. Erstelle eins mit 'Create Profile'."));
+      list.append(el("div", "muted", "Noch keine Profile. Erstelle eins mit 'Neues Profil'."));
       return;
     }
 
@@ -144,15 +267,55 @@ async function renderLauncher(root: HTMLElement) {
 
       const actions = el("div", "rowActions");
       const btnManage = el("button", "btn", "Einstellungen");
+      const btnCalib = el("button", "btn", "Kalibrieren");
       const btnPlay = el("button", "btn primary", "Spielen");
       const btnDel = el("button", "btn danger", "Löschen");
+
+      btnCalib.onclick = async () => {
+        await window.api.roiOpen(p.id);
+      };
+
+      // Overlay-Target Button
+      const btnTag = el("button", "btn", "") as HTMLButtonElement;
+      btnTag.title = p.overlayTarget ? "Overlay-Ziel (klicken zum deaktivieren)" : "Als Overlay-Ziel markieren";
+
+      const img = document.createElement("img");
+      img.src = aibattGold;
+      img.alt = "Overlay";
+      img.style.width = "18px";
+      img.style.height = "18px";
+      img.style.opacity = p.overlayTarget ? "1" : "0.35";
+      img.style.filter = p.overlayTarget ? "none" : "grayscale(100%)";
+      btnTag.append(img);
+
+      btnTag.style.width = "34px";
+      btnTag.style.height = "34px";
+      btnTag.style.display = "grid";
+      btnTag.style.placeItems = "center";
+      btnTag.style.padding = "0";
+      btnTag.style.borderRadius = "10px";
+
+      btnTag.onclick = async () => {
+        try {
+          if (p.overlayTarget) {
+            await window.api.profilesSetOverlayTarget(null);
+          } else {
+            await window.api.profilesSetOverlayTarget(p.id, "aibatt-gold");
+          }
+          await reload();
+        } catch (e) {
+          console.error("profilesSetOverlayTarget failed:", e);
+        }
+      };
 
       btnDel.onclick = async () => {
         await window.api.profilesDelete(p.id);
         await reload();
       };
 
-      actions.append(btnManage, btnPlay, btnDel);
+      // ✅ NUR EINMAL append
+      actions.append(btnManage, btnCalib, btnTag, btnPlay);
+
       row.append(leftInfo, actions);
 
       const manage = el("div", "manage hidden");
@@ -180,30 +343,26 @@ async function renderLauncher(root: HTMLElement) {
       modeLabel.append(modeCheck, el("span", "", "In Tabs verwenden"));
       modeWrap.append(modeLabel);
 
-      // ... nachdem modeCheck erstellt wurde (nach: modeCheck.checked = p.launchMode === "tabs";)
+      function currentMode(): "tabs" | "window" {
+        return modeCheck.checked ? "tabs" : "window";
+      }
 
-function currentMode(): "tabs" | "window" {
-  return modeCheck.checked ? "tabs" : "window";
-}
+      btnPlay.onclick = async () => {
+        await window.api.profilesUpdate({
+          id: p.id,
+          launchMode: currentMode(),
+        });
 
-btnPlay.onclick = async () => {
-  // optional: direkt persistieren, damit Badge & main.ts sicher konsistent sind:
-  await window.api.profilesUpdate({
-    id: p.id,
-    launchMode: currentMode(),
-  });
+        if (currentMode() === "tabs") {
+          await window.api.openTab(p.id);
+        } else {
+          await window.api.openWindow(p.id);
+        }
+      };
 
-  if (currentMode() === "tabs") {
-    await window.api.openTab(p.id);
-  } else {
-    await window.api.openWindow(p.id);
-  }
-};
-
-
-      const btnSave = el("button", "btn primary", "Save");
-      const btnClone = el("button", "btn", "Clone");
-      const btnClose = el("button", "btn", "Close");
+      const btnSave = el("button", "btn primary", "Speichern");
+      const btnClone = el("button", "btn", "Profil kopieren");
+      const btnClose = el("button", "btn", "schließen");
 
       const clonePanel = el("div", "clonePanel hidden");
       const cloneInput = document.createElement("input");
@@ -212,8 +371,8 @@ btnPlay.onclick = async () => {
       cloneInput.value = `${p.name} (Copy)`;
 
       const cloneActions = el("div", "manageActions");
-      const btnDoClone = el("button", "btn primary", "Clone");
-      const btnCloneCancel = el("button", "btn", "Cancel");
+      const btnDoClone = el("button", "btn primary", "Profil kopieren");
+      const btnCloneCancel = el("button", "btn", "zurück");
       cloneActions.append(btnDoClone, btnCloneCancel);
       clonePanel.append(cloneInput, cloneActions);
 
@@ -257,12 +416,13 @@ btnPlay.onclick = async () => {
       manage.append(grid, actionBar, clonePanel);
       btnManage.onclick = () => manage.classList.toggle("hidden");
 
+      // ---- Drag & Drop card reorder ----
       card.addEventListener("dragover", (e) => {
         e.preventDefault();
         if (!draggingId || draggingId === p.id) return;
 
         const rect = card.getBoundingClientRect();
-        const after = (e.clientY - rect.top) > rect.height / 2;
+        const after = e.clientY - rect.top > rect.height / 2;
 
         card.classList.toggle("dropAfter", after);
         card.classList.toggle("dropBefore", !after);
@@ -282,7 +442,7 @@ btnPlay.onclick = async () => {
         if (!fromId || fromId === toId) return;
 
         const rect = card.getBoundingClientRect();
-        const after = (e.clientY - rect.top) > rect.height / 2;
+        const after = e.clientY - rect.top > rect.height / 2;
 
         const orderedIds = reorderIds(profiles.map((x) => x.id), fromId, toId, after);
         await window.api.profilesReorder(orderedIds);
@@ -361,7 +521,6 @@ async function renderSession(root: HTMLElement) {
   }
 
   function renderTabsOrder() {
-    // in der Reihenfolge der Array-Liste wieder vor den + Button einsetzen
     for (const t of tabs) {
       tabsBar.insertBefore(t.tabBtn, btnPlus);
     }
@@ -397,7 +556,6 @@ async function renderSession(root: HTMLElement) {
     tabBtn.addEventListener("dragend", () => {
       draggingId = null;
       tabBtn.classList.remove("dragging", "dropBefore", "dropAfter");
-      // cleanup aller drop marker
       for (const t of tabs) t.tabBtn.classList.remove("dropBefore", "dropAfter");
     });
 
@@ -406,9 +564,8 @@ async function renderSession(root: HTMLElement) {
       const fromId = draggingId ?? e.dataTransfer?.getData("text/plain");
       if (!fromId || fromId === profileId) return;
 
-      // links/rechts Entscheidung
       const rect = tabBtn.getBoundingClientRect();
-      const after = (e.clientX - rect.left) > rect.width / 2;
+      const after = e.clientX - rect.left > rect.width / 2;
 
       tabBtn.classList.toggle("dropAfter", after);
       tabBtn.classList.toggle("dropBefore", !after);
@@ -425,7 +582,7 @@ async function renderSession(root: HTMLElement) {
       if (!fromId || fromId === profileId) return;
 
       const rect = tabBtn.getBoundingClientRect();
-      const after = (e.clientX - rect.left) > rect.width / 2;
+      const after = e.clientX - rect.left > rect.width / 2;
 
       tabBtn.classList.remove("dropBefore", "dropAfter");
       moveTab(fromId, profileId, after);
@@ -439,14 +596,12 @@ async function renderSession(root: HTMLElement) {
     const profiles: Profile[] = await window.api.profilesList();
     const p = profiles.find((x) => x.id === profileId);
 
-    // ✅ 2) Job NICHT in den Tabnamen
     const title = p?.name ?? profileId;
 
     const tabBtn = document.createElement("button");
     tabBtn.className = "tabBtn";
     tabBtn.textContent = title;
 
-    // optional: Job nur als Tooltip
     if (p?.job?.trim()) tabBtn.title = p.job;
 
     const closeBtn = el("span", "tabClose", "×");
@@ -486,7 +641,7 @@ async function renderSession(root: HTMLElement) {
 
     const overlay = el("div", "modalOverlay");
     const modal = el("div", "modal");
-    const header = el("div", "modalHeader", "Select Profile");
+    const header = el("div", "modalHeader", "Profil auswählen:");
     const body = el("div", "modalBody");
     const list = el("div", "pickerList");
     modal.append(header, body);
@@ -540,7 +695,6 @@ async function renderSession(root: HTMLElement) {
 
   kickBounds();
 }
-
 
 // ---------- Instance (unused/legacy) ----------
 async function renderInstance(root: HTMLElement, profileId: string) {

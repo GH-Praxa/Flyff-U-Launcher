@@ -451,3 +451,41 @@ html, body{
   color: var(--muted);
   padding: 10px 0;
 }
+
+/* Button-Stil für Flyffipedia-Icon */
+.btn.primary {
+  flex-shrink: 0; /* Verhindert, dass der Button durch Flexbox komprimiert wird */
+  min-width: 48px; /* Mindestbreite erzwingen */
+  min-height: 48px; /* Mindesthöhe erzwingen */
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 10px;
+}
+
+/* Header-Stil anpassen */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Abstand zwischen Buttons */
+  padding: 8px;
+}
+
+/* Stil für Buttons mit pinkfarbener Schrift */
+.btn.pink-text {
+  color: #FF1493;          /* Pink */
+  font-size: 18px;        /* Schriftgröße */
+  font-weight: 4000;       /* Schriftstärke (optional) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  height: 40px;
+  gap: 0px;               /* Abstand zwischen Icon und Text */
+}
+
+/* Optional: Hover-Effekt */
+.btn.pink-text:hover {
+  color: #FF69B4;         /* Helleres Pink beim Hovern */
+  opacity: 0.9;
+}
