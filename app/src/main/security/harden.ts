@@ -1,0 +1,31 @@
+import type { BrowserWindow, WebContents } from "electron";
+
+export function hardenWebviews(win: BrowserWindow) {
+  win.webContents.on("will-attach-webview", (event, webPreferences, params) => {
+    const src = params.src || "";
+    const allowed = src === "" || src === "about:blank" || src.startsWith("https://universe.flyff.com/");
+
+    if (!allowed) event.preventDefault();
+
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+
+    // keine fremden preloads erlauben
+    // @ts-ignore
+    delete webPreferences.preload;
+    // @ts-ignore
+    delete webPreferences.preloadURL;
+  });
+}
+
+export function hardenGameContents(wc: WebContents) {
+  // Keine Popups
+  wc.setWindowOpenHandler(() => ({ action: "deny" }));
+
+  // Optional: Navigation einschränken
+  wc.on("will-navigate", (e, url) => {
+    if (!url.startsWith("https://universe.flyff.com/") && url !== "about:blank") {
+      e.preventDefault();
+    }
+  });
+}
