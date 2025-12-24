@@ -1,5 +1,27 @@
 # Versionshistory
 
+## 0.4.0 – Overlay-Kontrolle & Launcher-Politur
+
+### Added
+- **Floatinges Overlay-Steuerfeld:** Eine schwebende Zahnrad-Schaltfläche lauert über dem markierten Profilfenster und öffnet ein Sidepanel mit Platzhaltern für Anzeige-, Settings-, Version- und Debug-Tabs. Das Panel folgt dem Spiel-Fenster, lässt sich in der Breite ziehen, bietet einen schnellen ROI-Kalibrier-Button und verarbeitet die `sidepanel:toggle`/`hudpanel:toggle`-Events.
+- **Launcher-Topbar mit Brand-Links:** Die neue Kopfzeile verlinkt Flyff Universe, Flyffipedia, Flyffulator, Skillulator und Discord inklusive eigener Icons, ergänzt um eine Infobadge-Grafik und die aktuelle Versionsnummer.
+- **Icon-Update:** Die Hauptfensterinstanz setzt jetzt das neue `flyff.png`-App-Icon, damit sich Launcher- und Gamefenster einheitlich präsentieren.
+
+### Changed
+- **Overlay-Handling:** Das HUD folgt nun automatisch dem aktiven Tabs-/Instanz-Fenster, blendet sich aus, sobald die Session den Fokus verliert, und nimmt per Rechtsklick-Editmodus Drag/Resize-Bounds entgegen, die über IPC persistiert und vom Sidepanel lesen werden können.
+
+## 0.3.0 – Erweiterte OCR/ROI-Workflows
+
+### Added
+- **Robuste EXP-HUD-Pipeline:** `startExpOverlay` orchestriert einen Python-Worker (`ocr_worker.py`) zum Erfassen von EXP- und Name/Level-Crops, schreibt auf Wunsch Debug-PNGs, cached die letzten Werte und feuert `exp:update`-Events ins Overlay, sobald sich Namen/Level/EXP ändern.
+- **Profile + IPC erweitern:** Das Profil-Store-Interface verwaltet nun Overlay-Settings/Hud-Layouts und ein Overlay-Icon pro Profil; `registerMainIpc` bietet Handler für ROI-Öffnen/Laden/Speichern sowie das Setzen des Overlay-Targets, wodurch Renderer und Sidepanel direkt auf diese Werkzeuge zugreifen können.
+- **ROI-Kalibrierer + Normierte Speicherung:** Der neue Kalibrierdialog (Screen-Screenshot + Ziehrechtecke) speichert normierte ROIs in `userData/rois.json`, folgt einem aktiven Tab- oder Instanz-Fenster und versorgt `createOverlayTargetController` mit pixelgenauen Rechtecken.
+- **Overlay-Target-Controller:** Dieser Controller liest das markierte Profil, lädt passende ROIs und startet das `startExpOverlay` nur dann, wenn die Zielinstanz im Fokus ist (Tabs + Fenster werden abgefragt).
+
+### Changed
+- **Overlay synchronisiert Fenstergrößen:** Statt `webContents.getSize()` nutzt das HUD `getContentBounds()` bzw. BrowserView-Bounds, passt sich an Parent-Bounds an, sendet `overlay:setBounds`/`overlay:setSize` und betreibt das click-through-Verhalten über `setIgnoreMouseEvents` dynamisch.
+- **ROI-Kalibrierung im Flow:** `roiOpen` (Main) sorgt dafür, dass entweder die Instanz oder die Tab-View den Screenshot liefert, der Kalibrierer das Fenster folgt und nach dem Speichern automatisch das Overlay aktualisiert.
+
 ## 0.2.0 – Overlay/OCR-Grundgerüst + ROI-Kalibrierung + Launcher-UI Updates
 
 ### Added
