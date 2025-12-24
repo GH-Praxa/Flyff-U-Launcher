@@ -16,8 +16,8 @@ type ProfilesStore = {
 };
 
 type SessionWindowController = {
-  ensure: () => Promise<any>; // BrowserWindow
-  get: () => any | null;     // BrowserWindow | null
+  ensure: () => Promise<any>;
+  get: () => any | null;
 };
 
 type SessionTabsManager = {
@@ -37,40 +37,32 @@ export function registerMainIpc(opts: {
 
   createInstanceWindow: (profileId: string) => void;
 
-  // wird genutzt um Overlay/Panel sofort nachzuführen
   overlayTargetRefresh?: () => Promise<any> | any;
 
-  // ROI
   roiOpen: (profileId: string) => Promise<boolean>;
   roiLoad: (profileId: string) => Promise<any>;
   roiSave: (profileId: string, rois: any) => Promise<boolean>;
 }) {
+  function safeHandle(channel: string, handler: any) {
+    try {
+      ipcMain.removeHandler(channel);
+    } catch {}
+    ipcMain.handle(channel, handler);
+  }
+
   // -------- Profiles --------
-  ipcMain.handle("profiles:list", async () => {
-    return await opts.profiles.list();
+  safeHandle("profiles:list", async () => await opts.profiles.list());
+  safeHandle("profiles:create", async (_e, name: string) => await opts.profiles.create(name));
+  safeHandle("profiles:update", async (_e, patch: any) => await opts.profiles.update(patch));
+  safeHandle("profiles:delete", async (_e, profileId: string) => await opts.profiles.delete(profileId));
+  safeHandle("profiles:clone", async (_e, profileId: string, newName: string) => await opts.profiles.clone(profileId, newName));
+  safeHandle("profiles:reorder", async (_e, orderedIds: string[]) => await opts.profiles.reorder(orderedIds));
+
+  safeHandle("profiles:getOverlayTargetId", async () => {
+    return await opts.profiles.getOverlayTargetId();
   });
 
-  ipcMain.handle("profiles:create", async (_e, name: string) => {
-    return await opts.profiles.create(name);
-  });
-
-  ipcMain.handle("profiles:update", async (_e, patch: any) => {
-    return await opts.profiles.update(patch);
-  });
-
-  ipcMain.handle("profiles:delete", async (_e, profileId: string) => {
-    return await opts.profiles.delete(profileId);
-  });
-
-  ipcMain.handle("profiles:clone", async (_e, profileId: string, newName: string) => {
-    return await opts.profiles.clone(profileId, newName);
-  });
-
-  ipcMain.handle("profiles:reorder", async (_e, orderedIds: string[]) => {
-    return await opts.profiles.reorder(orderedIds);
-  });
-
-  ipcMain.handle("profiles:setOverlayTarget", async (_e, profileId: string | null, iconKey?: string) => {
+  safeHandle("profiles:setOverlayTarget", async (_e, profileId: string | null, iconKey?: string) => {
     const next = await opts.profiles.setOverlayTarget(profileId, iconKey);
     try {
       await opts.overlayTargetRefresh?.();
@@ -80,15 +72,13 @@ export function registerMainIpc(opts: {
     return next;
   });
 
-  // ✅ neu: Overlay-Settings laden
-  ipcMain.handle("overlaySettings:get", async (_e, profileId: string) => {
+  // optional (wenn dein Renderer das nutzt)
+  safeHandle("overlaySettings:get", async (_e, profileId: string) => {
     return await opts.profiles.getOverlaySettings(profileId);
   });
 
-  // ✅ neu: Overlay-Settings patchen
-  ipcMain.handle("overlaySettings:patch", async (_e, profileId: string, patch: any) => {
+  safeHandle("overlaySettings:patch", async (_e, profileId: string, patch: any) => {
     const next = await opts.profiles.patchOverlaySettings(profileId, patch);
-    // optional: Overlay sofort updaten (falls du später Settings im Overlay nutzt)
     try {
       await opts.overlayTargetRefresh?.();
     } catch {}
@@ -96,64 +86,60 @@ export function registerMainIpc(opts: {
   });
 
   // -------- Launcher → Session/Instance --------
-  ipcMain.handle("session:openTab", async (_e, profileId: string) => {
+  safeHandle("session:openTab", async (_e, profileId: string) => {
     const win = await opts.sessionWindow.ensure();
     win.show();
     win.focus();
-
     await opts.sessionTabs.open(profileId);
-
     try {
       win.webContents.send("session:openTab", profileId);
     } catch {}
-
     return true;
   });
 
-  ipcMain.handle("instance:openWindow", async (_e, profileId: string) => {
+  safeHandle("instance:openWindow", async (_e, profileId: string) => {
     opts.createInstanceWindow(profileId);
     return true;
   });
 
   // -------- Session Tabs (Session Renderer) --------
-  ipcMain.handle("sessionTabs:open", async (_e, profileId: string) => {
+  safeHandle("sessionTabs:open", async (_e, profileId: string) => {
     await opts.sessionTabs.open(profileId);
     return true;
   });
 
-  ipcMain.handle("sessionTabs:switch", async (_e, profileId: string) => {
+  safeHandle("sessionTabs:switch", async (_e, profileId: string) => {
     await opts.sessionTabs.switchTo(profileId);
     return true;
   });
 
-  ipcMain.handle("sessionTabs:close", async (_e, profileId: string) => {
+  safeHandle("sessionTabs:close", async (_e, profileId: string) => {
     await opts.sessionTabs.close(profileId);
     return true;
   });
 
-  ipcMain.handle("sessionTabs:setBounds", async (_e, bounds: Rect) => {
+  safeHandle("sessionTabs:setBounds", async (_e, bounds: Rect) => {
     opts.sessionTabs.setBounds(bounds);
     return true;
   });
 
-  ipcMain.handle("sessionTabs:setVisible", async (_e, visible: boolean) => {
+  safeHandle("sessionTabs:setVisible", async (_e, visible: boolean) => {
     opts.sessionTabs.setVisible(visible);
     return true;
   });
 
   // -------- ROI --------
-  ipcMain.handle("roi:open", async (_e, profileId: string) => {
+  safeHandle("roi:open", async (_e, arg) => {
+    const profileId = typeof arg === "string" ? arg : arg?.profileId;
+    if (!profileId) throw new Error("roi:open: missing profileId");
     return await opts.roiOpen(profileId);
   });
 
-  ipcMain.handle("roi:load", async (_e, profileId: string) => {
+  safeHandle("roi:load", async (_e, profileId: string) => {
     return await opts.roiLoad(profileId);
   });
 
-  ipcMain.handle("roi:save", async (_e, a: any, b?: any) => {
-    // akzeptiert:
-    // 1) invoke("roi:save", profileId, rois)
-    // 2) invoke("roi:save", { profileId, rois })
+  safeHandle("roi:save", async (_e, a: any, b?: any) => {
     let profileId: string;
     let rois: any;
 
@@ -164,8 +150,6 @@ export function registerMainIpc(opts: {
       profileId = a as string;
       rois = b;
     }
-
-    console.log("[ROI SAVE] profileId =", profileId, "payload =", rois);
 
     const actual = rois?.rois ?? rois;
     if (!actual?.nameLevel || !actual?.expPercent) {

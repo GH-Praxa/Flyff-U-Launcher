@@ -2,7 +2,13 @@ import "./index.css";
 import aibattGold from "./assets/icons/aibatt_gold.png";
 import flyffuniverseIcon from "./assets/icons/flyffuniverse.png";
 import flyffipediaIcon from "./assets/icons/flyffipedia.png";
-import flyffulatorIcon from "./assets/icons/flyffulator.png"
+import flyffulatorIcon from "./assets/icons/flyffulator.png";
+import reskillIcon from "./assets/icons/reskill.png";
+import infoPengIcon from "./assets/icons/infopeng.png";
+import pkg from "../package.json";
+
+const discordIcon =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237289da'/%3E%3Ccircle cx='11' cy='12' r='3' fill='%23fff'/%3E%3Ccircle cx='21' cy='12' r='3' fill='%23fff'/%3E%3Cpath d='M9 22 Q16 26 23 22' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 
 
 const FLYFF_URL = "https://universe.flyff.com/play";
@@ -72,6 +78,13 @@ async function renderLauncher(root: HTMLElement) {
 
 
   const header = el("div", "topbar");
+  const jobOptions = ["", "Blade", "Ringmaster", "Ranger", "Vagrant", "Jester", "Knight", "Psykeeper", "Elementor", "Billposter"];
+  const tips = [
+    "Ziehe Profile per Drag & Drop, um die Reihenfolge zu aendern.",
+    "Nutze den Tabs-Modus, um mehrere Chars in einem Fenster offen zu halten.",
+    "Markiere einen Char als Overlay-Ziel (Aibatt), damit die Overlay-Anzeige folgt.",
+    "Klicke auf 'Spielen', um direkt im gewaehlten Startmodus (Tabs/Fenster) zu oeffnen.",
+  ];
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,14 +194,76 @@ btnFlyffulator.addEventListener("click", () => {
 
 // Button zum Header hinzufügen
 header.append(btnFlyffulator);
+const btnSkillulator = el("button", "btn primary skillulator") as HTMLButtonElement;
+btnSkillulator.title = "Skillulator öffnen";
+
+const skillulatorImg = document.createElement("img");
+skillulatorImg.src = reskillIcon;
+skillulatorImg.alt = "Skillulator";
+skillulatorImg.style.width = "32px";
+skillulatorImg.style.height = "32px";
+skillulatorImg.style.marginRight = "0px";
+
+const btnSkillulatorText = document.createElement("span");
+btnSkillulatorText.textContent = "Skillulator";
+btnSkillulatorText.className = "skillulatorLabel";
+
+btnSkillulator.style.display = "flex";
+btnSkillulator.style.alignItems = "center";
+btnSkillulator.style.justifyContent = "center";
+btnSkillulator.style.padding = "8px 12px";
+btnSkillulator.style.height = "40px";
+btnSkillulator.append(skillulatorImg, btnSkillulatorText);
+btnSkillulator.addEventListener("click", () => {
+  window.open(
+    "https://skillulator.lol/",
+    "_blank",
+    "toolbar=no,location=no,status=no,menubar=no,width=1024,height=768"
+  );
+});
+header.append(btnSkillulator);
+const btnDiscord = el("button", "btn primary") as HTMLButtonElement;
+btnDiscord.title = "Discord-Server beitreten";
+btnDiscord.style.width = "38px";
+btnDiscord.style.height = "36px";
+const discordImg = document.createElement("img");
+discordImg.src = discordIcon;
+discordImg.alt = "Discord";
+discordImg.style.width = "20px";
+discordImg.style.height = "20px";
+btnDiscord.append(discordImg);
+btnDiscord.addEventListener("click", () => {
+  window.open(
+    "https://discord.gg/vAPxWYHt",
+    "_blank",
+    "toolbar=no,location=no,status=no,menubar=no,width=900,height=700"
+  );
+});
+header.append(btnDiscord);
 
 
 
 
-  header.append(el("div", "title", ""), el("div", "spacer"));
+  const versionLabel = el("div", "versionLabel", `v${pkg.version}`);
+  header.append(el("div", "title", ""), el("div", "spacer"), versionLabel);
 
   const btnCreate = el("button", "btn primary", "Neues Profil");
-  header.append(btnCreate);
+
+  const filterBar = el("div", "filterBar");
+  const searchInput = document.createElement("input");
+  searchInput.className = "input searchInput";
+  searchInput.placeholder = "Charname suchen...";
+
+  const jobSelect = document.createElement("select");
+  jobSelect.className = "select filterSelect";
+  for (const j of jobOptions) {
+    const opt = document.createElement("option");
+    opt.value = j;
+    opt.textContent = j === "" ? "Alle Berufe" : j;
+    jobSelect.append(opt);
+  }
+
+  filterBar.append(searchInput, jobSelect, btnCreate);
 
   const body = el("div", "layout");
   const left = el("div", "panel left");
@@ -198,6 +273,11 @@ header.append(btnFlyffulator);
 
   const createPanel = el("div", "manage hidden");
   const createGrid = el("div", "manageGrid");
+
+  const tipsBanner = el("div", "tipsBanner");
+  const tipsTitle = el("div", "tipsTitle", "Tipp");
+  const tipsText = el("div", "tipsText", "");
+  tipsBanner.append(tipsTitle, tipsText);
 
   const createName = document.createElement("input");
   createName.className = "input";
@@ -211,11 +291,17 @@ header.append(btnFlyffulator);
   createActions.append(btnAdd, btnCancel);
 
   createPanel.append(createGrid, createActions);
-  left.append(createPanel, list);
+  left.append(createPanel, list, tipsBanner);
 
   right.append(el("div", "panelTitle", "Newsfeed (später)"), el("div", "muted", "später"));
 
-  root.append(header, body);
+  root.append(header, filterBar, body);
+  const infoBadge = el("div", "infoBadge");
+  const infoImg = document.createElement("img");
+  infoImg.src = infoPengIcon;
+  infoImg.alt = "InfoPeng";
+  infoBadge.append(infoImg);
+  root.append(infoBadge);
   body.append(left, right);
 
   async function reload() {
@@ -235,9 +321,23 @@ header.append(btnFlyffulator);
       return;
     }
 
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    const jobFilter = jobSelect.value;
+
+    const filteredProfiles = profiles.filter((p) => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+      const matchesJob = !jobFilter || (p.job ?? "") === jobFilter;
+      return matchesSearch && matchesJob;
+    });
+
+    if (filteredProfiles.length === 0) {
+      list.append(el("div", "muted", "Keine Treffer für den Filter."));
+      return;
+    }
+
     let draggingId: string | null = null;
 
-    for (const p of profiles) {
+    for (const p of filteredProfiles) {
       const card = el("div", "card");
 
       const row = el("div", "row");
@@ -245,7 +345,7 @@ header.append(btnFlyffulator);
 
       const dragHandle = el("span", "dragHandle", "≡");
       const name = el("div", "rowName", p.name);
-      leftInfo.append(dragHandle, name);
+      leftInfo.append(dragHandle);
 
       (dragHandle as any).draggable = true;
 
@@ -262,22 +362,19 @@ header.append(btnFlyffulator);
         card.classList.remove("dragging", "dropBefore", "dropAfter");
       });
 
-      if (p.job?.trim()) leftInfo.append(el("span", "badge", p.job));
-      leftInfo.append(el("span", "badge subtle", p.launchMode === "tabs" ? "Tabs" : "Window"));
-
       const actions = el("div", "rowActions");
-      const btnManage = el("button", "btn", "Einstellungen");
-      const btnCalib = el("button", "btn", "Kalibrieren");
+      const btnManage = el("button", "btn", "") as HTMLButtonElement;
+      const manageIcon = document.createElement("span");
+      manageIcon.textContent = "⚙";
+      manageIcon.setAttribute("aria-hidden", "true");
+      btnManage.append(manageIcon);
       const btnPlay = el("button", "btn primary", "Spielen");
       const btnDel = el("button", "btn danger", "Löschen");
-
-      btnCalib.onclick = async () => {
-        await window.api.roiOpen(p.id);
-      };
 
       // Overlay-Target Button
       const btnTag = el("button", "btn", "") as HTMLButtonElement;
       btnTag.title = p.overlayTarget ? "Overlay-Ziel (klicken zum deaktivieren)" : "Als Overlay-Ziel markieren";
+      if (p.overlayTarget) btnTag.classList.add("primary");
 
       const img = document.createElement("img");
       img.src = aibattGold;
@@ -308,13 +405,17 @@ header.append(btnFlyffulator);
         }
       };
 
+      leftInfo.append(btnTag, name);
+      if (p.job?.trim()) leftInfo.append(el("span", "badge", p.job));
+      leftInfo.append(el("span", "badge subtle", p.launchMode === "tabs" ? "Tabs" : "Window"));
+
       btnDel.onclick = async () => {
         await window.api.profilesDelete(p.id);
         await reload();
       };
 
       // ✅ NUR EINMAL append
-      actions.append(btnManage, btnCalib, btnTag, btnPlay);
+      actions.append(btnManage, btnPlay);
 
       row.append(leftInfo, actions);
 
@@ -326,8 +427,7 @@ header.append(btnFlyffulator);
 
       const jobSelect = document.createElement("select");
       jobSelect.className = "select";
-      const jobs = ["", "Blade", "Ringmaster", "Ranger", "Vagrant", "Jester", "Knight", "Psykeeper", "Elementor", "Billposter"];
-      for (const j of jobs) {
+      for (const j of jobOptions) {
         const opt = document.createElement("option");
         opt.value = j;
         opt.textContent = j === "" ? "— Job —" : j;
@@ -469,6 +569,23 @@ header.append(btnFlyffulator);
   };
 
   btnCancel.onclick = () => createPanel.classList.add("hidden");
+
+  searchInput.addEventListener("input", () => {
+    reload().catch(console.error);
+  });
+  jobSelect.addEventListener("change", () => {
+    reload().catch(console.error);
+  });
+
+  // Tipp-Banner rotieren
+  let tipIdx = 0;
+  function showNextTip() {
+    if (tips.length === 0) return;
+    tipsText.textContent = tips[tipIdx];
+    tipIdx = (tipIdx + 1) % tips.length;
+  }
+  showNextTip();
+  setInterval(showNextTip, 6000);
 
   await reload();
 }

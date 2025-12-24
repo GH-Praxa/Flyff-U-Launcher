@@ -1,9 +1,6 @@
-import { BrowserWindow } from "electron";
+﻿import { BrowserWindow } from "electron";
 
-const ICON_W = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsSAAALEgHS3X78AAABJUlEQVR4nO2XsUoDQRSGv2kqKBiQ1sLGQmtrY2FhZ2FhY2FhY2FhY2HhC2gQKx0C8Qn0gkQxQhQ0q7j3r2c7d3b0p7mY+Z0zv3d2Z7gkO3cCk0lQm0mJ4AqgGkJfM2cA4wE8rH8b1cKcKkYfW8b0s4H2Q9QmQeEo4bQv7oWcQG0xvWq6bQ7m8GvQ9bqgC9QHnY4k7gFq2J0i6xg0r2tQmE1q5qfXo3wDkYc0gF0yqkq2B2oGQ1c3cQ5nqgC9QFf2Z8Aqgq7g9GZyJ5b0Z2b6gY0oYc1oWm0m0lY0V8A2F5p0x0uV0y8j1n0Yt6+8rj0yq7Q0m2g5oBvW8m3jz0aQAAAABJRU5ErkJggg==";
-const ICON_H = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsSAAALEgHS3X78AAABG0lEQVR4nO2XsUoDQRSGv2kqKBiQ1sLGQmtrY2FhZ2FhY2FhY2FhY2HhC2gQKx0C8Qn0gkQxQhQ0q7j3r2c7d3b0p7mY+Z0zv3d2Z7gkO3cCk0lQm0mJ4AqgGkJfM2cA4wE8rH8b1cKcKkYfW8b0s4H2Q9QmQeEo4bQv7oWcQG0xvWq6bQ7m8GvQ9bqgC9QHnY4k7gFq2J0i6xg0r2tQmE1q5qfXo3wDkYc0gF0yqkq2B2oGQ1c3cQ5nqgC9QFf2Z8Aqgq7g9GZyJ5b0Z2b6gY0oYc1oWm0m0lY0V8A2F5p0x0uV0y8j1n0Yt6+8rj0yq7Q0m2g5oBvW8m3jz0aQAAAABJRU5ErkJggg==";
-
-export function createHudControlWindow(parent: BrowserWindow) {
+export function createHudSideTabWindow(parent: BrowserWindow) {
   const win = new BrowserWindow({
     parent,
     frame: false,
@@ -11,7 +8,7 @@ export function createHudControlWindow(parent: BrowserWindow) {
     resizable: false,
     movable: false,
     show: true,
-    focusable: false,
+    focusable: true,
     skipTaskbar: true,
     hasShadow: false,
     alwaysOnTop: true,
@@ -32,115 +29,346 @@ export function createHudControlWindow(parent: BrowserWindow) {
 <meta charset="utf-8" />
 <style>
   html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:Segoe UI,Arial}
-  #wrap{
-    width: 168px; height: 44px;
-    display:flex; gap:8px;
-    align-items:center; justify-content:flex-end;
-    padding:6px;
+  :root{
+    --gold: rgba(255,215,0,0.55);
+    --gold2: rgba(255,215,0,0.25);
+    --bg: rgba(0,0,0,0.55);
+    --bg2: rgba(0,0,0,0.35);
+    --line: rgba(255,255,255,0.10);
+    --txt: #e9e9e9;
+    --muted: rgba(255,255,255,0.60);
+    --brown: rgba(160,110,60,0.90);
+    --brown2: rgba(160,110,60,0.22);
+  }
+
+  #root{
+    width: 100%;
+    height: 100%;
+    display:flex;
+    justify-content:flex-end;
+    pointer-events:auto;
+  }
+
+  /* collapsed handle area always visible */
+  #handle{
+    width: 44px;
+    height: 100%;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding-top: 10px;
+  }
+
+  #toggle{
+    width: 34px;
+    height: 34px;
     border-radius: 12px;
-    border:1px solid rgba(255,215,0,0.35);
-    background: rgba(0,0,0,0.55);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    user-select:none;
+    border:1px solid var(--gold2);
+    background: var(--bg);
+    color: #ffd700;
+    cursor:pointer;
+    font-size: 14px;
+    display:grid;
+    place-items:center;
+  }
+  #toggle:hover{ background: rgba(0,0,0,0.70); }
+
+  #panel{
+    width: calc(100% - 44px);
+    height: 100%;
+    border-radius: 16px 0 0 16px;
+    border:1px solid var(--gold2);
+    border-right: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35));
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  #tabs{
+    display:flex;
+    gap:10px;
+    padding: 10px 10px 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tab{
+    border:1px solid var(--line);
+    background: rgba(255,255,255,0.06);
+    color: var(--txt);
+    border-radius: 12px;
+    padding: 8px 10px;
+    cursor:pointer;
+    font-size: 12px;
+  }
+  .tab.active{
+    border-color: var(--gold);
+    background: rgba(255,215,0,0.12);
+    color: #ffd700;
+  }
+
+  #content{
+    padding: 10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    overflow:auto;
+  }
+
+  .section{
+    border:1px solid var(--line);
+    background: rgba(0,0,0,0.25);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .sectionTitle{
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding: 10px;
+    border-radius: 14px;
+    border:1px solid rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.22);
+    margin-bottom: 10px;
+  }
+  .row:last-child{ margin-bottom: 0; }
+
+  .label{ font-size: 12px; color: var(--txt); }
+  .hint{ font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* simple toggle */
+  .switch{
+    position:relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.10);
+    border-radius: 999px;
+    cursor:pointer;
+    flex: 0 0 auto;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.60);
+    transition: all 120ms ease;
+  }
+  .switch.on{
+    background: rgba(255,215,0,0.20);
+    border-color: var(--gold2);
+  }
+  .switch.on::after{
+    left: 22px;
+    background: rgba(255,215,0,0.90);
   }
 
   .btn{
-    width: 36px; height: 28px;
-    border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.06);
-    color:#ddd;
+    background: rgba(255,255,255,0.08);
+    color: var(--txt);
+    border-radius: 12px;
+    padding: 10px 12px;
     cursor:pointer;
-    display:grid;
-    place-items:center;
-    touch-action:none;
+    font-size: 12px;
   }
-  .btn:hover{ background: rgba(255,255,255,0.10); }
+  .btn:hover{ background: rgba(255,255,255,0.12); }
 
-  .btn img{ width:20px; height:20px; image-rendering: auto; }
+  .btnBrown{
+    border-color: rgba(160,110,60,0.55);
+    background: var(--brown2);
+    color: #f2d7bf;
+  }
+  .btnBrown:hover{ background: rgba(160,110,60,0.30); }
 
-  #move{ font-size: 16px; line-height: 1; }
-  #reset.hidden{ display:none; }
-
-  .active{
-    border-color: rgba(255,215,0,0.35);
-    background: rgba(255,215,0,0.12);
-    color:#ffd700;
+  /* resize handle inside panel */
+  #resizeGrip{
+    position:absolute;
+    left: 44px;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    cursor: ew-resize;
+    background: transparent;
   }
 </style>
 </head>
 <body>
-  <div id="wrap">
-    <div class="btn" id="reset" title="Reset">R</div>
-    <div class="btn" id="move" title="Verschieben">⤧</div>
-    <div class="btn" id="w" title="Breite ändern"><img alt="↔" src="${ICON_W}"></div>
-    <div class="btn" id="h" title="Höhe ändern"><img alt="↕" src="${ICON_H}"></div>
+  <div id="root">
+    <div id="handle">
+      <button id="toggle" title="Panel ein-/ausblenden">X</button>
+    </div>
+
+    <div id="resizeGrip" title="Breite ziehen"></div>
+
+    <div id="panel">
+      <div id="tabs">
+        <button class="tab active" data-tab="display">Anzeige</button>
+        <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="version">Version</button>
+        <button class="tab" data-tab="debug">Debug</button>
+      </div>
+
+      <div id="content"></div>
+    </div>
   </div>
 
 <script>
   const { ipcRenderer } = require("electron");
 
   let profileId = null;
-  let dragging = null; // { kind, pointerId }
 
-  const moveBtn = document.getElementById("move");
-  const wBtn = document.getElementById("w");
-  const hBtn = document.getElementById("h");
-  const resetBtn = document.getElementById("reset");
+  // --- Open/Close ---
+  document.getElementById("toggle").onclick = () => {
+    ipcRenderer.send("hudpanel:toggle");
+  };
 
-  function startDrag(kind, el, e){
+  // --- Resize (sends absolute width) ---
+  const grip = document.getElementById("resizeGrip");
+  let resizing = false;
+  let startX = 0;
+  let startW = 0;
+
+  grip.addEventListener("mousedown", (e) => {
+    resizing = true;
+    startX = e.clientX;
+    startW = window.innerWidth;
     e.preventDefault();
-    dragging = { kind, pointerId: e.pointerId };
-    el.setPointerCapture(e.pointerId);
-    el.classList.add("active");
-    ipcRenderer.send("hud:dragStart", { kind, x: e.screenX, y: e.screenY });
-  }
-
-  function moveDrag(e){
-    if (!dragging) return;
-    ipcRenderer.send("hud:dragMove", { x: e.screenX, y: e.screenY });
-  }
-
-  function endDrag(el, e){
-    if (!dragging) return;
-    try { el.releasePointerCapture(dragging.pointerId); } catch {}
-    dragging = null;
-    el.classList.remove("active");
-    ipcRenderer.send("hud:dragEnd");
-  }
-
-  // Move
-  moveBtn.addEventListener("pointerdown", (e) => startDrag("move", moveBtn, e));
-  moveBtn.addEventListener("pointermove", moveDrag);
-  moveBtn.addEventListener("pointerup", (e) => endDrag(moveBtn, e));
-  moveBtn.addEventListener("pointercancel", (e) => endDrag(moveBtn, e));
-
-  // Resize Width
-  wBtn.addEventListener("pointerdown", (e) => startDrag("w", wBtn, e));
-  wBtn.addEventListener("pointermove", moveDrag);
-  wBtn.addEventListener("pointerup", (e) => endDrag(wBtn, e));
-  wBtn.addEventListener("pointercancel", (e) => endDrag(wBtn, e));
-
-  // Resize Height
-  hBtn.addEventListener("pointerdown", (e) => startDrag("h", hBtn, e));
-  hBtn.addEventListener("pointermove", moveDrag);
-  hBtn.addEventListener("pointerup", (e) => endDrag(hBtn, e));
-  hBtn.addEventListener("pointercancel", (e) => endDrag(hBtn, e));
-
-  // Reset
-  resetBtn.addEventListener("click", () => {
-    if (!profileId) return;
-    ipcRenderer.send("overlay:reset", { profileId });
   });
 
-  // Profil + Settings
-  ipcRenderer.on("exp:update", (_e, payload) => {
-    if (!payload) return;
-    profileId = payload.profileId ?? profileId;
+  window.addEventListener("mousemove", (e) => {
+    if (!resizing) return;
+    const dx = startX - e.clientX;
+    const next = Math.max(240, Math.min(720, startW + dx));
+    ipcRenderer.send("hudpanel:setWidth", { width: next });
+  });
 
-    const s = payload.settings || null;
-    const showReset = (s && typeof s.showResetButton === "boolean") ? s.showResetButton : true;
-    resetBtn.classList.toggle("hidden", !showReset);
+  window.addEventListener("mouseup", () => {
+    resizing = false;
+  });
+
+  // --- Tabs ---
+  const content = document.getElementById("content");
+  const tabs = Array.from(document.querySelectorAll(".tab"));
+
+  function setTab(name){
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    renderTab(name);
+  }
+
+  tabs.forEach(t => {
+    t.onclick = () => setTab(t.dataset.tab);
+  });
+
+  // dummy state (nur UI â€“ Funktionen kommen spÃ¤ter)
+  const state = {
+    showExp: true,
+    showDelta: true,
+    showTotal: false,
+    showKillsSession: false,
+    showKillsLifetime: false,
+  };
+
+  function makeToggleRow(label, key){
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const l = document.createElement("div");
+    l.className = "label";
+    l.textContent = label;
+
+    const sw = document.createElement("div");
+    sw.className = "switch" + (state[key] ? " on" : "");
+    sw.onclick = () => {
+      state[key] = !state[key];
+      sw.classList.toggle("on", state[key]);
+      // spÃ¤ter: IPC -> settings persist + overlay anzeigen/ausblenden
+    };
+
+    row.append(l, sw);
+    return row;
+  }
+
+  function renderTab(name){
+    content.innerHTML = "";
+
+    if(name === "display"){
+      const sec = document.createElement("div");
+      sec.className = "section";
+      sec.innerHTML = '<div class="sectionTitle">Anzeige (Platzhalter â€“ Funktionen kommen in 0.3+)</div>';
+      sec.append(
+        makeToggleRow("EXP-Anzeige im Overlay anzeigen", "showExp"),
+        makeToggleRow("Delta EXP im Overlay anzeigen", "showDelta"),
+        makeToggleRow("Gesamt EXP im Overlay anzeigen", "showTotal"),
+        makeToggleRow("Kills Session im Overlay anzeigen", "showKillsSession"),
+        makeToggleRow("Kills Lifetime im Overlay anzeigen", "showKillsLifetime"),
+      );
+      content.append(sec);
+      return;
+    }
+
+    if(name === "settings"){
+      const sec = document.createElement("div");
+      sec.className = "section";
+      sec.innerHTML = '<div class="sectionTitle">Settings (kommt spÃ¤ter)</div><div class="hint">Hier kommen spÃ¤ter z.B. Hotkeys, Themes, etc.</div>';
+      content.append(sec);
+      return;
+    }
+
+    if(name === "version"){
+      const sec = document.createElement("div");
+      sec.className = "section";
+      sec.innerHTML = '<div class="sectionTitle">Version</div><div class="hint">v0.3</div>';
+      content.append(sec);
+      return;
+    }
+
+    if(name === "debug"){
+      const sec = document.createElement("div");
+      sec.className = "section";
+      sec.innerHTML = '<div class="sectionTitle">Debug</div>';
+
+      const btn = document.createElement("button");
+      btn.className = "btn btnBrown";
+      btn.textContent = "Kalibrieren (ROI)";
+      btn.onclick = async () => {
+        if(!profileId) return;
+        try{
+          // nutzt deinen bestehenden IPC handler (wie window.api.roiOpen im Launcher)
+          await ipcRenderer.invoke("roi:open", profileId);
+        }catch(e){
+          console.error("roi:open failed", e);
+        }
+      };
+
+      const hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = "Ã–ffnet das ROI-Kalibrierfenster fÃ¼r das aktuelle Overlay-Profil.";
+
+      sec.append(btn, hint);
+      content.append(sec);
+      return;
+    }
+  }
+
+  // initial
+  renderTab("display");
+
+  // --- Receive exp:update (wir merken uns profileId fÃ¼rs Debug->Kalibrieren)
+  ipcRenderer.on("exp:update", (_e, payload) => {
+    if(payload && payload.profileId) profileId = payload.profileId;
   });
 </script>
 </body>
@@ -150,3 +378,4 @@ export function createHudControlWindow(parent: BrowserWindow) {
   win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
   return win;
 }
+

@@ -1,7 +1,7 @@
 import { BrowserWindow } from "electron";
-import path from "path";
 import { hardenWebviews } from "../security/harden";
 import type { LoadView } from "../viewLoader";
+import flyffIcon from "../../assets/icons/flyff.png";
 
 export function createLauncherWindow(opts: {
   preloadPath: string;
@@ -16,7 +16,12 @@ export function createLauncherWindow(opts: {
       contextIsolation: true,
       nodeIntegration: false,
     },
+    icon: flyffIcon,
   });
+
+  // Hide native menu bar (File/Edit/View/Window/Help)
+  win.setMenuBarVisibility(false);
+  win.setMenu(null);
 
   hardenWebviews(win);
   opts.loadView(win, "launcher").catch(console.error);

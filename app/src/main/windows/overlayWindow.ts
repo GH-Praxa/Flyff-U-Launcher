@@ -5,8 +5,8 @@ export function createOverlayWindow(parent: BrowserWindow) {
     parent,
     frame: false,
     transparent: true,
-    resizable: false, // wird im Edit-Modus per setResizable(true) aktiviert
-    movable: true,
+    resizable: false,
+    movable: false,
     show: true,
     focusable: false,
     skipTaskbar: true,
@@ -20,8 +20,9 @@ export function createOverlayWindow(parent: BrowserWindow) {
     },
   });
 
+  // click-through by default, aber Maus an Spiel weiterreichen:
+  win.setIgnoreMouseEvents(true, { forward: true });
   win.setAlwaysOnTop(true, "screen-saver");
-  win.setMinimumSize(260, 180);
 
   const html = `
 <!doctype html>
@@ -30,216 +31,179 @@ export function createOverlayWindow(parent: BrowserWindow) {
 <meta charset="utf-8" />
 <style>
   html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:Segoe UI,Arial}
-
-  #hud{
-    position:absolute; inset:0;
-    border-radius: 14px;
-    border: 1px solid rgba(255,215,0,0.35);
-    background: rgba(0,0,0,0.55);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    color:#ddd;
-    user-select:none;
-    overflow:hidden;
-  }
-
-  /* Edit-Mode: sichtbarer Rahmen */
-  body.edit #hud{
-    outline: 2px solid rgba(255,215,0,0.55);
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.35), 0 12px 34px rgba(0,0,0,0.45);
-  }
-
-  #top{
-    display:flex; align-items:center; justify-content:space-between;
+  /* Cursor ausblenden, damit der Spielecursor sichtbar bleibt (außer im Edit-Modus) */
+  body{ cursor: none; }
+  body.edit{ cursor: default; }
+  body:not(.edit) *{ cursor: none; }
+  #box{
+    position:fixed; left:0; top:0;
     padding:10px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-    background: rgba(0,0,0,0.35);
+    border-radius:14px;
+    border:1px solid rgba(255,215,0,0.28);
+    background: rgba(0,0,0,0.55);
+    color:#eaeaea;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    user-select:none;
+    cursor: none;
+    min-width: 160px;
   }
-  body.edit #top{ -webkit-app-region: drag; } /* ✅ Drag nur im Edit-Modus */
-  #top *{ -webkit-app-region: no-drag; }
+  #title{font-weight:600;font-size:12px;opacity:0.9;margin-bottom:6px}
+  #exp{font-size:22px;font-weight:700;letter-spacing:0.5px}
+  #raw{margin-top:6px;font-size:11px;opacity:0.6}
 
-  #title{
-    display:flex; gap:10px; align-items:center;
-    font-weight:600; color:#ffd700;
+  /* edit mode visuals */
+  body.edit #box{
+    outline: 1px dashed rgba(255,215,0,0.55);
+    cursor: move;
   }
-  #title .muted{font-weight:500;color:#bbb}
-  #kbadge{
-    padding:2px 8px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.06);
-    color:#ddd;
-    font-size:12px;
-  }
-
-  #grid{
-    padding:10px 12px 12px 12px;
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap:8px;
-  }
-
-  .cell{
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.10);
-    background: rgba(0,0,0,0.25);
-    padding:8px 10px;
-    line-height:1.15;
-  }
-  .lbl{font-size:11px;color:#aaa;margin-bottom:4px}
-  .val{font-size:13px;color:#fff}
-
-  .hidden{display:none !important;}
-
-  #editHint{
+  #resize{
     position:absolute;
-    left:10px; bottom:10px;
-    padding:6px 10px;
-    border-radius: 999px;
-    border:1px solid rgba(255,255,255,0.12);
-    background: rgba(0,0,0,0.35);
-    color:#ddd;
-    font-size:12px;
+    right:6px; bottom:6px;
+    width:14px; height:14px;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    display:none;
+    cursor: nwse-resize;
+  }
+  body.edit #resize{ display:block; }
+
+  #lockHint{
+    position:absolute;
+    left:10px; bottom:-18px;
+    font-size:10px; opacity:0.55;
     display:none;
   }
-  body.edit #editHint{ display:block; }
+  body.edit #lockHint{ display:block; }
 </style>
 </head>
 <body>
-  <div id="hud">
-    <div id="top">
-      <div id="title">
-        <span id="name">—</span>
-        <span class="muted">Lv:</span><span id="level">—</span>
-      </div>
-      <div id="kbadge">Kills: <span id="kills">0</span></div>
-    </div>
-
-    <div id="grid">
-      <div class="cell" id="rowExp">
-        <div class="lbl">EXP</div>
-        <div class="val"><span id="exp">—</span></div>
-      </div>
-
-      <div class="cell" id="rowDeltaExp">
-        <div class="lbl">Delta EXP</div>
-        <div class="val"><span id="deltaExp">—</span></div>
-      </div>
-
-      <div class="cell" id="rowTotalExp">
-        <div class="lbl">Gesamt EXP</div>
-        <div class="val"><span id="totalExp">—</span></div>
-      </div>
-
-      <div class="cell" id="rowKillsSession">
-        <div class="lbl">Kills (Session)</div>
-        <div class="val"><span id="killsSession">0</span></div>
-      </div>
-
-      <div class="cell" id="rowKillsLifetime">
-        <div class="lbl">Kills (Lifetime)</div>
-        <div class="val"><span id="killsLifetime">0</span></div>
-      </div>
-
-      <div class="cell" id="rowKpm">
-        <div class="lbl">KPM</div>
-        <div class="val"><span id="kpm">0.0</span></div>
-      </div>
-
-      <div class="cell" id="rowKph">
-        <div class="lbl">KPH</div>
-        <div class="val"><span id="kph">0.0</span></div>
-      </div>
-
-      <div class="cell" id="rowSessionTime">
-        <div class="lbl">Laufzeit</div>
-        <div class="val"><span id="sessionTime">00:00:00</span></div>
-      </div>
-
-      <div class="cell" id="rowLastKill">
-        <div class="lbl">Last</div>
-        <div class="val"><span id="lastKill">—</span></div>
-      </div>
-
-      <div class="cell" id="rowAvgExpPerKill">
-        <div class="lbl">ØEXP/Kill</div>
-        <div class="val"><span id="avgExpKill">0.0000</span></div>
-      </div>
-
-      <div class="cell" id="rowExpPerMin">
-        <div class="lbl">EXP/min</div>
-        <div class="val"><span id="expPerMin">0.0000</span></div>
-      </div>
-    </div>
-
-    <div id="editHint">Edit-Modus: oben ziehen, Rand ziehen zum Skalieren</div>
+  <div id="box">
+    <div id="title">—</div>
+    <div id="exp">EXP: —</div>
+    <div id="raw"></div>
+    <div id="resize" title="Resize"></div>
+    <div id="lockHint">Edit aktiv (rechte Maus: aus)</div>
   </div>
 
 <script>
   const { ipcRenderer } = require("electron");
 
-  function fmt4(n){ if (typeof n !== "number" || !isFinite(n)) return "—"; return n.toFixed(4); }
-  function fmtPct(n){ if (typeof n !== "number" || !isFinite(n)) return "—"; return n.toFixed(4) + "%"; }
-  function fmtSigned4(n){
-    if (typeof n !== "number" || !isFinite(n)) return "—";
-    const s = (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(4);
-    return s;
-  }
-  function fmtTime(ms){
-    if (typeof ms !== "number" || !isFinite(ms) || ms < 0) ms = 0;
-    const sec = Math.floor(ms/1000);
-    const h = String(Math.floor(sec/3600)).padStart(2,"0");
-    const m = String(Math.floor((sec%3600)/60)).padStart(2,"0");
-    const s = String(sec%60).padStart(2,"0");
-    return h+":"+m+":"+s;
-  }
+  const box = document.getElementById("box");
+  const title = document.getElementById("title");
+  const expEl = document.getElementById("exp");
+  const rawEl = document.getElementById("raw");
+  const resize = document.getElementById("resize");
 
-  function applySettings(s){
-    const on = (k, def=true) => (s && typeof s[k] === "boolean") ? s[k] : def;
+  let edit = false;
+  let dragging = false;
+  let resizing = false;
 
-    document.getElementById("rowExp").classList.toggle("hidden", !on("showExp", true));
-    document.getElementById("rowDeltaExp").classList.toggle("hidden", !on("showDeltaExp", true));
-    document.getElementById("rowTotalExp").classList.toggle("hidden", !on("showTotalExp", true));
+  let dragStart = { x:0, y:0, px:0, py:0 };
+  let sizeStart = { x:0, y:0, w:0, h:0 };
+  let hudPos = { x:0, y:0 };
 
-    document.getElementById("rowKillsSession").classList.toggle("hidden", !on("showKillsSession", false));
-    document.getElementById("rowKillsLifetime").classList.toggle("hidden", !on("showKillsLifetime", false));
-    document.getElementById("rowKpm").classList.toggle("hidden", !on("showKillsPerMinute", false));
-    document.getElementById("rowKph").classList.toggle("hidden", !on("showKillsPerHour", false));
-
-    document.getElementById("rowSessionTime").classList.toggle("hidden", !on("showSessionTime", false));
-    document.getElementById("rowLastKill").classList.toggle("hidden", !on("showLastKill", false));
-    document.getElementById("rowAvgExpPerKill").classList.toggle("hidden", !on("showAvgExpPerKill", false));
-    document.getElementById("rowExpPerMin").classList.toggle("hidden", !on("showExpPerMinute", false));
+  function setEdit(on){
+    edit = !!on;
+    document.body.classList.toggle("edit", edit);
+    // in edit mode müssen clicks im overlay bleiben:
+    ipcRenderer.send("overlay:toggleEdit", { on: edit });
   }
 
-  ipcRenderer.on("hud:edit", (_e, payload) => {
-    const on = !!payload?.on;
-    document.body.classList.toggle("edit", on);
+  // rechte maus toggelt edit (schnell)
+  window.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    setEdit(!edit);
+  });
+
+  // load initial bounds from main (optional)
+  async function loadBounds(){
+    try{
+      const b = await ipcRenderer.invoke("hud:getBounds");
+      if(b && typeof b.x==="number"){
+        hudPos.x = b.x;
+        hudPos.y = b.y;
+        if(typeof b.width === "number" && b.width > 0){
+          box.style.width = b.width + "px";
+          box.style.minWidth = b.width + "px";
+        }
+        if(typeof b.height === "number" && b.height > 0){
+          box.style.height = b.height + "px";
+          box.style.minHeight = b.height + "px";
+        }
+        if(typeof b.editOn === "boolean"){
+          setEdit(b.editOn);
+        }
+      }
+    }catch{}
+  }
+  loadBounds();
+
+  // drag
+  box.addEventListener("mousedown", (e) => {
+    if(!edit) return;
+    // resize handle handled separately
+    if(e.target === resize) return;
+    dragging = true;
+    dragStart.x = e.clientX;
+    dragStart.y = e.clientY;
+    dragStart.px = hudPos.x;
+    dragStart.py = hudPos.y;
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if(dragging){
+      const nx = dragStart.px + (e.clientX - dragStart.x);
+      const ny = dragStart.py + (e.clientY - dragStart.y);
+      hudPos.x = nx;
+      hudPos.y = ny;
+      ipcRenderer.send("overlay:setBounds", { x:nx, y:ny });
+    }
+    if(resizing){
+      const dx = e.clientX - sizeStart.x;
+      const dy = e.clientY - sizeStart.y;
+      const nw = Math.max(140, sizeStart.w + dx);
+      const nh = Math.max(60, sizeStart.h + dy);
+      box.style.width = nw + "px";
+      box.style.height = nh + "px";
+      ipcRenderer.send("overlay:setSize", { width:nw, height:nh });
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    dragging = false;
+    resizing = false;
+  });
+
+  // resize
+  resize.addEventListener("mousedown", (e) => {
+    if(!edit) return;
+    resizing = true;
+    sizeStart.x = e.clientX;
+    sizeStart.y = e.clientY;
+    sizeStart.w = box.getBoundingClientRect().width;
+    sizeStart.h = box.getBoundingClientRect().height;
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  ipcRenderer.on("overlay:edit", (_e, payload) => {
+    edit = !!payload?.on;
+    document.body.classList.toggle("edit", edit);
   });
 
   ipcRenderer.on("exp:update", (_e, payload) => {
-    if (!payload) return;
+    if(!payload) return;
+    const nm = payload.name ?? "—";
+    const lvl = payload.level != null ? ("Lv " + payload.level) : "";
+    title.textContent = (nm + " " + lvl).trim();
 
-    document.getElementById("name").textContent = payload.name ?? "—";
-    document.getElementById("level").textContent = (payload.level ?? "—").toString();
-
-    const st = payload.stats || {};
-    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-
-    setText("exp", fmtPct(payload.expPct));
-    setText("deltaExp", fmtSigned4(st.deltaExp));
-    setText("totalExp", fmt4(st.totalExp));
-
-    setText("kills", (st.killsSession ?? 0).toString());
-    setText("killsSession", (st.killsSession ?? 0).toString());
-    setText("killsLifetime", (st.killsLifetime ?? 0).toString());
-    setText("kpm", (typeof st.kpm === "number" ? st.kpm.toFixed(1) : "0.0"));
-    setText("kph", (typeof st.kph === "number" ? st.kph.toFixed(1) : "0.0"));
-    setText("sessionTime", fmtTime(st.sessionMs ?? 0));
-    setText("lastKill", st.lastKill ?? "—");
-    setText("avgExpKill", (typeof st.avgExpPerKill === "number" ? st.avgExpPerKill.toFixed(4) : "0.0000"));
-    setText("expPerMin", (typeof st.expPerMinute === "number" ? st.expPerMinute.toFixed(4) : "0.0000"));
-
-    applySettings(payload.settings || null);
+    if(payload.expPct != null){
+      expEl.textContent = "EXP: " + Number(payload.expPct).toFixed(4) + "%";
+    }
+    const raw = payload.rawExp ? ("rawExp: " + payload.rawExp) : "";
+    rawEl.textContent = raw;
   });
 </script>
 </body>

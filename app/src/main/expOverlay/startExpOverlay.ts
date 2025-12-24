@@ -1,50 +1,34 @@
+﻿// app/src/main/expOverlay/startExpOverlay.ts
 import { app, BrowserView, BrowserWindow, Rectangle, ipcMain } from "electron";
 import path from "path";
 import fs from "fs/promises";
 import { createOverlayWindow } from "../windows/overlayWindow";
-import { createHudControlWindow } from "../windows/hudControlWindow";
 import { PythonOcrWorker } from "../ocr/pythonWorker";
 
 type OcrResponse = {
   id: number;
   ok: boolean;
   raw?: string;
-  value?: string | null;
+  value?: string | null; // bei EXP: "75.0000"
   unit?: string | null;
   error?: string;
-};
-
-type OverlaySettings = {
-  showResetButton?: boolean;
-  // (deine restlichen Toggles kannst du später hier ergänzen)
-};
-
-type OverlayHudLayout = {
-  offsetX: number;
-  offsetY: number;
-  width: number;
-  height: number;
 };
 
 export type StartHudOverlayOptions = {
   getSessionWindow: () => BrowserWindow | null;
   getActiveView: () => BrowserView | null;
 
-  getTargetId?: () => string | null;
-  getSettings?: () => OverlaySettings | null;
-
-  getHudLayout?: () => OverlayHudLayout | null;
-  onHudLayoutChange?: (profileId: string, patch: Partial<OverlayHudLayout>) => void | Promise<void>;
-
   intervalMs?: number;
   nameLevelEveryMs?: number;
 
+  // Debug: alle N Ticks Crops als PNG in userData/ocr_debug schreiben (0 = aus)
   debugEveryN?: number;
 
   pythonExe?: string;
   ocrScriptPath?: string;
 
-  getRects?: (size: { width: number; height: number }) => HudRects;
+  // optional: eigene Rects (Kalibrierung/ROI-Store)
+  getRects?: (size: { width: number; height: number }) => HudRects | undefined | null;
 };
 
 type HudRects = {
@@ -104,18 +88,44 @@ function defaultRects(size: { width: number; height: number }): HudRects {
   const { width: w, height: h } = size;
 
   const nameLevel = clampRect(
-    { x: Math.round(w * 0.012), y: Math.round(h * 0.012), width: Math.round(w * 0.24), height: Math.round(h * 0.05) },
+    {
+      x: Math.round(w * 0.012),
+      y: Math.round(h * 0.012),
+      width: Math.round(w * 0.24),
+      height: Math.round(h * 0.05),
+    },
     w,
     h
   );
 
   const expPercent = clampRect(
-    { x: Math.round(w * 0.055), y: Math.round(h * 0.078), width: Math.round(w * 0.16), height: Math.round(h * 0.05) },
+    {
+      x: Math.round(w * 0.055),
+      y: Math.round(h * 0.078),
+      width: Math.round(w * 0.16),
+      height: Math.round(h * 0.05),
+    },
     w,
     h
   );
 
   return { nameLevel, expPercent };
+}
+
+function resolveRects(
+  size: { width: number; height: number },
+  getRects?: (size: { width: number; height: number }) => HudRects | undefined | null
+): HudRects {
+  const fallback = defaultRects(size);
+  if (!getRects) return fallback;
+
+  try {
+    const r = getRects(size);
+    if (!r || !r.nameLevel || !r.expPercent) return fallback;
+    return r;
+  } catch {
+    return fallback;
+  }
 }
 
 // ---------------------------
@@ -127,6 +137,8 @@ function normalizeOcr(s: string) {
 
 function parseNameLevel(raw: string): { name: string | null; level: number | null } {
   const s = normalizeOcr(raw).replace(/\n/g, " ").trim();
+
+  // "Name Lv 2" / "Name Lv2" / "Name L v 2"
   const m = s.match(/^(.*?)\s*L\s*[vV]\s*([0-9]{1,3})\b/);
   if (!m) return { name: s || null, level: null };
 
@@ -136,6 +148,7 @@ function parseNameLevel(raw: string): { name: string | null; level: number | nul
 }
 
 function parseExpFromResponse(res: OcrResponse): number | null {
+  // bevorzugt value ("75.0000"), fallback raw
   const v = res?.value;
   if (typeof v === "string" && v.trim()) {
     const n = Number(v.replace(",", "."));
@@ -148,10 +161,6 @@ function parseExpFromResponse(res: OcrResponse): number | null {
   if (!m) return null;
   const n = Number(m[1]);
   return Number.isFinite(n) ? n : null;
-}
-
-function defaultHudLayout(): OverlayHudLayout {
-  return { offsetX: 12, offsetY: 12, width: 380, height: 320 };
 }
 
 // ---------------------------
@@ -176,9 +185,9 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
 
   let overlay: BrowserWindow | null = null;
   let overlayParentId: number | null = null;
-
-  let control: BrowserWindow | null = null;
-  let controlParentId: number | null = null;
+  let overlayFollowTimer: NodeJS.Timeout | null = null;
+  let overlayFollowParentId: number | null = null;
+  let parentEventCleanup: (() => void) | null = null;
 
   let worker: PythonOcrWorker | null = null;
 
@@ -188,40 +197,93 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
   let cachedLevel: number | null = null;
   let cachedExpPct: number | null = null;
 
-  // smoothing + anti-glitch
-  let expHist: number[] = [];
-  function pushMedianExp(v: number) {
-    expHist.push(v);
-    if (expHist.length > 5) expHist.shift();
-    const s = [...expHist].sort((a, b) => a - b);
-    return s[Math.floor(s.length / 2)];
-  }
-
   // optional raw debug
   let cachedRawExp: string | null = null;
   let cachedRawNameLevel: string | null = null;
 
   let lastSentKey = "";
+  let overlayVisible = false;
 
-  // --- drag/resize state (über ControlWindow) ---
-  type DragKind = "move" | "w" | "h";
-  let drag:
-    | {
-        kind: DragKind;
-        startX: number;
-        startY: number;
-        startBounds: Rectangle;
-        gameRect: Rectangle;
-        profileId: string;
-      }
-    | null = null;
+  // HUD box state (fÃ¼r Drag/Resize Persist + Init)
+  let hudBox = { x: 14, y: 14, width: 0, height: 0 };
+  // edit true = Overlay nimmt Maus entgegen (Drag/Resize), false = click-through
+  let editOn = false;
 
-  function safeSend(win: BrowserWindow | null, channel: string, payload: any) {
-    if (!win || win.isDestroyed()) return;
-    const wc = win.webContents;
+  // ---- IPC: Overlay Edit/Bounds/Size (gefiltert auf aktuellen Overlay-Sender) ----
+  function safeHandle(channel: string, handler: any) {
+    try {
+      ipcMain.removeHandler(channel);
+    } catch {}
+    ipcMain.handle(channel, handler);
+  }
+  function safeOn(channel: string, listener: any) {
+    try {
+      ipcMain.removeAllListeners(channel);
+    } catch {}
+    ipcMain.on(channel, listener);
+  }
+  function isFromOverlay(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
+    return !!(overlay && !overlay.isDestroyed() && event?.sender && overlay.webContents && event.sender.id === overlay.webContents.id);
+  }
+
+  function computeOverlayWindowBounds(parent: BrowserWindow) {
+    const pb = parent.getContentBounds();
+    const w = Math.max(160, hudBox.width || 0);
+    const h = Math.max(60, hudBox.height || 0);
+    const x = pb.x + Math.max(0, hudBox.x || 0);
+    const y = pb.y + Math.max(0, hudBox.y || 0);
+    return { x, y, width: w, height: h };
+  }
+
+  safeHandle("hud:getBounds", async (e) => {
+    if (!isFromOverlay(e)) return null;
+    return { ...hudBox, editOn };
+  });
+
+  safeOn("overlay:setBounds", (e, payload) => {
+    if (!isFromOverlay(e)) return;
+    const x = payload?.x;
+    const y = payload?.y;
+    if (typeof x === "number") hudBox.x = x;
+    if (typeof y === "number") hudBox.y = y;
+
+    const parent = overlay?.getParentWindow?.();
+    if (parent && !parent.isDestroyed()) syncOverlayBounds(parent);
+  });
+
+  safeOn("overlay:setSize", (e, payload) => {
+    if (!isFromOverlay(e)) return;
+    const w = payload?.width;
+    const h = payload?.height;
+    if (typeof w === "number") hudBox.width = w;
+    if (typeof h === "number") hudBox.height = h;
+
+    const parent = overlay?.getParentWindow?.();
+    if (parent && !parent.isDestroyed()) syncOverlayBounds(parent);
+  });
+
+  function applyOverlayEditMode() {
+    if (!overlay || overlay.isDestroyed()) return;
+    try {
+      overlay.setIgnoreMouseEvents(!editOn, { forward: !editOn });
+    } catch {}
+    try {
+      overlay.webContents.send("overlay:edit", { on: editOn });
+    } catch {}
+  }
+
+  safeOn("overlay:toggleEdit", (e, payload) => {
+    if (!isFromOverlay(e)) return;
+    editOn = !!payload?.on;
+    applyOverlayEditMode();
+  });
+
+  function safeSendToOverlay(payload: any) {
+    if (!overlay || overlay.isDestroyed()) return;
+    const wc = overlay.webContents;
     if (!wc || wc.isDestroyed()) return;
     try {
-      wc.send(channel, payload);
+      wc.send("exp:update", payload);
     } catch {}
   }
 
@@ -233,55 +295,157 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     }
     overlay = null;
     overlayParentId = null;
+    if (overlayFollowTimer) {
+      clearInterval(overlayFollowTimer);
+      overlayFollowTimer = null;
+    }
+    overlayFollowParentId = null;
+    if (parentEventCleanup) {
+      try {
+        parentEventCleanup();
+      } catch {}
+      parentEventCleanup = null;
+    }
   }
 
-  function closeControl() {
-    if (control && !control.isDestroyed()) {
+  function syncOverlayBounds(parent: BrowserWindow) {
+    if (!overlay || overlay.isDestroyed()) return;
+    try {
+      const b = computeOverlayWindowBounds(parent);
+      overlay.setBounds(b, false);
+    } catch {}
+  }
+
+  function isParentVisible(parent: BrowserWindow) {
+    try {
+      return parent.isVisible() && !parent.isMinimized();
+    } catch {
+      return false;
+    }
+  }
+
+  function isParentActive(parent: BrowserWindow) {
+    try {
+      const focused = BrowserWindow.getFocusedWindow();
+      if (!focused) return false;
+
+      // true if focused is parent or any child/ancestor chain matches parent
+      let cur: BrowserWindow | null = focused;
+      while (cur) {
+        if (cur.id === parent.id) return true;
+        cur = cur.getParentWindow?.() ?? null;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  function updateOverlayVisibility(parent: BrowserWindow) {
+    if (!overlay || overlay.isDestroyed()) return;
+    const show = isParentVisible(parent) && isParentActive(parent);
+    if (show === overlayVisible) return;
+
+    overlayVisible = show;
+    try {
+      if (show) {
+        overlay.setAlwaysOnTop(true, "screen-saver");
+        overlay.showInactive();
+        syncOverlayBounds(parent);
+      } else {
+        overlay.setAlwaysOnTop(false);
+        overlay.hide();
+      }
+    } catch {}
+  }
+
+  function startOverlayFollow(parent: BrowserWindow) {
+    const pid = parent.id;
+    if (overlayFollowTimer && overlayFollowParentId === pid) return;
+
+    if (overlayFollowTimer) {
+      clearInterval(overlayFollowTimer);
+      overlayFollowTimer = null;
+    }
+    overlayFollowParentId = pid;
+
+    overlayFollowTimer = setInterval(() => {
+      if (!overlay || overlay.isDestroyed()) return;
+      updateOverlayVisibility(parent);
+      if (isParentVisible(parent) && isParentActive(parent)) {
+        syncOverlayBounds(parent);
+      }
+    }, 80);
+  }
+
+  function attachParentEvents(parent: BrowserWindow) {
+    const pid = parent.id;
+    if (parentEventCleanup && overlayParentId === pid) return;
+
+    if (parentEventCleanup) {
       try {
-        control.close();
+        parentEventCleanup();
       } catch {}
     }
-    control = null;
-    controlParentId = null;
+
+    const onMove = () => syncOverlayBounds(parent);
+    const onResize = () => syncOverlayBounds(parent);
+    const onFocus = () => updateOverlayVisibility(parent);
+    const onBlur = () => updateOverlayVisibility(parent);
+    const onShow = () => updateOverlayVisibility(parent);
+    const onHide = () => updateOverlayVisibility(parent);
+    const onMinimize = () => updateOverlayVisibility(parent);
+    const onRestore = () => updateOverlayVisibility(parent);
+
+    parent.on("move", onMove);
+    parent.on("resize", onResize);
+    parent.on("focus", onFocus);
+    parent.on("blur", onBlur);
+    parent.on("show", onShow);
+    parent.on("hide", onHide);
+    parent.on("minimize", onMinimize);
+    parent.on("restore", onRestore);
+
+    parentEventCleanup = () => {
+      parent.removeListener("move", onMove);
+      parent.removeListener("resize", onResize);
+      parent.removeListener("focus", onFocus);
+      parent.removeListener("blur", onBlur);
+      parent.removeListener("show", onShow);
+      parent.removeListener("hide", onHide);
+      parent.removeListener("minimize", onMinimize);
+      parent.removeListener("restore", onRestore);
+    };
   }
 
   function ensureOverlayForParent(parent: BrowserWindow) {
     if (overlay && overlay.isDestroyed()) overlay = null;
 
     const pid = parent.id;
-    if (overlay && overlayParentId !== pid) closeOverlay();
+    if (overlay && overlayParentId !== pid) {
+      closeOverlay();
+    }
 
     if (!overlay) {
       overlay = createOverlayWindow(parent);
       overlayParentId = pid;
 
-      // ✅ IMMER click-through
-      try {
-        overlay.setIgnoreMouseEvents(true, { forward: true });
-      } catch {}
-
       overlay.on("closed", () => {
         overlay = null;
         overlayParentId = null;
       });
+
+      applyOverlayEditMode();
     }
-  }
 
-  function ensureControlForParent(parent: BrowserWindow) {
-    if (control && control.isDestroyed()) control = null;
+    // immer Bounds an Parent anpassen (sonst overlay ueber Desktop)
+    syncOverlayBounds(parent);
+    attachParentEvents(parent);
+    startOverlayFollow(parent);
 
-    const pid = parent.id;
-    if (control && controlParentId !== pid) closeControl();
-
-    if (!control) {
-      control = createHudControlWindow(parent);
-      controlParentId = pid;
-
-      control.on("closed", () => {
-        control = null;
-        controlParentId = null;
-      });
-    }
+    try {
+      overlay?.setAlwaysOnTop(true, "screen-saver");
+    } catch {}
   }
 
   function getCaptureSize(parent: BrowserWindow, view: BrowserView | null) {
@@ -291,88 +455,6 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     }
     const [w, h] = parent.getContentSize();
     return { width: Math.max(1, w), height: Math.max(1, h) };
-  }
-
-  function computeGameRect(): Rectangle | null {
-    const parent = opts.getSessionWindow();
-    if (!parent || parent.isDestroyed()) return null;
-
-    const view = (() => {
-      try {
-        const v = opts.getActiveView?.() ?? null;
-        if (!v) return null;
-        if (v.webContents.isDestroyed()) return null;
-        return v;
-      } catch {
-        return null;
-      }
-    })();
-
-    try {
-      const cb = parent.getContentBounds(); // screen coords
-      if (view) {
-        const vb = view.getBounds(); // content coords
-        return { x: cb.x + vb.x, y: cb.y + vb.y, width: vb.width, height: vb.height };
-      }
-      return { x: cb.x, y: cb.y, width: cb.width, height: cb.height };
-    } catch {
-      return null;
-    }
-  }
-
-  function clampToGame(bounds: Rectangle, game: Rectangle): Rectangle {
-    const minW = 260;
-    const minH = 180;
-
-    const width = Math.max(minW, Math.min(bounds.width, game.width));
-    const height = Math.max(minH, Math.min(bounds.height, game.height));
-
-    const maxX = game.x + game.width - width;
-    const maxY = game.y + game.height - height;
-
-    const x = Math.max(game.x, Math.min(bounds.x, maxX));
-    const y = Math.max(game.y, Math.min(bounds.y, maxY));
-
-    return { x, y, width, height };
-  }
-
-  function fitHudBounds() {
-    if (!overlay || overlay.isDestroyed()) return;
-
-    // während Drag/Resize nicht überschreiben
-    if (drag) return;
-
-    const game = computeGameRect();
-    if (!game) return;
-
-    const layout = opts.getHudLayout?.() ?? defaultHudLayout();
-
-    const desired = {
-      x: Math.round(game.x + layout.offsetX),
-      y: Math.round(game.y + layout.offsetY),
-      width: Math.max(260, Math.min(layout.width, game.width)),
-      height: Math.max(180, Math.min(layout.height, game.height)),
-    };
-
-    try {
-      overlay.setBounds(clampToGame(desired, game), false);
-    } catch {}
-  }
-
-  function fitControlBounds() {
-    if (!control || control.isDestroyed()) return;
-    if (!overlay || overlay.isDestroyed()) return;
-
-    try {
-      const ob = overlay.getBounds();
-      const cw = 180;
-      const ch = 56;
-
-      const x = ob.x + ob.width - cw - 8;
-      const y = ob.y + 8;
-
-      control.setBounds({ x, y, width: cw, height: ch }, false);
-    } catch {}
   }
 
   async function captureCropPng(parent: BrowserWindow, view: BrowserView | null, rect: Rectangle) {
@@ -406,104 +488,6 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     }
   }
 
-  // ---------------------------
-  // IPC: Reset + Drag/Resize
-  // ---------------------------
-  const onReset = (_e: any, payload: any) => {
-    // placeholder – du kannst später echte Stats zurücksetzen
-    // aktuell nur loggen
-    if (!payload?.profileId) return;
-    console.log("[HUD] reset for", payload.profileId);
-  };
-
-  const onDragStart = (_e: any, payload: any) => {
-    if (!overlay || overlay.isDestroyed()) return;
-
-    const profileId = opts.getTargetId?.() ?? null;
-    if (!profileId) return;
-
-    const game = computeGameRect();
-    if (!game) return;
-
-    const kind = payload?.kind as DragKind;
-    const x = Number(payload?.x);
-    const y = Number(payload?.y);
-    if (!kind || !Number.isFinite(x) || !Number.isFinite(y)) return;
-
-    drag = {
-      kind,
-      startX: x,
-      startY: y,
-      startBounds: overlay.getBounds(),
-      gameRect: game,
-      profileId,
-    };
-  };
-
-  const onDragMove = (_e: any, payload: any) => {
-    if (!drag) return;
-    if (!overlay || overlay.isDestroyed()) return;
-
-    const x = Number(payload?.x);
-    const y = Number(payload?.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-
-    const dx = x - drag.startX;
-    const dy = y - drag.startY;
-
-    const b0 = drag.startBounds;
-    const g = drag.gameRect;
-
-    let next: Rectangle;
-
-    if (drag.kind === "move") {
-      next = clampToGame({ x: b0.x + dx, y: b0.y + dy, width: b0.width, height: b0.height }, g);
-    } else if (drag.kind === "w") {
-      const maxW = g.x + g.width - b0.x;
-      const w = Math.max(260, Math.min(b0.width + dx, maxW));
-      next = clampToGame({ x: b0.x, y: b0.y, width: w, height: b0.height }, g);
-    } else {
-      const maxH = g.y + g.height - b0.y;
-      const h = Math.max(180, Math.min(b0.height + dy, maxH));
-      next = clampToGame({ x: b0.x, y: b0.y, width: b0.width, height: h }, g);
-    }
-
-    try {
-      overlay.setBounds(next, false);
-    } catch {}
-
-    fitControlBounds();
-  };
-
-  const onDragEnd = async () => {
-    if (!drag) return;
-    const d = drag;
-    drag = null;
-
-    if (!overlay || overlay.isDestroyed()) return;
-
-    const game = computeGameRect();
-    if (!game) return;
-
-    const ob = overlay.getBounds();
-
-    const patch: Partial<OverlayHudLayout> = {
-      offsetX: ob.x - game.x,
-      offsetY: ob.y - game.y,
-      width: ob.width,
-      height: ob.height,
-    };
-
-    try {
-      await opts.onHudLayoutChange?.(d.profileId, patch);
-    } catch {}
-  };
-
-  ipcMain.on("overlay:reset", onReset);
-  ipcMain.on("hud:dragStart", onDragStart);
-  ipcMain.on("hud:dragMove", onDragMove);
-  ipcMain.on("hud:dragEnd", onDragEnd);
-
   const tick = async () => {
     if (stopped || inFlight) return;
     inFlight = true;
@@ -512,18 +496,15 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     try {
       const parent = opts.getSessionWindow();
 
+      // kein Parent -> Overlay schlieÃŸen
       if (!parent || parent.isDestroyed()) {
-        closeControl();
         closeOverlay();
         return;
       }
 
       ensureOverlayForParent(parent);
-      ensureControlForParent(parent);
 
-      // HUD folgt Fenster/Tab (relativ), aber NICHT während Drag
-      fitHudBounds();
-      fitControlBounds();
+      updateOverlayVisibility(parent);
 
       // Worker lazy-start
       if (!worker) {
@@ -543,7 +524,9 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
       })();
 
       const size = getCaptureSize(parent, view);
-      const rects = (opts.getRects ?? defaultRects)(size);
+
+      // âœ… WICHTIG: robustes Fallback, wenn getRects() undefined liefert
+      const rects = resolveRects(size, opts.getRects);
 
       // -------- EXP (jedes Tick) --------
       const expPng = await captureCropPng(parent, view, rects.expPercent);
@@ -554,20 +537,8 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         cachedRawExp = res.raw ?? cachedRawExp;
 
         const exp = parseExpFromResponse(res);
-
         if (exp !== null && exp >= 0 && exp <= 100) {
-          if (cachedExpPct !== null) {
-            // keine Drops, keine absurden Sprünge
-            if (exp < cachedExpPct - 0.1) {
-              // ignore glitch
-            } else if (exp > cachedExpPct + 10) {
-              // ignore glitch
-            } else {
-              cachedExpPct = pushMedianExp(exp);
-            }
-          } else {
-            cachedExpPct = pushMedianExp(exp);
-          }
+          cachedExpPct = exp;
         }
       }
 
@@ -583,11 +554,6 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
 
           if (res.raw) {
             const parsed = parseNameLevel(res.raw);
-
-            if (cachedLevel !== null && parsed.level !== null && parsed.level !== cachedLevel) {
-              expHist = [];
-            }
-
             cachedName = parsed.name ?? cachedName;
             cachedLevel = parsed.level ?? cachedLevel;
           }
@@ -595,26 +561,19 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         lastNameLevelAt = now;
       }
 
-      const profileId = opts.getTargetId?.() ?? null;
-      const settings = opts.getSettings?.() ?? null;
-
-      const key = `${profileId ?? ""}|${cachedName ?? ""}|${cachedLevel ?? ""}|${cachedExpPct ?? ""}|${JSON.stringify(settings ?? {})}`;
+      // nur senden wenn sich was Ã¤ndert
+      const key = `${cachedName ?? ""}|${cachedLevel ?? ""}|${cachedExpPct ?? ""}`;
       if (key !== lastSentKey) {
         lastSentKey = key;
 
-        const payload = {
+        safeSendToOverlay({
           ts: Date.now(),
-          profileId,
           name: cachedName,
           level: cachedLevel,
           expPct: cachedExpPct,
-          settings,
           rawExp: cachedRawExp,
           rawNameLevel: cachedRawNameLevel,
-        };
-
-        safeSend(overlay, "exp:update", payload);
-        safeSend(control, "exp:update", payload);
+        });
       }
     } catch (e) {
       console.error("[OCR DEBUG] tick error", e);
@@ -631,17 +590,11 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     if (stopped) return;
     stopped = true;
 
-    ipcMain.removeListener("overlay:reset", onReset);
-    ipcMain.removeListener("hud:dragStart", onDragStart);
-    ipcMain.removeListener("hud:dragMove", onDragMove);
-    ipcMain.removeListener("hud:dragEnd", onDragEnd);
-
     if (timer) {
       clearInterval(timer);
       timer = null;
     }
 
-    closeControl();
     closeOverlay();
 
     const hadWorker = !!worker;
@@ -653,3 +606,14 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
 
   return { stop };
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -18,6 +18,7 @@ export function createRoiCalibratorWindow(opts: {
     movable: false,
     show: true,
     focusable: true,
+    acceptFirstMouse: true,
     skipTaskbar: true,
     hasShadow: false,
     alwaysOnTop: true,
@@ -28,8 +29,18 @@ export function createRoiCalibratorWindow(opts: {
     },
   });
 
+  // sicherstellen, dass das Fenster Eingaben annimmt und oben liegt
+  win.setIgnoreMouseEvents(false);
+  win.setAlwaysOnTop(true, "screen-saver");
+  try {
+    win.moveTop();
+  } catch {}
+
   win.setBounds(opts.screenRect, false);
   win.focus();
+  try {
+    win.webContents.openDevTools({ mode: "detach" });
+  } catch {}
 
   const initial = JSON.stringify(opts.initialRois ?? {});
   const html = `
@@ -39,11 +50,12 @@ export function createRoiCalibratorWindow(opts: {
 <meta charset="utf-8" />
 <style>
   html, body { margin:0; padding:0; background: rgba(0,0,0,0.15); overflow:hidden; }
-  #wrap { position:relative; width:100vw; height:100vh; }
-  #bg { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; }
-  #c { position:absolute; inset:0; }
+  #wrap { position:relative; width:100vw; height:100vh; pointer-events:auto; }
+  #bg { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:0; pointer-events:none; }
+  #c { position:absolute; inset:0; z-index:1; pointer-events:auto; }
   #bar {
-    position:absolute; left:12px; top:12px; display:flex; gap:8px;
+    position:absolute; left:50%; top:12px; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:2; pointer-events:auto;
     background: rgba(0,0,0,0.55); padding:10px; border-radius:10px;
     font-family: Segoe UI, Arial; color:white; user-select:none;
   }
@@ -71,6 +83,12 @@ export function createRoiCalibratorWindow(opts: {
   const channel = ${JSON.stringify(opts.channel)};
   const rois = ${initial};
 
+  const log = (msg, payload) => {
+    try {
+      ipcRenderer.send(channel + ":debug", { msg, payload });
+    } catch {}
+  };
+
   const img = document.getElementById("bg");
   img.src = "data:image/png;base64," + ${JSON.stringify(opts.pngB64)};
 
@@ -86,8 +104,8 @@ export function createRoiCalibratorWindow(opts: {
   resize();
 
   let activeKey = "expPercent"; // or nameLevel
-  document.getElementById("btnName").onclick = () => { activeKey = "nameLevel"; draw(); };
-  document.getElementById("btnExp").onclick  = () => { activeKey = "expPercent"; draw(); };
+  document.getElementById("btnName").onclick = () => { activeKey = "nameLevel"; log("btnName"); draw(); };
+  document.getElementById("btnExp").onclick  = () => { activeKey = "expPercent"; log("btnExp"); draw(); };
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "Tab") { e.preventDefault(); activeKey = (activeKey==="expPercent") ? "nameLevel" : "expPercent"; draw(); }
@@ -145,6 +163,7 @@ export function createRoiCalibratorWindow(opts: {
     sx = e.offsetX; sy = e.offsetY;
     cur = { x:sx, y:sy, w:1, h:1 };
     draw();
+    log("mousedown", { x: sx, y: sy });
   });
 
   window.addEventListener("mousemove", (e) => {
@@ -165,10 +184,12 @@ export function createRoiCalibratorWindow(opts: {
       rois[activeKey] = toNorm(cur);
       cur = null;
       draw();
+      log("mouseup:save", { activeKey, rois });
     }
   });
 
   function cancel() {
+    log("cancel");
     ipcRenderer.send(channel, { ok:false });
     window.close();
   }
@@ -176,6 +197,7 @@ export function createRoiCalibratorWindow(opts: {
   document.getElementById("btnCancel").onclick = cancel;
 
   document.getElementById("btnSave").onclick = () => {
+    log("save");
     if (!rois.nameLevel || !rois.expPercent) {
       alert("Bitte beide ROIs setzen (Name/Lv und EXP%).");
       return;
@@ -253,6 +275,7 @@ export async function openRoiCalibratorWindow(opts: {
       done = true;
       try {
         ipcMain.removeAllListeners(channel);
+        ipcMain.removeAllListeners(channel + ":debug");
       } catch {}
       if (followIv) {
         try {
@@ -279,6 +302,12 @@ export async function openRoiCalibratorWindow(opts: {
           if (win && !win.isDestroyed()) win.close();
         } catch {}
       }
+    });
+
+    ipcMain.on(channel + ":debug", (_e, payload) => {
+      try {
+        console.log("[ROI CALIB DEBUG]", payload);
+      } catch {}
     });
 
     win.on("closed", () => {

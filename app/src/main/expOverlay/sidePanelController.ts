@@ -33,14 +33,17 @@ export function createSidePanelController(opts: {
   let panelWin: BrowserWindow | null = null;
   let panelOpen = false;
 
-  // ✅ damit wir bei Target-Wechsel das Panel neu erstellen
+  // Panel state
   let panelProfileId: string | null = null;
-
   let followTimer: NodeJS.Timeout | null = null;
+  let followParentId: number | null = null;
+  let parentEventCleanup: (() => void) | null = null;
   let lastCtxRect: Rectangle | null = null;
+  let buttonVisible = false;
 
   const onToggle = () => toggle();
   ipcMain.on("sidepanel:toggle", onToggle);
+  ipcMain.on("hudpanel:toggle", onToggle);
 
   function computeCtx(): TargetCtx | null {
     if (!targetId) return null;
@@ -72,14 +75,90 @@ export function createSidePanelController(opts: {
     return { mode: "tabs", parent: win, rect, view };
   }
 
+  function isParentActive(win: BrowserWindow) {
+    try {
+      const focused = BrowserWindow.getFocusedWindow();
+      if (!focused) return false;
+      let cur: BrowserWindow | null = focused;
+      while (cur) {
+        if (cur.id === win.id) return true;
+        cur = cur.getParentWindow?.() ?? null;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  function attachParentEvents(win: BrowserWindow) {
+    const pid = win.id;
+    if (parentEventCleanup && followParentId === pid) return;
+
+    if (parentEventCleanup) {
+      try {
+        parentEventCleanup();
+      } catch {}
+      parentEventCleanup = null;
+    }
+
+    const onMove = () => sync();
+    const onResize = () => sync();
+    const onFocus = () => sync();
+    const onBlur = () => sync();
+    const onShow = () => sync();
+    const onHide = () => sync();
+    const onMinimize = () => sync();
+    const onRestore = () => sync();
+
+    win.on("move", onMove);
+    win.on("resize", onResize);
+    win.on("focus", onFocus);
+    win.on("blur", onBlur);
+    win.on("show", onShow);
+    win.on("hide", onHide);
+    win.on("minimize", onMinimize);
+    win.on("restore", onRestore);
+
+    parentEventCleanup = () => {
+      win.removeListener("move", onMove);
+      win.removeListener("resize", onResize);
+      win.removeListener("focus", onFocus);
+      win.removeListener("blur", onBlur);
+      win.removeListener("show", onShow);
+      win.removeListener("hide", onHide);
+      win.removeListener("minimize", onMinimize);
+      win.removeListener("restore", onRestore);
+    };
+    followParentId = pid;
+  }
+
   function ensureButton(ctx: TargetCtx) {
     if (btnWin && btnWin.isDestroyed()) btnWin = null;
+
+    if (btnWin) {
+      try {
+        btnWin.show();
+        btnWin.setIgnoreMouseEvents(false);
+        buttonVisible = true;
+      } catch {}
+      return;
+    }
 
     if (!btnWin) {
       btnWin = createOverlayButtonWindow({ parent: ctx.parent });
       btnWin.on("closed", () => {
         btnWin = null;
       });
+      buttonVisible = true;
+    }
+  }
+
+  function hideButton() {
+    if (btnWin && !btnWin.isDestroyed()) {
+      try {
+        btnWin.hide();
+        buttonVisible = false;
+      } catch {}
     }
   }
 
@@ -104,7 +183,7 @@ export function createSidePanelController(opts: {
       panelProfileId = null;
     }
 
-    // ✅ wenn das Panel existiert, aber für ein anderes Profil ist -> neu
+    // âœ… wenn das Panel existiert, aber fÃ¼r ein anderes Profil ist -> neu
     if (panelWin && panelProfileId && panelProfileId !== (targetId ?? "")) {
       try {
         panelWin.close();
@@ -115,10 +194,7 @@ export function createSidePanelController(opts: {
 
     if (!panelWin) {
       panelProfileId = targetId ?? "";
-      panelWin = createSidePanelWindow({
-        parent: ctx.parent,
-        profileId: panelProfileId,
-      });
+      panelWin = createSidePanelWindow(ctx.parent);
 
       panelWin.on("closed", () => {
         panelWin = null;
@@ -174,19 +250,25 @@ export function createSidePanelController(opts: {
       return;
     }
 
-    ensureButton(ctx);
-    positionButton(ctx);
+    const parentVisible = ctx.parent.isVisible() && !ctx.parent.isMinimized() && isParentActive(ctx.parent);
+    if (!parentVisible) {
+      hideButton();
+      closePanel();
+      return;
+    }
+
+    attachParentEvents(ctx.parent);
 
     if (panelOpen) {
+      hideButton();
       ensurePanel(ctx);
       positionPanel(ctx);
     } else {
+      if (!buttonVisible) ensureButton(ctx);
+      positionButton(ctx);
       if (panelWin) closePanel();
     }
 
-    try {
-      ctx.parent.focus();
-    } catch {}
   }
 
   function startFollow() {
@@ -202,17 +284,28 @@ export function createSidePanelController(opts: {
         return;
       }
 
-      if (!lastCtxRect || !sameRect(lastCtxRect, ctx.rect)) {
-        lastCtxRect = ctx.rect;
+      const parentVisible = ctx.parent.isVisible() && !ctx.parent.isMinimized() && isParentActive(ctx.parent);
+      if (!parentVisible) {
+        hideButton();
+        closePanel();
+        return;
       }
 
-      ensureButton(ctx);
-      positionButton(ctx);
+      attachParentEvents(ctx.parent);
 
-      if (panelOpen) {
+      if (!panelOpen) {
+        if (!lastCtxRect || !sameRect(lastCtxRect, ctx.rect)) {
+          lastCtxRect = ctx.rect;
+        }
+
+        if (!buttonVisible) ensureButton(ctx);
+        positionButton(ctx);
+      } else {
+        hideButton();
         ensurePanel(ctx);
         positionPanel(ctx);
       }
+
     }, followIntervalMs);
   }
 
@@ -220,6 +313,13 @@ export function createSidePanelController(opts: {
     if (followTimer) {
       clearInterval(followTimer);
       followTimer = null;
+    }
+    followParentId = null;
+    if (parentEventCleanup) {
+      try {
+        parentEventCleanup();
+      } catch {}
+      parentEventCleanup = null;
     }
   }
 
@@ -239,7 +339,11 @@ export function createSidePanelController(opts: {
     closePanel();
     closeButton();
     ipcMain.removeListener("sidepanel:toggle", onToggle);
+    ipcMain.removeListener("hudpanel:toggle", onToggle);
   }
 
   return { refreshFromStore, toggle, stop };
 }
+
+
+

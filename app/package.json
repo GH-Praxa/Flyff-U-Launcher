@@ -1,7 +1,7 @@
 {
-  "name": "app",
-  "productName": "app",
-  "version": "0.2.0",
+  "name": "Flyff-U-Launcher",
+  "productName": "Flyff-U-Launcher",
+  "version": "0.4.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
