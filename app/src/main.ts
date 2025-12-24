@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import path from "path";
+import squirrelStartup from "electron-squirrel-startup";
 
 import { createViewLoader } from "./main/viewLoader";
 import { createProfilesStore } from "./main/profiles/store";
@@ -22,6 +23,14 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 const FLYFF_URL = "https://universe.flyff.com/play";
+
+// Squirrel installer: create/remove shortcuts and exit early during install/update/uninstall
+if (squirrelStartup) {
+  app.quit();
+}
+
+// Ensure a stable app id for Windows shell integrations (shortcuts, notifications)
+app.setAppUserModelId("Flyff-U-Launcher");
 
 let launcherWindow: BrowserWindow | null = null;
 let overlayTarget: ReturnType<typeof createOverlayTargetController> | null = null;
