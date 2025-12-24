@@ -1,5 +1,13 @@
 # Versionshistory
 
+## 0.5.0 – Asset-Fixes & Version-Bump
+
+### Fixed
+- **Fehlende Launcher-Assets nachgezogen:** `flyff.png`, `infopeng.png` und `reskill.png` werden gebundled, damit App-Icon und Topbar-Links korrekt laden.
+
+### Changed
+- **Version hochgezogen:** Paketversion auf **0.5.0** gesetzt als Basis fürs Release.
+
 ## 0.4.0 – Overlay-Kontrolle & Launcher-Politur
 
 ### Added
