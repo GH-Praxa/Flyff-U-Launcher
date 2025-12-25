@@ -66,6 +66,68 @@ html, body{
   text-shadow: 0 0 8px rgba(92, 183, 255, 0.35);
 }
 
+.langPicker{
+  position: relative;
+}
+
+.langButton{
+  min-width: 48px;
+  padding: 6px 10px;
+  font-size: 18px;
+  line-height: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+}
+
+.langIcon{
+  width: 32px;
+  height: 22px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+}
+
+.langMenu{
+  position: absolute;
+  right: 0;
+  top: 110%;
+  background: rgba(15,26,51,0.95);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  z-index: 10;
+}
+
+.langMenu.hidden{
+  display: none;
+}
+
+.langMenuItem{
+  appearance: none;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  width: 40px;
+  height: 30px;
+  background-size: cover;
+  background-position: center;
+}
+
+.langMenuItem:hover{
+  border-color: rgba(44,107,255,0.75);
+  box-shadow: 0 0 0 2px rgba(44,107,255,0.18);
+}
+
 /* Filterleiste zwischen Toolbar und Liste */
 .filterBar{
   display:flex;
@@ -202,6 +264,108 @@ html, body{
   flex: 0 0 auto;
   padding: 16px;
   background: rgba(255,255,255,0.02);
+}
+
+.newsHeader{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.newsHeader .btn{
+  padding: 6px 10px;
+}
+
+.newsState{
+  margin-bottom: 8px;
+}
+
+.newsList{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding-right: 4px;
+}
+
+.newsList::-webkit-scrollbar{
+  width: 10px;
+}
+
+.newsList::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+}
+
+.newsList::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(44,107,255,0.35), rgba(44,107,255,0.18));
+  border-radius: 10px;
+  border: 1px solid rgba(44,107,255,0.45);
+}
+
+.newsList::-webkit-scrollbar-thumb:hover{
+  background: linear-gradient(180deg, rgba(44,107,255,0.45), rgba(44,107,255,0.28));
+}
+
+.newsItem{
+  display:flex;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius2);
+  padding: 8px;
+  background: rgba(255,255,255,0.03);
+  transition: 0.15s ease;
+  box-shadow: var(--shadow);
+}
+
+.newsItem:hover{
+  border-color: rgba(44,107,255,0.55);
+  background: rgba(44,107,255,0.06);
+  transform: translateY(-1px);
+}
+
+.newsThumb{
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.05);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink: 0;
+}
+
+.newsThumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+.newsContent{
+  min-width: 0;
+  display:flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.newsMeta{
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.newsTitle{
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 /* Ueberschrift innerhalb eines Panels */
@@ -543,6 +707,73 @@ html, body{
   border-color: rgba(44,107,255,0.85);
 }
 
+/* Split Toggle + Linked Tabs */
+#app.sessionRoot .tabBtn.splitToggle{
+  width: auto;
+  min-width: 120px;
+  max-width: none;
+  padding: 6px 12px;
+  font-weight: 800;
+}
+
+#app.sessionRoot .tabBtn.splitToggle.active{
+  background: rgba(46,204,113,0.18);
+  border-color: rgba(46,204,113,0.80);
+  box-shadow: 0 0 0 2px rgba(46,204,113,0.12);
+}
+
+#app.sessionRoot .tabBtn.splitPartner{
+  border-color: rgba(46,204,113,0.55);
+  background: rgba(46,204,113,0.12);
+}
+
+#app.sessionRoot .tabBtn.splitLeft{
+  box-shadow: -2px 0 0 0 rgba(46,204,113,0.75) inset;
+}
+
+#app.sessionRoot .tabBtn.splitRight{
+  box-shadow: 2px 0 0 0 rgba(44,107,255,0.85) inset;
+}
+
+#app.sessionRoot .splitControls{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+
+#app.sessionRoot .splitSlider{
+  appearance: none;
+  width: 140px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(46,204,113,0.80), rgba(44,107,255,0.85));
+  outline: none;
+  cursor: pointer;
+}
+
+#app.sessionRoot .splitSlider::-webkit-slider-thumb{
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,0.35);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+#app.sessionRoot .splitSliderValue{
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  min-width: 64px;
+  text-align: center;
+}
+
 /* Dragn Drop */
 /* Drag-Zustand: reduzierte Deckkraft beim Ziehen */
 #app.sessionRoot .tabBtn.dragging {
@@ -613,6 +844,12 @@ html, body{
   gap: 10px;
 }
 
+.modalHint{
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 /* Liste fuer waehlbare Eintraege */
 .pickerList{
   display:flex;
@@ -637,6 +874,17 @@ html, body{
 .pickerItem:hover{
   border-color: rgba(44,107,255,0.35);
   background: rgba(255,255,255,0.06);
+}
+
+.pickerItem.secondary{
+  border-style: dashed;
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.03);
+}
+
+.pickerItem.secondary:hover{
+  border-color: rgba(44,107,255,0.45);
+  background: rgba(44,107,255,0.08);
 }
 
 /* Anzeige, wenn keine Optionen vorhanden sind */

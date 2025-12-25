@@ -16,7 +16,7 @@ export function createSidePanelController(opts: {
   sessionTabs: {
     getViewByProfile: (profileId: string) => BrowserView | null;
     isActive: (profileId: string) => boolean;
-    getBounds: () => Rectangle;
+    getBounds: (profileId?: string) => Rectangle;
   };
 
   instances: { get: (profileId: string) => BrowserWindow | null };
@@ -63,7 +63,7 @@ export function createSidePanelController(opts: {
     if (!view || view.webContents.isDestroyed()) return null;
 
     const cb = win.getContentBounds();
-    const vb = opts.sessionTabs.getBounds();
+    const vb = opts.sessionTabs.getBounds(targetId);
 
     const rect = {
       x: cb.x + vb.x,

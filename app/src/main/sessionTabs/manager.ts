@@ -1,7 +1,9 @@
-import { BrowserView } from "electron";
+import { BrowserView, screen } from "electron";
 import type { ViewBounds } from "../../shared/types";
 import { hardenGameContents } from "../security/harden";
 import type { SessionWindowController } from "../windows/sessionWindow";
+
+type SplitPair = { leftId: string; rightId: string };
 
 export function createSessionTabsManager(opts: {
   sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
@@ -9,12 +11,89 @@ export function createSessionTabsManager(opts: {
 }) {
   const sessionViews = new Map<string, BrowserView>();
   let sessionActiveId: string | null = null;
+  let sessionSplit: SplitPair | null = null;
+  const defaultSplitRatio = 0.5;
+  let sessionSplitRatio = defaultSplitRatio;
   let sessionVisible = true;
   let sessionBounds: ViewBounds = { x: 0, y: 60, width: 1200, height: 700 };
+  const splitGap = 8;
+  const minSplitRatio = 0.2;
+  const maxSplitRatio = 0.8;
+  const hoverPollMs = 120;
+  let hoverTimer: NodeJS.Timeout | null = null;
+  let lastNotifiedActiveId: string | null = null;
+
+  function clampSplitRatio(ratio: number): number {
+    if (!Number.isFinite(ratio)) return sessionSplitRatio;
+    return Math.min(maxSplitRatio, Math.max(minSplitRatio, ratio));
+  }
+
+  function getLayoutIds(): string[] {
+    if (sessionSplit) return [sessionSplit.leftId, sessionSplit.rightId];
+    return sessionActiveId ? [sessionActiveId] : [];
+  }
+
+  function sanitizeActiveId(): void {
+    const visibleIds = getLayoutIds();
+    if (visibleIds.length === 0) {
+      sessionActiveId = null;
+      return;
+    }
+    if (!sessionActiveId || !visibleIds.includes(sessionActiveId)) {
+      sessionActiveId = visibleIds[0];
+    }
+  }
+
+  function computeLayoutBounds(): Array<{ id: string; bounds: ViewBounds }> {
+    const ids = getLayoutIds();
+    if (ids.length === 0) return [];
+
+    const hasSplit = sessionSplit !== null && ids.length > 1;
+    const gap = hasSplit ? splitGap : 0;
+    const leftWidth = hasSplit
+      ? Math.max(1, Math.floor((sessionBounds.width - gap) * clampSplitRatio(sessionSplitRatio)))
+      : sessionBounds.width;
+    const rightWidth = hasSplit ? Math.max(1, sessionBounds.width - gap - leftWidth) : sessionBounds.width;
+
+    return ids.map((id, idx) => {
+      const isLeft = idx === 0;
+      const width = hasSplit ? (isLeft ? leftWidth : rightWidth) : sessionBounds.width;
+      const x = hasSplit && !isLeft ? sessionBounds.x + leftWidth + gap : sessionBounds.x;
+
+      return {
+        id,
+        bounds: { x, y: sessionBounds.y, width, height: sessionBounds.height },
+      };
+    });
+  }
+
+  function notifyActiveChanged() {
+    if (sessionActiveId === lastNotifiedActiveId) return;
+    lastNotifiedActiveId = sessionActiveId;
+
+    const win = opts.sessionWindow.get();
+    if (!win || win.isDestroyed()) return;
+
+    try {
+      win.webContents.send("sessionTabs:activeChanged", sessionActiveId);
+    } catch {}
+  }
+
+  function focusActiveView() {
+    if (!sessionActiveId) return;
+    const view = sessionViews.get(sessionActiveId);
+    if (!view) return;
+
+    try {
+      view.webContents.focus();
+    } catch {}
+  }
 
   function applyActiveBrowserView() {
     const win = opts.sessionWindow.get();
     if (!win) return;
+
+    sanitizeActiveId();
 
     for (const v of win.getBrowserViews()) {
       try {
@@ -22,15 +101,93 @@ export function createSessionTabsManager(opts: {
       } catch {}
     }
 
-    if (!sessionVisible) return;
-    if (!sessionActiveId) return;
+    if (!sessionVisible) {
+      notifyActiveChanged();
+      return;
+    }
 
-    const view = sessionViews.get(sessionActiveId);
-    if (!view) return;
+    const layout = computeLayoutBounds();
+    if (layout.length === 0) {
+      notifyActiveChanged();
+      return;
+    }
 
-    win.addBrowserView(view);
-    view.setBounds(sessionBounds);
-    view.setAutoResize({ width: true, height: true });
+    layout.forEach(({ id, bounds }) => {
+      const view = sessionViews.get(id);
+      if (!view) return;
+
+      win.addBrowserView(view);
+      view.setBounds(bounds);
+      view.setAutoResize({ width: true, height: true });
+    });
+
+    focusActiveView();
+    notifyActiveChanged();
+  }
+
+  function checkHoverActivation() {
+    if (!sessionSplit || !sessionVisible) return;
+
+    const win = opts.sessionWindow.get();
+    if (!win || win.isDestroyed() || !win.isFocused()) return;
+
+    const layout = computeLayoutBounds();
+    if (layout.length < 2) return;
+
+    const contentBounds = win.getContentBounds();
+    const cursor = screen.getCursorScreenPoint();
+    const localX = cursor.x - contentBounds.x;
+    const localY = cursor.y - contentBounds.y;
+
+    if (localY < sessionBounds.y || localY > sessionBounds.y + sessionBounds.height) return;
+    if (localX < sessionBounds.x || localX > sessionBounds.x + sessionBounds.width) return;
+
+    const target = layout.find(({ bounds }) => {
+      return (
+        localX >= bounds.x &&
+        localX <= bounds.x + bounds.width &&
+        localY >= bounds.y &&
+        localY <= bounds.y + bounds.height
+      );
+    });
+
+    if (!target || target.id === sessionActiveId) return;
+
+    sessionActiveId = target.id;
+    focusActiveView();
+    notifyActiveChanged();
+  }
+
+  function startHoverActivation() {
+    if (hoverTimer || !sessionSplit || !sessionVisible) return;
+    hoverTimer = setInterval(checkHoverActivation, hoverPollMs);
+  }
+
+  function stopHoverActivation() {
+    if (!hoverTimer) return;
+    clearInterval(hoverTimer);
+    hoverTimer = null;
+  }
+
+  function ensureSessionView(profileId: string) {
+    if (sessionViews.has(profileId)) return sessionViews.get(profileId)!;
+
+    const view = new BrowserView({
+      webPreferences: {
+        partition: `persist:${profileId}`,
+        contextIsolation: true,
+        nodeIntegration: false,
+        // backgroundThrottling: false,
+      },
+    });
+
+    hardenGameContents(view.webContents);
+    sessionViews.set(profileId, view);
+
+    view.webContents.loadURL("about:blank").catch(() => {});
+    view.webContents.loadURL(opts.flyffUrl).catch(console.error);
+
+    return view;
   }
 
   function destroySessionView(profileId: string) {
@@ -49,31 +206,27 @@ export function createSessionTabsManager(opts: {
     } catch {}
 
     sessionViews.delete(profileId);
-    if (sessionActiveId === profileId) sessionActiveId = null;
+    if (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId)) {
+      const survivor = sessionSplit.leftId === profileId ? sessionSplit.rightId : sessionSplit.leftId;
+      sessionSplit = null;
+      sessionActiveId = survivor ?? null;
+      stopHoverActivation();
+    }
+
+    if (sessionActiveId === profileId) {
+      sessionActiveId = null;
+    }
   }
 
   async function open(profileId: string) {
     const win = await opts.sessionWindow.ensure();
 
-    if (!sessionViews.has(profileId)) {
-      const view = new BrowserView({
-        webPreferences: {
-          partition: `persist:${profileId}`,
-          contextIsolation: true,
-          nodeIntegration: false,
-          // backgroundThrottling: false,
-        },
-      });
-
-      hardenGameContents(view.webContents);
-      sessionViews.set(profileId, view);
-
-      view.webContents.loadURL("about:blank").catch(() => {});
-      view.webContents.loadURL(opts.flyffUrl).catch(console.error);
-    }
+    ensureSessionView(profileId);
 
     sessionActiveId = profileId;
+    sessionSplit = null;
     applyActiveBrowserView();
+    stopHoverActivation();
 
     win.show();
     win.focus();
@@ -82,8 +235,18 @@ export function createSessionTabsManager(opts: {
   }
 
   function switchTo(profileId: string) {
+    if (sessionSplit) {
+      if (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId) {
+        sessionActiveId = profileId;
+        applyActiveBrowserView();
+        return true;
+      }
+      sessionSplit = null;
+    }
+
     sessionActiveId = profileId;
     applyActiveBrowserView();
+    stopHoverActivation();
     return true;
   }
 
@@ -101,7 +264,53 @@ export function createSessionTabsManager(opts: {
 
   function setVisible(visible: boolean) {
     sessionVisible = !!visible;
+    if (!sessionVisible) stopHoverActivation();
+    else startHoverActivation();
     applyActiveBrowserView();
+    return true;
+  }
+
+  async function setSplit(pair: { primary: string; secondary: string; ratio?: number } | null) {
+    const win = await opts.sessionWindow.ensure();
+
+    if (!pair || !pair.primary) {
+      sessionSplit = null;
+      applyActiveBrowserView();
+      stopHoverActivation();
+      return true;
+    }
+
+    if (pair.primary === pair.secondary) {
+      sessionActiveId = pair.primary;
+      sessionSplit = null;
+      applyActiveBrowserView();
+      stopHoverActivation();
+      return true;
+    }
+
+    ensureSessionView(pair.primary);
+    ensureSessionView(pair.secondary);
+
+    sessionActiveId = pair.primary;
+    sessionSplit = { leftId: pair.primary, rightId: pair.secondary };
+    sessionSplitRatio = clampSplitRatio(pair.ratio ?? sessionSplitRatio);
+
+    applyActiveBrowserView();
+    startHoverActivation();
+
+    win.show();
+    win.focus();
+
+    return true;
+  }
+
+  function setSplitRatio(ratio: number) {
+    if (!sessionSplit) return true;
+    const next = clampSplitRatio(ratio);
+    if (Math.abs(next - sessionSplitRatio) < 0.0001) return true;
+    sessionSplitRatio = next;
+    applyActiveBrowserView();
+    startHoverActivation();
     return true;
   }
 
@@ -109,6 +318,9 @@ export function createSessionTabsManager(opts: {
     for (const id of [...sessionViews.keys()]) destroySessionView(id);
     sessionViews.clear();
     sessionActiveId = null;
+    sessionSplit = null;
+    sessionSplitRatio = defaultSplitRatio;
+    stopHoverActivation();
   }
 
   function getActiveView(): BrowserView | null {
@@ -125,12 +337,16 @@ export function createSessionTabsManager(opts: {
   }
 
   function isActive(profileId: string): boolean {
-    return sessionActiveId === profileId;
+    return getLayoutIds().includes(profileId);
   }
 
-  // ✅ NEU: Bounds der View (für ROI Calibrator Position)
-  function getBounds(): ViewBounds {
-    return sessionBounds;
+  // ’'o. NEU: Bounds der View (fÇÎ¶ªr ROI Calibrator Position)
+  function getBounds(profileId?: string): ViewBounds {
+    const layout = computeLayoutBounds();
+    if (!profileId || layout.length <= 1) return sessionBounds;
+
+    const match = layout.find((l) => l.id === profileId);
+    return match?.bounds ?? sessionBounds;
   }
 
   return {
@@ -139,6 +355,8 @@ export function createSessionTabsManager(opts: {
     close,
     setBounds,
     setVisible,
+    setSplit,
+    setSplitRatio,
     reset,
     getActiveView,
     getViewByProfile,

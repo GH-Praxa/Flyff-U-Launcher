@@ -150,7 +150,7 @@ app.whenReady().then(async () => {
     const v2 = sessionTabs.getViewByProfile(profileId);
     if (!v2) return false;
 
-    const viewBounds = sessionTabs.getBounds(); // content coords
+    const viewBounds = sessionTabs.getBounds(profileId); // content coords
     const contentBounds = win.getContentBounds(); // screen coords
 
     const screenshot = await v2.webContents.capturePage();
@@ -160,7 +160,7 @@ app.whenReady().then(async () => {
       const w = sessionWindow.get();
       if (!w || w.isDestroyed()) return null;
 
-      const vb = sessionTabs.getBounds();
+      const vb = sessionTabs.getBounds(profileId);
       const cb = w.getContentBounds();
 
       return {
