@@ -22,6 +22,10 @@ const config: ForgeConfig = {
             description: "Flyff-U-Launcher",
             icon: path.resolve(__dirname, "src/assets/icons/flyff.ico"),
             appIconPath: path.resolve(__dirname, "src/assets/icons/flyff.ico"),
+            shortcutName: "Flyff-U-Launcher",
+            shortcutFolderName: "Flyff-U-Launcher",
+            programFilesFolderName: "Flyff-U-Launcher",
+            ui: true,
             beforeCreate: (creator) => {
                 console.log("MakerWix icon path:", path.resolve(__dirname, "src/assets/icons/flyff.ico"));
                 creator.icon = path.resolve(__dirname, "src/assets/icons/flyff.ico");
