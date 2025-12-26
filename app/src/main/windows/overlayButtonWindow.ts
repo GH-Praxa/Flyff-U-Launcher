@@ -1,29 +1,28 @@
 import { BrowserWindow } from "electron";
-
-export function createOverlayButtonWindow(opts: { parent: BrowserWindow; preloadPath?: string }) {
-  const win = new BrowserWindow({
-    parent: opts.parent,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    show: true,
-    focusable: true,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    webPreferences: {
-      preload: opts.preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      backgroundThrottling: false,
-    },
-  });
-
-  // Wichtig: über dem Game
-  win.setAlwaysOnTop(true, "screen-saver");
-
-  const html = `
+export function createOverlayButtonWindow(opts: {
+    parent: BrowserWindow;
+    preloadPath?: string;
+}) {
+    const win = new BrowserWindow({
+        parent: opts.parent,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        show: true,
+        focusable: true,
+        skipTaskbar: true,
+        hasShadow: false,
+        alwaysOnTop: true,
+        webPreferences: {
+            preload: opts.preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false,
+        },
+    });
+    win.setAlwaysOnTop(true, "screen-saver");
+    const html = `
 <!doctype html>
 <html>
 <head>
@@ -64,7 +63,6 @@ export function createOverlayButtonWindow(opts: { parent: BrowserWindow; preload
 </body>
 </html>
 `.trim();
-
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayButtonWindow] load failed", err));
-  return win;
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayButtonWindow] load failed", err));
+    return win;
 }

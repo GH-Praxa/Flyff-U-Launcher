@@ -547,7 +547,7 @@ const tipsEn = [
   "Use tabs mode to keep multiple chars in one window.",
   "Mark a char as overlay target (Aibatt) so the overlay follows.",
   "Click Play to open in the chosen start mode (tabs/window).",
-  "Join the Discord for feedback and bug reports.",
+  "Share feedback or bugs on the Flyff-U-Launcher Discord or via PM to Praxa.",
   "Save your current tab setup as a layout to reload it later with one click.",
   "Enable split-view before saving: left/right placement is kept in the layout.",
   "Left-click a tab to set the left split pane, right-click to set the right pane.",
@@ -558,7 +558,7 @@ const tipsDe = [
   "Nutze den Tabs-Modus, um mehrere Chars in einem Fenster offen zu halten.",
   "Markiere einen Char als Overlay-Ziel (Aibatt), damit die Overlay-Anzeige folgt.",
   "Klicke auf 'Spielen', um direkt im gewählten Startmodus (Tabs/Fenster) zu öffnen.",
-  "Komm auf den Discord fuer Feedback und Bugmeldungen.",
+  "Teile gerne Feedback oder Bugs auf dem Flyff-U-Launcher Discord mit oder per PM an Praxa.",
   "Speichere dein aktuelles Tab-Setup als Layout, um es später per Klick zu laden.",
   "Aktiviere Split-View vor dem Speichern: Links/Rechts-Anordnung bleibt im Layout erhalten.",
   "Linksklick setzt den linken Split, Rechtsklick den rechten.",
@@ -569,7 +569,7 @@ const tipsPl = [
   "Używaj trybu kart, by mieć kilka postaci w jednym oknie.",
   "Oznacz cel overlay (Aibatt), by overlay podążał.",
   "Kliknij Graj, by otworzyć w wybranym trybie (karty/okno).",
-  "Dolacz na Discord po feedback i zgloszenia bugow.",
+  "Podziel się opinią lub błędami na Discordzie Flyff-U-Launcher albo wyślij PM do Praxa.",
 ];
 
 const tipsFr = [
@@ -577,7 +577,7 @@ const tipsFr = [
   "Utilise le mode onglets pour plusieurs persos dans une fenêtre.",
   "Marque une cible overlay (Aibatt) pour suivre l'overlay.",
   "Clique sur Jouer pour ouvrir dans le mode choisi (onglets/fenêtre).",
-  "Rejoins le Discord pour feedback et signaler des bugs.",
+  "Partage ton feedback ou tes bugs sur le Discord Flyff-U-Launcher ou en MP à Praxa.",
 ];
 
 const tipsRu = [
@@ -585,7 +585,7 @@ const tipsRu = [
   "Режим вкладок держит несколько персонажей в одном окне.",
   "Отметь цель оверлея (Aibatt), чтобы оверлей следовал.",
   "Жми Играть, чтобы открыть в выбранном режиме (вкладки/окно).",
-  "Заходи в Discord, чтобы оставить фидбек и сообщить о багах.",
+  "Делись отзывами или багами в Discord Flyff-U-Launcher или отправь PM Праксе.",
 ];
 
 const tipsTr = [
@@ -593,7 +593,7 @@ const tipsTr = [
   "Sekme moduyla birden çok karakteri tek pencerede tut.",
   "Overlay hedefi (Aibatt) seç, overlay onu takip etsin.",
   "Oyna'ya tıkla, seçili modda aç (sekme/pencere).",
-  "Feedback ve bug bildirimleri icin Discord'a katıl.",
+  "Flyff-U-Launcher Discord'da geri bildirim veya buglarını paylaş ya da Praxa'ya PM at.",
 ];
 
 const tipsCn = [
@@ -601,7 +601,7 @@ const tipsCn = [
   "用标签模式在一个窗口开多个角色。",
   "标记覆盖目标（Aibatt），覆盖会跟随。",
   "点击开始游戏，用所选模式打开（标签/窗口）。",
-  "加入 Discord 提交反馈和错误报告。",
+  "在 Flyff-U-Launcher 的 Discord 上分享反馈或问题，或者私信 Praxa。",
 ];
 
 const tipsJp = [
@@ -609,7 +609,7 @@ const tipsJp = [
   "タブモードで複数キャラを1ウィンドウに。",
   "オーバーレイ対象（Aibatt）を指定すると追従。",
   "「プレイ」で選択したモード（タブ/ウィンドウ）で開く。",
-  "フィードバックやバグ報告はDiscordに参加してね。",
+  "フィードバックやバグはFlyff-U-LauncherのDiscordで共有するか、PraxaへPMしてください。",
 ];
 
 const tipsFallbacks: Record<Locale, string[]> = {

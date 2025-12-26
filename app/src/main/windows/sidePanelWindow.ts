@@ -1,34 +1,31 @@
 import { BrowserWindow } from "electron";
-
-export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
-  const win = new BrowserWindow({
-    parent,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    show: true,
-    focusable: true,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    backgroundColor: "#00000000",
-    webPreferences: {
-      preload: opts?.preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      backgroundThrottling: false,
-    },
-  });
-
-  // Menüleiste weg
-  win.setMenuBarVisibility(false);
-  win.setAutoHideMenuBar(true);
-  win.setMenu(null);
-
-  win.setAlwaysOnTop(true, "screen-saver");
-
-  const html = `
+export function createSidePanelWindow(parent: BrowserWindow, opts?: {
+    preloadPath?: string;
+}) {
+    const win = new BrowserWindow({
+        parent,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        show: true,
+        focusable: true,
+        skipTaskbar: true,
+        hasShadow: false,
+        alwaysOnTop: true,
+        backgroundColor: "#00000000",
+        webPreferences: {
+            preload: opts?.preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false,
+        },
+    });
+    win.setMenuBarVisibility(false);
+    win.setAutoHideMenuBar(true);
+    win.setMenu(null);
+    win.setAlwaysOnTop(true, "screen-saver");
+    const html = `
 <!doctype html>
 <html>
 <head>
@@ -231,12 +228,10 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPat
     throw new Error("ipc bridge missing");
   }
 
-  // --- Open/Close ---
   document.getElementById("toggle").onclick = () => {
     ipc.send("hudpanel:toggle");
   };
 
-  // --- Resize (sends absolute width) ---
   const grip = document.getElementById("resizeGrip");
   let resizing = false;
   let startX = 0;
@@ -260,7 +255,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPat
     resizing = false;
   });
 
-  // --- Tabs ---
   const content = document.getElementById("content");
   const tabs = Array.from(document.querySelectorAll(".tab"));
 
@@ -273,7 +267,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPat
     t.onclick = () => setTab(t.dataset.tab);
   });
 
-  // dummy state (nur UI – Funktionen kommen später)
   const state = {
     showExp: true,
     showDelta: true,
@@ -377,7 +370,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPat
 </body>
 </html>
 `.trim();
-
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[SidePanelWindow] load failed", err));
-  return win;
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[SidePanelWindow] load failed", err));
+    return win;
 }

@@ -1,53 +1,60 @@
 import { BrowserWindow, Rectangle, ipcMain } from "electron";
-
-export type RoiNorm = { x: number; y: number; w: number; h: number };
-export type HudRois = { nameLevel?: RoiNorm; expPercent?: RoiNorm };
-
+export type RoiNorm = {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+};
+export type HudRois = {
+    nameLevel?: RoiNorm;
+    expPercent?: RoiNorm;
+};
 const logErr = (err: unknown) => console.error("[RoiCalibratorWindow]", err);
-
 export function createRoiCalibratorWindow(opts: {
-  parent: BrowserWindow;
-  screenRect: Rectangle; // exakt über Game-Fläche (SCREEN coords)
-  pngB64: string;
-  initialRois?: HudRois;
-  channel: string; // eindeutiger IPC channel
-  preloadPath?: string;
+    parent: BrowserWindow;
+    screenRect: Rectangle;
+    pngB64: string;
+    initialRois?: HudRois;
+    channel: string;
+    preloadPath?: string;
 }) {
-  const win = new BrowserWindow({
-    parent: opts.parent,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    show: true,
-    focusable: true,
-    acceptFirstMouse: true,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    webPreferences: {
-      preload: opts.preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      backgroundThrottling: false,
-    },
-  });
-
-  // sicherstellen, dass das Fenster Eingaben annimmt und oben liegt
-  win.setIgnoreMouseEvents(false);
-  win.setAlwaysOnTop(true, "screen-saver");
-  try {
-    win.moveTop();
-  } catch (err) { logErr(err); }
-
-  win.setBounds(opts.screenRect, false);
-  win.focus();
-  try {
-    win.webContents.openDevTools({ mode: "detach" });
-  } catch (err) { logErr(err); }
-
-  const initial = JSON.stringify(opts.initialRois ?? {});
-  const html = `
+    const win = new BrowserWindow({
+        parent: opts.parent,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        show: true,
+        focusable: true,
+        acceptFirstMouse: true,
+        skipTaskbar: true,
+        hasShadow: false,
+        alwaysOnTop: true,
+        webPreferences: {
+            preload: opts.preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false,
+        },
+    });
+    win.setIgnoreMouseEvents(false);
+    win.setAlwaysOnTop(true, "screen-saver");
+    try {
+        win.moveTop();
+    }
+    catch (err) {
+        logErr(err);
+    }
+    win.setBounds(opts.screenRect, false);
+    win.focus();
+    try {
+        win.webContents.openDevTools({ mode: "detach" });
+    }
+    catch (err) {
+        logErr(err);
+    }
+    const initial = JSON.stringify(opts.initialRois ?? {});
+    const html = `
 <!doctype html>
 <html>
 <head>
@@ -110,7 +117,7 @@ export function createRoiCalibratorWindow(opts: {
   window.addEventListener("resize", resize);
   resize();
 
-  let activeKey = "expPercent"; // or nameLevel
+  let activeKey = "expPercent";
   document.getElementById("btnName").onclick = () => { activeKey = "nameLevel"; log("btnName"); draw(); };
   document.getElementById("btnExp").onclick  = () => { activeKey = "expPercent"; log("btnExp"); draw(); };
 
@@ -216,114 +223,121 @@ export function createRoiCalibratorWindow(opts: {
 </body>
 </html>
   `.trim();
-
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html) + `#${encodeURIComponent(opts.channel)}`).catch((err) => console.error("[RoiCalibratorWindow] load failed", err));
-  return win;
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html) + `#${encodeURIComponent(opts.channel)}`).catch((err) => console.error("[RoiCalibratorWindow] load failed", err));
+    return win;
 }
-
 export async function openRoiCalibratorWindow(opts: {
-  profileId: string;
-  parent: BrowserWindow;
-
-  bounds: Rectangle;
-  screenshotPng: Buffer;
-  existing?: HudRois | null;
-
-  onSave: (rois: HudRois) => Promise<void>;
-
-  follow?: {
-    getBounds: () => Rectangle | null;
-    intervalMs?: number;
-  };
-  preloadPath?: string;
+    profileId: string;
+    parent: BrowserWindow;
+    bounds: Rectangle;
+    screenshotPng: Buffer;
+    existing?: HudRois | null;
+    onSave: (rois: HudRois) => Promise<void>;
+    follow?: {
+        getBounds: () => Rectangle | null;
+        intervalMs?: number;
+    };
+    preloadPath?: string;
 }): Promise<boolean> {
-  const channel = `roi-calib:${opts.profileId}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
-
-  const win = createRoiCalibratorWindow({
-    parent: opts.parent,
-    screenRect: opts.bounds,
-    pngB64: opts.screenshotPng.toString("base64"),
-    initialRois: opts.existing ?? undefined,
-    channel,
-    preloadPath: opts.preloadPath,
-  });
-
-  // FOLLOW: Fenster bewegt/resized mit
-  let followIv: NodeJS.Timeout | null = null;
-  if (opts.follow?.getBounds) {
-    const intervalMs = opts.follow.intervalMs ?? 80;
-
-    let last: Rectangle | null = null;
-    const same = (a: Rectangle, b: Rectangle) =>
-      a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
-
-    const tick = () => {
-      if (!win || win.isDestroyed()) return;
-      const b = opts.follow!.getBounds();
-      if (!b) return;
-      if (last && same(last, b)) return;
-      last = b;
-      try {
-        win.setBounds(b, false);
-      } catch (err) { logErr(err); }
-    };
-
-    tick();
-    followIv = setInterval(tick, intervalMs);
-    win.on("closed", () => {
-      if (followIv) clearInterval(followIv);
-      followIv = null;
+    const channel = `roi-calib:${opts.profileId}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    const win = createRoiCalibratorWindow({
+        parent: opts.parent,
+        screenRect: opts.bounds,
+        pngB64: opts.screenshotPng.toString("base64"),
+        initialRois: opts.existing ?? undefined,
+        channel,
+        preloadPath: opts.preloadPath,
     });
-  }
-
-  return await new Promise<boolean>((resolve) => {
-    let done = false;
-
-    const cleanup = () => {
-      if (done) return;
-      done = true;
-      try {
-        ipcMain.removeAllListeners(channel);
-        ipcMain.removeAllListeners(channel + ":debug");
-      } catch (err) { logErr(err); }
-      if (followIv) {
-        try {
-          clearInterval(followIv);
-        } catch (err) { logErr(err); }
-        followIv = null;
-      }
-    };
-
-    ipcMain.once(channel, async (_e, payload: any) => {
-      try {
-        if (payload?.ok && payload?.rois) {
-          await opts.onSave(payload.rois as HudRois);
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      } catch (err) {
-        console.error("[ROI CALIB] onSave failed:", err);
-        resolve(false);
-      } finally {
-        cleanup();
-        try {
-          if (win && !win.isDestroyed()) win.close();
-        } catch (err) { logErr(err); }
-      }
+    let followIv: NodeJS.Timeout | null = null;
+    if (opts.follow?.getBounds) {
+        const intervalMs = opts.follow.intervalMs ?? 80;
+        let last: Rectangle | null = null;
+        const same = (a: Rectangle, b: Rectangle) => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+        const tick = () => {
+            if (!win || win.isDestroyed())
+                return;
+            const b = opts.follow!.getBounds();
+            if (!b)
+                return;
+            if (last && same(last, b))
+                return;
+            last = b;
+            try {
+                win.setBounds(b, false);
+            }
+            catch (err) {
+                logErr(err);
+            }
+        };
+        tick();
+        followIv = setInterval(tick, intervalMs);
+        win.on("closed", () => {
+            if (followIv)
+                clearInterval(followIv);
+            followIv = null;
+        });
+    }
+    return await new Promise<boolean>((resolve) => {
+        let done = false;
+        const cleanup = () => {
+            if (done)
+                return;
+            done = true;
+            try {
+                ipcMain.removeAllListeners(channel);
+                ipcMain.removeAllListeners(channel + ":debug");
+            }
+            catch (err) {
+                logErr(err);
+            }
+            if (followIv) {
+                try {
+                    clearInterval(followIv);
+                }
+                catch (err) {
+                    logErr(err);
+                }
+                followIv = null;
+            }
+        };
+        ipcMain.once(channel, async (_e, payload: any) => {
+            try {
+                if (payload?.ok && payload?.rois) {
+                    await opts.onSave(payload.rois as HudRois);
+                    resolve(true);
+                }
+                else {
+                    resolve(false);
+                }
+            }
+            catch (err) {
+                console.error("[ROI CALIB] onSave failed:", err);
+                resolve(false);
+            }
+            finally {
+                cleanup();
+                try {
+                    if (win && !win.isDestroyed())
+                        win.close();
+                }
+                catch (err) {
+                    logErr(err);
+                }
+            }
+        });
+        ipcMain.on(channel + ":debug", (_e, payload) => {
+            try {
+                console.log("[ROI CALIB DEBUG]", payload);
+            }
+            catch (err) {
+                logErr(err);
+            }
+        });
+        win.on("closed", () => {
+            if (!done) {
+                cleanup();
+                resolve(false);
+            }
+        });
     });
-
-    ipcMain.on(channel + ":debug", (_e, payload) => {
-      try {
-        console.log("[ROI CALIB DEBUG]", payload);
-      } catch (err) { logErr(err); }
-    });
-
-    win.on("closed", () => {
-      if (!done) {
-        cleanup();
-        resolve(false);
-      }
-    });
-  });
 }

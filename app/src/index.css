@@ -1,25 +1,25 @@
-/* ---------- Global ---------- */
-/* Farb- und Layout-Variablen fuer das komplette UI */
+
+
 :root{
-  --bg: #0b1220; /* Basis-Hintergrund fuer dunkles Theme */
-  --panel: #0f1a33; /* Primaere Panel-Flaeche */
-  --panel2: #0d1830; /* Alternative Panel-Flaeche */
-  --stroke: #1b2b4d; /* Standard-Rahmenlinien */
-  --text: #e6eefc; /* Primaere Schriftfarbe */
-  --muted: #294093; /* Sekundaerer Text / Hinweise */
-  --blue: #2c6bff; /* Haupt-Akzent Blau */
-  --blue2: #3b7bff; /* Sekundaer-Akzent Blau */
-  --danger: #ff3b4f; /* Warn-/Loeschaktionen */
-  --shadow: 0 8px 30px rgba(0,0,0,0.35); /* Standard Schattenwurf */
-  --radius: 14px; /* Grosse Rundungen fuer Karten/Fenster */
-  --radius2: 10px; /* Kleinere Rundungen fuer Inputs/Buttons */
-  --green: #2ecc71; /* Erfolgs-/Aktiv-Akzent */
+  --bg: #0b1220; 
+  --panel: #0f1a33; 
+  --panel2: #0d1830; 
+  --stroke: #1b2b4d; 
+  --text: #e6eefc; 
+  --muted: #294093; 
+  --blue: #2c6bff; 
+  --blue2: #3b7bff; 
+  --danger: #ff3b4f; 
+  --shadow: 0 8px 30px rgba(0,0,0,0.35); 
+  --radius: 14px; 
+  --radius2: 10px; 
+  --green: #2ecc71; 
 }
 
-/* Vereinheitlicht Box-Sizing ueber alle Elemente */
+
 *{ box-sizing: border-box; }
 
-/* Basis-Layout fuer Seite und Schrift */
+
 html, body{
   width: 100%;
   height: 100%;
@@ -29,14 +29,14 @@ html, body{
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
 }
 
-/* Mount-Container fuellt die View */
+
 #app{
   width: 100%;
   height: 100%;
 }
 
-/* ---------- Basic UI ---------- */
-/* Obere Toolbar fuer Kopfzeilenaktionen */
+
+
 .topbar{
   display:flex;
   align-items:center;
@@ -46,16 +46,16 @@ html, body{
   background: linear-gradient(180deg, rgba(44,107,255,0.18), rgba(15,26,51,0));
 }
 
-/* Titeltext in der Kopfzeile */
+
 .title{
   font-weight: 800;
   letter-spacing: 0.2px;
 }
 
-/* Flex-Platzhalter, damit Actions rechts buendeln */
+
 .spacer{ flex: 1; }
 
-/* Versionslabel oben rechts */
+
 .versionLabel{
   font-size: 12px;
   letter-spacing: 0.4px;
@@ -64,6 +64,44 @@ html, body{
   font-weight: 700;
   padding-right: 8px;
   text-shadow: 0 0 8px rgba(92, 183, 255, 0.35);
+}
+
+.githubBtn{
+  width: 38px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.githubBtn img{
+  width: 20px;
+  height: 20px;
+}
+
+.githubBtn.updateAvailable{
+  background: rgba(46,204,113,0.18);
+  border-color: rgba(46,204,113,0.65);
+  box-shadow: 0 0 0 2px rgba(46,204,113,0.12);
+}
+
+.updateNotice{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(46,204,113,0.55);
+  background: rgba(46,204,113,0.12);
+  color: rgba(153, 255, 169, 0.9);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.updateNotice.hidden{
+  display: none;
 }
 
 .langPicker{
@@ -128,7 +166,7 @@ html, body{
   box-shadow: 0 0 0 2px rgba(44,107,255,0.18);
 }
 
-/* Filterleiste zwischen Toolbar und Liste */
+
 .filterBar{
   display:flex;
   align-items:center;
@@ -319,7 +357,7 @@ html, body{
   background: rgba(44,107,255,0.12);
 }
 
-/* Basis-Button-Styling fuer alle Buttons */
+
 .btn{
   appearance: none;
   border: 1px solid var(--stroke);
@@ -332,25 +370,25 @@ html, body{
   font-weight: 700;
 }
 
-/* Dezenter Hover fuer neutrale Buttons */
+
 .btn:hover{
   background: rgba(255,255,255,0.06);
   border-color: rgba(44,107,255,0.35);
 }
 
-/* Primaere Buttons fuer positive Aktionen */
+
 .btn.primary{
   background: rgba(44,107,255,0.18);
   border-color: rgba(44,107,255,0.55);
 }
 
-/* Hover-State fuer primaere Buttons */
+
 .btn.primary:hover{
   background: rgba(44,107,255,0.26);
 }
 
 .btn.skillulator{
-  /* keep primary button styling */
+  
 }
 
 .skillulatorLabel{
@@ -360,19 +398,19 @@ html, body{
   text-shadow: 0 0 6px rgba(199,149,97,0.35);
 }
 
-/* Danger-Variante fuer kritische Aktionen */
+
 .btn.danger{
   background: rgba(255,59,79,0.12);
   border-color: rgba(255,59,79,0.35);
 }
 
-/* Hover-State fuer Danger-Buttons */
+
 .btn.danger:hover{
   background: rgba(255,59,79,0.18);
   border-color: rgba(255,59,79,0.55);
 }
 
-/* Standard Inputs und Selects */
+
 .input, .select{
   width: 100%;
   padding: 10px 12px;
@@ -383,7 +421,7 @@ html, body{
   outline: none;
 }
 
-/* Fokus-Styling fuer Formularfelder */
+
 .input:focus, .select:focus{
   border-color: rgba(44,107,255,0.6);
   box-shadow: 0 0 0 3px rgba(44,107,255,0.15);
@@ -423,11 +461,30 @@ html, body{
   background: linear-gradient(180deg, rgba(44,107,255,0.45), rgba(44,107,255,0.28));
 }
 
-/* Text in zurueckhaltender Farbe */
+.select.jobSelect{
+  padding-left: 44px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 22px 22px;
+}
+
+.select.jobSelect.noIcon{
+  padding-left: 12px;
+  background-image: none;
+}
+
+.select.jobSelect option.hasIcon{
+  padding-left: 32px;
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 18px 18px;
+}
+
+
 .muted{ color: var(--muted); }
 
-/* ---------- Launcher ---------- */
-/* Root-Layout fuer die Launcher-Ansicht */
+
+
 #app.launcherRoot{
   width: 100%;
   height: 100%;
@@ -437,14 +494,14 @@ html, body{
   position: relative;
 }
 
-/* Hauptbereich teilt sich in Liste und Sidebar */
+
 .layout{
   flex: 1 1 auto;
   display:flex;
   min-height: 0;
 }
 
-/* Panel-Grundaufbau, damit Inhalt sauber scrollt */
+
 .panel{
   min-height: 0;
   overflow: hidden;
@@ -452,13 +509,13 @@ html, body{
   flex-direction: column;
 }
 
-/* Linke Seite fuer Profil-/Instanzlisten */
+
 .panel.left{
   flex: 1 1 auto;
   border-right: 1px solid var(--stroke);
 }
 
-/* Rechte Seitenleiste fuer Details und Aktionen */
+
 .panel.right{
   width: 360px;
   flex: 0 0 auto;
@@ -568,13 +625,13 @@ html, body{
   line-height: 1.2;
 }
 
-/* Ueberschrift innerhalb eines Panels */
+
 .panelTitle{
   font-weight: 800;
   margin-bottom: 10px;
 }
 
-/* Scrollbare Liste mit Karten */
+
 .list{
   padding: 12px 14px;
   overflow: auto;
@@ -583,7 +640,7 @@ html, body{
   scroll-snap-type: y mandatory;
 }
 
-/* Scrollbar im Launcher an das Design anpassen */
+
 .list::-webkit-scrollbar{
   width: 10px;
 }
@@ -604,7 +661,7 @@ html, body{
   background: linear-gradient(180deg, rgba(44,107,255,0.45), rgba(44,107,255,0.28));
 }
 
-/* Tipps-Banner unter der Liste */
+
 .tipsBanner{
   margin: 8px 14px 0 14px;
   padding: 10px 12px;
@@ -631,7 +688,7 @@ html, body{
   line-height: 1.4;
 }
 
-/* Karte fuer Profil/Instanz-Eintraege */
+
 .card{
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,0.03);
@@ -642,7 +699,7 @@ html, body{
   scroll-snap-align: start;
 }
 
-/* Zeile fuer Titel und Aktionen */
+
 .row{
   display:flex;
   align-items: center;
@@ -650,7 +707,7 @@ html, body{
   gap: 8px;
 }
 
-/* Linker Block (Text/Badges) bleibt zusammen */
+
 .rowLeft{
   display:flex;
   align-items: center;
@@ -658,7 +715,7 @@ html, body{
   min-width: 0;
 }
 
-/* Name wird auf Breite beschnitten */
+
 .rowName{
   font-weight: 800;
   white-space: nowrap;
@@ -667,7 +724,7 @@ html, body{
   max-width: 280px;
 }
 
-/* Badge fuer Status oder Typen */
+
 .badge{
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.05);
@@ -677,19 +734,35 @@ html, body{
   color: var(--text);
 }
 
-/* Dezentere Badge-Variante */
+
 .badge.subtle{
   color: var(--muted);
 }
 
-/* Bereich fuer Karten-Aktionen */
+.badge.jobBadge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+}
+
+.jobBadgeIcon{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  padding: 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+
 .rowActions{
   display:flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-/* Primary-Buttons in den Launcher-Karten sollen nicht auf Topbar-Icon-Groesse aufblasen */
+
 #app.launcherRoot .rowActions .btn.primary{
   min-width: 0;
   min-height: 0;
@@ -698,55 +771,55 @@ html, body{
   justify-content: center;
 }
 
-/* Kompaktere Buttons nur im Launcher-Listeneintrag */
+
 #app.launcherRoot .rowActions .btn{
   padding: 6px 10px;
   line-height: 1.1;
   min-height: 0;
 }
 
-/* Eingabebereich unterhalb einer Karte */
+
 .manage{
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Bereich ausblendbar, wenn nicht noetig */
+
 .manage.hidden{ display:none; }
 
-/* Zwei-Spalten-Layout fuer Inputs */
+
 .manageGrid{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-/* Aktionen direkt unter dem Eingabeblock */
+
 .manageActions{
   margin-top: 10px;
   display:flex;
   gap: 8px;
 }
 
-/* Klon-Abschnitt mit gestrichelter Abgrenzung */
+
 .clonePanel{
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px dashed rgba(255,255,255,0.08);
 }
 
-/* Ausblendbar, wenn Klonen deaktiviert ist */
+
 .clonePanel.hidden{ display:none; }
 
-/* Wrapper fuer Modus-Label und Toggle */
+
 .modeWrap{
   display:flex;
   align-items:center;
   gap: 10px;
 }
 
-/* Checkbox-Stil fuer Optionen */
+
 .checkbox{
   display:flex;
   align-items:center;
@@ -755,7 +828,7 @@ html, body{
   user-select: none;
 }
 
-/* Drag-Handle fuer Sortierung */
+
 .dragHandle{
   cursor: grab;
   color: var(--muted);
@@ -765,13 +838,13 @@ html, body{
   border: 1px dashed rgba(255,255,255,0.10);
 }
 
-/* Visuelle Zustaende bei Drag & Drop */
+
 .card.dragging { opacity: 0.6; }
 .card.dropBefore { box-shadow: 0 -2px 0 0 #2c6bff inset; }
 .card.dropAfter  { box-shadow: 0  2px 0 0 #2c6bff inset; }
 
-/* ---------- Session ---------- */
-/* Root fuer die Session-Ansicht mit Tabs */
+
+
 #app.sessionRoot {
   position: fixed;
   inset: 0;
@@ -781,7 +854,7 @@ html, body{
   overflow: hidden;
 }
 
-/* Tab-Leiste oberhalb des Session-Inhalts */
+
 #app.sessionRoot .tabs {
   flex: 0 0 auto;
   display: flex;
@@ -792,14 +865,14 @@ html, body{
   background: linear-gradient(180deg, rgba(44,107,255,0.10), rgba(15,26,51,0));
   position: relative;
   z-index: 5;
+  min-width: 0;
 }
 
-/* Tabs wie Launcher-Buttons, aber farblich "blau/grün" */
-/* Tab-Schaltflaeche mit fixer Breite und Overflow-Schutz */
+
+
 #app.sessionRoot .tabBtn{
-  width: 25ch;          /* ca. 25 Zeichen */
-  min-width: 25ch;
-  max-width: 25ch;
+  width: auto;
+  min-width: 0;
 
   appearance: none;
   border: 1px solid rgba(44,107,255,0.55);
@@ -822,23 +895,57 @@ html, body{
   white-space: nowrap;
   text-overflow: ellipsis;
 
-  position: relative;              /* für close absolute */
-  padding-right: 32px;             /* Platz für X */
+  position: relative;              
+  padding-right: 32px;             
 }
 
-/* Hover-Effekt fuer Tab-Schaltflaechen */
+
+#app.sessionRoot .tabLabel{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#app.sessionRoot .tabJobIcon{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  padding: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+#app.sessionRoot .tabBtn.sessionTab{
+  flex: 1 1 24ch;        
+  min-width: 12ch;       
+  max-width: 24ch;       
+}
+
+
 #app.sessionRoot .tabBtn:hover{
   background: rgba(44,107,255,0.20);
   border-color: rgba(44,107,255,0.75);
 }
 
-/* Tastatur-Fokus klar sichtbar machen */
+
 #app.sessionRoot .tabBtn:focus-visible{
   outline: none;
   box-shadow: 0 0 0 3px rgba(44,107,255,0.18);
 }
 
-/* Aktiver Tab */
+
+#app.sessionRoot .tabBtn.iconBtn{
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  padding: 4px 0;
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+}
+
+
 #app.sessionRoot .tabBtn.active{
   background: rgba(46,204,113,0.16);
   border-color: rgba(46,204,113,0.75);
@@ -847,7 +954,7 @@ html, body{
     0 10px 22px rgba(46,204,113,0.10);
 }
 
-/* Close Button */
+
 #app.sessionRoot .tabClose{
   position: absolute;
   right: 8px;
@@ -865,34 +972,27 @@ html, body{
   transition: 0.15s ease;
 }
 
-/* Hover-Farbe fuer Tab-Close */
+
 #app.sessionRoot .tabClose:hover{
   background: rgba(255,255,255,0.10);
   color: rgba(255,255,255,0.95);
 }
 
-/* ✅ Plus: kleiner, blau und wie Button */
+
 #app.sessionRoot .tabBtn.plus{
   margin-left: auto;
-
-  width: 38px;
-  min-width: 38px;
-  max-width: 38px;
-
-  padding: 4px 0;
-  justify-content: center;
 
   border-color: rgba(44,107,255,0.65);
   background: rgba(44,107,255,0.18);
 }
 
-/* Hover fuer den Plus-Button */
+
 #app.sessionRoot .tabBtn.plus:hover{
   background: rgba(44,107,255,0.26);
   border-color: rgba(44,107,255,0.85);
 }
 
-/* Split Toggle + Linked Tabs */
+
 #app.sessionRoot .tabBtn.splitToggle{
   width: auto;
   min-width: 120px;
@@ -959,23 +1059,23 @@ html, body{
   text-align: center;
 }
 
-/* Dragn Drop */
-/* Drag-Zustand: reduzierte Deckkraft beim Ziehen */
+
+
 #app.sessionRoot .tabBtn.dragging {
   opacity: 0.70;
 }
 
-/* Drop-Markierung vor Zieltab */
+
 #app.sessionRoot .tabBtn.dropBefore {
   box-shadow: -2px 0 0 0 rgba(46,204,113,0.85) inset;
 }
 
-/* Drop-Markierung hinter Zieltab */
+
 #app.sessionRoot .tabBtn.dropAfter {
   box-shadow: 2px 0 0 0 rgba(44,107,255,0.95) inset;
 }
 
-/* Inhaltsbereich unterhalb der Tabs */
+
 #app.sessionRoot .content {
   flex: 1 1 auto;
   min-height: 0;
@@ -984,16 +1084,16 @@ html, body{
   z-index: 1;
 }
 
-/* ---------- Instance ---------- */
-/* Fullscreen-Container fuer einzelne Instanz */
+
+
 #app.instanceRoot {
   position: fixed;
   inset: 0;
   overflow: hidden;
 }
 
-/* ---------- Picker Modal ---------- */
-/* Abdunkelung fuer Modaldialoge */
+
+
 .modalOverlay{
   position: fixed;
   inset: 0;
@@ -1004,7 +1104,7 @@ html, body{
   z-index: 999999;
 }
 
-/* Dialog-Container fuer Auswahl */
+
 .modal{
   width: min(520px, calc(100vw - 30px));
   border: 1px solid var(--stroke);
@@ -1014,14 +1114,14 @@ html, body{
   overflow:hidden;
 }
 
-/* Kopfzeile des Modals */
+
 .modalHeader{
   padding: 12px 14px;
   border-bottom: 1px solid var(--stroke);
   font-weight: 700;
 }
 
-/* Inhaltsbereich mit Spacing */
+
 .modalBody{
   padding: 12px;
   display:flex;
@@ -1035,14 +1135,14 @@ html, body{
   line-height: 1.4;
 }
 
-/* Liste fuer waehlbare Eintraege */
+
 .pickerList{
   display:flex;
   flex-direction: column;
   gap: 8px;
 }
 
-/* Klickbarer Eintrag in der Pickerliste */
+
 .pickerItem{
   width: 100%;
   text-align: left;
@@ -1055,7 +1155,7 @@ html, body{
   font-weight: 800;
 }
 
-/* Hover-Zustand fuer Picker-Eintrag */
+
 .pickerItem:hover{
   border-color: rgba(44,107,255,0.35);
   background: rgba(255,255,255,0.06);
@@ -1072,46 +1172,47 @@ html, body{
   background: rgba(44,107,255,0.08);
 }
 
-/* Anzeige, wenn keine Optionen vorhanden sind */
+
 .pickerEmpty{
   color: var(--muted);
   padding: 10px 0;
 }
 
-/* Button-Stil für Flyffipedia-Icon (nur Topbar) */
+
 .topbar .btn.primary {
-  flex-shrink: 0; /* Verhindert, dass der Button durch Flexbox komprimiert wird */
-  min-width: 48px; /* Mindestbreite erzwingen */
-  min-height: 48px; /* Mindesthöhe erzwingen */
+  flex-shrink: 0; 
+  min-width: 48px; 
+  min-height: 48px; 
   display: grid;
   place-items: center;
   padding: 0;
   border-radius: 10px;
 }
 
-/* Header-Stil anpassen */
+
 .topbar {
   display: flex;
   align-items: center;
-  gap: 8px; /* Abstand zwischen Buttons */
+  gap: 8px; 
   padding: 8px;
 }
 
-/* Stil für Buttons mit pinkfarbener Schrift */
+
 .btn.pink-text {
-  color: #FF1493;          /* Pink */
-  font-size: 18px;        /* Schriftgröße */
-  font-weight: 4000;       /* Schriftstärke (optional) */
+  color: #FF1493;          
+  font-size: 18px;        
+  font-weight: 4000;       
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
   height: 40px;
-  gap: 0px;               /* Abstand zwischen Icon und Text */
+  gap: 0px;               
 }
 
-/* Optional: Hover-Effekt */
+
 .btn.pink-text:hover {
-  color: #FF69B4;         /* Helleres Pink beim Hovern */
+  color: #FF69B4;         
   opacity: 0.9;
 }
+

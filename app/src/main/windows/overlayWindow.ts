@@ -1,38 +1,35 @@
 import { BrowserWindow } from "electron";
-
-export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
-  const win = new BrowserWindow({
-    parent,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    show: true,
-    focusable: false,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    backgroundColor: "#00000000",
-    webPreferences: {
-      preload: opts?.preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      backgroundThrottling: false,
-    },
-  });
-
-  // click-through by default, aber Maus an Spiel weiterreichen:
-  win.setIgnoreMouseEvents(true, { forward: true });
-  win.setAlwaysOnTop(true, "screen-saver");
-
-  const html = `
+export function createOverlayWindow(parent: BrowserWindow, opts?: {
+    preloadPath?: string;
+}) {
+    const win = new BrowserWindow({
+        parent,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        show: true,
+        focusable: false,
+        skipTaskbar: true,
+        hasShadow: false,
+        alwaysOnTop: true,
+        backgroundColor: "#00000000",
+        webPreferences: {
+            preload: opts?.preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false,
+        },
+    });
+    win.setIgnoreMouseEvents(true, { forward: true });
+    win.setAlwaysOnTop(true, "screen-saver");
+    const html = `
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
   html,body{margin:0;padding:0;background:transparent;overflow:hidden;font-family:Segoe UI,Arial}
-  /* Cursor ausblenden, damit der Spielecursor sichtbar bleibt (außer im Edit-Modus) */
   body{ cursor: none; }
   body.edit{ cursor: default; }
   body:not(.edit) *{ cursor: none; }
@@ -52,7 +49,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?
   #exp{font-size:22px;font-weight:700;letter-spacing:0.5px}
   #raw{margin-top:6px;font-size:11px;opacity:0.6}
 
-  /* edit mode visuals */
   body.edit #box{
     outline: 1px dashed rgba(255,215,0,0.55);
     cursor: move;
@@ -110,17 +106,14 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?
   function setEdit(on){
     edit = !!on;
     document.body.classList.toggle("edit", edit);
-    // in edit mode müssen clicks im overlay bleiben:
     ipc.send("overlay:toggleEdit", { on: edit });
   }
 
-  // rechte maus toggelt edit (schnell)
   window.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     setEdit(!edit);
   });
 
-  // load initial bounds from main (optional)
   async function loadBounds(){
     try{
       const b = await ipc.invoke("hud:getBounds");
@@ -145,10 +138,8 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?
   }
   loadBounds();
 
-  // drag
   box.addEventListener("mousedown", (e) => {
     if(!edit) return;
-    // resize handle handled separately
     if(e.target === resize) return;
     dragging = true;
     dragStart.x = e.clientX;
@@ -182,7 +173,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?
     resizing = false;
   });
 
-  // resize
   resize.addEventListener("mousedown", (e) => {
     if(!edit) return;
     resizing = true;
@@ -215,7 +205,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?
 </body>
 </html>
 `.trim();
-
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayWindow] load failed", err));
-  return win;
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayWindow] load failed", err));
+    return win;
 }

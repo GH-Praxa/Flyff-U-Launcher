@@ -1,4 +1,4 @@
-# Repository Guidelines
+commite und # Repository Guidelines
 
 ## Project Structure & Module Organization
 - `app/` holds the Electron Forge + Vite project; run all npm commands here.
