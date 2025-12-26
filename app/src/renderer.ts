@@ -4,9 +4,11 @@ import flyffuniverseIcon from "./assets/icons/flyffuniverse.png";
 import flyffipediaIcon from "./assets/icons/flyffipedia.png";
 import flyffulatorIcon from "./assets/icons/flyffulator.png";
 import reskillIcon from "./assets/icons/reskill.png";
-import infoPengIcon from "./assets/icons/infopeng.png";
 import pkg from "../package.json";
 import { DEFAULT_LOCALE, getTips, translate, type Locale, type TranslationKey } from "./i18n/translations";
+import type { TabLayout } from "./shared/types";
+
+const logErr = (err: unknown) => console.error("[renderer]", err);
 
 const discordIcon =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237289da'/%3E%3Ccircle cx='11' cy='12' r='3' fill='%23fff'/%3E%3Ccircle cx='21' cy='12' r='3' fill='%23fff'/%3E%3Cpath d='M9 22 Q16 26 23 22' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
@@ -85,7 +87,7 @@ function loadLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_LANG_KEY) as Locale | null;
     if (stored) return stored;
-  } catch {}
+  } catch (err) { logErr(err); }
   return DEFAULT_LOCALE;
 }
 
@@ -97,7 +99,7 @@ function setLocale(lang: Locale) {
   document.documentElement.lang = lang;
   try {
     localStorage.setItem(STORAGE_LANG_KEY, lang);
-  } catch {}
+  } catch (err) { logErr(err); }
 }
 
 function t(key: TranslationKey) {
@@ -130,6 +132,67 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 
 function clear(root: HTMLElement) {
   root.innerHTML = "";
+}
+
+function loadLocalLayouts(): TabLayout[] {
+  try {
+    const raw = localStorage.getItem("tabLayoutsLocal");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    logErr(err);
+    return [];
+  }
+}
+
+function saveLocalLayouts(layouts: TabLayout[]) {
+  try {
+    localStorage.setItem("tabLayoutsLocal", JSON.stringify(layouts));
+  } catch (err) {
+    logErr(err);
+  }
+}
+
+function showToast(message: string, tone: "info" | "success" | "error" = "info", ttlMs = 3200) {
+  let container = document.querySelector(".toastContainer") as HTMLElement | null;
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toastContainer";
+    document.body.append(container);
+  }
+  const toast = document.createElement("div");
+  toast.className = `toast ${tone}`;
+  toast.textContent = message;
+  container.append(toast);
+  setTimeout(() => toast.remove(), ttlMs);
+}
+
+function withTimeout<T>(p: Promise<T>, label: string, ms = 6000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`timeout: ${label}`)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+async function fetchTabLayouts(): Promise<TabLayout[]> {
+  try {
+    return await window.api.tabLayoutsList();
+  } catch (err) {
+    logErr(err);
+    const fallback = loadLocalLayouts();
+    showToast(`Local layouts loaded (${fallback.length})`, "info");
+    return fallback;
+  }
 }
 
 // (Legacy/optional) – wird im Tab-Modus nicht mehr benutzt
@@ -176,8 +239,47 @@ async function renderLauncher(root: HTMLElement) {
   }
 
   const header = el("div", "topbar");
-  const jobOptions = ["", "Blade", "Ringmaster", "Ranger", "Vagrant", "Jester", "Knight", "Psykeeper", "Elementor", "Billposter"];
+  type JobOption = { value: string; label: string; disabled?: boolean };
+  const jobOptions: JobOption[] = [
+    { value: "", label: t("job.choose") },
+    { value: "Vagrant", label: "Vagrant" },
+    { value: "__sep1", label: "--- 1. Job ---", disabled: true },
+    { value: "Assist", label: "Assist" },
+    { value: "Acrobat", label: "Acrobat" },
+    { value: "Mercenary", label: "Mercenary" },
+    { value: "Magician", label: "Magician" },
+    { value: "__sep2", label: "--- 2. Job ---", disabled: true },
+    { value: "Ringmaster", label: "Ringmaster" },
+    { value: "Billposter", label: "Billposter" },
+    { value: "Blade", label: "Blade" },
+    { value: "Knight", label: "Knight" },
+    { value: "Ranger", label: "Ranger" },
+    { value: "Jester", label: "Jester" },
+    { value: "Elementor", label: "Elementor" },
+    { value: "Psykeeper", label: "Psykeeper" },
+    { value: "__sep3", label: "--- 3. Job ---", disabled: true },
+    { value: "Templar", label: "Templar" },
+    { value: "Forcemaster", label: "Forcemaster" },
+    { value: "Seraph", label: "Seraph" },
+    { value: "Mentalist", label: "Mentalist" },
+    { value: "Slayer", label: "Slayer" },
+    { value: "Arcanist", label: "Arcanist" },
+    { value: "Harlequin", label: "Harlequin" },
+    { value: "Crackshooter", label: "Crackshooter" },
+  ];
   const tips = getTips(currentLocale);
+
+  function renderJobOptions(select: HTMLSelectElement, selectedValue: string | null = null) {
+    select.innerHTML = "";
+    for (const j of jobOptions) {
+      const opt = document.createElement("option");
+      opt.value = j.disabled ? "" : j.value;
+      opt.textContent = j.label;
+      if (j.disabled) opt.disabled = true;
+      select.append(opt);
+    }
+    select.value = selectedValue ?? "";
+  }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -404,19 +506,127 @@ header.append(btnDiscord);
 
   const jobSelect = document.createElement("select");
   jobSelect.className = "select filterSelect";
-  for (const j of jobOptions) {
-    const opt = document.createElement("option");
-    opt.value = j;        opt.textContent = j === "" ? t("job.choose") : j;
-    jobSelect.append(opt);
-  }
+  renderJobOptions(jobSelect);
 
-  filterBar.append(searchInput, jobSelect, btnCreate);
+  const btnRefreshLayouts = el("button", "btn", t("layout.refresh"));
+
+  filterBar.append(searchInput, jobSelect, btnCreate, btnRefreshLayouts);
+
+  async function renderLayoutChips(target: HTMLElement) {
+    const refreshFlag = localStorage.getItem("tabLayoutsRefresh");
+    if (refreshFlag) localStorage.removeItem("tabLayoutsRefresh");
+
+    const layouts = await fetchTabLayouts();
+    const card = el("div", "card");
+    const layoutBar = el("div", "layoutBar");
+    const layoutList = el("div", "layoutList");
+
+    layoutBar.append(layoutList);
+
+    let profileNames = new Map<string, string>();
+    try {
+      const profiles = await window.api.profilesList();
+      profileNames = new Map(profiles.map((p: Profile) => [p.id, p.name]));
+    } catch (e) {
+      console.warn("profilesList failed", e);
+    }
+
+    if (layouts.length === 0) {
+      layoutList.append(el("div", "muted", t("layout.empty")));
+    } else {
+      for (const layout of layouts) {
+        const chip = el("div", "layoutChip");
+        const handle = el("span", "dragHandle", "=");
+        const name = el("span", "layoutName", layout.name);
+        const metaParts = [`${layout.tabs.length} Tabs`];
+        if (layout.split) metaParts.push("Split");
+        const meta = el("span", "layoutMeta", metaParts.join(" | "));
+
+        const actions = el("div", "layoutActions");
+        const manageBtn = el("button", "btn", "⚙");
+        manageBtn.title = "Manage";
+        let menu: HTMLDivElement | null = null;
+        let closeMenu: (() => void) | null = null;
+
+        const buildMenu = () => {
+          if (menu) return;
+          menu = el("div", "layoutMenu") as HTMLDivElement;
+          const menuTitle = el("div", "layoutMenuTitle", t("layout.title"));
+          const list = el("div", "layoutMenuList");
+
+          if (layout.tabs.length === 0) {
+            list.append(el("div", "muted", t("layout.empty")));
+          } else {
+            for (const tabId of layout.tabs) {
+              const label = profileNames.get(tabId) ?? tabId;
+              list.append(el("div", "layoutMenuItem", label));
+            }
+          }
+
+          const delBtn = el("button", "btn danger", t("layout.delete"));
+          delBtn.onclick = async () => {
+            await window.api.tabLayoutsDelete(layout.id);
+            await renderLayoutChips(target);
+          };
+
+          const menuActions = el("div", "layoutMenuActions");
+          menuActions.append(delBtn);
+
+          menu.append(menuTitle, list, menuActions);
+          chip.append(menu);
+
+          const onDocClick = (e: MouseEvent) => {
+            if (!menu) return;
+            const targetEl = e.target as Node;
+            if (targetEl === manageBtn || menu.contains(targetEl)) return;
+            closeMenu?.();
+          };
+
+          closeMenu = () => {
+            menu?.remove();
+            menu = null;
+            document.removeEventListener("click", onDocClick);
+          };
+
+          document.addEventListener("click", onDocClick);
+        };
+
+        manageBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (menu) {
+            closeMenu?.();
+          } else {
+            buildMenu();
+          }
+        };
+
+        const openBtn = el("button", "btn primary", t("profile.play"));
+        openBtn.onclick = async () => {
+          showToast(t("layout.apply"), "info");
+          try {
+            await window.api.tabLayoutsApply(layout.id);
+          } catch (err) {
+            showToast(`${t("layout.saveError")}: ${err instanceof Error ? err.message : String(err)}`, "error", 5000);
+          }
+        };
+
+        actions.append(manageBtn, openBtn);
+        chip.append(handle, name, meta, actions);
+        layoutList.append(chip);
+      }
+    }
+
+    card.append(layoutBar);
+    target.append(card);
+  }
 
   const body = el("div", "layout");
   const left = el("div", "panel left");
   const right = el("div", "panel right");
 
   const list = el("div", "list");
+  const profilesContainer = el("div", "profilesContainer");
+  list.append(profilesContainer);
 
   const createPanel = el("div", "manage hidden");
   const createGrid = el("div", "manageGrid");
@@ -450,12 +660,6 @@ header.append(btnDiscord);
   right.append(newsHeader, newsState, newsList);
 
   root.append(header, filterBar, body);
-  const infoBadge = el("div", "infoBadge");
-  const infoImg = document.createElement("img");
-  infoImg.src = infoPengIcon;
-  infoImg.alt = "InfoPeng";
-  infoBadge.append(infoImg);
-  root.append(infoBadge);
   body.append(left, right);
 
   type NewsItem = { title: string; url: string; excerpt?: string; image?: string; category?: string; date?: string };
@@ -541,7 +745,7 @@ header.append(btnDiscord);
     }
 
     m = t.match(
-      /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)[\s.\-]*(\d{1,2})(?:,?\s*(\d{2,4}))?/i,
+      /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)[\s.-]*(\d{1,2})(?:,?\s*(\d{2,4}))?/i,
     );
     if (m) {
       const month = MONTHS[m[1].toLowerCase()];
@@ -629,7 +833,7 @@ header.append(btnDiscord);
         try {
           const url = new URL(href);
           slug = url.pathname.split("/").filter(Boolean).pop() ?? "";
-        } catch {}
+        } catch (err) { logErr(err); }
 
         const date = extractDate([altText, title, excerpt, link.textContent, slug]);
 
@@ -710,7 +914,8 @@ header.append(btnDiscord);
   }
 
   async function reload() {
-    list.innerHTML = "";
+    profilesContainer.innerHTML = "";
+    await renderLayoutChips(profilesContainer);
 
     if (overlayDisabled && !overlayClearedOnce) {
       try {
@@ -726,12 +931,12 @@ header.append(btnDiscord);
       profiles = await window.api.profilesList();
     } catch (e) {
       console.error(e);
-      list.append(el("div", "muted", t("list.error")));
+      profilesContainer.append(el("div", "muted", t("list.error")));
       return;
     }
 
     if (profiles.length === 0) {
-      list.append(el("div", "muted", t("list.empty")));
+      profilesContainer.append(el("div", "muted", t("list.empty")));
       return;
     }
 
@@ -745,7 +950,7 @@ header.append(btnDiscord);
     });
 
     if (filteredProfiles.length === 0) {
-      list.append(el("div", "muted", t("list.noMatches")));
+      profilesContainer.append(el("div", "muted", t("list.noMatches")));
       return;
     }
 
@@ -849,13 +1054,7 @@ if (!overlayDisabled && p.overlayTarget) btnTag.classList.add("primary");
 
       const jobSelect = document.createElement("select");
       jobSelect.className = "select";
-      for (const j of jobOptions) {
-        const opt = document.createElement("option");
-        opt.value = j;
-        opt.textContent = j === "" ? "— Job —" : j;
-        if ((p.job ?? "") === j) opt.selected = true;
-        jobSelect.append(opt);
-      }
+      renderJobOptions(jobSelect, p.job ?? "");
 
       const modeWrap = el("div", "modeWrap");
       const modeLabel = el("label", "checkbox");
@@ -865,9 +1064,7 @@ if (!overlayDisabled && p.overlayTarget) btnTag.classList.add("primary");
       modeLabel.append(modeCheck, el("span", "", t("profile.mode.useTabs")));
       modeWrap.append(modeLabel);
 
-      function currentMode(): "tabs" | "window" {
-        return modeCheck.checked ? "tabs" : "window";
-      }
+      const currentMode = (): "tabs" | "window" => (modeCheck.checked ? "tabs" : "window");
 
       btnPlay.onclick = async () => {
         await window.api.profilesUpdate({
@@ -973,7 +1170,7 @@ if (!overlayDisabled && p.overlayTarget) btnTag.classList.add("primary");
       });
 
       card.append(row, manage);
-      list.append(card);
+      profilesContainer.append(card);
     }
   }
 
@@ -999,6 +1196,9 @@ if (!overlayDisabled && p.overlayTarget) btnTag.classList.add("primary");
   jobSelect.addEventListener("change", () => {
     reload().catch(console.error);
   });
+  btnRefreshLayouts.onclick = () => {
+    reload().catch(console.error);
+  };
 
   // Tipp-Banner rotieren
   let tipIdx = 0;
@@ -1020,6 +1220,11 @@ async function renderSession(root: HTMLElement) {
   root.className = "sessionRoot";
 
   const tabsBar = el("div", "tabs");
+  const layoutStatus = el("div", "layoutStatus");
+  const setLayoutStatus = (text: string, tone: "info" | "success" | "error" = "info") => {
+    layoutStatus.textContent = text;
+    layoutStatus.className = `layoutStatus${tone === "info" ? "" : ` ${tone}`}`;
+  };
   const content = el("div", "content"); // nur Platzhalter, BrowserView liegt drueber
   root.append(tabsBar, content);
 
@@ -1056,9 +1261,15 @@ async function renderSession(root: HTMLElement) {
   splitSlider.ariaLabel = "Fensteraufteilung anpassen";
   const splitSliderValue = el("span", "splitSliderValue", "50 / 50");
   splitControls.append(splitSlider, splitSliderValue);
+  const btnSaveLayout = el("button", "tabBtn", t("layout.saveCurrent")) as HTMLButtonElement;
+  btnSaveLayout.draggable = false;
+  const btnLayouts = el("button", "tabBtn", t("layout.pick")) as HTMLButtonElement;
+  btnLayouts.draggable = false;
   const btnPlus = el("button", "tabBtn plus", "+") as HTMLButtonElement;
   btnPlus.draggable = false;
-  tabsBar.append(tabsSpacer, btnSplit, splitControls, btnPlus);
+  tabsBar.append(layoutStatus, tabsSpacer, btnSplit, splitControls, btnSaveLayout, btnLayouts, btnPlus);
+  setLayoutStatus("Layout status idle");
+  setLayoutStatus("Layout status idle");
 
   function isOpen(profileId: string) {
     return tabs.some((t) => t.profileId === profileId);
@@ -1121,11 +1332,235 @@ async function renderSession(root: HTMLElement) {
     kickBounds();
   });
 
+  function askLayoutName(defaultName: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      window.api.sessionTabsSetVisible(false).catch(() => undefined);
+      const overlay = el("div", "modalOverlay");
+      const modal = el("div", "modal");
+      const header = el("div", "modalHeader", t("layout.namePrompt"));
+      const body = el("div", "modalBody");
+      const input = document.createElement("input");
+      input.className = "input";
+      input.value = defaultName;
+      input.placeholder = t("layout.namePrompt");
+
+      const actions = el("div", "manageActions");
+      const btnSave = el("button", "btn primary", t("profile.save"));
+      const btnCancel = el("button", "btn", t("create.cancel"));
+      actions.append(btnSave, btnCancel);
+
+      body.append(input, actions);
+      modal.append(header, body);
+      overlay.append(modal);
+
+      const cleanup = (val: string | null) => {
+        overlay.remove();
+        window.api.sessionTabsSetVisible(true).catch(() => undefined);
+        resolve(val);
+        pushBounds();
+        kickBounds();
+      };
+
+      btnSave.onclick = () => cleanup(input.value.trim() || defaultName);
+      btnCancel.onclick = () => cleanup(null);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) cleanup(null);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") cleanup(input.value.trim() || defaultName);
+        if (e.key === "Escape") cleanup(null);
+      });
+
+      document.body.append(overlay);
+      input.focus();
+      input.select();
+    });
+  }
+
+  async function saveCurrentLayout() {
+    setLayoutStatus("Save clicked", "info");
+    if (tabs.length === 0) {
+      alert(t("layout.saveError"));
+      setLayoutStatus(t("layout.saveError"), "error");
+      return;
+    }
+    if (!window.api.tabLayoutsSave) {
+      alert(`${t("layout.saveError")}: tabLayoutsSave not available`);
+      setLayoutStatus("tabLayoutsSave not available", "error");
+      return;
+    }
+    setLayoutStatus(`Tabs open: ${tabs.length}`, "info");
+    const defaultName = `Layout ${new Date().toLocaleTimeString()}`;
+    const name = await askLayoutName(defaultName);
+    if (!name) {
+      setLayoutStatus("Save cancelled", "info");
+      return;
+    }
+    setLayoutStatus(`Tabs open: ${tabs.length} | Name len=${name.length}`, "info");
+
+    const payload = {
+      name,
+      tabs: tabs.map((t) => t.profileId),
+      split: splitState ? { ...splitState, ratio: splitState.ratio ?? currentSplitRatio } : null,
+      activeId,
+    };
+
+    const statusMsg = `Saving layout: ${payload.tabs.length} tabs${payload.split ? " + split" : ""}`;
+    setLayoutStatus(statusMsg, "info");
+    showToast(statusMsg, "info", 2500);
+
+    try {
+      const before = await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList before", 2000);
+      const saved = await withTimeout(window.api.tabLayoutsSave(payload), "tabLayoutsSave", 3000);
+      const after = saved ?? (await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList after", 2000));
+      const beforeCount = before?.length ?? 0;
+      const afterCount = after?.length ?? 0;
+      const delta = afterCount - beforeCount;
+      const deltaMsg = `before=${beforeCount} after=${afterCount} delta=${delta}`;
+      showToast(t("layout.saved"), "success");
+      alert(`${t("layout.saved")} (${deltaMsg})`);
+      setLayoutStatus(`${t("layout.saved")} (${deltaMsg})`, "success");
+      // refresh launcher list on next visit by persisting flag
+      localStorage.setItem("tabLayoutsRefresh", "1");
+    } catch (err) {
+      logErr(err);
+      const msg =
+        err instanceof Error
+          ? `${err.name}: ${err.message}`
+          : typeof err === "string"
+            ? err
+            : JSON.stringify(err ?? "unknown error");
+      const full = `${t("layout.saveError")}: ${msg}`;
+      showToast(full, "error", 6000);
+      alert(full);
+      setLayoutStatus(full, "error");
+
+      // Fallback: localStorage speichern, wenn Main-Save scheitert
+      try {
+        const beforeLocal = loadLocalLayouts();
+        const newLayout: TabLayout = {
+          id: Math.random().toString(36).slice(2, 10),
+          name: name || `Layout-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          tabs: [...payload.tabs],
+          split: payload.split,
+          activeId: payload.activeId,
+        };
+        const next = [...beforeLocal, newLayout];
+        saveLocalLayouts(next);
+        const msgLocal = `Locally saved (now ${next.length})`;
+        showToast(msgLocal, "success");
+        alert(msgLocal);
+        setLayoutStatus(`${full} | ${msgLocal}`, "success");
+      } catch (e2) {
+        logErr(e2);
+        setLayoutStatus(`${full} | local fallback failed`, "error");
+      }
+    }
+  }
+
+  async function applyLayout(layout: TabLayout) {
+    await window.api.sessionTabsSetVisible(false);
+    await window.api.sessionTabsReset();
+    await clearSplit();
+
+    const profiles = await window.api.profilesList();
+    const existingIds = new Set((profiles ?? []).map((p: Profile) => p.id));
+    const ordered = (layout.tabs ?? []).filter((id) => existingIds.has(id));
+    if (ordered.length === 0) return;
+
+    for (const t of tabs) t.tabBtn.remove();
+    tabs.length = 0;
+
+    if (layout.split?.ratio) currentSplitRatio = clampSplitRatio(layout.split.ratio);
+
+    for (const id of ordered) {
+      await openTab(id);
+    }
+
+    if (layout.split && existingIds.has(layout.split.leftId) && existingIds.has(layout.split.rightId)) {
+      await applySplit({
+        leftId: layout.split.leftId,
+        rightId: layout.split.rightId,
+        ratio: layout.split.ratio ?? currentSplitRatio,
+      });
+    } else {
+      await clearSplit();
+    }
+
+    if (layout.activeId && existingIds.has(layout.activeId)) {
+      await setActive(layout.activeId);
+    }
+
+    updateSplitButton();
+    syncTabClasses();
+    pushBounds();
+    setTimeout(pushBounds, 120);
+    setTimeout(pushBounds, 280);
+    await window.api.sessionTabsSetVisible(true);
+    pushBounds();
+    kickBounds();
+  }
+
+  async function showLayoutPicker() {
+    await window.api.sessionTabsSetVisible(false);
+
+    const overlay = el("div", "modalOverlay");
+    const modal = el("div", "modal");
+    const header = el("div", "modalHeader", t("layout.pick"));
+    const body = el("div", "modalBody");
+    const list = el("div", "pickerList");
+    modal.append(header, body);
+    body.append(list);
+    overlay.append(modal);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close().catch(console.error);
+    };
+
+    const close = async () => {
+      overlay.remove();
+      document.removeEventListener("keydown", onKey);
+      await window.api.sessionTabsSetVisible(true);
+      kickBounds();
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close().catch(console.error);
+    });
+    document.addEventListener("keydown", onKey);
+
+    document.body.append(overlay);
+
+    const layouts = await fetchTabLayouts();
+    if (layouts.length === 0) {
+      list.append(el("div", "pickerEmpty", t("layout.empty")));
+      return;
+    }
+
+    for (const layout of layouts) {
+      const metaParts = [`${layout.tabs.length} Tabs`];
+      if (layout.split) metaParts.push("Split");
+      const item = el("button", "pickerItem", `${layout.name} (${metaParts.join(" • ")})`) as HTMLButtonElement;
+      item.onclick = async () => {
+        await applyLayout(layout);
+        await close();
+      };
+      list.append(item);
+    }
+  }
+
   function pushBounds() {
     const y = Math.round(tabsBar.getBoundingClientRect().height);
     const width = Math.round(window.innerWidth);
     const height = Math.max(1, Math.round(window.innerHeight - y));
     window.api.sessionTabsSetBounds({ x: 0, y, width, height });
+  }
+
+  function forceBounds() {
+    pushBounds();
+    window.api.sessionTabsSetVisible(true);
   }
 
   let raf = 0;
@@ -1171,7 +1606,15 @@ async function renderSession(root: HTMLElement) {
       if (splitState.leftId === profileId || splitState.rightId === profileId) {
         // keep order, only focus the hovered side
       } else {
-        await clearSplit();
+        // keep left anchored, swap right side to requested tab
+        splitState = { leftId: splitState.leftId, rightId: profileId, ratio: splitState.ratio };
+        updateSplitButton();
+        syncTabClasses();
+        await window.api.sessionTabsSetSplit({
+          primary: splitState.leftId,
+          secondary: splitState.rightId,
+          ratio: splitState.ratio,
+        });
       }
     }
     activeId = profileId;
@@ -1445,6 +1888,14 @@ async function renderSession(root: HTMLElement) {
     showSplitPicker(anchor).catch(console.error);
   };
 
+  btnSaveLayout.onclick = () => {
+    showToast(t("layout.saveStart"), "info", 1800);
+    saveCurrentLayout().catch((err) => {
+      logErr(err);
+      showToast(`${t("layout.saveError")}: ${err instanceof Error ? err.message : String(err)}`, "error", 5000);
+    });
+  };
+  btnLayouts.onclick = () => showLayoutPicker().catch(console.error);
   btnPlus.onclick = () => showPicker().catch(console.error);
 
   window.api.onOpenTab((profileId: string) => {
@@ -1457,8 +1908,20 @@ async function renderSession(root: HTMLElement) {
     syncTabClasses();
   });
 
+  window.api.onApplyLayout((layout: TabLayout) => {
+    applyLayout(layout).catch(console.error);
+  });
+
+  const initialLayoutId = qs().get("layoutId");
   const initial = qs().get("openProfileId");
-  if (initial) openTab(initial).catch(console.error);
+  if (initialLayoutId) {
+    window.api
+      .tabLayoutsGet(initialLayoutId)
+      .then((layout) => layout && applyLayout(layout))
+      .catch(console.error);
+  } else if (initial) {
+    openTab(initial).catch(console.error);
+  }
 
   updateSplitButton();
   syncTabClasses();

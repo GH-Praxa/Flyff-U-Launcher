@@ -22,6 +22,7 @@ export function createSessionWindowController(opts: {
       },
     });
 
+    sessionWindow.setMaxListeners(0); // avoid MaxListeners warning when multiple helpers subscribe
     sessionWindow.setMenuBarVisibility(false);
     sessionWindow.setAutoHideMenuBar(true);
 
@@ -32,7 +33,7 @@ export function createSessionWindowController(opts: {
       for (const fn of onClosedHandlers) {
         try {
           fn();
-        } catch {}
+        } catch (err) { console.error("[SessionWindow]", err); }
       }
     });
 

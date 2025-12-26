@@ -8,6 +8,7 @@ import { createLauncherWindow } from "./main/windows/launcherWindow";
 import { createSessionWindowController } from "./main/windows/sessionWindow";
 import { createInstanceWindow } from "./main/windows/instanceWindow";
 import { createSessionTabsManager } from "./main/sessionTabs/manager";
+import { createTabLayoutsStore } from "./main/sessionTabs/layoutStore";
 import { registerMainIpc } from "./main/ipc/registerMainIpc";
 
 import { createInstanceRegistry } from "./main/windows/instanceRegistry";
@@ -32,7 +33,7 @@ if (squirrelStartup) {
 // Ensure a stable app id for Windows shell integrations (shortcuts, notifications)
 app.setAppUserModelId("Flyff-U-Launcher");
 
-let launcherWindow: BrowserWindow | null = null;
+let _launcherWindow: BrowserWindow | null = null;
 let overlayTarget: ReturnType<typeof createOverlayTargetController> | null = null;
 
 // ✅ neu
@@ -49,6 +50,7 @@ app.whenReady().then(async () => {
   });
 
   const profiles = createProfilesStore();
+  const tabLayouts = createTabLayoutsStore();
 
   const sessionWindow = createSessionWindowController({
     preloadPath,
@@ -61,12 +63,6 @@ app.whenReady().then(async () => {
   });
 
   sessionWindow.onClosed(() => sessionTabs.reset());
-
-  launcherWindow = createLauncherWindow({
-    preloadPath,
-    loadView,
-    onClosed: () => (launcherWindow = null),
-  });
 
   const instances = createInstanceRegistry();
   const roiStore = createRoiStore();
@@ -88,6 +84,7 @@ app.whenReady().then(async () => {
     sessionWindow,
     sessionTabs,
     instances,
+    preloadPath,
     panelWidth: 420,
     followIntervalMs: 80,
   });
@@ -122,6 +119,7 @@ app.whenReady().then(async () => {
         bounds: { x: contentBounds.x, y: contentBounds.y, width: contentBounds.width, height: contentBounds.height },
         screenshotPng: screenshot.toPNG(),
         existing,
+        preloadPath,
         onSave: async (rois: HudRois) => {
           await roiStore.set(profileId, rois);
           await overlayTarget?.refreshFromStore();
@@ -171,20 +169,21 @@ app.whenReady().then(async () => {
       };
     };
 
-    await openRoiCalibratorWindow({
-      profileId,
-      parent: win,
+      await openRoiCalibratorWindow({
+        profileId,
+        parent: win,
       bounds: {
         x: contentBounds.x + viewBounds.x,
         y: contentBounds.y + viewBounds.y,
         width: viewBounds.width,
         height: viewBounds.height,
       },
-      screenshotPng: screenshot.toPNG(),
-      existing,
-      onSave: async (rois: HudRois) => {
-        await roiStore.set(profileId, rois);
-        await overlayTarget?.refreshFromStore();
+        screenshotPng: screenshot.toPNG(),
+        existing,
+        preloadPath,
+        onSave: async (rois: HudRois) => {
+          await roiStore.set(profileId, rois);
+          await overlayTarget?.refreshFromStore();
       },
       follow: { getBounds: getFollowBounds, intervalMs: 80 },
     });
@@ -196,6 +195,7 @@ app.whenReady().then(async () => {
     profiles,
     sessionTabs,
     sessionWindow,
+    tabLayouts,
     loadView,
 
     createInstanceWindow: (profileId) => {
@@ -203,8 +203,8 @@ app.whenReady().then(async () => {
       instances.register(profileId, win);
 
       // Overlay/Sidepanel neu einlesen (falls Target auf diese Instanz zeigt)
-      overlayTarget?.refreshFromStore().catch(() => {});
-      sidePanel?.refreshFromStore().catch(() => {});
+      overlayTarget?.refreshFromStore().catch((err) => console.error("[overlayTarget] refresh failed", err));
+      sidePanel?.refreshFromStore().catch((err) => console.error("[sidePanel] refresh failed", err));
     },
 
     // ✅ wichtig: wenn overlay target geändert wird, sollen beide refreshen
@@ -222,12 +222,18 @@ app.whenReady().then(async () => {
     },
   });
 
+  _launcherWindow = createLauncherWindow({
+    preloadPath,
+    loadView,
+    onClosed: () => (_launcherWindow = null),
+  });
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      launcherWindow = createLauncherWindow({
+      _launcherWindow = createLauncherWindow({
         preloadPath,
         loadView,
-        onClosed: () => (launcherWindow = null),
+        onClosed: () => (_launcherWindow = null),
       });
     }
   });

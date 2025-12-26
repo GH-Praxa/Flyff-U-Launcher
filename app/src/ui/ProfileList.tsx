@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-unresolved
 import React, { useEffect, useMemo, useState } from "react";
 import type { Profile } from "../shared/types";
 import aibattGold from "../assets/icons/aibatt_gold.png";

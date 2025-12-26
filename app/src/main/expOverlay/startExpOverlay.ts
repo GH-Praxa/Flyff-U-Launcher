@@ -1,4 +1,4 @@
-﻿// app/src/main/expOverlay/startExpOverlay.ts
+// app/src/main/expOverlay/startExpOverlay.ts
 import { app, BrowserView, BrowserWindow, Rectangle, ipcMain } from "electron";
 import path from "path";
 import fs from "fs/promises";
@@ -67,7 +67,7 @@ async function releaseWorker() {
     if (sharedWorker) {
       try {
         await sharedWorker.stop();
-      } catch {}
+      } catch (err) { logErr(err); }
       sharedWorker = null;
     }
   }
@@ -170,6 +170,8 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
   const intervalMs = opts.intervalMs ?? 800;
   const nameLevelEveryMs = opts.nameLevelEveryMs ?? 8000;
   const debugEveryN = opts.debugEveryN ?? 0;
+  const overlayPreloadPath = path.join(__dirname, "preload.js");
+  const logErr = (err: unknown) => console.error("[Overlay]", err);
 
   const debugDir = debugEveryN ? path.join(app.getPath("userData"), "ocr_debug") : null;
   if (debugDir) {
@@ -204,8 +206,8 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
   let lastSentKey = "";
   let overlayVisible = false;
 
-  // HUD box state (fÃ¼r Drag/Resize Persist + Init)
-  let hudBox = { x: 14, y: 14, width: 0, height: 0 };
+  // HUD box state (für Drag/Resize Persist + Init)
+  const hudBox = { x: 14, y: 14, width: 0, height: 0 };
   // edit true = Overlay nimmt Maus entgegen (Drag/Resize), false = click-through
   let editOn = false;
 
@@ -213,13 +215,13 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
   function safeHandle(channel: string, handler: any) {
     try {
       ipcMain.removeHandler(channel);
-    } catch {}
+    } catch (err) { logErr(err); }
     ipcMain.handle(channel, handler);
   }
   function safeOn(channel: string, listener: any) {
     try {
       ipcMain.removeAllListeners(channel);
-    } catch {}
+    } catch (err) { logErr(err); }
     ipcMain.on(channel, listener);
   }
   function isFromOverlay(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
@@ -266,10 +268,10 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     if (!overlay || overlay.isDestroyed()) return;
     try {
       overlay.setIgnoreMouseEvents(!editOn, { forward: !editOn });
-    } catch {}
+    } catch (err) { logErr(err); }
     try {
       overlay.webContents.send("overlay:edit", { on: editOn });
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   safeOn("overlay:toggleEdit", (e, payload) => {
@@ -284,14 +286,14 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     if (!wc || wc.isDestroyed()) return;
     try {
       wc.send("exp:update", payload);
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function closeOverlay() {
     if (overlay && !overlay.isDestroyed()) {
       try {
         overlay.close();
-      } catch {}
+      } catch (err) { logErr(err); }
     }
     overlay = null;
     overlayParentId = null;
@@ -303,7 +305,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     if (parentEventCleanup) {
       try {
         parentEventCleanup();
-      } catch {}
+      } catch (err) { logErr(err); }
       parentEventCleanup = null;
     }
   }
@@ -313,7 +315,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     try {
       const b = computeOverlayWindowBounds(parent);
       overlay.setBounds(b, false);
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function isParentVisible(parent: BrowserWindow) {
@@ -356,7 +358,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         overlay.setAlwaysOnTop(false);
         overlay.hide();
       }
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function startOverlayFollow(parent: BrowserWindow) {
@@ -385,7 +387,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     if (parentEventCleanup) {
       try {
         parentEventCleanup();
-      } catch {}
+      } catch (err) { logErr(err); }
     }
 
     const onMove = () => syncOverlayBounds(parent);
@@ -427,7 +429,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     }
 
     if (!overlay) {
-      overlay = createOverlayWindow(parent);
+      overlay = createOverlayWindow(parent, { preloadPath: overlayPreloadPath });
       overlayParentId = pid;
 
       overlay.on("closed", () => {
@@ -445,7 +447,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
 
     try {
       overlay?.setAlwaysOnTop(true, "screen-saver");
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function getCaptureSize(parent: BrowserWindow, view: BrowserView | null) {
@@ -496,7 +498,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     try {
       const parent = opts.getSessionWindow();
 
-      // kein Parent -> Overlay schlieÃŸen
+      // kein Parent -> Overlay schließen
       if (!parent || parent.isDestroyed()) {
         closeOverlay();
         return;
@@ -525,7 +527,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
 
       const size = getCaptureSize(parent, view);
 
-      // âœ… WICHTIG: robustes Fallback, wenn getRects() undefined liefert
+      // ✅ WICHTIG: robustes Fallback, wenn getRects() undefined liefert
       const rects = resolveRects(size, opts.getRects);
 
       // -------- EXP (jedes Tick) --------
@@ -561,7 +563,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         lastNameLevelAt = now;
       }
 
-      // nur senden wenn sich was Ã¤ndert
+      // nur senden wenn sich was ändert
       const key = `${cachedName ?? ""}|${cachedLevel ?? ""}|${cachedExpPct ?? ""}`;
       if (key !== lastSentKey) {
         lastSentKey = key;
@@ -583,7 +585,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
   };
 
   timer = setInterval(() => {
-    tick().catch(() => {});
+    tick().catch((err) => logErr(err));
   }, intervalMs);
 
   const stop = () => {
@@ -600,7 +602,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     const hadWorker = !!worker;
     worker = null;
     if (hadWorker) {
-      releaseWorker().catch(() => {});
+      releaseWorker().catch((err) => logErr(err));
     }
   };
 

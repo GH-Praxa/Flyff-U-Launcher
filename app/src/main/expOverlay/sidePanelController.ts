@@ -21,6 +21,7 @@ export function createSidePanelController(opts: {
 
   instances: { get: (profileId: string) => BrowserWindow | null };
 
+  preloadPath: string;
   panelWidth?: number;
   followIntervalMs?: number;
 }) {
@@ -40,6 +41,8 @@ export function createSidePanelController(opts: {
   let parentEventCleanup: (() => void) | null = null;
   let lastCtxRect: Rectangle | null = null;
   let buttonVisible = false;
+
+  const logErr = (err: unknown) => console.error("[SidePanel]", err);
 
   const onToggle = () => toggle();
   ipcMain.on("sidepanel:toggle", onToggle);
@@ -97,7 +100,7 @@ export function createSidePanelController(opts: {
     if (parentEventCleanup) {
       try {
         parentEventCleanup();
-      } catch {}
+      } catch (err) { logErr(err); }
       parentEventCleanup = null;
     }
 
@@ -140,12 +143,12 @@ export function createSidePanelController(opts: {
         btnWin.show();
         btnWin.setIgnoreMouseEvents(false);
         buttonVisible = true;
-      } catch {}
+      } catch (err) { logErr(err); }
       return;
     }
 
     if (!btnWin) {
-      btnWin = createOverlayButtonWindow({ parent: ctx.parent });
+      btnWin = createOverlayButtonWindow({ parent: ctx.parent, preloadPath: opts.preloadPath });
       btnWin.on("closed", () => {
         btnWin = null;
       });
@@ -158,7 +161,7 @@ export function createSidePanelController(opts: {
       try {
         btnWin.hide();
         buttonVisible = false;
-      } catch {}
+      } catch (err) { logErr(err); }
     }
   }
 
@@ -174,7 +177,7 @@ export function createSidePanelController(opts: {
     const r = { x: bx, y: by, width: size, height: size };
     try {
       btnWin.setBounds(r, false);
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function ensurePanel(ctx: TargetCtx) {
@@ -187,14 +190,14 @@ export function createSidePanelController(opts: {
     if (panelWin && panelProfileId && panelProfileId !== (targetId ?? "")) {
       try {
         panelWin.close();
-      } catch {}
+      } catch (err) { logErr(err); }
       panelWin = null;
       panelProfileId = null;
     }
 
     if (!panelWin) {
       panelProfileId = targetId ?? "";
-      panelWin = createSidePanelWindow(ctx.parent);
+      panelWin = createSidePanelWindow(ctx.parent, { preloadPath: opts.preloadPath });
 
       panelWin.on("closed", () => {
         panelWin = null;
@@ -217,14 +220,14 @@ export function createSidePanelController(opts: {
 
     try {
       panelWin.setBounds(r, false);
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function closePanel() {
     if (panelWin && !panelWin.isDestroyed()) {
       try {
         panelWin.close();
-      } catch {}
+      } catch (err) { logErr(err); }
     }
     panelWin = null;
     panelProfileId = null;
@@ -235,7 +238,7 @@ export function createSidePanelController(opts: {
     if (btnWin && !btnWin.isDestroyed()) {
       try {
         btnWin.close();
-      } catch {}
+      } catch (err) { logErr(err); }
     }
     btnWin = null;
   }
@@ -318,7 +321,7 @@ export function createSidePanelController(opts: {
     if (parentEventCleanup) {
       try {
         parentEventCleanup();
-      } catch {}
+      } catch (err) { logErr(err); }
       parentEventCleanup = null;
     }
   }

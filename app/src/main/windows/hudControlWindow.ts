@@ -1,6 +1,6 @@
-﻿import { BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
 
-export function createHudSideTabWindow(parent: BrowserWindow) {
+export function createHudSideTabWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
   const win = new BrowserWindow({
     parent,
     frame: false,
@@ -14,8 +14,9 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     alwaysOnTop: true,
     backgroundColor: "#00000000",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts?.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
@@ -226,13 +227,16 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
   </div>
 
 <script>
-  const { ipcRenderer } = require("electron");
+  const ipc = window.ipc;
+  if(!ipc){
+    throw new Error("ipc bridge missing");
+  }
 
   let profileId = null;
 
   // --- Open/Close ---
   document.getElementById("toggle").onclick = () => {
-    ipcRenderer.send("hudpanel:toggle");
+    ipc.send("hudpanel:toggle");
   };
 
   // --- Resize (sends absolute width) ---
@@ -252,7 +256,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     if (!resizing) return;
     const dx = startX - e.clientX;
     const next = Math.max(240, Math.min(720, startW + dx));
-    ipcRenderer.send("hudpanel:setWidth", { width: next });
+    ipc.send("hudpanel:setWidth", { width: next });
   });
 
   window.addEventListener("mouseup", () => {
@@ -272,7 +276,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     t.onclick = () => setTab(t.dataset.tab);
   });
 
-  // dummy state (nur UI â€“ Funktionen kommen spÃ¤ter)
+  // dummy state (nur UI – Funktionen kommen später)
   const state = {
     showExp: true,
     showDelta: true,
@@ -294,7 +298,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     sw.onclick = () => {
       state[key] = !state[key];
       sw.classList.toggle("on", state[key]);
-      // spÃ¤ter: IPC -> settings persist + overlay anzeigen/ausblenden
+      // später: IPC -> settings persist + overlay anzeigen/ausblenden
     };
 
     row.append(l, sw);
@@ -307,7 +311,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     if(name === "display"){
       const sec = document.createElement("div");
       sec.className = "section";
-      sec.innerHTML = '<div class="sectionTitle">Anzeige (Platzhalter â€“ Funktionen kommen in 0.3+)</div>';
+      sec.innerHTML = '<div class="sectionTitle">Anzeige (Platzhalter – Funktionen kommen in 0.3+)</div>';
       sec.append(
         makeToggleRow("EXP-Anzeige im Overlay anzeigen", "showExp"),
         makeToggleRow("Delta EXP im Overlay anzeigen", "showDelta"),
@@ -322,7 +326,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     if(name === "settings"){
       const sec = document.createElement("div");
       sec.className = "section";
-      sec.innerHTML = '<div class="sectionTitle">Settings (kommt spÃ¤ter)</div><div class="hint">Hier kommen spÃ¤ter z.B. Hotkeys, Themes, etc.</div>';
+      sec.innerHTML = '<div class="sectionTitle">Settings (kommt später)</div><div class="hint">Hier kommen später z.B. Hotkeys, Themes, etc.</div>';
       content.append(sec);
       return;
     }
@@ -346,8 +350,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
       btn.onclick = async () => {
         if(!profileId) return;
         try{
-          // nutzt deinen bestehenden IPC handler (wie window.api.roiOpen im Launcher)
-          await ipcRenderer.invoke("roi:open", profileId);
+          await ipc.invoke("roi:open", profileId);
         }catch(e){
           console.error("roi:open failed", e);
         }
@@ -355,7 +358,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
 
       const hint = document.createElement("div");
       hint.className = "hint";
-      hint.textContent = "Ã–ffnet das ROI-Kalibrierfenster fÃ¼r das aktuelle Overlay-Profil.";
+      hint.textContent = "Öffnet das ROI-Kalibrierfenster für das aktuelle Overlay-Profil.";
 
       sec.append(btn, hint);
       content.append(sec);
@@ -366,8 +369,8 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
   // initial
   renderTab("display");
 
-  // --- Receive exp:update (wir merken uns profileId fÃ¼rs Debug->Kalibrieren)
-  ipcRenderer.on("exp:update", (_e, payload) => {
+  // --- Receive exp:update (wir merken uns profileId fürs Debug->Kalibrieren)
+  ipc.on("exp:update", (payload) => {
     if(payload && payload.profileId) profileId = payload.profileId;
   });
 </script>
@@ -375,7 +378,6 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
 </html>
 `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[HudControlWindow] load failed", err));
   return win;
 }
-

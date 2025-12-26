@@ -1,6 +1,6 @@
-﻿import { BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
 
-export function createHudSideTabWindow(parent: BrowserWindow) {
+export function createHudSideTabWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
   const win = new BrowserWindow({
     parent,
     frame: false,
@@ -14,8 +14,9 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     alwaysOnTop: true,
     backgroundColor: "#00000000",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts?.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
@@ -94,16 +95,21 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
   </div>
 
 <script>
-  const { ipcRenderer } = require("electron");
+  const ipc = window.ipc;
+  if(!ipc){
+    throw new Error("ipc bridge missing");
+  }
 
   let profileId = null;
   let editOn = false;
 
-  const log = (msg) => ipcRenderer.send("hudpanel:log", msg);
+  const log = (msg) => {
+    console.log(msg);
+  };
 
   log("[hudSideTabWindow] loaded");
 
-  document.getElementById("toggle").onclick = () => ipcRenderer.send("hudpanel:toggle");
+  document.getElementById("toggle").onclick = () => ipc.send("hudpanel:toggle");
 
   const grip = document.getElementById("resizeGrip");
   let resizing = false, startX = 0, startW = 0;
@@ -119,7 +125,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     if (!resizing) return;
     const dx = startX - e.clientX;
     const next = Math.max(240, Math.min(720, startW + dx));
-    ipcRenderer.send("hudpanel:setWidth", { width: next });
+    ipc.send("hudpanel:setWidth", { width: next });
   });
 
   window.addEventListener("mouseup", () => { resizing = false; });
@@ -162,26 +168,25 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
       return;
     }
     try{
-      log("roi:open invoke => " + profileId);
-      await ipcRenderer.invoke("roi:open", profileId);
+      await ipc.invoke("roi:open", profileId);
       return;
     }catch(e1){
       log("roi:open invoke(string) failed: " + (e1?.message || e1));
     }
     try{
-      await ipcRenderer.invoke("roi:open", { profileId });
+      await ipc.invoke("roi:open", { profileId });
       return;
     }catch(e2){
       log("roi:open invoke(obj) failed: " + (e2?.message || e2));
     }
     try{
-      ipcRenderer.send("roi:open", profileId);
+      ipc.send("roi:open", profileId);
       return;
     }catch(e3){
       log("roi:open send(string) failed: " + (e3?.message || e3));
     }
     try{
-      ipcRenderer.send("roi:open", { profileId });
+      ipc.send("roi:open", { profileId });
     }catch(e4){
       log("roi:open send(obj) failed: " + (e4?.message || e4));
     }
@@ -201,7 +206,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
     if(name === "settings"){
       const sec = document.createElement("div");
       sec.className = "section";
-      sec.innerHTML = '<div class="sectionTitle">Settings</div><div class="hint">kommt spÃ¤ter</div>';
+      sec.innerHTML = '<div class="sectionTitle">Settings</div><div class="hint">kommt später</div>';
       content.append(sec);
       return;
     }
@@ -221,7 +226,7 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
 
       const pill = document.createElement("div");
       pill.className = "pill";
-      pill.textContent = "Overlay-Profil: " + (profileId ?? "â€”");
+      pill.textContent = "Overlay-Profil: " + (profileId ?? "-");
 
       const row1 = document.createElement("div");
       row1.className = "row";
@@ -230,8 +235,8 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
       l1.textContent = "HUD bearbeiten";
       const lockBtn = document.createElement("button");
       lockBtn.className = "btn btnLock";
-      lockBtn.textContent = editOn ? "ðŸ”“" : "ðŸ”’";
-      lockBtn.onclick = () => ipcRenderer.send("hud:toggleEdit");
+      lockBtn.textContent = editOn ? "On" : "Off";
+      lockBtn.onclick = () => ipc.send("hud:toggleEdit");
       row1.append(l1, lockBtn);
 
       const row2 = document.createElement("div");
@@ -258,16 +263,15 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
 
   renderTab("display");
 
-  ipcRenderer.on("exp:update", (_e, payload) => {
+  ipc.on("exp:update", (payload) => {
     if(payload && payload.profileId){
       profileId = payload.profileId;
-      // wenn debug offen: refresh
       const active = (document.querySelector(".tab.active") || {}).dataset?.tab;
       if(active === "debug") renderTab("debug");
     }
   });
 
-  ipcRenderer.on("hud:edit", (_e, payload) => {
+  ipc.on("hud:edit", (payload) => {
     editOn = !!payload?.on;
     const active = (document.querySelector(".tab.active") || {}).dataset?.tab;
     if(active === "debug") renderTab("debug");
@@ -277,7 +281,6 @@ export function createHudSideTabWindow(parent: BrowserWindow) {
 </html>
 `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[HudSideTabWindow] load failed", err));
   return win;
 }
-

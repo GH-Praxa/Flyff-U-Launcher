@@ -29,12 +29,21 @@ type SessionTabsManager = {
   setVisible: (visible: boolean) => void;
   setSplit: (pair: { primary: string; secondary: string; ratio?: number } | null) => Promise<void> | void;
   setSplitRatio: (ratio: number) => Promise<void> | void;
+  reset: () => void;
+};
+
+type TabLayoutsStore = {
+  list: () => Promise<any[]>;
+  get: (layoutId: string) => Promise<any | null>;
+  save: (input: any) => Promise<any[]>;
+  delete: (layoutId: string) => Promise<any[]>;
 };
 
 export function registerMainIpc(opts: {
   profiles: ProfilesStore;
   sessionTabs: SessionTabsManager;
   sessionWindow: SessionWindowController;
+  tabLayouts: TabLayoutsStore;
 
   loadView?: any;
 
@@ -46,10 +55,12 @@ export function registerMainIpc(opts: {
   roiLoad: (profileId: string) => Promise<any>;
   roiSave: (profileId: string, rois: any) => Promise<boolean>;
 }) {
+  const logErr = (err: unknown) => console.error("[IPC]", err);
+
   function safeHandle(channel: string, handler: any) {
     try {
       ipcMain.removeHandler(channel);
-    } catch {}
+    } catch (err) { logErr(err); }
     ipcMain.handle(channel, handler);
   }
 
@@ -84,7 +95,7 @@ export function registerMainIpc(opts: {
     const next = await opts.profiles.patchOverlaySettings(profileId, patch);
     try {
       await opts.overlayTargetRefresh?.();
-    } catch {}
+    } catch (err) { logErr(err); }
     return next;
   });
 
@@ -96,7 +107,7 @@ export function registerMainIpc(opts: {
     await opts.sessionTabs.open(profileId);
     try {
       win.webContents.send("session:openTab", profileId);
-    } catch {}
+    } catch (err) { logErr(err); }
     return true;
   });
 
@@ -138,6 +149,30 @@ export function registerMainIpc(opts: {
 
   safeHandle("sessionTabs:setSplitRatio", async (_e, ratio: number) => {
     await opts.sessionTabs.setSplitRatio(ratio);
+    return true;
+  });
+
+  safeHandle("sessionTabs:reset", async () => {
+    opts.sessionTabs.reset();
+    return true;
+  });
+
+  // -------- Tab Layouts --------
+  safeHandle("tabLayouts:list", async () => await opts.tabLayouts.list());
+  safeHandle("tabLayouts:get", async (_e, layoutId: string) => await opts.tabLayouts.get(layoutId));
+  safeHandle("tabLayouts:save", async (_e, input: any) => await opts.tabLayouts.save(input));
+  safeHandle("tabLayouts:delete", async (_e, layoutId: string) => await opts.tabLayouts.delete(layoutId));
+  safeHandle("tabLayouts:apply", async (_e, layoutId: string) => {
+    const layout = await opts.tabLayouts.get(layoutId);
+    if (!layout) throw new Error("layout not found");
+
+    const win = await opts.sessionWindow.ensure();
+    try {
+      win.show();
+      win.focus();
+      win.webContents.send("session:applyLayout", layout);
+    } catch (err) { logErr(err); }
+
     return true;
   });
 

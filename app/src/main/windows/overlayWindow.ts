@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 
-export function createOverlayWindow(parent: BrowserWindow) {
+export function createOverlayWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
   const win = new BrowserWindow({
     parent,
     frame: false,
@@ -14,8 +14,9 @@ export function createOverlayWindow(parent: BrowserWindow) {
     alwaysOnTop: true,
     backgroundColor: "#00000000",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts?.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
@@ -87,7 +88,10 @@ export function createOverlayWindow(parent: BrowserWindow) {
   </div>
 
 <script>
-  const { ipcRenderer } = require("electron");
+  const ipc = window.ipc;
+  if(!ipc){
+    throw new Error("ipc bridge missing");
+  }
 
   const box = document.getElementById("box");
   const title = document.getElementById("title");
@@ -107,7 +111,7 @@ export function createOverlayWindow(parent: BrowserWindow) {
     edit = !!on;
     document.body.classList.toggle("edit", edit);
     // in edit mode müssen clicks im overlay bleiben:
-    ipcRenderer.send("overlay:toggleEdit", { on: edit });
+    ipc.send("overlay:toggleEdit", { on: edit });
   }
 
   // rechte maus toggelt edit (schnell)
@@ -119,7 +123,7 @@ export function createOverlayWindow(parent: BrowserWindow) {
   // load initial bounds from main (optional)
   async function loadBounds(){
     try{
-      const b = await ipcRenderer.invoke("hud:getBounds");
+      const b = await ipc.invoke("hud:getBounds");
       if(b && typeof b.x==="number"){
         hudPos.x = b.x;
         hudPos.y = b.y;
@@ -135,7 +139,9 @@ export function createOverlayWindow(parent: BrowserWindow) {
           setEdit(b.editOn);
         }
       }
-    }catch{}
+    }catch(err){
+      console.error("[OverlayWindow] loadBounds failed", err);
+    }
   }
   loadBounds();
 
@@ -158,7 +164,7 @@ export function createOverlayWindow(parent: BrowserWindow) {
       const ny = dragStart.py + (e.clientY - dragStart.y);
       hudPos.x = nx;
       hudPos.y = ny;
-      ipcRenderer.send("overlay:setBounds", { x:nx, y:ny });
+      ipc.send("overlay:setBounds", { x:nx, y:ny });
     }
     if(resizing){
       const dx = e.clientX - sizeStart.x;
@@ -167,7 +173,7 @@ export function createOverlayWindow(parent: BrowserWindow) {
       const nh = Math.max(60, sizeStart.h + dy);
       box.style.width = nw + "px";
       box.style.height = nh + "px";
-      ipcRenderer.send("overlay:setSize", { width:nw, height:nh });
+      ipc.send("overlay:setSize", { width:nw, height:nh });
     }
   });
 
@@ -188,12 +194,12 @@ export function createOverlayWindow(parent: BrowserWindow) {
     e.stopPropagation();
   });
 
-  ipcRenderer.on("overlay:edit", (_e, payload) => {
+  ipc.on("overlay:edit", (payload) => {
     edit = !!payload?.on;
     document.body.classList.toggle("edit", edit);
   });
 
-  ipcRenderer.on("exp:update", (_e, payload) => {
+  ipc.on("exp:update", (payload) => {
     if(!payload) return;
     const nm = payload.name ?? "—";
     const lvl = payload.level != null ? ("Lv " + payload.level) : "";
@@ -210,6 +216,6 @@ export function createOverlayWindow(parent: BrowserWindow) {
 </html>
 `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayWindow] load failed", err));
   return win;
 }

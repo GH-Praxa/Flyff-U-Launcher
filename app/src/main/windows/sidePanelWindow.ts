@@ -1,6 +1,6 @@
-﻿import { BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
 
-export function createSidePanelWindow(parent: BrowserWindow) {
+export function createSidePanelWindow(parent: BrowserWindow, opts?: { preloadPath?: string }) {
   const win = new BrowserWindow({
     parent,
     frame: false,
@@ -14,13 +14,14 @@ export function createSidePanelWindow(parent: BrowserWindow) {
     alwaysOnTop: true,
     backgroundColor: "#00000000",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts?.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
 
-  // âœ… MenÃ¼leiste weg
+  // Menüleiste weg
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
   win.setMenu(null);
@@ -225,11 +226,14 @@ export function createSidePanelWindow(parent: BrowserWindow) {
   </div>
 
 <script>
-  const { ipcRenderer } = require("electron");
+  const ipc = window.ipc;
+  if(!ipc){
+    throw new Error("ipc bridge missing");
+  }
 
   // --- Open/Close ---
   document.getElementById("toggle").onclick = () => {
-    ipcRenderer.send("hudpanel:toggle");
+    ipc.send("hudpanel:toggle");
   };
 
   // --- Resize (sends absolute width) ---
@@ -249,7 +253,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
     if (!resizing) return;
     const dx = startX - e.clientX;
     const next = Math.max(240, Math.min(720, startW + dx));
-    ipcRenderer.send("hudpanel:setWidth", { width: next });
+    ipc.send("hudpanel:setWidth", { width: next });
   });
 
   window.addEventListener("mouseup", () => {
@@ -269,7 +273,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
     t.onclick = () => setTab(t.dataset.tab);
   });
 
-  // dummy state (nur UI â€“ Funktionen kommen spÃ¤ter)
+  // dummy state (nur UI – Funktionen kommen später)
   const state = {
     showExp: true,
     showDelta: true,
@@ -299,7 +303,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
 
   async function getActiveOverlayProfileId(){
     try{
-      return await ipcRenderer.invoke("profiles:getOverlayTargetId");
+      return await ipc.invoke("profiles:getOverlayTargetId");
     }catch(e){
       console.error("profiles:getOverlayTargetId failed", e);
       return null;
@@ -327,7 +331,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
     if(name === "settings"){
       const sec = document.createElement("div");
       sec.className = "section";
-      sec.innerHTML = '<div class="sectionTitle">Settings</div><div class="hint">kommt spÃ¤ter</div>';
+      sec.innerHTML = '<div class="sectionTitle">Settings</div><div class="hint">kommt später</div>';
       content.append(sec);
       return;
     }
@@ -352,7 +356,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
         try{
           const pid = await getActiveOverlayProfileId();
           if(!pid) return;
-          await ipcRenderer.invoke("roi:open", pid);
+          await ipc.invoke("roi:open", pid);
         }catch(e){
           console.error("roi:open failed", e);
         }
@@ -360,7 +364,7 @@ export function createSidePanelWindow(parent: BrowserWindow) {
 
       const hint = document.createElement("div");
       hint.className = "hint";
-      hint.textContent = "Ã–ffnet das ROI-Kalibrierfenster fÃ¼r das aktuelle Overlay-Profil.";
+      hint.textContent = "Öffnet das ROI-Kalibrierfenster für das aktuelle Overlay-Profil.";
 
       sec.append(btn, hint);
       content.append(sec);
@@ -374,7 +378,6 @@ export function createSidePanelWindow(parent: BrowserWindow) {
 </html>
 `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[SidePanelWindow] load failed", err));
   return win;
 }
-

@@ -11,10 +11,8 @@ export function hardenWebviews(win: BrowserWindow) {
     webPreferences.contextIsolation = true;
 
     // keine fremden preloads erlauben
-    // @ts-ignore
-    delete webPreferences.preload;
-    // @ts-ignore
-    delete webPreferences.preloadURL;
+    delete (webPreferences as Record<string, unknown>).preload;
+    delete (webPreferences as Record<string, unknown>).preloadURL;
   });
 }
 

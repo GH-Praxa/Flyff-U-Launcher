@@ -9,7 +9,9 @@ export function createSessionTabsManager(opts: {
   sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
   flyffUrl: string;
 }) {
+  const logErr = (err: unknown) => console.error("[SessionTabs]", err);
   const sessionViews = new Map<string, BrowserView>();
+  const loadedProfiles = new Set<string>();
   let sessionActiveId: string | null = null;
   let sessionSplit: SplitPair | null = null;
   const defaultSplitRatio = 0.5;
@@ -76,7 +78,7 @@ export function createSessionTabsManager(opts: {
 
     try {
       win.webContents.send("sessionTabs:activeChanged", sessionActiveId);
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function focusActiveView() {
@@ -86,7 +88,7 @@ export function createSessionTabsManager(opts: {
 
     try {
       view.webContents.focus();
-    } catch {}
+    } catch (err) { logErr(err); }
   }
 
   function applyActiveBrowserView() {
@@ -98,7 +100,7 @@ export function createSessionTabsManager(opts: {
     for (const v of win.getBrowserViews()) {
       try {
         win.removeBrowserView(v);
-      } catch {}
+      } catch (err) { logErr(err); }
     }
 
     if (!sessionVisible) {
@@ -119,6 +121,7 @@ export function createSessionTabsManager(opts: {
       win.addBrowserView(view);
       view.setBounds(bounds);
       view.setAutoResize({ width: true, height: true });
+      loadProfileIfNeeded(id);
     });
 
     focusActiveView();
@@ -184,10 +187,24 @@ export function createSessionTabsManager(opts: {
     hardenGameContents(view.webContents);
     sessionViews.set(profileId, view);
 
-    view.webContents.loadURL("about:blank").catch(() => {});
-    view.webContents.loadURL(opts.flyffUrl).catch(console.error);
-
     return view;
+  }
+
+  function loadProfileIfNeeded(profileId: string) {
+    const shouldLoad =
+      sessionActiveId === profileId ||
+      (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId));
+    if (!shouldLoad) return;
+    if (loadedProfiles.has(profileId)) return;
+    const view = sessionViews.get(profileId);
+    if (!view) return;
+    const currentUrl = view.webContents.getURL();
+    if (currentUrl && currentUrl !== "about:blank") {
+      loadedProfiles.add(profileId);
+      return;
+    }
+    loadedProfiles.add(profileId);
+    view.webContents.loadURL(opts.flyffUrl).catch(() => undefined); // swallow network aborts
   }
 
   function destroySessionView(profileId: string) {
@@ -198,14 +215,15 @@ export function createSessionTabsManager(opts: {
     if (win) {
       try {
         win.removeBrowserView(view);
-      } catch {}
+      } catch (err) { logErr(err); }
     }
 
     try {
       view.webContents.destroy();
-    } catch {}
+    } catch (err) { logErr(err); }
 
     sessionViews.delete(profileId);
+    loadedProfiles.delete(profileId);
     if (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId)) {
       const survivor = sessionSplit.leftId === profileId ? sessionSplit.rightId : sessionSplit.leftId;
       sessionSplit = null;
@@ -317,6 +335,7 @@ export function createSessionTabsManager(opts: {
   function reset() {
     for (const id of [...sessionViews.keys()]) destroySessionView(id);
     sessionViews.clear();
+    loadedProfiles.clear();
     sessionActiveId = null;
     sessionSplit = null;
     sessionSplitRatio = defaultSplitRatio;

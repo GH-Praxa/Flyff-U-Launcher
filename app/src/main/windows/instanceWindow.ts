@@ -1,5 +1,4 @@
 import { BrowserWindow } from "electron";
-import path from "path";
 import { hardenGameContents } from "../security/harden";
 
 export function createInstanceWindow(profileId: string, opts: { flyffUrl: string }): BrowserWindow {
@@ -30,7 +29,7 @@ export function createInstanceWindow(profileId: string, opts: { flyffUrl: string
   hardenGameContents(win.webContents);
 
   // Unity/WebGL ist oft stabiler mit about:blank “warmup”
-  win.webContents.loadURL("about:blank").catch(() => {});
+  win.webContents.loadURL("about:blank").catch((err) => console.error("[InstanceWindow] load failed", err));
   win.webContents.loadURL(opts.flyffUrl).catch(console.error);
 
   win.once("ready-to-show", () => {

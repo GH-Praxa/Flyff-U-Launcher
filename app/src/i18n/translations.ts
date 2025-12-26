@@ -53,6 +53,18 @@ const messagesEn = {
   "split.subtitle": "Choose a second tab to show side by side.",
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
+
+  "layout.title": "Tab layouts",
+  "layout.saveCurrent": "Save current layout",
+  "layout.pick": "Choose layout",
+  "layout.apply": "Open",
+  "layout.refresh": "Refresh",
+  "layout.delete": "Delete",
+  "layout.empty": "No layouts saved yet.",
+  "layout.namePrompt": "Name for this layout",
+  "layout.saveStart": "Saving layout...",
+  "layout.saved": "Layout saved.",
+  "layout.saveError": "Could not save layout.",
 };
 
 const messagesDe: typeof messagesEn = {
@@ -106,6 +118,18 @@ const messagesDe: typeof messagesEn = {
   "split.subtitle": "Wähle einen zweiten Tab, der daneben angezeigt wird.",
   "split.noOpenTabs": "Keine weiteren offenen Tabs.",
   "split.openOther": "Anderes Profil öffnen...",
+
+  "layout.title": "Tab-Layouts",
+  "layout.saveCurrent": "Aktuelles Layout speichern",
+  "layout.pick": "Layout wählen",
+  "layout.apply": "Öffnen",
+  "layout.refresh": "Aktualisieren",
+  "layout.delete": "Löschen",
+  "layout.empty": "Noch keine Layouts gespeichert.",
+  "layout.namePrompt": "Name für dieses Layout",
+  "layout.saveStart": "Layout wird gespeichert...",
+  "layout.saved": "Layout gespeichert.",
+  "layout.saveError": "Layout konnte nicht gespeichert werden.",
 
 };
 
@@ -161,6 +185,18 @@ const messagesPl: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "layout.title": "Układy kart",
+  "layout.saveCurrent": "Zapisz bieżący układ",
+  "layout.pick": "Wybierz układ",
+  "layout.apply": "Otwórz",
+  "layout.refresh": "Odśwież",
+  "layout.delete": "Usuń",
+  "layout.empty": "Brak zapisanych układów.",
+  "layout.namePrompt": "Nazwa układu",
+  "layout.saveStart": "Zapisywanie układu...",
+  "layout.saved": "Układ zapisany.",
+  "layout.saveError": "Nie udało się zapisać układu.",
+
 };
 
 const messagesFr: typeof messagesEn = {
@@ -214,6 +250,18 @@ const messagesFr: typeof messagesEn = {
   "split.subtitle": "Choose a second tab to show side by side.",
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
+
+  "layout.title": "Layouts d'onglets",
+  "layout.saveCurrent": "Enregistrer le layout actuel",
+  "layout.pick": "Choisir un layout",
+  "layout.apply": "Ouvrir",
+  "layout.refresh": "Rafraîchir",
+  "layout.delete": "Supprimer",
+  "layout.empty": "Aucun layout enregistré.",
+  "layout.namePrompt": "Nom pour ce layout",
+  "layout.saveStart": "Sauvegarde du layout...",
+  "layout.saved": "Layout enregistré.",
+  "layout.saveError": "Impossible d'enregistrer le layout.",
 
 };
 
@@ -269,6 +317,18 @@ const messagesRu: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "layout.title": "Схемы вкладок",
+  "layout.saveCurrent": "Сохранить текущую схему",
+  "layout.pick": "Выбрать схему",
+  "layout.apply": "Открыть",
+  "layout.refresh": "Обновить",
+  "layout.delete": "Удалить",
+  "layout.empty": "Сохранённых схем нет.",
+  "layout.namePrompt": "Имя для схемы",
+  "layout.saveStart": "Сохраняю схему...",
+  "layout.saved": "Схема сохранена.",
+  "layout.saveError": "Не удалось сохранить схему.",
+
 };
 
 const messagesTr: typeof messagesEn = {
@@ -322,6 +382,18 @@ const messagesTr: typeof messagesEn = {
   "split.subtitle": "Choose a second tab to show side by side.",
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
+
+  "layout.title": "Sekme yerleşimleri",
+  "layout.saveCurrent": "Geçerli yerleşimi kaydet",
+  "layout.pick": "Yerleşim seç",
+  "layout.apply": "Aç",
+  "layout.refresh": "Yenile",
+  "layout.delete": "Sil",
+  "layout.empty": "Kayıtlı yerleşim yok.",
+  "layout.namePrompt": "Yerleşim adı",
+  "layout.saveStart": "Yerleşim kaydediliyor...",
+  "layout.saved": "Yerleşim kaydedildi.",
+  "layout.saveError": "Yerleşim kaydedilemedi.",
 
 };
 
@@ -377,6 +449,18 @@ const messagesCn: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "layout.title": "标签布局",
+  "layout.saveCurrent": "保存当前布局",
+  "layout.pick": "选择布局",
+  "layout.apply": "打开",
+  "layout.refresh": "刷新",
+  "layout.delete": "删除",
+  "layout.empty": "暂无保存的布局。",
+  "layout.namePrompt": "布局名称",
+  "layout.saveStart": "正在保存布局...",
+  "layout.saved": "布局已保存。",
+  "layout.saveError": "布局保存失败。",
+
 };
 
 const messagesJp: typeof messagesEn = {
@@ -431,6 +515,18 @@ const messagesJp: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "layout.title": "タブレイアウト",
+  "layout.saveCurrent": "現在のレイアウトを保存",
+  "layout.pick": "レイアウトを選択",
+  "layout.apply": "開く",
+  "layout.refresh": "更新",
+  "layout.delete": "削除",
+  "layout.empty": "保存されたレイアウトはありません。",
+  "layout.namePrompt": "レイアウト名",
+  "layout.saveStart": "レイアウトを保存中...",
+  "layout.saved": "レイアウトを保存しました。",
+  "layout.saveError": "レイアウトを保存できませんでした。",
+
 };
 
 export type TranslationKey = keyof typeof messagesEn;
@@ -451,6 +547,7 @@ const tipsEn = [
   "Use tabs mode to keep multiple chars in one window.",
   "Mark a char as overlay target (Aibatt) so the overlay follows.",
   "Click Play to open in the chosen start mode (tabs/window).",
+  "Join the Discord for feedback and bug reports.",
 ];
 
 const tipsDe = [
@@ -458,6 +555,7 @@ const tipsDe = [
   "Nutze den Tabs-Modus, um mehrere Chars in einem Fenster offen zu halten.",
   "Markiere einen Char als Overlay-Ziel (Aibatt), damit die Overlay-Anzeige folgt.",
   "Klicke auf 'Spielen', um direkt im gewählten Startmodus (Tabs/Fenster) zu öffnen.",
+  "Komm auf den Discord fuer Feedback und Bugmeldungen.",
 ];
 
 const tipsPl = [
@@ -465,6 +563,7 @@ const tipsPl = [
   "Używaj trybu kart, by mieć kilka postaci w jednym oknie.",
   "Oznacz cel overlay (Aibatt), by overlay podążał.",
   "Kliknij Graj, by otworzyć w wybranym trybie (karty/okno).",
+  "Dolacz na Discord po feedback i zgloszenia bugow.",
 ];
 
 const tipsFr = [
@@ -472,6 +571,7 @@ const tipsFr = [
   "Utilise le mode onglets pour plusieurs persos dans une fenêtre.",
   "Marque une cible overlay (Aibatt) pour suivre l'overlay.",
   "Clique sur Jouer pour ouvrir dans le mode choisi (onglets/fenêtre).",
+  "Rejoins le Discord pour feedback et signaler des bugs.",
 ];
 
 const tipsRu = [
@@ -479,6 +579,7 @@ const tipsRu = [
   "Режим вкладок держит несколько персонажей в одном окне.",
   "Отметь цель оверлея (Aibatt), чтобы оверлей следовал.",
   "Жми Играть, чтобы открыть в выбранном режиме (вкладки/окно).",
+  "Заходи в Discord, чтобы оставить фидбек и сообщить о багах.",
 ];
 
 const tipsTr = [
@@ -486,6 +587,7 @@ const tipsTr = [
   "Sekme moduyla birden çok karakteri tek pencerede tut.",
   "Overlay hedefi (Aibatt) seç, overlay onu takip etsin.",
   "Oyna'ya tıkla, seçili modda aç (sekme/pencere).",
+  "Feedback ve bug bildirimleri icin Discord'a katıl.",
 ];
 
 const tipsCn = [
@@ -493,6 +595,7 @@ const tipsCn = [
   "用标签模式在一个窗口开多个角色。",
   "标记覆盖目标（Aibatt），覆盖会跟随。",
   "点击开始游戏，用所选模式打开（标签/窗口）。",
+  "加入 Discord 提交反馈和错误报告。",
 ];
 
 const tipsJp = [
@@ -500,6 +603,7 @@ const tipsJp = [
   "タブモードで複数キャラを1ウィンドウに。",
   "オーバーレイ対象（Aibatt）を指定すると追従。",
   "「プレイ」で選択したモード（タブ/ウィンドウ）で開く。",
+  "フィードバックやバグ報告はDiscordに参加してね。",
 ];
 
 const tipsFallbacks: Record<Locale, string[]> = {

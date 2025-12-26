@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 
-export function createOverlayButtonWindow(opts: { parent: BrowserWindow }) {
+export function createOverlayButtonWindow(opts: { parent: BrowserWindow; preloadPath?: string }) {
   const win = new BrowserWindow({
     parent: opts.parent,
     frame: false,
@@ -13,8 +13,9 @@ export function createOverlayButtonWindow(opts: { parent: BrowserWindow }) {
     hasShadow: false,
     alwaysOnTop: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
@@ -52,15 +53,18 @@ export function createOverlayButtonWindow(opts: { parent: BrowserWindow }) {
 </button>
 
 <script>
-  const { ipcRenderer } = require("electron");
+  const ipc = window.ipc;
+  if(!ipc){
+    throw new Error("ipc bridge missing");
+  }
   document.getElementById("b").onclick = () => {
-    ipcRenderer.send("sidepanel:toggle");
+    ipc.send("sidepanel:toggle");
   };
 </script>
 </body>
 </html>
 `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayButtonWindow] load failed", err));
   return win;
 }

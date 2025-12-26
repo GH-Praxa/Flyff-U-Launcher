@@ -77,26 +77,26 @@ export class PythonOcrWorker {
   private onStdout(chunk: string): void {
     this.buf += chunk;
 
-    while (true) {
-      const idx = this.buf.indexOf("\n");
-      if (idx < 0) break;
-
+    let idx = this.buf.indexOf("\n");
+    while (idx >= 0) {
       const line = this.buf.slice(0, idx).trim();
       this.buf = this.buf.slice(idx + 1);
 
-      if (!line) continue;
-
-      try {
-        const msg = JSON.parse(line) as OcrResponse;
-        const p = this.pending.get(msg.id);
-        if (p) {
-          clearTimeout(p.t);
-          this.pending.delete(msg.id);
-          p.resolve(msg);
+      if (line) {
+        try {
+          const msg = JSON.parse(line) as OcrResponse;
+          const p = this.pending.get(msg.id);
+          if (p) {
+            clearTimeout(p.t);
+            this.pending.delete(msg.id);
+            p.resolve(msg);
+          }
+        } catch {
+          // ignore malformed lines
         }
-      } catch {
-        // ignore malformed lines
       }
+
+      idx = this.buf.indexOf("\n");
     }
   }
 }

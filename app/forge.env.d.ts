@@ -13,6 +13,18 @@ type Profile = {
   overlayIconKey?: string;
 };
 
+type TabLayoutSplit = { leftId: string; rightId: string; ratio?: number };
+
+type TabLayout = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  tabs: string[];
+  split?: TabLayoutSplit | null;
+  activeId?: string | null;
+};
+
 declare global {
   interface Window {
     api: {
@@ -34,9 +46,17 @@ declare global {
       sessionTabsSetVisible: (visible: boolean) => Promise<boolean>;
       sessionTabsSetSplit: (pair: { primary: string; secondary: string; ratio?: number } | null) => Promise<boolean>;
       sessionTabsSetSplitRatio: (ratio: number) => Promise<boolean>;
+      sessionTabsReset: () => Promise<boolean>;
+
+      tabLayoutsList: () => Promise<TabLayout[]>;
+      tabLayoutsGet: (id: string) => Promise<TabLayout | null>;
+      tabLayoutsSave: (input: Partial<TabLayout> & { name: string; tabs: string[] }) => Promise<TabLayout[]>;
+      tabLayoutsDelete: (id: string) => Promise<TabLayout[]>;
+      tabLayoutsApply: (id: string) => Promise<boolean>;
 
       onOpenTab: (cb: (profileId: string) => void) => void;
       onSessionActiveChanged: (cb: (profileId: string | null) => void) => void;
+      onApplyLayout: (cb: (layout: TabLayout) => void) => void;
 
       roiOpen: (profileId: string) => Promise<boolean>;
       roiLoad: (profileId: string) => Promise<any>;
@@ -44,6 +64,18 @@ declare global {
 
       fetchNewsPage: () => Promise<string>;
       fetchNewsArticle: (url: string) => Promise<string>;
+    };
+
+    ipc?: {
+      send: (channel: string, payload?: any) => void;
+      invoke: (channel: string, ...args: any[]) => Promise<any>;
+      on: (channel: string, listener: (...args: any[]) => void) => () => void;
+    };
+
+    roiBridge?: {
+      channel: string | null;
+      send?: (payload: any) => void;
+      sendDebug?: (payload: any) => void;
     };
   }
 }

@@ -153,6 +153,172 @@ html, body{
   min-width: 140px;
 }
 
+.layoutBar{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.layoutHeader{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.layoutTitle{
+  font-weight: 800;
+}
+
+.layoutList{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.layoutChip{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius2);
+  border: 1px solid #b07a45;
+  background: rgba(255,255,255,0.04);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  min-height: 44px;
+  flex-wrap: wrap;
+  width: 100%;
+  position: relative;
+}
+
+.layoutName{
+  font-weight: 800;
+  margin-right: 6px;
+}
+
+.layoutMeta{
+  color: var(--muted);
+  font-size: 12px;
+  margin-right: auto;
+}
+
+.layoutActions{
+  display:flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.layoutActions .btn{
+  padding: 6px 10px;
+  min-height: 0;
+  line-height: 1.1;
+}
+
+.layoutMenu{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: rgba(15,26,51,0.96);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius2);
+  box-shadow: var(--shadow);
+  padding: 10px;
+  min-width: 240px;
+  z-index: 5;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layoutMenuTitle{
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.layoutMenuList{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.layoutMenuItem{
+  padding: 6px 8px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius2);
+  background: rgba(255,255,255,0.04);
+  font-weight: 700;
+}
+
+.layoutMenuActions{
+  display:flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.layoutStatus{
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(44,107,255,0.12);
+  border: 1px solid rgba(44,107,255,0.45);
+  flex: 0 0 auto;
+  min-width: 220px;
+}
+
+.layoutStatus.error{
+  color: #ff6b81;
+  background: rgba(255,59,79,0.12);
+  border-color: rgba(255,59,79,0.45);
+}
+
+.layoutStatus.success{
+  color: #2ecc71;
+  background: rgba(46,204,113,0.12);
+  border-color: rgba(46,204,113,0.45);
+}
+
+.toastContainer{
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+
+.toast{
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(15,26,51,0.9);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-weight: 700;
+}
+
+.toast.success{
+  border-color: rgba(46,204,113,0.6);
+  background: rgba(46,204,113,0.12);
+}
+
+.toast.error{
+  border-color: rgba(255,59,79,0.6);
+  background: rgba(255,59,79,0.12);
+}
+
+.toast.info{
+  border-color: rgba(44,107,255,0.6);
+  background: rgba(44,107,255,0.12);
+}
+
 /* Basis-Button-Styling fuer alle Buttons */
 .btn{
   appearance: none;
@@ -212,7 +378,7 @@ html, body{
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--stroke);
-  background: rgba(255,255,255,0.04);
+  background: rgba(44,107,255,0.12);
   color: var(--text);
   outline: none;
 }
@@ -221,6 +387,40 @@ html, body{
 .input:focus, .select:focus{
   border-color: rgba(44,107,255,0.6);
   box-shadow: 0 0 0 3px rgba(44,107,255,0.15);
+}
+
+.select option,
+.select optgroup{
+  background: rgba(44,107,255,0.12);
+  color: #0b1220;
+}
+
+.select option:disabled{
+  font-weight: 700;
+}
+
+.select option:checked{
+  background: rgba(44,107,255,0.25);
+}
+
+.select::-webkit-scrollbar{
+  width: 10px;
+}
+
+.select::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+}
+
+.select::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(44,107,255,0.35), rgba(44,107,255,0.18));
+  border-radius: 10px;
+  border: 1px solid rgba(44,107,255,0.45);
+}
+
+.select::-webkit-scrollbar-thumb:hover{
+  background: linear-gradient(180deg, rgba(44,107,255,0.45), rgba(44,107,255,0.28));
 }
 
 /* Text in zurueckhaltender Farbe */
@@ -431,21 +631,6 @@ html, body{
   line-height: 1.4;
 }
 
-.infoBadge{
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 116px;
-  height: 116px;
-  pointer-events: none;
-}
-
-.infoBadge img{
-  width: 116px;
-  height: 116px;
-  display: block;
-}
-
 /* Karte fuer Profil/Instanz-Eintraege */
 .card{
   border: 1px solid var(--stroke);
@@ -653,7 +838,7 @@ html, body{
   box-shadow: 0 0 0 3px rgba(44,107,255,0.18);
 }
 
-/* ✅ Aktiver Tab: grün + dezenter Glow */
+/* Aktiver Tab */
 #app.sessionRoot .tabBtn.active{
   background: rgba(46,204,113,0.16);
   border-color: rgba(46,204,113,0.75);

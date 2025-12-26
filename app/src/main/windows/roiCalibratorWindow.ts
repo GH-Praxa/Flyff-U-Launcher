@@ -3,12 +3,15 @@ import { BrowserWindow, Rectangle, ipcMain } from "electron";
 export type RoiNorm = { x: number; y: number; w: number; h: number };
 export type HudRois = { nameLevel?: RoiNorm; expPercent?: RoiNorm };
 
+const logErr = (err: unknown) => console.error("[RoiCalibratorWindow]", err);
+
 export function createRoiCalibratorWindow(opts: {
   parent: BrowserWindow;
   screenRect: Rectangle; // exakt über Game-Fläche (SCREEN coords)
   pngB64: string;
   initialRois?: HudRois;
   channel: string; // eindeutiger IPC channel
+  preloadPath?: string;
 }) {
   const win = new BrowserWindow({
     parent: opts.parent,
@@ -23,8 +26,9 @@ export function createRoiCalibratorWindow(opts: {
     hasShadow: false,
     alwaysOnTop: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: opts.preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
       backgroundThrottling: false,
     },
   });
@@ -34,13 +38,13 @@ export function createRoiCalibratorWindow(opts: {
   win.setAlwaysOnTop(true, "screen-saver");
   try {
     win.moveTop();
-  } catch {}
+  } catch (err) { logErr(err); }
 
   win.setBounds(opts.screenRect, false);
   win.focus();
   try {
     win.webContents.openDevTools({ mode: "detach" });
-  } catch {}
+  } catch (err) { logErr(err); }
 
   const initial = JSON.stringify(opts.initialRois ?? {});
   const html = `
@@ -79,14 +83,17 @@ export function createRoiCalibratorWindow(opts: {
 </div>
 
 <script>
-  const { ipcRenderer } = require("electron");
-  const channel = ${JSON.stringify(opts.channel)};
+  const bridge = window.roiBridge;
   const rois = ${initial};
+
+  if(!bridge || !bridge.channel){
+    throw new Error("roi bridge missing");
+  }
 
   const log = (msg, payload) => {
     try {
-      ipcRenderer.send(channel + ":debug", { msg, payload });
-    } catch {}
+      bridge.sendDebug?.({ msg, payload });
+    } catch (err) { logErr(err); }
   };
 
   const img = document.getElementById("bg");
@@ -190,7 +197,7 @@ export function createRoiCalibratorWindow(opts: {
 
   function cancel() {
     log("cancel");
-    ipcRenderer.send(channel, { ok:false });
+    bridge.send?.({ ok:false });
     window.close();
   }
 
@@ -202,7 +209,7 @@ export function createRoiCalibratorWindow(opts: {
       alert("Bitte beide ROIs setzen (Name/Lv und EXP%).");
       return;
     }
-    ipcRenderer.send(channel, { ok:true, rois });
+    bridge.send?.({ ok:true, rois });
     window.close();
   };
 </script>
@@ -210,7 +217,7 @@ export function createRoiCalibratorWindow(opts: {
 </html>
   `.trim();
 
-  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html) + `#${encodeURIComponent(opts.channel)}`).catch((err) => console.error("[RoiCalibratorWindow] load failed", err));
   return win;
 }
 
@@ -228,6 +235,7 @@ export async function openRoiCalibratorWindow(opts: {
     getBounds: () => Rectangle | null;
     intervalMs?: number;
   };
+  preloadPath?: string;
 }): Promise<boolean> {
   const channel = `roi-calib:${opts.profileId}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
 
@@ -237,6 +245,7 @@ export async function openRoiCalibratorWindow(opts: {
     pngB64: opts.screenshotPng.toString("base64"),
     initialRois: opts.existing ?? undefined,
     channel,
+    preloadPath: opts.preloadPath,
   });
 
   // FOLLOW: Fenster bewegt/resized mit
@@ -256,7 +265,7 @@ export async function openRoiCalibratorWindow(opts: {
       last = b;
       try {
         win.setBounds(b, false);
-      } catch {}
+      } catch (err) { logErr(err); }
     };
 
     tick();
@@ -276,11 +285,11 @@ export async function openRoiCalibratorWindow(opts: {
       try {
         ipcMain.removeAllListeners(channel);
         ipcMain.removeAllListeners(channel + ":debug");
-      } catch {}
+      } catch (err) { logErr(err); }
       if (followIv) {
         try {
           clearInterval(followIv);
-        } catch {}
+        } catch (err) { logErr(err); }
         followIv = null;
       }
     };
@@ -300,14 +309,14 @@ export async function openRoiCalibratorWindow(opts: {
         cleanup();
         try {
           if (win && !win.isDestroyed()) win.close();
-        } catch {}
+        } catch (err) { logErr(err); }
       }
     });
 
     ipcMain.on(channel + ":debug", (_e, payload) => {
       try {
         console.log("[ROI CALIB DEBUG]", payload);
-      } catch {}
+      } catch (err) { logErr(err); }
     });
 
     win.on("closed", () => {
