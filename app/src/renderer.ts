@@ -1220,11 +1220,7 @@ async function renderSession(root: HTMLElement) {
   root.className = "sessionRoot";
 
   const tabsBar = el("div", "tabs");
-  const layoutStatus = el("div", "layoutStatus");
-  const setLayoutStatus = (text: string, tone: "info" | "success" | "error" = "info") => {
-    layoutStatus.textContent = text;
-    layoutStatus.className = `layoutStatus${tone === "info" ? "" : ` ${tone}`}`;
-  };
+  const setLayoutStatus = (_text: string, _tone: "info" | "success" | "error" = "info") => {};
   const content = el("div", "content"); // nur Platzhalter, BrowserView liegt drueber
   root.append(tabsBar, content);
 
@@ -1261,15 +1257,15 @@ async function renderSession(root: HTMLElement) {
   splitSlider.ariaLabel = "Fensteraufteilung anpassen";
   const splitSliderValue = el("span", "splitSliderValue", "50 / 50");
   splitControls.append(splitSlider, splitSliderValue);
-  const btnSaveLayout = el("button", "tabBtn", t("layout.saveCurrent")) as HTMLButtonElement;
+  const btnSaveLayout = el("button", "tabBtn", "💾") as HTMLButtonElement;
+  btnSaveLayout.title = t("layout.saveCurrent");
   btnSaveLayout.draggable = false;
-  const btnLayouts = el("button", "tabBtn", t("layout.pick")) as HTMLButtonElement;
+  const btnLayouts = el("button", "tabBtn", "🗂") as HTMLButtonElement;
+  btnLayouts.title = t("layout.pick");
   btnLayouts.draggable = false;
   const btnPlus = el("button", "tabBtn plus", "+") as HTMLButtonElement;
   btnPlus.draggable = false;
-  tabsBar.append(layoutStatus, tabsSpacer, btnSplit, splitControls, btnSaveLayout, btnLayouts, btnPlus);
-  setLayoutStatus("Layout status idle");
-  setLayoutStatus("Layout status idle");
+  tabsBar.append(tabsSpacer, btnSplit, splitControls, btnSaveLayout, btnLayouts, btnPlus);
 
   function isOpen(profileId: string) {
     return tabs.some((t) => t.profileId === profileId);
