@@ -1290,6 +1290,16 @@ async function renderSession(root: HTMLElement) {
     syncSplitSlider();
   }
 
+  function updateSplitGlyphs() {
+    for (const t of tabs) {
+      const glyph = t.tabBtn.querySelector('.tabGlyph') as HTMLElement | null;
+      if (!glyph) continue;
+      glyph.textContent = "";
+      if (splitState?.leftId === t.profileId) glyph.textContent = "?";
+      else if (splitState?.rightId === t.profileId) glyph.textContent = "?";
+    }
+  }
+
   function syncTabClasses() {
     for (const t of tabs) {
       const isLeft = splitState?.leftId === t.profileId;
@@ -1618,6 +1628,7 @@ async function renderSession(root: HTMLElement) {
       activeId = profileId;
       updateSplitButton();
       syncTabClasses();
+      updateSplitGlyphs();
       await window.api.sessionTabsSetSplit({
         primary: splitState.leftId,
         secondary: splitState.rightId,
@@ -1630,6 +1641,7 @@ async function renderSession(root: HTMLElement) {
 
     activeId = profileId;
     syncTabClasses();
+    updateSplitGlyphs();
     await window.api.sessionTabsSwitch(profileId);
     kickBounds();
   }
@@ -1727,6 +1739,9 @@ async function renderSession(root: HTMLElement) {
     tabBtn.dataset.title = title;
 
     if (p?.job?.trim()) tabBtn.title = p.job;
+
+    const splitGlyph = el("span", "tabGlyph", "");
+    tabBtn.prepend(splitGlyph);
 
     const closeBtn = el("span", "tabClose", "×");
     closeBtn.onclick = async (e) => {
