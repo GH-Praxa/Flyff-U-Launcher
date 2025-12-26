@@ -1,6 +1,19 @@
 # Versionshistory
 
-## 0.5.0 – Asset-Fixes & Version-Bump
+# Versionshistory
+
+## 0.7.0 — Tab-Layouts & Launcher-Polish
+
+### Added
+- **Tab-Layouts speichern/laden:** Aktuelles Tab-/Split-Setup kann benannt, gespeichert und später mit einem Klick wieder geöffnet werden (IPC + `tabLayouts.json` Store).
+- **Layout-Badges im Scroll-Bereich:** Layouts erscheinen wie die Profilkarten (brauner Rand), mit Drag-Handle, Öffnen-Button und Manage-Menü (Profil-Liste + Löschen).
+- **Neue Tipps zur Layout-Mechanik:** Hinweise zum Speichern und Split-View wurden in die Tipp-Rotation aufgenommen.
+
+### Changed
+- **Header-Refresh:** Layout-Aktualisieren-Button sitzt jetzt neben „Neues Profil“ in der Filterleiste.
+- **UI-Verfeinerungen:** Layout-Menü mit Symbol-Button, angepasste Button-Größen an die übrigen Listeneinträge.
+
+## 0.5.0 — Asset-Fixes & Version-Bump
 
 ### Fixed
 - **Fehlende Launcher-Assets nachgezogen:** `flyff.png`, `infopeng.png` und `reskill.png` werden gebundled, damit App-Icon und Topbar-Links korrekt laden.
@@ -63,7 +76,7 @@
 - Overlay-/HUD-Fenster Interaktion (Click-Through / Control-UI / Resizing / Dragging) ist **noch nicht final** (kommt als 0.3-Thema).
 
 
-## 0.1.0 – Basis Launcher (Profile, Tabs/Window, IPC)
+## 0.1.0 — Basis Launcher (Profile, Tabs/Window, IPC)
 
 ### Added
 - Grundlegender **Electron/Vite Launcher**
