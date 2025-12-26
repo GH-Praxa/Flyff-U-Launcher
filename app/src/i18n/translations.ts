@@ -548,6 +548,9 @@ const tipsEn = [
   "Mark a char as overlay target (Aibatt) so the overlay follows.",
   "Click Play to open in the chosen start mode (tabs/window).",
   "Join the Discord for feedback and bug reports.",
+  "Save your current tab setup as a layout to reload it later with one click.",
+  "Enable split-view before saving: left/right placement is kept in the layout.",
+  "Left-click a tab to set the left split pane, right-click to set the right pane.",
 ];
 
 const tipsDe = [
@@ -556,6 +559,9 @@ const tipsDe = [
   "Markiere einen Char als Overlay-Ziel (Aibatt), damit die Overlay-Anzeige folgt.",
   "Klicke auf 'Spielen', um direkt im gewählten Startmodus (Tabs/Fenster) zu öffnen.",
   "Komm auf den Discord fuer Feedback und Bugmeldungen.",
+  "Speichere dein aktuelles Tab-Setup als Layout, um es später per Klick zu laden.",
+  "Aktiviere Split-View vor dem Speichern: Links/Rechts-Anordnung bleibt im Layout erhalten.",
+  "Linksklick setzt den linken Split, Rechtsklick den rechten.",
 ];
 
 const tipsPl = [
