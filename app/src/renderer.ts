@@ -1601,22 +1601,37 @@ async function renderSession(root: HTMLElement) {
     await applySplit(null);
   }
 
-  async function setActive(profileId: string) {
+  async function setActive(profileId: string, side: "left" | "right" = "left") {
     if (splitState) {
-      if (splitState.leftId === profileId || splitState.rightId === profileId) {
-        // keep order, only focus the hovered side
+      let nextLeft = splitState.leftId;
+      let nextRight = splitState.rightId;
+
+      if (side === "left") {
+        if (profileId === nextRight) {
+          nextRight = nextLeft; // swap to keep unique pairing
+        }
+        nextLeft = profileId;
       } else {
-        // keep left anchored, swap right side to requested tab
-        splitState = { leftId: splitState.leftId, rightId: profileId, ratio: splitState.ratio };
-        updateSplitButton();
-        syncTabClasses();
-        await window.api.sessionTabsSetSplit({
-          primary: splitState.leftId,
-          secondary: splitState.rightId,
-          ratio: splitState.ratio,
-        });
+        if (profileId === nextLeft) {
+          nextLeft = nextRight;
+        }
+        nextRight = profileId;
       }
+
+      splitState = { leftId: nextLeft, rightId: nextRight, ratio: splitState.ratio };
+      activeId = profileId;
+      updateSplitButton();
+      syncTabClasses();
+      await window.api.sessionTabsSetSplit({
+        primary: splitState.leftId,
+        secondary: splitState.rightId,
+        ratio: splitState.ratio,
+      });
+      await window.api.sessionTabsSwitch(profileId);
+      kickBounds();
+      return;
     }
+
     activeId = profileId;
     syncTabClasses();
     await window.api.sessionTabsSwitch(profileId);
@@ -1748,7 +1763,11 @@ async function renderSession(root: HTMLElement) {
     };
     tabBtn.append(closeBtn);
 
-    tabBtn.onclick = () => setActive(profileId);
+    tabBtn.onclick = () => setActive(profileId, "left");
+    tabBtn.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      setActive(profileId, "right").catch(console.error);
+    });
 
     attachDnd(tabBtn, profileId);
 
