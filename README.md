@@ -37,5 +37,11 @@ npm run start
 ## Release
 - Current release: `v1.1.0`.
 
+## 1.1.0 add:
+- Left and right windows in split-screen mode are labeled with “L” and “R” tags.
+- Tab size can be adjusted via a button.
+- When closing, a dialog asks whether to close the tab, the window, or all instances.
+
 ## License
 MIT (see `package.json`).
+
