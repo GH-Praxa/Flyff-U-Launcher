@@ -4,8 +4,6 @@ Electron Forge + Vite launcher for Flyff with overlay, ROI calibration, and opti
 
 ## Features
 - Launcher UI with session/instance windows and overlay controls.
-- ROI capture/calibration pipeline and experimental overlay controllers.
-- Optional OCR pipeline powered by Python (`app/ocr/ocr_worker.py`) and Tesseract.
 - Electron Forge build chain with Vite for renderer/main/preload bundles.
 
 ## Prerequisites
