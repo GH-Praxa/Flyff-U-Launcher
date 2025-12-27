@@ -10,6 +10,8 @@ export function createLauncherWindow(opts: {
     const win = new BrowserWindow({
         width: 980,
         height: 640,
+        show: false,
+        backgroundColor: "#0b1220",
         webPreferences: {
             preload: opts.preloadPath,
             contextIsolation: true,
@@ -21,6 +23,10 @@ export function createLauncherWindow(opts: {
     win.setMenu(null);
     hardenWebviews(win);
     opts.loadView(win, "launcher").catch(console.error);
+    win.once("ready-to-show", () => {
+        if (!win.isDestroyed())
+            win.show();
+    });
     win.on("closed", () => opts.onClosed?.());
     return win;
 }

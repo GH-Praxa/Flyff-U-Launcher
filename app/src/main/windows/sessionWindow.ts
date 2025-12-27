@@ -6,6 +6,7 @@ export function createSessionWindowController(opts: {
 }) {
     let sessionWindow: BrowserWindow | null = null;
     const onClosedHandlers: Array<() => void> = [];
+    let skipClosePrompt = false;
     async function ensure() {
         if (sessionWindow && !sessionWindow.isDestroyed())
             return sessionWindow;
@@ -22,9 +23,32 @@ export function createSessionWindowController(opts: {
         sessionWindow.setMaxListeners(0);
         sessionWindow.setMenuBarVisibility(false);
         sessionWindow.setAutoHideMenuBar(true);
+        sessionWindow.on("close", (e) => {
+            if (!sessionWindow || sessionWindow.isDestroyed())
+                return;
+            if (skipClosePrompt) {
+                skipClosePrompt = false;
+                return;
+            }
+            e.preventDefault();
+            try {
+                sessionWindow.webContents.send("sessionWindow:closeRequested");
+            }
+            catch (err) {
+                console.error("[SessionWindow]", err);
+                skipClosePrompt = true;
+                try {
+                    sessionWindow.close();
+                }
+                catch (err2) {
+                    console.error("[SessionWindow]", err2);
+                }
+            }
+        });
         await opts.loadView(sessionWindow, "session");
         sessionWindow.on("closed", () => {
             sessionWindow = null;
+            skipClosePrompt = false;
             for (const fn of onClosedHandlers) {
                 try {
                     fn();
@@ -42,6 +66,16 @@ export function createSessionWindowController(opts: {
     function onClosed(fn: () => void) {
         onClosedHandlers.push(fn);
     }
-    return { ensure, get, onClosed };
+    function allowCloseWithoutPrompt() {
+        skipClosePrompt = true;
+    }
+    function closeWithoutPrompt() {
+        const win = get();
+        if (!win)
+            return;
+        skipClosePrompt = true;
+        win.close();
+    }
+    return { ensure, get, onClosed, allowCloseWithoutPrompt, closeWithoutPrompt };
 }
 export type SessionWindowController = ReturnType<typeof createSessionWindowController>;

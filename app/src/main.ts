@@ -24,6 +24,7 @@ app.setAppUserModelId("Flyff-U-Launcher");
 let _launcherWindow: BrowserWindow | null = null;
 let overlayTarget: ReturnType<typeof createOverlayTargetController> | null = null;
 let sidePanel: ReturnType<typeof createSidePanelController> | null = null;
+let sessionWindow: ReturnType<typeof createSessionWindowController> | null = null;
 app.whenReady().then(async () => {
     const preloadPath = path.join(__dirname, "preload.js");
     console.log("userData:", app.getPath("userData"));
@@ -34,21 +35,25 @@ app.whenReady().then(async () => {
     });
     const profiles = createProfilesStore();
     const tabLayouts = createTabLayoutsStore();
-    const sessionWindow = createSessionWindowController({
+    sessionWindow = createSessionWindowController({
         preloadPath,
         loadView,
     });
+    const sessionWindowController = sessionWindow;
+    if (!sessionWindowController) {
+        throw new Error("Failed to create session window controller");
+    }
     const sessionTabs = createSessionTabsManager({
-        sessionWindow,
+        sessionWindow: sessionWindowController,
         flyffUrl: FLYFF_URL,
     });
-    sessionWindow.onClosed(() => sessionTabs.reset());
+    sessionWindowController.onClosed(() => sessionTabs.reset());
     const instances = createInstanceRegistry();
     const roiStore = createRoiStore();
     overlayTarget = createOverlayTargetController({
         profiles,
         roiStore,
-        sessionWindow,
+        sessionWindow: sessionWindowController,
         sessionTabs,
         instances,
         pythonExe: process.env.FLYFF_OCR_PYTHON ?? "python",
@@ -57,7 +62,7 @@ app.whenReady().then(async () => {
     });
     sidePanel = createSidePanelController({
         profiles,
-        sessionWindow,
+        sessionWindow: sessionWindowController,
         sessionTabs,
         instances,
         preloadPath,
@@ -96,7 +101,7 @@ app.whenReady().then(async () => {
             });
             return true;
         }
-        const win = await sessionWindow.ensure();
+        const win = await sessionWindowController.ensure();
         win.show();
         win.focus();
         const view = sessionTabs.getViewByProfile(profileId);
@@ -115,7 +120,7 @@ app.whenReady().then(async () => {
         const screenshot = await v2.webContents.capturePage();
         const existing = await roiStore.get(profileId);
         const getFollowBounds = () => {
-            const w = sessionWindow.get();
+            const w = sessionWindowController.get();
             if (!w || w.isDestroyed())
                 return null;
             const vb = sessionTabs.getBounds(profileId);
@@ -150,7 +155,7 @@ app.whenReady().then(async () => {
     registerMainIpc({
         profiles,
         sessionTabs,
-        sessionWindow,
+        sessionWindow: sessionWindowController,
         tabLayouts,
         loadView,
         createInstanceWindow: (profileId) => {
@@ -187,6 +192,7 @@ app.whenReady().then(async () => {
     });
 });
 app.on("before-quit", () => {
+    sessionWindow?.allowCloseWithoutPrompt();
     overlayTarget?.stop();
     overlayTarget = null;
     sidePanel?.stop();

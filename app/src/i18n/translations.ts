@@ -53,6 +53,7 @@ const messagesEn = {
   "split.subtitle": "Choose a second tab to show side by side.",
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
+  "tabHeight.label": "Tab height",
 
   "layout.title": "Tab layouts",
   "layout.saveCurrent": "Save current layout",
@@ -65,6 +66,13 @@ const messagesEn = {
   "layout.saveStart": "Saving layout...",
   "layout.saved": "Layout saved.",
   "layout.saveError": "Could not save layout.",
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 const messagesDe: typeof messagesEn = {
@@ -118,7 +126,9 @@ const messagesDe: typeof messagesEn = {
   "split.subtitle": "Wähle einen zweiten Tab, der daneben angezeigt wird.",
   "split.noOpenTabs": "Keine weiteren offenen Tabs.",
   "split.openOther": "Anderes Profil öffnen...",
+  "tabHeight.label": "Tab-H?he",
 
+  "tabHeight.label": "Tab-H?he",
   "layout.title": "Tab-Layouts",
   "layout.saveCurrent": "Aktuelles Layout speichern",
   "layout.pick": "Layout wählen",
@@ -130,7 +140,13 @@ const messagesDe: typeof messagesEn = {
   "layout.saveStart": "Layout wird gespeichert...",
   "layout.saved": "Layout gespeichert.",
   "layout.saveError": "Layout konnte nicht gespeichert werden.",
-
+  "close.title": "Schliessen",
+  "close.prompt": "Was moechtest du schliessen?",
+  "close.target": "Aktiver Tab:",
+  "close.optionTab": "Nur diesen Tab",
+  "close.optionWindow": "Dieses Fenster",
+  "close.optionApp": "Gesamtes Programm (alle Instanzen)",
+  "close.optionCancel": "Abbrechen",
 };
 
 const messagesPl: typeof messagesEn = {
@@ -185,6 +201,8 @@ const messagesPl: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "Wysokość kart",
+
   "layout.title": "Układy kart",
   "layout.saveCurrent": "Zapisz bieżący układ",
   "layout.pick": "Wybierz układ",
@@ -196,7 +214,13 @@ const messagesPl: typeof messagesEn = {
   "layout.saveStart": "Zapisywanie układu...",
   "layout.saved": "Układ zapisany.",
   "layout.saveError": "Nie udało się zapisać układu.",
-
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 const messagesFr: typeof messagesEn = {
@@ -251,6 +275,8 @@ const messagesFr: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "Hauteur des onglets",
+  "tabHeight.label": "Hauteur des onglets",
   "layout.title": "Layouts d'onglets",
   "layout.saveCurrent": "Enregistrer le layout actuel",
   "layout.pick": "Choisir un layout",
@@ -262,7 +288,13 @@ const messagesFr: typeof messagesEn = {
   "layout.saveStart": "Sauvegarde du layout...",
   "layout.saved": "Layout enregistré.",
   "layout.saveError": "Impossible d'enregistrer le layout.",
-
+  "close.title": "Fermer",
+  "close.prompt": "Que souhaitez-vous fermer ?",
+  "close.target": "Onglet actif :",
+  "close.optionTab": "Seulement cet onglet",
+  "close.optionWindow": "Cette fenêtre",
+  "close.optionApp": "Toute l'application (toutes les instances)",
+  "close.optionCancel": "Annuler",
 };
 
 const messagesRu: typeof messagesEn = {
@@ -317,6 +349,8 @@ const messagesRu: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "Высота вкладок",
+
   "layout.title": "Схемы вкладок",
   "layout.saveCurrent": "Сохранить текущую схему",
   "layout.pick": "Выбрать схему",
@@ -328,7 +362,13 @@ const messagesRu: typeof messagesEn = {
   "layout.saveStart": "Сохраняю схему...",
   "layout.saved": "Схема сохранена.",
   "layout.saveError": "Не удалось сохранить схему.",
-
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 const messagesTr: typeof messagesEn = {
@@ -383,6 +423,8 @@ const messagesTr: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "Sekme yüksekliği",
+
   "layout.title": "Sekme yerleşimleri",
   "layout.saveCurrent": "Geçerli yerleşimi kaydet",
   "layout.pick": "Yerleşim seç",
@@ -394,7 +436,13 @@ const messagesTr: typeof messagesEn = {
   "layout.saveStart": "Yerleşim kaydediliyor...",
   "layout.saved": "Yerleşim kaydedildi.",
   "layout.saveError": "Yerleşim kaydedilemedi.",
-
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 const messagesCn: typeof messagesEn = {
@@ -449,6 +497,8 @@ const messagesCn: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "标签高度",
+
   "layout.title": "标签布局",
   "layout.saveCurrent": "保存当前布局",
   "layout.pick": "选择布局",
@@ -460,7 +510,13 @@ const messagesCn: typeof messagesEn = {
   "layout.saveStart": "正在保存布局...",
   "layout.saved": "布局已保存。",
   "layout.saveError": "布局保存失败。",
-
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 const messagesJp: typeof messagesEn = {
@@ -515,6 +571,8 @@ const messagesJp: typeof messagesEn = {
   "split.noOpenTabs": "No other open tabs.",
   "split.openOther": "Open another profile...",
 
+  "tabHeight.label": "タブ高さ",
+
   "layout.title": "タブレイアウト",
   "layout.saveCurrent": "現在のレイアウトを保存",
   "layout.pick": "レイアウトを選択",
@@ -526,7 +584,13 @@ const messagesJp: typeof messagesEn = {
   "layout.saveStart": "レイアウトを保存中...",
   "layout.saved": "レイアウトを保存しました。",
   "layout.saveError": "レイアウトを保存できませんでした。",
-
+  "close.title": "Close",
+  "close.prompt": "What do you want to close?",
+  "close.target": "Active tab:",
+  "close.optionTab": "Only this tab",
+  "close.optionWindow": "This window",
+  "close.optionApp": "Entire app (all instances)",
+  "close.optionCancel": "Cancel",
 };
 
 export type TranslationKey = keyof typeof messagesEn;

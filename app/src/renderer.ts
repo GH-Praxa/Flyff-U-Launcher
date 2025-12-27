@@ -1352,6 +1352,7 @@ async function renderSession(root: HTMLElement) {
         rightId: string;
         ratio: number;
     };
+    type CloseChoice = "tab" | "window" | "app" | "cancel";
     const defaultSplitRatio = 0.5;
     const minSplitRatio = 0.2;
     const maxSplitRatio = 0.8;
@@ -1360,6 +1361,36 @@ async function renderSession(root: HTMLElement) {
     let splitState: SplitState | null = null;
     let currentSplitRatio = defaultSplitRatio;
     let pendingSplitAnchor: string | null = null;
+    let closePromptOpen = false;
+    const TAB_HEIGHT_KEY = "sessionTabHeightPx";
+    const tabHeightPresets = [28, 32, 36, 40, 44, 48, 52, 56, 60, 64];
+    function loadTabHeight() {
+        try {
+            const raw = localStorage.getItem(TAB_HEIGHT_KEY);
+            const num = raw ? Number(raw) : NaN;
+            if (Number.isFinite(num))
+                return num;
+        }
+        catch (err) {
+            logErr(err);
+        }
+        return tabHeightPresets[1];
+    }
+    function persistTabHeight(px: number) {
+        try {
+            localStorage.setItem(TAB_HEIGHT_KEY, String(px));
+        }
+        catch (err) {
+            logErr(err);
+        }
+    }
+    function applyTabHeight(px: number) {
+        const clamped = Math.max(28, Math.min(64, Math.round(px)));
+        document.documentElement.style.setProperty("--session-tab-height", `${clamped}px`);
+        persistTabHeight(clamped);
+        return clamped;
+    }
+    let tabHeightPx = applyTabHeight(loadTabHeight());
     function clampSplitRatio(r: number) {
         const value = Number.isFinite(r) ? r : defaultSplitRatio;
         return Math.min(maxSplitRatio, Math.max(minSplitRatio, value));
@@ -1380,6 +1411,17 @@ async function renderSession(root: HTMLElement) {
     splitSlider.ariaLabel = "Fensteraufteilung anpassen";
     const splitSliderValue = el("span", "splitSliderValue", "50 / 50");
     splitControls.append(splitSlider, splitSliderValue);
+    const btnTabHeight = el("button", "tabBtn iconBtn", `↕ ${tabHeightPx}px`) as HTMLButtonElement;
+    btnTabHeight.title = `${t("tabHeight.label")}: ${tabHeightPx}px`;
+    btnTabHeight.draggable = false;
+    btnTabHeight.onclick = () => {
+        const idx = tabHeightPresets.findIndex((v) => v === tabHeightPx);
+        const nextIdx = (idx + 1) % tabHeightPresets.length;
+        tabHeightPx = applyTabHeight(tabHeightPresets[nextIdx]);
+        btnTabHeight.textContent = `↕ ${tabHeightPx}px`;
+        btnTabHeight.title = `${t("tabHeight.label")}: ${tabHeightPx}px`;
+        kickBounds();
+    };
     const btnSaveLayout = el("button", "tabBtn iconBtn", "💾") as HTMLButtonElement;
     btnSaveLayout.title = t("layout.saveCurrent");
     btnSaveLayout.draggable = false;
@@ -1388,7 +1430,7 @@ async function renderSession(root: HTMLElement) {
     btnLayouts.draggable = false;
     const btnPlus = el("button", "tabBtn iconBtn plus", "+") as HTMLButtonElement;
     btnPlus.draggable = false;
-    tabsBar.append(tabsSpacer, btnSplit, splitControls, btnSaveLayout, btnLayouts, btnPlus);
+    tabsBar.append(tabsSpacer, btnSplit, splitControls, btnTabHeight, btnSaveLayout, btnLayouts, btnPlus);
     function isOpen(profileId: string) {
         return tabs.some((t) => t.profileId === profileId);
     }
@@ -1415,11 +1457,26 @@ async function renderSession(root: HTMLElement) {
             const glyph = t.tabBtn.querySelector('.tabGlyph') as HTMLElement | null;
             if (!glyph)
                 continue;
-            glyph.textContent = "";
-            if (splitState?.leftId === t.profileId)
-                glyph.textContent = "?";
-            else if (splitState?.rightId === t.profileId)
-                glyph.textContent = "?";
+            glyph.innerHTML = "";
+            glyph.classList.remove("isLeft", "isRight");
+            const side = splitState?.leftId === t.profileId
+                ? "left"
+                : splitState?.rightId === t.profileId
+                    ? "right"
+                    : null;
+            if (!side) {
+                glyph.style.display = "none";
+                continue;
+            }
+            glyph.style.display = "inline-flex";
+            glyph.classList.add(side === "left" ? "isLeft" : "isRight");
+            glyph.textContent = side === "left" ? "L" : "R";
+            if (side === "left") {
+                glyph.style.background = "linear-gradient(120deg, rgba(46,204,113,0.85), rgba(46,204,113,0.55))";
+            }
+            else {
+                glyph.style.background = "linear-gradient(120deg, rgba(44,107,255,0.85), rgba(44,107,255,0.55))";
+            }
         }
     }
     function syncTabClasses() {
@@ -1802,6 +1859,117 @@ async function renderSession(root: HTMLElement) {
             moveTab(fromId, profileId, after);
         });
     }
+    async function promptCloseChoice(targetProfileId: string | null): Promise<CloseChoice> {
+        await window.api.sessionTabsSetVisible(false).catch(() => undefined);
+        const targetLabel = targetProfileId ? findTab(targetProfileId)?.title ?? targetProfileId : null;
+        return await new Promise<CloseChoice>((resolve) => {
+            const overlay = el("div", "modalOverlay");
+            const modal = el("div", "modal");
+            const header = el("div", "modalHeader", t("close.title"));
+            const body = el("div", "modalBody");
+            const prompt = el("div", "modalHint", t("close.prompt"));
+            const targetHint = targetLabel ? el("div", "modalHint", `${t("close.target")} ${targetLabel}`) : null;
+            const actions = el("div", "manageActions");
+            const btnTab = el("button", "btn primary", t("close.optionTab")) as HTMLButtonElement;
+            const btnWindow = el("button", "btn", t("close.optionWindow")) as HTMLButtonElement;
+            const btnApp = el("button", "btn danger", t("close.optionApp")) as HTMLButtonElement;
+            const btnCancel = el("button", "btn", t("close.optionCancel")) as HTMLButtonElement;
+            let done = false;
+            const finish = (choice: CloseChoice) => {
+                if (done)
+                    return;
+                done = true;
+                overlay.remove();
+                window.removeEventListener("keydown", onKey);
+                resolve(choice);
+            };
+            const onKey = (e: KeyboardEvent) => {
+                if (e.key === "Escape")
+                    finish("cancel");
+            };
+            window.addEventListener("keydown", onKey);
+            btnTab.disabled = !targetProfileId;
+            btnTab.onclick = () => finish("tab");
+            btnWindow.onclick = () => finish("window");
+            btnApp.onclick = () => finish("app");
+            btnCancel.onclick = () => finish("cancel");
+            actions.append(btnTab, btnWindow, btnApp, btnCancel);
+            body.append(prompt);
+            if (targetHint)
+                body.append(targetHint);
+            body.append(actions);
+            modal.append(header, body);
+            overlay.append(modal);
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay)
+                    finish("cancel");
+            });
+            document.body.append(overlay);
+            (btnTab.disabled ? btnWindow : btnTab).focus();
+        });
+    }
+    async function closeTab(profileId: string) {
+        pendingSplitAnchor = pendingSplitAnchor === profileId ? null : pendingSplitAnchor;
+        const wasSplit = splitState && (splitState.leftId === profileId || splitState.rightId === profileId);
+        const survivorId = wasSplit ? (splitState.leftId === profileId ? splitState.rightId : splitState.leftId) : null;
+        await window.api.sessionTabsClose(profileId);
+        const idx = tabs.findIndex((t) => t.profileId === profileId);
+        if (idx >= 0) {
+            const [removed] = tabs.splice(idx, 1);
+            removed.tabBtn.remove();
+        }
+        else {
+            const existing = findTab(profileId);
+            existing?.tabBtn.remove();
+        }
+        if (wasSplit)
+            await clearSplit();
+        const next = (survivorId && isOpen(survivorId) ? findTab(survivorId) : null) ??
+            tabs[idx] ??
+            tabs[idx - 1] ??
+            null;
+        activeId = null;
+        if (next)
+            await setActive(next.profileId);
+        renderTabsOrder();
+        updateSplitButton();
+        syncTabClasses();
+        updateSplitGlyphs();
+    }
+    async function handleCloseChoice(profileId?: string | null) {
+        if (closePromptOpen)
+            return;
+        closePromptOpen = true;
+        const targetId = profileId ?? activeId ?? tabs[0]?.profileId ?? null;
+        let restoreTabs = true;
+        try {
+            const choice = await promptCloseChoice(targetId);
+            restoreTabs = choice === "tab" || choice === "cancel" || !targetId;
+            if (choice === "tab") {
+                if (targetId)
+                    await closeTab(targetId);
+            }
+            else if (choice === "window") {
+                restoreTabs = false;
+                await window.api.sessionWindowClose();
+            }
+            else if (choice === "app") {
+                restoreTabs = false;
+                await window.api.appQuit();
+            }
+        }
+        catch (err) {
+            logErr(err);
+            restoreTabs = true;
+        }
+        finally {
+            closePromptOpen = false;
+        }
+        if (restoreTabs) {
+            window.api.sessionTabsSetVisible(true).catch(() => undefined);
+            kickBounds();
+        }
+    }
     async function openTab(profileId: string) {
         const existing = tabs.find((t) => t.profileId === profileId);
         if (existing) {
@@ -1821,33 +1989,15 @@ async function renderSession(root: HTMLElement) {
         tabBtn.className = "tabBtn sessionTab";
         tabBtn.dataset.title = title;
         const splitGlyph = el("span", "tabGlyph", "");
+        (splitGlyph as HTMLElement).style.display = "none";
         const jobIcon = createJobIcon(p?.job, "tabJobIcon");
         const label = el("span", "tabLabel", title);
         if (p?.job?.trim())
             tabBtn.title = p.job;
         const closeBtn = el("span", "tabClose", "×");
-        closeBtn.onclick = async (e) => {
+        closeBtn.onclick = (e) => {
             e.stopPropagation();
-            pendingSplitAnchor = pendingSplitAnchor === profileId ? null : pendingSplitAnchor;
-            const wasSplit = splitState && (splitState.leftId === profileId || splitState.rightId === profileId);
-            const survivorId = wasSplit ? (splitState.leftId === profileId ? splitState.rightId : splitState.leftId) : null;
-            await window.api.sessionTabsClose(profileId);
-            const idx = tabs.findIndex((t) => t.profileId === profileId);
-            if (idx >= 0)
-                tabs.splice(idx, 1);
-            tabBtn.remove();
-            if (wasSplit)
-                await clearSplit();
-            const next = (survivorId && isOpen(survivorId) ? findTab(survivorId) : null) ??
-                tabs[idx] ??
-                tabs[idx - 1] ??
-                null;
-            activeId = null;
-            if (next)
-                await setActive(next.profileId);
-            renderTabsOrder();
-            updateSplitButton();
-            syncTabClasses();
+            handleCloseChoice(profileId).catch(console.error);
         };
         tabBtn.append(splitGlyph);
         if (jobIcon)
@@ -1994,6 +2144,9 @@ async function renderSession(root: HTMLElement) {
             return;
         activeId = profileId;
         syncTabClasses();
+    });
+    window.api.onSessionWindowCloseRequested(() => {
+        handleCloseChoice(activeId).catch(console.error);
     });
     window.api.onApplyLayout((layout: TabLayout) => {
         applyLayout(layout).catch(console.error);

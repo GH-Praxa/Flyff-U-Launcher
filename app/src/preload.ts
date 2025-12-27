@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld("api", {
     } | null) => ipcRenderer.invoke("sessionTabs:setSplit", pair),
     sessionTabsSetSplitRatio: (ratio: number) => ipcRenderer.invoke("sessionTabs:setSplitRatio", ratio),
     sessionTabsReset: () => ipcRenderer.invoke("sessionTabs:reset"),
+    sessionWindowClose: () => ipcRenderer.invoke("sessionWindow:close"),
+    appQuit: () => ipcRenderer.invoke("app:quit"),
     tabLayoutsList: () => ipcRenderer.invoke("tabLayouts:list"),
     tabLayoutsGet: (id: string) => ipcRenderer.invoke("tabLayouts:get", id),
     tabLayoutsSave: (input: any) => ipcRenderer.invoke("tabLayouts:save", input),
@@ -40,6 +42,9 @@ contextBridge.exposeInMainWorld("api", {
     },
     onSessionActiveChanged: (cb: (profileId: string | null) => void) => {
         ipcRenderer.on("sessionTabs:activeChanged", (_e, profileId: string | null) => cb(profileId));
+    },
+    onSessionWindowCloseRequested: (cb: () => void) => {
+        ipcRenderer.on("sessionWindow:closeRequested", () => cb());
     },
     fetchNewsPage: (path?: string) => ipcRenderer.invoke("news:fetch", path),
     fetchNewsArticle: (url: string) => ipcRenderer.invoke("news:fetchArticle", url),

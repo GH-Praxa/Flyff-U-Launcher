@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { ipcMain, app } from "electron";
 import https from "https";
 type Rect = {
     x: number;
@@ -21,6 +21,8 @@ type ProfilesStore = {
 type SessionWindowController = {
     ensure: () => Promise<any>;
     get: () => any | null;
+    allowCloseWithoutPrompt: () => void;
+    closeWithoutPrompt: () => void;
 };
 type SessionTabsManager = {
     open: (profileId: string) => Promise<void> | void;
@@ -147,6 +149,15 @@ export function registerMainIpc(opts: {
     });
     safeHandle("sessionTabs:reset", async () => {
         opts.sessionTabs.reset();
+        return true;
+    });
+    safeHandle("sessionWindow:close", async () => {
+        opts.sessionWindow.closeWithoutPrompt();
+        return true;
+    });
+    safeHandle("app:quit", async () => {
+        opts.sessionWindow.allowCloseWithoutPrompt();
+        app.quit();
         return true;
     });
     safeHandle("tabLayouts:list", async () => await opts.tabLayouts.list());
