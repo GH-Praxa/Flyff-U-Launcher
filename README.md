@@ -1,4 +1,4 @@
-# Flyff-U-Launcher
+# Unofficial Flyff-U-Launcher
 
 Electron Forge + Vite launcher for Flyff with overlay, ROI calibration, and optional OCR support. Main-process logic lives under `app/src/main`, while the UI is driven by `app/src/renderer.ts` and shared styles in `app/src/index.css`. Packaging and scripts are scoped to the `app/` workspace.
 
