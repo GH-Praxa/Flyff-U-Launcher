@@ -1,15 +1,12 @@
 # Unofficial Flyff-U-Launcher
 
-Electron Forge + Vite launcher for Flyff with overlay, ROI calibration, and optional OCR support. Main-process logic lives under `app/src/main`, while the UI is driven by `app/src/renderer.ts` and shared styles in `app/src/index.css`. Packaging and scripts are scoped to the `app/` workspace.
+Electron Forge + Vite launcher for Flyff Universe
 
 ## Features
 - Launcher UI with session/instance windows and overlay controls.
-- Electron Forge build chain with Vite for renderer/main/preload bundles.
 
 ## Prerequisites
 - Node.js (18+ recommended) and npm.
-- For OCR: Python 3 with `pip`, plus Tesseract available on `PATH`.
-- Windows is the primary target (uses Electron with native overlay windows).
 
 ## Quickstart
 ```bash
@@ -34,16 +31,11 @@ npm run start
 - `app/src/main/` — Windows/controllers, session tabs, overlay targets, ROI capture, IPC wiring.
 - `app/src/preload.ts` — Preload bridge.
 - `app/src/renderer.ts` — Launcher UI entry; shared styling in `app/src/index.css`; React/TSX experiments under `app/src/ui/`.
-- `app/src/main/expOverlay` & `app/src/main/roi` — Overlay and calibration logic.
-- `app/ocr/ocr_worker.py` — OCR worker.
 - Config: `.eslintrc.json`, `tsconfig.json`, `forge.config.ts`.
 
-## Configuration Notes
-- Environment: `FLYFF_OCR_PYTHON` for custom Python path; ensure `PATH` includes Tesseract.
-- Runtime screenshots/crops go to the Electron `userData` path (not versioned).
 
 ## Release
-- Current release: `v1.0.0` (branch `1.0`).
+- Current release: `v1.1.0`.
 
 ## License
 MIT (see `package.json`).
