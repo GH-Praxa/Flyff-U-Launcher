@@ -28,12 +28,6 @@ npm run start
 - `npm run publish` — Publish via Electron Forge publishers.
 - Vite output lives in `app/.vite/build/` (kept out of git).
 
-## OCR Setup (optional)
-```bash
-cd app
-pip install -r ocr/requirements.txt
-```
-Ensure `tesseract` is on `PATH`. Set `FLYFF_OCR_PYTHON` to point to a specific Python interpreter if needed.
 
 ## Project Structure
 - `app/` — Electron Forge + Vite project (run all npm commands here).
