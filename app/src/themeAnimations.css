@@ -1,0 +1,22 @@
+.theme-animation-layer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.theme-animation-layer canvas{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.theme-animation-layer.is-active{
+  opacity: 1;
+}
+
+body.has-theme-animation{
+  position: relative;
+}

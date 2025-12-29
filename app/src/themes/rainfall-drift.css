@@ -1,0 +1,58 @@
+:root.theme-rainfall-drift{
+  --bg: #0c1118;
+  --panel: #101825;
+  --panel2: #111c2a;
+  --stroke: #273347;
+  --text: #e9eff7;
+  --muted: #6f94c5;
+  --blue: #5babff;
+  --blue2: #8fd9ff;
+  --danger: #ff6377;
+  --shadow: 0 15px 40px rgba(2,3,9,0.8);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #5ff5d7;
+  --accent-rgb: 91,171,255;
+  --danger-rgb: 255,99,119;
+  --green-rgb: 95,245,215;
+  --tab-active-rgb: 95,245,215;
+}
+
+.theme-rainfall-drift body{
+  background: linear-gradient(180deg, #0c1118 0%, #0a0f17 50%, #05070d 100%);
+  position: relative;
+}
+
+.theme-rainfall-drift body::after{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(transparent 50%, rgba(255,255,255,0.05) 50%),
+    radial-gradient(circle at 70% -30%, rgba(var(--accent-rgb),0.35), transparent 45%);
+  background-size: 100% 200%, 180% 180%;
+  animation: rainFall 5s linear infinite, driftGlow 14s ease-in-out infinite;
+}
+
+@keyframes rainFall{
+  0%{ background-position: 0 0, 0 0; }
+  100%{ background-position: 0 200%, 0 0; }
+}
+
+@keyframes driftGlow{
+  0%{ opacity: 0.35; transform: translateY(0); }
+  50%{ opacity: 0.65; transform: translateY(12px); }
+  100%{ opacity: 0.35; transform: translateY(0); }
+}
+
+.theme-rainfall-drift .panel{
+  border-color: rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+}
+
+.theme-rainfall-drift .btn.primary{
+  border-color: rgba(var(--accent-rgb),0.65);
+  background: rgba(var(--accent-rgb),0.2);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.35), 0 12px 25px rgba(0,0,0,0.45);
+}

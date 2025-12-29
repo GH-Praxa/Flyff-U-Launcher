@@ -1,0 +1,73 @@
+:root.theme-midnight-neon{
+  --bg: #030918;
+  --panel: #090e24;
+  --panel2: #11163a;
+  --stroke: #1c2b60;
+  --text: #e3ebff;
+  --muted: #7bc8ff;
+  --blue: #47c7ff;
+  --blue2: #82d7ff;
+  --danger: #ff4fa4;
+  --shadow: 0 16px 45px rgba(3,9,24,0.8);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #7af5c7;
+  --accent-rgb: 71,199,255;
+  --danger-rgb: 255,79,164;
+  --green-rgb: 122,245,199;
+  --tab-active-rgb: 206,67,238;
+}
+
+.theme-midnight-neon body{
+  background:
+    radial-gradient(circle at 10% 15%, rgba(71,199,255,0.28), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(255,79,164,0.3), transparent 40%),
+    linear-gradient(180deg, rgba(9,29,65,0.9), #030918 60%);
+}
+
+.theme-midnight-neon #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.35), rgba(0,0,0,0.9));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-midnight-neon #app.sessionRoot .tabBtn{
+  border-color: rgba(var(--accent-rgb),0.55);
+  background: rgba(255,255,255,0.02);
+  color: var(--text);
+}
+.theme-midnight-neon #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.8);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb),0.25);
+}
+.theme-midnight-neon #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.25);
+}
+.theme-midnight-neon #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.28), rgba(0,0,0,0.35));
+  border-color: rgba(var(--tab-active-rgb),0.9);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.2),
+    0 10px 28px rgba(0,0,0,0.6);
+}
+
+.theme-midnight-neon .btn.primary{
+  background: linear-gradient(135deg, #47c7ff, #d466ff);
+  border-color: rgba(255,255,255,0.5);
+  color: #090c1f;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 18px 36px rgba(0,0,0,0.45);
+}
+.theme-midnight-neon .btn.primary:hover{
+  background: linear-gradient(135deg, #78e4ff, #ff7aca);
+  border-color: rgba(255,255,255,0.7);
+}
+.theme-midnight-neon .topbar .btn.primary{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(var(--accent-rgb),0.5);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.35), 0 10px 20px rgba(0,0,0,0.45);
+}
+.theme-midnight-neon .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(var(--accent-rgb),0.75);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.55), 0 12px 26px rgba(0,0,0,0.5);
+}

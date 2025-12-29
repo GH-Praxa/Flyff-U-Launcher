@@ -1,0 +1,72 @@
+:root.theme-neo-classic{
+  --bg: #12131a;
+  --panel: #1d1f28;
+  --panel2: #1a1c24;
+  --stroke: #2e3244;
+  --text: #f4f7ff;
+  --muted: #b2c0d8;
+  --blue: #5fb4ff;
+  --blue2: #9bc7ff;
+  --danger: #ff7373;
+  --shadow: 0 12px 32px rgba(4,5,12,0.65);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #6dd4c7;
+  --accent-rgb: 95,180,255;
+  --danger-rgb: 255,115,115;
+  --green-rgb: 109,212,199;
+  --tab-active-rgb: 95,180,255;
+}
+
+.theme-neo-classic body{
+  background:
+    linear-gradient(180deg, rgba(18,19,26,0.9), #10121a 80%);
+}
+
+.theme-neo-classic #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.25), rgba(0,0,0,0.85));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-neo-classic #app.sessionRoot .tabBtn{
+  border-color: var(--stroke);
+  background: var(--panel);
+  color: var(--text);
+}
+.theme-neo-classic #app.sessionRoot .tabBtn:hover{
+  background: var(--panel2);
+  border-color: rgba(var(--accent-rgb),0.45);
+  box-shadow: 0 6px 14px rgba(var(--accent-rgb),0.15);
+}
+.theme-neo-classic #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.25);
+}
+.theme-neo-classic #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.18), rgba(0,0,0,0.32));
+  border-color: rgba(var(--tab-active-rgb),0.8);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.18),
+    0 12px 26px rgba(0,0,0,0.45);
+}
+
+.theme-neo-classic .btn.primary{
+  background: linear-gradient(135deg, #5fb4ff, #7ea6ff);
+  border-color: rgba(255,255,255,0.4);
+  color: #0e1019;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 12px 24px rgba(0,0,0,0.4);
+}
+.theme-neo-classic .btn.primary:hover{
+  background: linear-gradient(135deg, #87c8ff, #a3cfff);
+  border-color: rgba(255,255,255,0.55);
+}
+.theme-neo-classic .topbar .btn.primary{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(var(--accent-rgb),0.35);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.2), 0 10px 20px rgba(0,0,0,0.35);
+}
+.theme-neo-classic .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(var(--accent-rgb),0.55);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.4), 0 12px 24px rgba(0,0,0,0.45);
+}

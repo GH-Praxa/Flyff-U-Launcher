@@ -1,0 +1,70 @@
+:root.theme-wood-grain{
+  --bg: #1a1309;
+  --panel: #22170d;
+  --panel2: #1f1209;
+  --stroke: #563c1d;
+  --text: #f9f1e7;
+  --muted: #b38a53;
+  --blue: #d2a16b;
+  --blue2: #f1c58a;
+  --danger: #ff9b4c;
+  --shadow: 0 16px 40px rgba(10,6,3,0.8);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #86c186;
+  --accent-rgb: 210,161,107;
+  --danger-rgb: 255,155,76;
+  --green-rgb: 134,193,134;
+  --tab-active-rgb: 134,193,134;
+}
+
+.theme-wood-grain body{
+  background:
+    radial-gradient(circle at 10% 15%, rgba(255,239,199,0.25), transparent 50%),
+    linear-gradient(180deg, #120c07, #1a1309 60%);
+}
+
+.theme-wood-grain #app.sessionRoot .tabs{
+  background: var(--panel);
+  border-bottom-color: var(--stroke);
+}
+
+.theme-wood-grain #app.sessionRoot .tabBtn{
+  border-color: var(--stroke);
+  background: var(--panel2);
+  color: var(--text);
+}
+.theme-wood-grain #app.sessionRoot .tabBtn:hover{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(var(--accent-rgb),0.55);
+}
+.theme-wood-grain #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.2);
+}
+.theme-wood-grain #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.2), rgba(0,0,0,0.4));
+  border-color: rgba(var(--tab-active-rgb),0.85);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.18),
+    0 10px 22px rgba(0,0,0,0.45);
+}
+
+.theme-wood-grain .btn.primary{
+  background: linear-gradient(135deg, #d2a16b, #ffcf84);
+  border-color: rgba(255,255,255,0.4);
+  color: #2d1b0f;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 12px 26px rgba(0,0,0,0.35);
+}
+.theme-wood-grain .btn.primary:hover{
+  background: linear-gradient(135deg, #f2c58a, #ffd999);
+  border-color: rgba(255,255,255,0.6);
+}
+.theme-wood-grain .topbar .btn.primary{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(var(--accent-rgb),0.45);
+  color: var(--text);
+}
+.theme-wood-grain .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(var(--accent-rgb),0.7);
+}

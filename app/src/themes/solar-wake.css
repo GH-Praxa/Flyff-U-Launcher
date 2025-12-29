@@ -1,0 +1,88 @@
+:root.theme-solar-wake {
+  --bg: #06060b;
+  --panel: #120b0a;
+  --panel2: #1c0f12;
+  --stroke: #a45a14;
+  --text: #fff5d7;
+  --muted: #fcb461;
+  --blue: #55d4ff;
+  --blue2: #a0e2ff;
+  --danger: #ff5f3d;
+  --shadow: 0 20px 55px rgba(3, 3, 6, 0.77);
+  --radius: 18px;
+  --radius2: 12px;
+  --green: #5bffa7;
+  --accent-rgb: 255, 148, 60;
+  --danger-rgb: 255, 95, 61;
+  --green-rgb: 91, 255, 167;
+  --tab-active-rgb: 255, 184, 85;
+}
+
+.theme-solar-wake body {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 148, 60, 0.3), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(91, 255, 167, 0.2), transparent 50%),
+    linear-gradient(180deg, #06060b 0%, #0c0505 60%, #040406 100%);
+}
+
+.theme-solar-wake body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.04), transparent 55%);
+  animation: solarWakeGlow 12s ease-in-out infinite;
+}
+
+@keyframes solarWakeGlow {
+  0% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+  100% { opacity: 0.35; transform: scale(1); }
+}
+
+.theme-solar-wake #app.sessionRoot .tabs {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.4), rgba(0, 0, 0, 0.85));
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.theme-solar-wake .btn.primary {
+  background: linear-gradient(135deg, #ff8f42, #ffcd6a);
+  border-color: rgba(255, 255, 255, 0.65);
+  color: #1b0c09;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.theme-solar-wake .btn.primary:hover {
+  background: linear-gradient(135deg, #ffb347, #ffe6a1);
+}
+
+.theme-solar-wake .panel.right {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+}
+
+.theme-solar-wake .tabBtn{
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-solar-wake .tabBtn::after{
+  content: "";
+  position: absolute;
+  inset: -4px;
+  opacity: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(255, 184, 85, 0.6), 0 0 20px rgba(255, 92, 60, 0.35);
+  transition: opacity 0.2s ease;
+}
+
+.theme-solar-wake .tabBtn:hover::after{
+  opacity: 1;
+  animation: solarTabPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes solarTabPulse{
+  0%,100%{ transform: scale(0.98); opacity: 0.6; }
+  50%{ transform: scale(1.03); opacity: 1; }
+}
