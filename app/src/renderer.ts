@@ -327,7 +327,8 @@ function getActiveThemeColors(): ThemeColors {
         tabActive: toHex(pick("tab-active-rgb", "#9fcf7a"), "#9fcf7a"),
     };
 }
-function hexToRgb(input: string): string | null {
+function hexToRgb(input: string | null | undefined): string | null {
+    if (!input) return null;
     const raw = input.trim();
     if (!raw)
         return null;
