@@ -1,6 +1,7 @@
 import { BrowserWindow, BrowserView, Rectangle, ipcMain } from "electron";
 import { createOverlayButtonWindow } from "../windows/overlayButtonWindow";
 import { createSidePanelWindow } from "../windows/sidePanelWindow";
+import { logErr } from "../../shared/logger";
 type TargetCtx = {
     mode: "instance";
     parent: BrowserWindow;
@@ -45,7 +46,7 @@ export function createSidePanelController(opts: {
     let parentEventCleanup: (() => void) | null = null;
     let lastCtxRect: Rectangle | null = null;
     let buttonVisible = false;
-    const logErr = (err: unknown) => console.error("[SidePanel]", err);
+
     const onToggle = () => toggle();
     ipcMain.on("sidepanel:toggle", onToggle);
     ipcMain.on("hudpanel:toggle", onToggle);
@@ -101,7 +102,7 @@ export function createSidePanelController(opts: {
                 parentEventCleanup();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
             parentEventCleanup = null;
         }
@@ -143,7 +144,7 @@ export function createSidePanelController(opts: {
                 buttonVisible = true;
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
             return;
         }
@@ -162,7 +163,7 @@ export function createSidePanelController(opts: {
                 buttonVisible = false;
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
         }
     }
@@ -178,7 +179,7 @@ export function createSidePanelController(opts: {
             btnWin.setBounds(r, false);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "SidePanel");
         }
     }
     function ensurePanel(ctx: TargetCtx) {
@@ -191,7 +192,7 @@ export function createSidePanelController(opts: {
                 panelWin.close();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
             panelWin = null;
             panelProfileId = null;
@@ -220,7 +221,7 @@ export function createSidePanelController(opts: {
             panelWin.setBounds(r, false);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "SidePanel");
         }
     }
     function closePanel() {
@@ -229,7 +230,7 @@ export function createSidePanelController(opts: {
                 panelWin.close();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
         }
         panelWin = null;
@@ -242,7 +243,7 @@ export function createSidePanelController(opts: {
                 btnWin.close();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
         }
         btnWin = null;
@@ -321,7 +322,7 @@ export function createSidePanelController(opts: {
                 parentEventCleanup();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SidePanel");
             }
             parentEventCleanup = null;
         }

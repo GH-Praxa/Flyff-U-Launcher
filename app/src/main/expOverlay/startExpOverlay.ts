@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import { createOverlayWindow } from "../windows/overlayWindow";
 import { PythonOcrWorker } from "../ocr/pythonWorker";
+import { logErr } from "../../shared/logger";
 type OcrResponse = {
     id: number;
     ok: boolean;
@@ -56,7 +57,7 @@ async function releaseWorker() {
                 await sharedWorker.stop();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "Overlay");
             }
             sharedWorker = null;
         }
@@ -143,8 +144,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     const nameLevelEveryMs = opts.nameLevelEveryMs ?? 8000;
     const debugEveryN = opts.debugEveryN ?? 0;
     const overlayPreloadPath = path.join(__dirname, "preload.js");
-    const logErr = (err: unknown) => console.error("[Overlay]", err);
-    const debugDir = debugEveryN ? path.join(app.getPath("userData"), "ocr_debug") : null;
+        const debugDir = debugEveryN ? path.join(app.getPath("userData"), "ocr_debug") : null;
     if (debugDir) {
         fs.mkdir(debugDir, { recursive: true })
             .then(() => console.log("[OCR DEBUG] dir ready:", debugDir))
@@ -170,24 +170,6 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
     let overlayVisible = false;
     const hudBox = { x: 14, y: 14, width: 0, height: 0 };
     let editOn = false;
-    function safeHandle(channel: string, handler: any) {
-        try {
-            ipcMain.removeHandler(channel);
-        }
-        catch (err) {
-            logErr(err);
-        }
-        ipcMain.handle(channel, handler);
-    }
-    function safeOn(channel: string, listener: any) {
-        try {
-            ipcMain.removeAllListeners(channel);
-        }
-        catch (err) {
-            logErr(err);
-        }
-        ipcMain.on(channel, listener);
-    }
     function isFromOverlay(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
         return !!(overlay && !overlay.isDestroyed() && event?.sender && overlay.webContents && event.sender.id === overlay.webContents.id);
     }
@@ -199,12 +181,12 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         const y = pb.y + Math.max(0, hudBox.y || 0);
         return { x, y, width: w, height: h };
     }
-    safeHandle("hud:getBounds", async (e) => {
+    ipcMain.handle("hud:getBounds", async (e) => {
         if (!isFromOverlay(e))
             return null;
         return { ...hudBox, editOn };
     });
-    safeOn("overlay:setBounds", (e, payload) => {
+    const onSetBounds = (e: Electron.IpcMainEvent, payload: any) => {
         if (!isFromOverlay(e))
             return;
         const x = payload?.x;
@@ -216,8 +198,9 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         const parent = overlay?.getParentWindow?.();
         if (parent && !parent.isDestroyed())
             syncOverlayBounds(parent);
-    });
-    safeOn("overlay:setSize", (e, payload) => {
+    };
+    ipcMain.on("overlay:setBounds", onSetBounds);
+    const onSetSize = (e: Electron.IpcMainEvent, payload: any) => {
         if (!isFromOverlay(e))
             return;
         const w = payload?.width;
@@ -229,7 +212,8 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
         const parent = overlay?.getParentWindow?.();
         if (parent && !parent.isDestroyed())
             syncOverlayBounds(parent);
-    });
+    };
+    ipcMain.on("overlay:setSize", onSetSize);
     function applyOverlayEditMode() {
         if (!overlay || overlay.isDestroyed())
             return;
@@ -237,21 +221,22 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             overlay.setIgnoreMouseEvents(!editOn, { forward: !editOn });
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
         try {
             overlay.webContents.send("overlay:edit", { on: editOn });
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
     }
-    safeOn("overlay:toggleEdit", (e, payload) => {
+    const onToggleEdit = (e: Electron.IpcMainEvent, payload: any) => {
         if (!isFromOverlay(e))
             return;
         editOn = !!payload?.on;
         applyOverlayEditMode();
-    });
+    };
+    ipcMain.on("overlay:toggleEdit", onToggleEdit);
     function safeSendToOverlay(payload: any) {
         if (!overlay || overlay.isDestroyed())
             return;
@@ -262,7 +247,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             wc.send("exp:update", payload);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
     }
     function closeOverlay() {
@@ -271,7 +256,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
                 overlay.close();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "Overlay");
             }
         }
         overlay = null;
@@ -286,7 +271,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
                 parentEventCleanup();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "Overlay");
             }
             parentEventCleanup = null;
         }
@@ -299,7 +284,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             overlay.setBounds(b, false);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
     }
     function isParentVisible(parent: BrowserWindow) {
@@ -346,7 +331,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             }
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
     }
     function startOverlayFollow(parent: BrowserWindow) {
@@ -376,7 +361,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
                 parentEventCleanup();
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "Overlay");
             }
         }
         const onMove = () => syncOverlayBounds(parent);
@@ -429,7 +414,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             overlay?.setAlwaysOnTop(true, "screen-saver");
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "Overlay");
         }
     }
     function getCaptureSize(parent: BrowserWindow, view: BrowserView | null) {
@@ -489,6 +474,7 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             if (!worker) {
                 worker = await acquireWorker(opts.pythonExe, opts.ocrScriptPath);
             }
+            if (stopped) return;
             const view = (() => {
                 try {
                     const v = opts.getActiveView?.() ?? null;
@@ -505,9 +491,12 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             const size = getCaptureSize(parent, view);
             const rects = resolveRects(size, opts.getRects);
             const expPng = await captureCropPng(parent, view, rects.expPercent);
+            if (stopped) return;
             if (expPng) {
                 await maybeDebugWrite(expPng, "hud_exp");
+                if (stopped) return;
                 const res = (await worker.recognizePng(expPng, { kind: "exp" })) as OcrResponse;
+                if (stopped) return;
                 cachedRawExp = res.raw ?? cachedRawExp;
                 const exp = parseExpFromResponse(res);
                 if (exp !== null && exp >= 0 && exp <= 100) {
@@ -517,9 +506,12 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             const now = Date.now();
             if (now - lastNameLevelAt > nameLevelEveryMs) {
                 const nlPng = await captureCropPng(parent, view, rects.nameLevel);
+                if (stopped) return;
                 if (nlPng) {
                     await maybeDebugWrite(nlPng, "hud_namelevel");
+                    if (stopped) return;
                     const res = (await worker.recognizePng(nlPng, { kind: "namelevel" })) as OcrResponse;
+                    if (stopped) return;
                     cachedRawNameLevel = res.raw ?? cachedRawNameLevel;
                     if (res.raw) {
                         const parsed = parseNameLevel(res.raw);
@@ -549,23 +541,34 @@ export function startExpOverlay(opts: StartHudOverlayOptions): Controller {
             inFlight = false;
         }
     };
-    timer = setInterval(() => {
-        tick().catch((err) => logErr(err));
-    }, intervalMs);
+    const scheduleNextTick = () => {
+        if (stopped) return; // Don't schedule if already stopped
+        timer = setTimeout(() => {
+            tick().then(scheduleNextTick).catch((err) => {
+                logErr(err, "Overlay");
+                if (!stopped) scheduleNextTick(); // Reschedule even on error, unless stopped
+            });
+        }, intervalMs);
+    };
+    scheduleNextTick(); // Initial call
     const stop = () => {
         if (stopped)
             return;
         stopped = true;
         if (timer) {
-            clearInterval(timer);
+            clearTimeout(timer); // Use clearTimeout for setTimeout
             timer = null;
         }
         closeOverlay();
         const hadWorker = !!worker;
         worker = null;
         if (hadWorker) {
-            releaseWorker().catch((err) => logErr(err));
+            releaseWorker().catch((err) => logErr(err, "Overlay"));
         }
+        ipcMain.removeHandler("hud:getBounds");
+        ipcMain.removeListener("overlay:setBounds", onSetBounds);
+        ipcMain.removeListener("overlay:setSize", onSetSize);
+        ipcMain.removeListener("overlay:toggleEdit", onToggleEdit);
     };
     return { stop };
 }

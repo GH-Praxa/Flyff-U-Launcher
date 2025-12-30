@@ -30,7 +30,7 @@ import pkg from "../package.json";
 import { DEFAULT_LOCALE, getTips, translate, type Locale, type TranslationKey } from "./i18n/translations";
 import { resetThemeEffect, setThemeEffect } from "./themeAnimations";
 import type { TabLayout } from "./shared/types";
-const logErr = (err: unknown) => console.error("[renderer]", err);
+import { logErr } from "./shared/logger";
 const discordIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237289da'/%3E%3Ccircle cx='11' cy='12' r='3' fill='%23fff'/%3E%3Ccircle cx='21' cy='12' r='3' fill='%23fff'/%3E%3Cpath d='M9 22 Q16 26 23 22' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 const githubIcon = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="12" fill="#0d1117" />
@@ -70,12 +70,12 @@ async function hydrateTabActiveJsonOverride() {
                 localStorage.setItem(STORAGE_TAB_ACTIVE_KEY, stored);
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "renderer");
             }
         }
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
 }
 const FLAG_ICONS: Record<string, string> = {
@@ -194,7 +194,7 @@ function loadTheme(): ThemeKey {
             return stored;
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
     return "toffee";
 }
@@ -213,7 +213,7 @@ function loadTabActiveOverride(): string | null {
         }
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
     return null;
 }
@@ -282,7 +282,7 @@ function loadLocale(): Locale {
             return stored;
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
     return DEFAULT_LOCALE;
 }
@@ -373,7 +373,7 @@ function setTabActiveColor(hex: string | null, options?: SetTabActiveColorOption
                     localStorage.setItem(STORAGE_TAB_ACTIVE_KEY, normalized ?? hex);
                 }
                 catch (err) {
-                    logErr(err);
+                    logErr(err, "renderer");
                 }
                 if (options?.persist) {
                     persistTabActiveColor(normalized);
@@ -388,7 +388,7 @@ function setTabActiveColor(hex: string | null, options?: SetTabActiveColorOption
             localStorage.removeItem(STORAGE_TAB_ACTIVE_KEY);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
         }
     }
 }
@@ -457,7 +457,7 @@ function applyTheme(theme: string) {
         localStorage.setItem(THEME_MIGRATION_KEY, "1");
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
 }
 function pushThemeUpdate(themeId: string, colors?: ThemeColors) {
@@ -486,7 +486,7 @@ function pushThemeUpdate(themeId: string, colors?: ThemeColors) {
             window.api.themePush(payload);
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
 }
 async function hydrateThemeFromSnapshot(): Promise<ThemeUpdatePayload | null> {
@@ -508,7 +508,7 @@ async function hydrateThemeFromSnapshot(): Promise<ThemeUpdatePayload | null> {
         return snap;
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
         return null;
     }
 }
@@ -519,7 +519,7 @@ function setLocale(lang: Locale) {
         localStorage.setItem(STORAGE_LANG_KEY, lang);
     }
     catch (err) {
-        logErr(err);
+        logErr(err, "renderer");
     }
 }
 function t(key: TranslationKey) {
@@ -611,27 +611,8 @@ function decorateJobSelect(select: HTMLSelectElement) {
     syncSelectedIcon();
     select.addEventListener("change", syncSelectedIcon);
 }
-function loadLocalLayouts(): TabLayout[] {
-    try {
-        const raw = localStorage.getItem("tabLayoutsLocal");
-        if (!raw)
-            return [];
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-    }
-    catch (err) {
-        logErr(err);
-        return [];
-    }
-}
-function saveLocalLayouts(layouts: TabLayout[]) {
-    try {
-        localStorage.setItem("tabLayoutsLocal", JSON.stringify(layouts));
-    }
-    catch (err) {
-        logErr(err);
-    }
-}
+
+
 function showToast(message: string, tone: "info" | "success" | "error" = "info", ttlMs = 5200) {
     let container = document.querySelector(".toastContainer") as HTMLElement | null;
     if (!container) {
@@ -658,15 +639,7 @@ function withTimeout<T>(p: Promise<T>, label: string, ms = 6000): Promise<T> {
     });
 }
 async function fetchTabLayouts(): Promise<TabLayout[]> {
-    try {
-        return await window.api.tabLayoutsList();
-    }
-    catch (err) {
-        logErr(err);
-        const fallback = loadLocalLayouts();
-        showToast(`Local layouts loaded (${fallback.length})`, "info");
-        return fallback;
-    }
+    return await window.api.tabLayoutsList();
 }
 function createWebview(profileId: string) {
     const wv = document.createElement("webview") as any;
@@ -1317,7 +1290,8 @@ async function renderLauncher(root: HTMLElement) {
     const createActions = el("div", "manageActions");
     const btnAdd = el("button", "btn primary", t("create.add"));
     const btnCancel = el("button", "btn", t("create.cancel"));
-    const btnDel = el("button", "btn danger", t("create.delete"));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const btnDel = el("button", "btn danger", t("create.delete")); // Reserved for future delete functionality
     createActions.append(btnAdd, btnCancel);
     createPanel.append(createGrid, createActions);
     left.append(createPanel, list, tipsBanner);
@@ -1485,7 +1459,7 @@ async function renderLauncher(root: HTMLElement) {
                     }
                 }
                 catch (err) {
-                    logErr(err);
+                    logErr(err, "renderer");
                 }
             }
         });
@@ -1514,7 +1488,7 @@ async function renderLauncher(root: HTMLElement) {
                     slug = url.pathname.split("/").filter(Boolean).pop() ?? "";
                 }
                 catch (err) {
-                    logErr(err);
+                    logErr(err, "renderer");
                 }
                 const date = extractDate([altText, title, excerpt, link.textContent, slug]);
                 items.push({
@@ -1997,7 +1971,7 @@ async function renderSession(root: HTMLElement) {
                 return num;
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
         }
         return tabHeightPresets[1];
     }
@@ -2006,7 +1980,7 @@ async function renderSession(root: HTMLElement) {
             localStorage.setItem(TAB_HEIGHT_KEY, String(px));
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
         }
     }
     function applyTabHeight(px: number) {
@@ -2234,57 +2208,23 @@ async function renderSession(root: HTMLElement) {
             tabs: tabs.map((t) => t.profileId),
             split: splitState ? { ...splitState, ratio: splitState.ratio ?? currentSplitRatio } : null,
             activeId,
+            loggedOutChars: tabs.filter((t) => t.loggedOut).map((t) => t.profileId),
         };
         const statusMsg = `Saving layout: ${payload.tabs.length} tabs${payload.split ? " + split" : ""}`;
         setLayoutStatus(statusMsg, "info");
         showToast(statusMsg, "info", 2500);
-        try {
-            const before = await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList before", 2000);
-            const saved = await withTimeout(window.api.tabLayoutsSave(payload), "tabLayoutsSave", 3000);
-            const after = saved ?? (await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList after", 2000));
-            const beforeCount = before?.length ?? 0;
-            const afterCount = after?.length ?? 0;
-            const delta = afterCount - beforeCount;
-            const deltaMsg = `before=${beforeCount} after=${afterCount} delta=${delta}`;
-            showToast(t("layout.saved"), "success");
-            alert(`${t("layout.saved")} (${deltaMsg})`);
-            setLayoutStatus(`${t("layout.saved")} (${deltaMsg})`, "success");
-            localStorage.setItem("tabLayoutsRefresh", "1");
-        }
-        catch (err) {
-            logErr(err);
-            const msg = err instanceof Error
-                ? `${err.name}: ${err.message}`
-                : typeof err === "string"
-                    ? err
-                    : JSON.stringify(err ?? "unknown error");
-            const full = `${t("layout.saveError")}: ${msg}`;
-            showToast(full, "error", 6000);
-            alert(full);
-            setLayoutStatus(full, "error");
-            try {
-                const beforeLocal = loadLocalLayouts();
-                const newLayout: TabLayout = {
-                    id: Math.random().toString(36).slice(2, 10),
-                    name: name || `Layout-${Date.now()}`,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    tabs: [...payload.tabs],
-                    split: payload.split,
-                    activeId: payload.activeId,
-                };
-                const next = [...beforeLocal, newLayout];
-                saveLocalLayouts(next);
-                const msgLocal = `Locally saved (now ${next.length})`;
-                showToast(msgLocal, "success");
-                alert(msgLocal);
-                setLayoutStatus(`${full} | ${msgLocal}`, "success");
-            }
-            catch (e2) {
-                logErr(e2);
-                setLayoutStatus(`${full} | local fallback failed`, "error");
-            }
-        }
+
+        const before = await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList before", 2000);
+        const saved = await withTimeout(window.api.tabLayoutsSave(payload), "tabLayoutsSave", 3000);
+        const after = saved ?? (await withTimeout(window.api.tabLayoutsList(), "tabLayoutsList after", 2000));
+        const beforeCount = before?.length ?? 0;
+        const afterCount = after?.length ?? 0;
+        const delta = afterCount - beforeCount;
+        const deltaMsg = `before=${beforeCount} after=${afterCount} delta=${delta}`;
+        showToast(t("layout.saved"), "success");
+        alert(`${t("layout.saved")} (${deltaMsg})`);
+        setLayoutStatus(`${t("layout.saved")} (${deltaMsg})`, "success");
+        localStorage.setItem("tabLayoutsRefresh", "1");
     }
     async function applyLayout(layout: TabLayout) {
         await window.api.sessionTabsSetVisible(false);
@@ -2302,6 +2242,11 @@ async function renderSession(root: HTMLElement) {
             currentSplitRatio = clampSplitRatio(layout.split.ratio);
         for (const id of ordered) {
             await openTab(id);
+        }
+        if (layout.loggedOutChars) {
+            for (const id of layout.loggedOutChars) {
+                await logoutTab(id);
+            }
         }
         if (layout.split && existingIds.has(layout.split.leftId) && existingIds.has(layout.split.rightId)) {
             await applySplit({
@@ -2395,13 +2340,14 @@ async function renderSession(root: HTMLElement) {
     }
     function pushBounds(force = false) {
         if (force) {
-            pushTimer && clearTimeout(pushTimer);
+            if (pushTimer) clearTimeout(pushTimer);
             pushTimer = 0;
             pushBoundsInternal(true);
             return;
         }
         schedulePushBounds();
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function forceBounds() {
         lastBounds = null;
         pushBounds(true);
@@ -2641,7 +2587,7 @@ async function renderSession(root: HTMLElement) {
             }
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
             restoreTabs = true;
         }
         finally {
@@ -2664,7 +2610,7 @@ async function renderSession(root: HTMLElement) {
             showToast("Tab ausgeloggt", "info", 1800);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
             tab.loggedOut = false;
             syncTabClasses();
             updateLoginOverlay();
@@ -2689,7 +2635,7 @@ async function renderSession(root: HTMLElement) {
             showToast("Tab eingeloggt", "success", 1800);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "renderer");
             tab.loggedOut = true;
             showToast("Einloggen fehlgeschlagen", "error", 3200);
         }
@@ -2878,7 +2824,7 @@ async function renderSession(root: HTMLElement) {
     btnSaveLayout.onclick = () => {
         showToast(t("layout.saveStart"), "info", 1800);
         saveCurrentLayout().catch((err) => {
-            logErr(err);
+            logErr(err, "renderer");
             showToast(`${t("layout.saveError")}: ${err instanceof Error ? err.message : String(err)}`, "error", 5000);
         });
     };
