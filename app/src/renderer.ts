@@ -328,7 +328,8 @@ function getActiveThemeColors(): ThemeColors {
     };
 }
 function hexToRgb(input: string | null | undefined): string | null {
-    if (!input) return null;
+    if (!input || typeof input !== "string")
+        return null;
     const raw = input.trim();
     if (!raw)
         return null;
@@ -341,6 +342,8 @@ function hexToRgb(input: string | null | undefined): string | null {
     return `${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)}`;
 }
 function rgbToHex(rgb: string): string {
+    if (typeof rgb !== "string")
+        return "#2ecc71";
     const parts = rgb.split(",").map((p) => parseInt(p.trim(), 10));
     if (parts.length >= 3 && parts.every((n) => Number.isFinite(n))) {
         const [r, g, b] = parts;
@@ -424,7 +427,7 @@ function applyTheme(theme: string) {
     if (builtin) {
         root.classList.add(`theme-${builtin.id}`);
         root.setAttribute("data-theme", builtin.id);
-        tabActiveBase = builtin.tabActive ? hexToRgb(builtin.tabActive) : hexToRgb(FALLBACK_THEME_COLORS.tabActive);
+        tabActiveBase = typeof builtin.tabActive === 'string' ? hexToRgb(builtin.tabActive) : hexToRgb(FALLBACK_THEME_COLORS.tabActive);
     }
     else {
         root.setAttribute("data-theme", themeId);
