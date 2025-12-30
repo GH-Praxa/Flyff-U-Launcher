@@ -7,6 +7,7 @@ export function createInstanceWindow(profileId: string, opts: {
         width: 1280,
         height: 720,
         show: false,
+        backgroundColor: "#0b1220",
         autoHideMenuBar: true,
         title: `Flyff - ${profileId}`,
         webPreferences: {

@@ -8,10 +8,12 @@ import { MakerWix } from "@electron-forge/maker-wix";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
+const iconPath = path.resolve(__dirname, "src/assets/icons/flyff.ico");
+const WIX_UPGRADE_CODE = "f3dd0e42-5e61-4709-b2ad-820051fa8d2a"; // keep stable so MSI upgrades replace existing installs
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
-        icon: path.resolve(__dirname, "src/assets/icons/flyff.ico"),
+        icon: iconPath,
     },
     rebuildConfig: {},
     makers: [
@@ -20,15 +22,22 @@ const config: ForgeConfig = {
             language: 1033,
             manufacturer: "Praxa",
             description: "Flyff-U-Launcher",
-            icon: path.resolve(__dirname, "src/assets/icons/flyff.ico"),
-            appIconPath: path.resolve(__dirname, "src/assets/icons/flyff.ico"),
+            icon: iconPath,
+            appIconPath: iconPath,
             shortcutName: "Flyff-U-Launcher",
             shortcutFolderName: "Flyff-U-Launcher",
             programFilesFolderName: "Flyff-U-Launcher",
-            ui: true,
+            exe: "Flyff-U-Launcher",
+            arch: "x64",
+            upgradeCode: WIX_UPGRADE_CODE,
+            defaultInstallMode: "perMachine",
+            ui: {
+                chooseDirectory: true,
+            },
             beforeCreate: (creator) => {
-                console.log("MakerWix icon path:", path.resolve(__dirname, "src/assets/icons/flyff.ico"));
-                creator.icon = path.resolve(__dirname, "src/assets/icons/flyff.ico");
+                console.log("MakerWix icon path:", iconPath);
+                creator.icon = iconPath;
+                creator.upgradeCode = WIX_UPGRADE_CODE;
             },
         }),
         new MakerZIP({}, ["darwin"]),

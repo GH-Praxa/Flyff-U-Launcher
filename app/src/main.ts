@@ -1,6 +1,16 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
+import fs from "fs";
+import { pathToFileURL } from "url";
 import squirrelStartup from "electron-squirrel-startup";
+
+// Fix Windows DWM flicker/ghost window issue
+if (process.platform === "win32") {
+    app.commandLine.appendSwitch("disable-direct-composition");
+    app.commandLine.appendSwitch("disable-gpu-vsync");
+    app.commandLine.appendSwitch("disable-frame-rate-limit");
+}
+
 import { createViewLoader } from "./main/viewLoader";
 import { createProfilesStore } from "./main/profiles/store";
 import { createLauncherWindow } from "./main/windows/launcherWindow";
@@ -8,15 +18,18 @@ import { createSessionWindowController } from "./main/windows/sessionWindow";
 import { createInstanceWindow } from "./main/windows/instanceWindow";
 import { createSessionTabsManager } from "./main/sessionTabs/manager";
 import { createTabLayoutsStore } from "./main/sessionTabs/layoutStore";
+import { createThemeStore } from "./main/themeStore";
 import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import { createInstanceRegistry } from "./main/windows/instanceRegistry";
 import { createOverlayTargetController } from "./main/expOverlay/overlayTargetController";
 import { createRoiStore, type HudRois } from "./main/roi/roiStore";
 import { openRoiCalibratorWindow } from "./main/windows/roiCalibratorWindow";
 import { createSidePanelController } from "./main/expOverlay/sidePanelController";
+import { createThemeStore } from "./main/themeStore";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 const FLYFF_URL = "https://universe.flyff.com/play";
+const BUFF_WECKER_ENABLED = process.env.BUFF_WECKER_ENABLED === "1";
 if (squirrelStartup) {
     app.quit();
 }
@@ -25,6 +38,7 @@ let _launcherWindow: BrowserWindow | null = null;
 let overlayTarget: ReturnType<typeof createOverlayTargetController> | null = null;
 let sidePanel: ReturnType<typeof createSidePanelController> | null = null;
 let sessionWindow: ReturnType<typeof createSessionWindowController> | null = null;
+let buffWecker: { stop?: () => void } | null = null;
 app.whenReady().then(async () => {
     const preloadPath = path.join(__dirname, "preload.js");
     console.log("userData:", app.getPath("userData"));
@@ -35,6 +49,7 @@ app.whenReady().then(async () => {
     });
     const profiles = createProfilesStore();
     const tabLayouts = createTabLayoutsStore();
+    const themes = createThemeStore();
     sessionWindow = createSessionWindowController({
         preloadPath,
         loadView,
@@ -157,6 +172,7 @@ app.whenReady().then(async () => {
         sessionTabs,
         sessionWindow: sessionWindowController,
         tabLayouts,
+        themes,
         loadView,
         createInstanceWindow: (profileId) => {
             const win = createInstanceWindow(profileId, { flyffUrl: FLYFF_URL });
@@ -176,6 +192,58 @@ app.whenReady().then(async () => {
             return true;
         },
     });
+    // Buff-Wecker (lokal, versucht immer zu laden, aber fehlende Dateien/Worker werden einfach geloggt)
+    // Buff-Wecker: versuche mehrere Basispfade (Dev: .vite/dev, root/app; Prod: resources/app)
+    if (BUFF_WECKER_ENABLED) {
+        try {
+            const baseCandidates = [
+                path.join(process.cwd(), "app", "buff-wecker-local"),
+                path.join(process.cwd(), "buff-wecker-local"),
+                path.join(app.getAppPath(), "buff-wecker-local"),
+                path.join(app.getAppPath(), "..", "buff-wecker-local"),
+                path.join(app.getAppPath(), "buff-wecker"),
+                app.getAppPath(),
+                path.join(app.getAppPath(), ".."),
+                path.join(process.cwd(), "app"),
+                process.cwd(),
+            ];
+            let loaderPath: string | null = null;
+            for (const base of baseCandidates) {
+                const candBundled = path.join(path.resolve(base), "mainLoader.js");
+                const candLocal = path.join(path.resolve(base), "mainLoader.js");
+                if (fs.existsSync(candBundled)) {
+                    loaderPath = candBundled;
+                    break;
+                }
+                if (fs.existsSync(candLocal)) {
+                    loaderPath = candLocal;
+                    break;
+                }
+            }
+            if (loaderPath) {
+                const mod = await import(pathToFileURL(loaderPath).href);
+                if (mod?.initBuffWecker) {
+                    buffWecker = mod.initBuffWecker({
+                        ipcMain,
+                        pythonExe: process.env.FLYFF_OCR_PYTHON ?? "python",
+                        sessionTabs,
+                        sessionWindow: sessionWindowController,
+                        profiles,
+                    });
+                    console.log("[buff-wecker] enabled via", loaderPath);
+                }
+            }
+            else {
+                console.warn("[buff-wecker] loader not found in candidates", baseCandidates);
+            }
+        }
+        catch (err) {
+            console.warn("[buff-wecker] failed to init", err);
+        }
+    }
+    else {
+        console.log("[buff-wecker] disabled via BUFF_WECKER_ENABLED flag");
+    }
     _launcherWindow = createLauncherWindow({
         preloadPath,
         loadView,
@@ -197,6 +265,7 @@ app.on("before-quit", () => {
     overlayTarget = null;
     sidePanel?.stop();
     sidePanel = null;
+    buffWecker?.stop?.();
 });
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin")

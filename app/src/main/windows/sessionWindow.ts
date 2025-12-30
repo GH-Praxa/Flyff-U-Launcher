@@ -13,11 +13,14 @@ export function createSessionWindowController(opts: {
         sessionWindow = new BrowserWindow({
             width: 1380,
             height: 860,
+            show: false,
+            backgroundColor: "#0b1220",
             autoHideMenuBar: true,
             webPreferences: {
                 preload: opts.preloadPath,
                 contextIsolation: true,
                 nodeIntegration: false,
+                backgroundThrottling: false,
             },
         });
         sessionWindow.setMaxListeners(0);
@@ -43,6 +46,11 @@ export function createSessionWindowController(opts: {
                 catch (err2) {
                     console.error("[SessionWindow]", err2);
                 }
+            }
+        });
+        sessionWindow.once("ready-to-show", () => {
+            if (sessionWindow && !sessionWindow.isDestroyed()) {
+                sessionWindow.show();
             }
         });
         await opts.loadView(sessionWindow, "session");

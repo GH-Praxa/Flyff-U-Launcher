@@ -1,4 +1,6 @@
 import { ipcMain, app } from "electron";
+import fs from "fs/promises";
+import path from "path";
 import https from "https";
 type Rect = {
     x: number;
@@ -27,6 +29,8 @@ type SessionWindowController = {
 type SessionTabsManager = {
     open: (profileId: string) => Promise<void> | void;
     switchTo: (profileId: string) => Promise<void> | void;
+    login: (profileId: string) => Promise<void> | void;
+    logout: (profileId: string) => Promise<void> | void;
     close: (profileId: string) => Promise<void> | void;
     setBounds: (bounds: Rect) => void;
     setVisible: (visible: boolean) => void;
@@ -44,11 +48,17 @@ type TabLayoutsStore = {
     save: (input: any) => Promise<any[]>;
     delete: (layoutId: string) => Promise<any[]>;
 };
+type ThemeStore = {
+    list: () => Promise<any[]>;
+    save: (input: any) => Promise<any[]>;
+    delete: (id: string) => Promise<any[]>;
+};
 export function registerMainIpc(opts: {
     profiles: ProfilesStore;
     sessionTabs: SessionTabsManager;
     sessionWindow: SessionWindowController;
     tabLayouts: TabLayoutsStore;
+    themes: ThemeStore;
     loadView?: any;
     createInstanceWindow: (profileId: string) => void;
     overlayTargetRefresh?: () => Promise<any> | any;
@@ -57,6 +67,70 @@ export function registerMainIpc(opts: {
     roiSave: (profileId: string, rois: any) => Promise<boolean>;
 }) {
     const logErr = (err: unknown) => console.error("[IPC]", err);
+    const themeSnapshotPath = path.join(app.getPath("userData"), "themeSnapshot.json");
+    const tabActiveColorPath = path.join(app.getPath("userData"), "tabActiveColor.json");
+    async function loadTabActiveColorFromFile(): Promise<string | null> {
+        try {
+            const raw = await fs.readFile(tabActiveColorPath, "utf-8");
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.color === "string" && parsed.color.trim()) {
+                return parsed.color;
+            }
+        }
+        catch (err) {
+            if (err && typeof err === "object" && "code" in err && (err as any).code === "ENOENT") {
+                return null;
+            }
+            logErr(err);
+        }
+        return null;
+    }
+    async function saveTabActiveColorToFile(color: string | null) {
+        if (!color) {
+            try {
+                await fs.unlink(tabActiveColorPath);
+            }
+            catch (err) {
+                if (!(err && typeof err === "object" && "code" in err && (err as any).code === "ENOENT")) {
+                    logErr(err);
+                }
+            }
+            return;
+        }
+        try {
+            await fs.mkdir(path.dirname(tabActiveColorPath), { recursive: true });
+            await fs.writeFile(tabActiveColorPath, JSON.stringify({ color }, null, 2), "utf-8");
+        }
+        catch (err) {
+            logErr(err);
+        }
+    }
+    let themeSnapshot: any = null;
+    async function loadThemeSnapshot() {
+        try {
+            const raw = await fs.readFile(themeSnapshotPath, "utf-8");
+            return JSON.parse(raw);
+        }
+        catch (err) {
+            if (err && typeof err === "object" && "code" in err && (err as any).code !== "ENOENT") {
+                logErr(err);
+            }
+            return null;
+        }
+    }
+    async function persistThemeSnapshot(snapshot: any) {
+        try {
+            await fs.mkdir(path.dirname(themeSnapshotPath), { recursive: true });
+            await fs.writeFile(themeSnapshotPath, JSON.stringify(snapshot, null, 2), "utf-8");
+        }
+        catch (err) {
+            logErr(err);
+        }
+    }
+    loadThemeSnapshot().then((snap) => {
+        if (snap)
+            themeSnapshot = snap;
+    }).catch(logErr);
     function safeHandle(channel: string, handler: any) {
         try {
             ipcMain.removeHandler(channel);
@@ -123,6 +197,14 @@ export function registerMainIpc(opts: {
         await opts.sessionTabs.switchTo(profileId);
         return true;
     });
+    safeHandle("sessionTabs:logout", async (_e, profileId: string) => {
+        await opts.sessionTabs.logout(profileId);
+        return true;
+    });
+    safeHandle("sessionTabs:login", async (_e, profileId: string) => {
+        await opts.sessionTabs.login(profileId);
+        return true;
+    });
     safeHandle("sessionTabs:close", async (_e, profileId: string) => {
         await opts.sessionTabs.close(profileId);
         return true;
@@ -178,6 +260,43 @@ export function registerMainIpc(opts: {
             logErr(err);
         }
         return true;
+    });
+    safeHandle("themes:list", async () => await opts.themes.list());
+    safeHandle("themes:save", async (_e, input: any) => await opts.themes.save(input));
+    safeHandle("themes:delete", async (_e, id: string) => await opts.themes.delete(id));
+    safeHandle("tabActiveColor:load", async () => await loadTabActiveColorFromFile());
+    safeHandle("tabActiveColor:save", async (_e, color: string | null) => {
+        await saveTabActiveColorToFile(color);
+        return true;
+    });
+    safeHandle("theme:push", async (_e, payload: any) => {
+        const merged: any = {
+            ...(themeSnapshot ?? {}),
+            ...(payload ?? {}),
+        };
+        if (themeSnapshot?.colors || payload?.colors) {
+            merged.colors = { ...(themeSnapshot?.colors ?? {}), ...(payload?.colors ?? {}) };
+        }
+        themeSnapshot = merged;
+        persistThemeSnapshot(merged).catch(logErr);
+        try {
+            const { BrowserWindow } = await import("electron");
+            for (const w of BrowserWindow.getAllWindows()) {
+                if (!w.isDestroyed()) {
+                    w.webContents.send("theme:update", merged);
+                }
+            }
+        }
+        catch (err) {
+            logErr(err);
+        }
+        return true;
+    });
+    safeHandle("theme:current", async () => {
+        if (themeSnapshot === null) {
+            themeSnapshot = await loadThemeSnapshot();
+        }
+        return themeSnapshot;
     });
     async function fetchWithFallback(url: string) {
         const headers = { "User-Agent": "FlyffU-Launcher" };

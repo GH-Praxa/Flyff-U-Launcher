@@ -16,12 +16,29 @@ export function createLauncherWindow(opts: {
             preload: opts.preloadPath,
             contextIsolation: true,
             nodeIntegration: false,
+            backgroundThrottling: false,
         },
         icon: flyffIcon,
     });
     win.setMenuBarVisibility(false);
     win.setMenu(null);
     hardenWebviews(win);
+
+    // Fix Windows DWM flicker/ghost window during move/resize
+    if (process.platform === "win32") {
+        let resizeTimeout: NodeJS.Timeout | null = null;
+        const scheduleInvalidate = () => {
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (!win.isDestroyed()) {
+                    win.webContents.invalidate();
+                }
+            }, 16);
+        };
+        win.on("will-move", scheduleInvalidate);
+        win.on("will-resize", scheduleInvalidate);
+    }
+
     opts.loadView(win, "launcher").catch(console.error);
     win.once("ready-to-show", () => {
         if (!win.isDestroyed())

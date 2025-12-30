@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved, @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from "react";
 import type { Profile } from "../shared/types";
 import aibattGold from "../assets/icons/aibatt_gold.png";

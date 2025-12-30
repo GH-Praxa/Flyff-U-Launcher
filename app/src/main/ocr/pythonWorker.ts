@@ -88,7 +88,10 @@ export class PythonOcrWorker {
                         p.resolve(msg);
                     }
                 }
-                catch {
+                catch (err) {
+                    // Ignore malformed lines but keep a trace for debugging.
+                    // eslint-disable-next-line no-console
+                    console.warn("[python-worker] invalid message", err);
                 }
             }
             idx = this.buf.indexOf("\n");

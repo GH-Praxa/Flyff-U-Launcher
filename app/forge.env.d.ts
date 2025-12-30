@@ -44,6 +44,8 @@ declare global {
             openWindow: (profileId: string) => Promise<boolean>;
             sessionTabsOpen: (profileId: string) => Promise<boolean>;
             sessionTabsSwitch: (profileId: string) => Promise<boolean>;
+            sessionTabsLogout: (profileId: string) => Promise<boolean>;
+            sessionTabsLogin: (profileId: string) => Promise<boolean>;
             sessionTabsClose: (profileId: string) => Promise<boolean>;
             sessionTabsSetBounds: (bounds: Rect) => Promise<boolean>;
             sessionTabsSetVisible: (visible: boolean) => Promise<boolean>;
@@ -62,6 +64,11 @@ declare global {
             }) => Promise<TabLayout[]>;
             tabLayoutsDelete: (id: string) => Promise<TabLayout[]>;
             tabLayoutsApply: (id: string) => Promise<boolean>;
+            buffWeckerShowPanel: () => Promise<{ ok?: boolean; error?: string }>;
+            buffWeckerPing: () => Promise<any>;
+            buffWeckerLiveScan: (args: any) => Promise<any>;
+            buffWeckerOverlayUpdate: (payload: any) => Promise<void>;
+            buffWeckerActiveJob: () => Promise<{ job?: string | null; error?: string }>;
             onOpenTab: (cb: (profileId: string) => void) => void;
             onSessionActiveChanged: (cb: (profileId: string | null) => void) => void;
             onApplyLayout: (cb: (layout: TabLayout) => void) => void;
@@ -70,6 +77,8 @@ declare global {
             roiSave: (profileId: string, rois: any) => Promise<boolean>;
             fetchNewsPage: (path?: string) => Promise<string>;
             fetchNewsArticle: (url: string) => Promise<string>;
+            tabActiveColorLoad: () => Promise<string | null>;
+            tabActiveColorSave: (color: string | null) => Promise<boolean>;
         };
         ipc?: {
             send: (channel: string, payload?: any) => void;

@@ -95,37 +95,83 @@ export function createSessionTabsManager(opts: {
             logErr(err);
         }
     }
-    function applyActiveBrowserView() {
-        const win = opts.sessionWindow.get();
-        if (!win)
-            return;
-        sanitizeActiveId();
-        for (const v of win.getBrowserViews()) {
+    function ensureAttached(win: Electron.BrowserWindow, view: BrowserView) {
+        const existing = win.getBrowserViews();
+        if (!existing.includes(view)) {
             try {
-                win.removeBrowserView(v);
+                win.addBrowserView(view);
             }
             catch (err) {
                 logErr(err);
             }
         }
-        if (!sessionVisible) {
-            notifyActiveChanged();
+    }
+    const lastBoundsMap = new Map<string, string>();
+    function applyActiveBrowserView() {
+        const win = opts.sessionWindow.get();
+        if (!win)
             return;
-        }
+        sanitizeActiveId();
         const layout = computeLayoutBounds();
-        if (layout.length === 0) {
+        const layoutIds = new Set(layout.map((l) => l.id));
+        const shouldShow = sessionVisible && layout.length > 0;
+        if (!shouldShow) {
+            for (const view of win.getBrowserViews()) {
+                try {
+                    win.removeBrowserView(view);
+                }
+                catch (err) {
+                    logErr(err);
+                }
+            }
+            lastBoundsMap.clear();
             notifyActiveChanged();
             return;
         }
-        layout.forEach(({ id, bounds }) => {
+        const idByView = new Map<BrowserView, string>();
+        for (const [id, view] of sessionViews) {
+            idByView.set(view, id);
+        }
+        // Remove views that are not part of the current layout
+        for (const view of win.getBrowserViews()) {
+            const id = idByView.get(view);
+            if (!id || !layoutIds.has(id)) {
+                try {
+                    win.removeBrowserView(view);
+                }
+                catch (err) {
+                    logErr(err);
+                }
+            }
+            else {
+                try {
+                    view.setAutoResize({ width: false, height: false });
+                }
+                catch (err) {
+                    logErr(err);
+                }
+            }
+        }
+        // Attach needed views and update bounds when changed
+        for (const { id, bounds } of layout) {
             const view = sessionViews.get(id);
             if (!view)
-                return;
-            win.addBrowserView(view);
-            view.setBounds(bounds);
-            view.setAutoResize({ width: true, height: true });
+                continue;
+            ensureAttached(win, view);
+            const key = `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`;
+            const prevKey = lastBoundsMap.get(id);
+            if (key !== prevKey) {
+                try {
+                    view.setBounds(bounds);
+                    view.setAutoResize({ width: false, height: false });
+                }
+                catch (err) {
+                    logErr(err);
+                }
+                lastBoundsMap.set(id, key);
+            }
             loadProfileIfNeeded(id);
-        });
+        }
         focusActiveView();
         notifyActiveChanged();
     }
@@ -179,6 +225,12 @@ export function createSessionTabsManager(opts: {
                 nodeIntegration: false,
             },
         });
+        try {
+            view.setAutoResize({ width: false, height: false });
+        }
+        catch (err) {
+            logErr(err);
+        }
         hardenGameContents(view.webContents);
         sessionViews.set(profileId, view);
         return view;
@@ -222,6 +274,7 @@ export function createSessionTabsManager(opts: {
         }
         sessionViews.delete(profileId);
         loadedProfiles.delete(profileId);
+        lastBoundsMap.delete(profileId);
         if (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId)) {
             const survivor = sessionSplit.leftId === profileId ? sessionSplit.rightId : sessionSplit.leftId;
             sessionSplit = null;
@@ -231,6 +284,30 @@ export function createSessionTabsManager(opts: {
         if (sessionActiveId === profileId) {
             sessionActiveId = null;
         }
+    }
+    function unloadSessionView(profileId: string) {
+        loadedProfiles.delete(profileId);
+        const view = sessionViews.get(profileId);
+        if (!view)
+            return false;
+        const win = opts.sessionWindow.get();
+        if (win) {
+            try {
+                win.removeBrowserView(view);
+            }
+            catch (err) {
+                logErr(err);
+            }
+        }
+        try {
+            view.webContents.destroy();
+        }
+        catch (err) {
+            logErr(err);
+        }
+        sessionViews.delete(profileId);
+        lastBoundsMap.delete(profileId);
+        return true;
     }
     async function open(profileId: string) {
         const win = await opts.sessionWindow.ensure();
@@ -255,6 +332,17 @@ export function createSessionTabsManager(opts: {
         sessionActiveId = profileId;
         applyActiveBrowserView();
         stopHoverActivation();
+        return true;
+    }
+    function logout(profileId: string) {
+        unloadSessionView(profileId);
+        applyActiveBrowserView();
+        return true;
+    }
+    function login(profileId: string) {
+        ensureSessionView(profileId);
+        loadedProfiles.delete(profileId);
+        applyActiveBrowserView();
         return true;
     }
     function close(profileId: string) {
@@ -322,6 +410,7 @@ export function createSessionTabsManager(opts: {
             destroySessionView(id);
         sessionViews.clear();
         loadedProfiles.clear();
+        lastBoundsMap.clear();
         sessionActiveId = null;
         sessionSplit = null;
         sessionSplitRatio = defaultSplitRatio;
@@ -357,6 +446,8 @@ export function createSessionTabsManager(opts: {
         setSplit,
         setSplitRatio,
         reset,
+        logout,
+        login,
         getActiveView,
         getViewByProfile,
         getActiveId,

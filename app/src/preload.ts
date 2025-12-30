@@ -5,6 +5,22 @@ type Rect = {
     width: number;
     height: number;
 };
+const BUFF_WECKER_ENABLED = process.env.BUFF_WECKER_ENABLED === "1";
+const buffWeckerApi = BUFF_WECKER_ENABLED
+    ? {
+        buffWeckerShowPanel: () => ipcRenderer.invoke("buff-wecker/show-panel"),
+        buffWeckerPing: () => ipcRenderer.invoke("buff-wecker/ping"),
+        buffWeckerLiveScan: (args: any) => ipcRenderer.invoke("buff-wecker/live-scan", args),
+        buffWeckerOverlayUpdate: (payload: any) => ipcRenderer.send("buff-wecker/overlay-update", payload),
+        buffWeckerActiveJob: () => ipcRenderer.invoke("buff-wecker/active-job"),
+    }
+    : {
+        buffWeckerShowPanel: async () => ({ disabled: true }),
+        buffWeckerPing: async () => ({ disabled: true }),
+        buffWeckerLiveScan: async () => ({ error: "buff-wecker disabled" }),
+        buffWeckerOverlayUpdate: (_payload: any) => undefined,
+        buffWeckerActiveJob: async () => ({ job: null, disabled: true }),
+    };
 contextBridge.exposeInMainWorld("api", {
     profilesList: () => ipcRenderer.invoke("profiles:list"),
     profilesCreate: (name: string) => ipcRenderer.invoke("profiles:create", name),
@@ -17,6 +33,8 @@ contextBridge.exposeInMainWorld("api", {
     openWindow: (profileId: string) => ipcRenderer.invoke("instance:openWindow", profileId),
     sessionTabsOpen: (profileId: string) => ipcRenderer.invoke("sessionTabs:open", profileId),
     sessionTabsSwitch: (profileId: string) => ipcRenderer.invoke("sessionTabs:switch", profileId),
+    sessionTabsLogout: (profileId: string) => ipcRenderer.invoke("sessionTabs:logout", profileId),
+    sessionTabsLogin: (profileId: string) => ipcRenderer.invoke("sessionTabs:login", profileId),
     sessionTabsClose: (profileId: string) => ipcRenderer.invoke("sessionTabs:close", profileId),
     sessionTabsSetBounds: (bounds: Rect) => ipcRenderer.invoke("sessionTabs:setBounds", bounds),
     sessionTabsSetVisible: (visible: boolean) => ipcRenderer.invoke("sessionTabs:setVisible", visible),
@@ -34,6 +52,7 @@ contextBridge.exposeInMainWorld("api", {
     tabLayoutsSave: (input: any) => ipcRenderer.invoke("tabLayouts:save", input),
     tabLayoutsDelete: (id: string) => ipcRenderer.invoke("tabLayouts:delete", id),
     tabLayoutsApply: (id: string) => ipcRenderer.invoke("tabLayouts:apply", id),
+    ...buffWeckerApi,
     onApplyLayout: (cb: (layout: any) => void) => {
         ipcRenderer.on("session:applyLayout", (_e, layout) => cb(layout));
     },
@@ -51,6 +70,16 @@ contextBridge.exposeInMainWorld("api", {
     roiOpen: (profileId: string) => ipcRenderer.invoke("roi:open", profileId),
     roiLoad: (profileId: string) => ipcRenderer.invoke("roi:load", profileId),
     roiSave: (profileId: string, rois: any) => ipcRenderer.invoke("roi:save", profileId, rois),
+    themesList: () => ipcRenderer.invoke("themes:list"),
+    themeSave: (input: any) => ipcRenderer.invoke("themes:save", input),
+    themeDelete: (id: string) => ipcRenderer.invoke("themes:delete", id),
+    themePush: (payload: any) => ipcRenderer.invoke("theme:push", payload),
+    themeCurrent: () => ipcRenderer.invoke("theme:current"),
+    tabActiveColorLoad: () => ipcRenderer.invoke("tabActiveColor:load"),
+    tabActiveColorSave: (color: string | null) => ipcRenderer.invoke("tabActiveColor:save", color),
+    onThemeUpdate: (cb: (payload: any) => void) => {
+        ipcRenderer.on("theme:update", (_e, payload) => cb(payload));
+    },
 });
 const allowedSend = new Set<string>([
     "overlay:toggleEdit",
@@ -61,8 +90,31 @@ const allowedSend = new Set<string>([
     "sidepanel:toggle",
     "hud:toggleEdit",
 ]);
-const allowedInvoke = new Set<string>(["hud:getBounds", "roi:open", "profiles:getOverlayTargetId"]);
-const allowedOn = new Set<string>(["overlay:edit", "exp:update", "hud:edit"]);
+if (BUFF_WECKER_ENABLED) {
+    allowedSend.add("buff-wecker/overlay-update");
+}
+const allowedInvoke = new Set<string>([
+    "hud:getBounds",
+    "roi:open",
+    "profiles:getOverlayTargetId",
+    "themes:list",
+    "themes:save",
+    "themes:delete",
+    "theme:push",
+    "theme:current",
+    "tabActiveColor:load",
+    "tabActiveColor:save",
+]);
+if (BUFF_WECKER_ENABLED) {
+    [
+        "buff-wecker/ping",
+        "buff-wecker/scan",
+        "buff-wecker/scan-file",
+        "buff-wecker/live-scan",
+        "buff-wecker/active-job",
+    ].forEach((channel) => allowedInvoke.add(channel));
+}
+const allowedOn = new Set<string>(["overlay:edit", "exp:update", "hud:edit", "theme:update"]);
 contextBridge.exposeInMainWorld("ipc", {
     send: (channel: string, payload?: any) => {
         if (!allowedSend.has(channel))
@@ -89,7 +141,9 @@ const roiChannel = (() => {
         if (raw && raw.startsWith("roi-calib:"))
             return raw;
     }
-    catch {
+    catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("roi-calib channel parse failed", err);
     }
     return null;
 })();
