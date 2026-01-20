@@ -1,0 +1,1338 @@
+[
+  {
+    "iconname": "guienhance.png",
+    "skillname": "2nd Anniversary Guild's Enhancement"
+  },
+  {
+    "iconname": "asscheaccura.png",
+    "skillname": "Accuracy"
+  },
+  {
+    "iconname": "additionaldamagefordisable.png",
+    "skillname": "Additional damage disable"
+  },
+  {
+    "iconname": "additionaldamageforweaken.png",
+    "skillname": "Additional damage weaken"
+  },
+  {
+    "iconname": "advancedtrap.png",
+    "skillname": "Advanced Trap"
+  },
+  {
+    "iconname": "aetherrend.png",
+    "skillname": "Aether Rend (Improved Scaling)"
+  },
+  {
+    "iconname": "agility.png",
+    "skillname": "Agility"
+  },
+  {
+    "iconname": "acrbowaimeds.png",
+    "skillname": "Aimed Shot"
+  },
+  {
+    "iconname": "alchemy.png",
+    "skillname": "Alchemy"
+  },
+  {
+    "iconname": "alterego.png",
+    "skillname": "Alter Ego"
+  },
+  {
+    "iconname": "ambidextrous.png",
+    "skillname": "Ambidextrous"
+  },
+  {
+    "iconname": "angelskill.png",
+    "skillname": "Angel's Grace"
+  },
+  {
+    "iconname": "aquaveil.png",
+    "skillname": "Aqua Veil"
+  },
+  {
+    "iconname": "blddblarmpen.png",
+    "skillname": "Armor Penetrate"
+  },
+  {
+    "iconname": "acrbowrain.png",
+    "skillname": "Arrow Rain"
+  },
+  {
+    "iconname": "bilasalraalaikum.png",
+    "skillname": "Asalraalaikum"
+  },
+  {
+    "iconname": "bilasmodeus.png",
+    "skillname": "Asmodeus"
+  },
+  {
+    "iconname": "aurabomb.png",
+    "skillname": "Aura Bomb (Aura Bomb)"
+  },
+  {
+    "iconname": "acrbowauto.png",
+    "skillname": "Auto Shot"
+  },
+  {
+    "iconname": "meroneamaster.png",
+    "skillname": "Axe Mastery"
+  },
+  {
+    "iconname": "bilbaraqijalesna.png",
+    "skillname": "Baraqijal Esna"
+  },
+  {
+    "iconname": "barrage.png",
+    "skillname": "Barrage (Increased Strike)"
+  },
+  {
+    "iconname": "florabsolutebarrier.png",
+    "skillname": "Barrier of Life"
+  },
+  {
+    "iconname": "battered.png",
+    "skillname": "Battered"
+  },
+  {
+    "iconname": "asschebeefup.png",
+    "skillname": "Beef Up"
+  },
+  {
+    "iconname": "bilbelialsmeshing.png",
+    "skillname": "Belial Smashing"
+  },
+  {
+    "iconname": "bldsupberser.png",
+    "skillname": "Berserker Mushroom"
+  },
+  {
+    "iconname": "bilgvurtialbold.png",
+    "skillname": "Bgvur Tialbold"
+  },
+  {
+    "iconname": "blddswblddan.png",
+    "skillname": "Blade Dance"
+  },
+  {
+    "iconname": "blazeeater.png",
+    "skillname": "Blaze Eater"
+  },
+  {
+    "iconname": "mersupblazin.png",
+    "skillname": "Blazing Sword"
+  },
+  {
+    "iconname": "coupleblessingsky.png",
+    "skillname": "Blessing from the Sky"
+  },
+  {
+    "iconname": "blessingofthewise.png",
+    "skillname": "Blessing of the Wise"
+  },
+  {
+    "iconname": "meroneblinds.png",
+    "skillname": "Blindside"
+  },
+  {
+    "iconname": "magmagblinkp.png",
+    "skillname": "Blinkpool"
+  },
+  {
+    "iconname": "bloodaccumulation.png",
+    "skillname": "Blood Armor"
+  },
+  {
+    "iconname": "bloodyrush.png",
+    "skillname": "Bloody Rush (Bloody Release)"
+  },
+  {
+    "iconname": "meronebloody.png",
+    "skillname": "Bloody Strike"
+  },
+  {
+    "iconname": "bloodythorn.png",
+    "skillname": "Bloody Thorn (Blood Penetration)"
+  },
+  {
+    "iconname": "ragboomburst.png",
+    "skillname": "Boomburst"
+  },
+  {
+    "iconname": "acrsupbowmaster.png",
+    "skillname": "Bow Mastery"
+  },
+  {
+    "iconname": "bubblesblessing.png",
+    "skillname": "Bubble's Blessing (Range Extension)"
+  },
+  {
+    "iconname": "bubbleiron.png",
+    "skillname": "Bubble's Bulwark"
+  },
+  {
+    "iconname": "sklking01.png",
+    "skillname": "Bubble's Fortune"
+  },
+  {
+    "iconname": "magspekestone.png",
+    "skillname": "Buff Break"
+  },
+  {
+    "iconname": "elefirbunfil.png",
+    "skillname": "Burningfield"
+  },
+  {
+    "iconname": "assknuburstc.png",
+    "skillname": "Burst Crack"
+  },
+  {
+    "iconname": "kntcalloffury.png",
+    "skillname": "Call of Fury"
+  },
+  {
+    "iconname": "asschecannon.png",
+    "skillname": "Cannon Ball"
+  },
+  {
+    "iconname": "carpentry.png",
+    "skillname": "Carpentry"
+  },
+  {
+    "iconname": "asschecatsre.png",
+    "skillname": "Cat's Reflex"
+  },
+  {
+    "iconname": "celestialbarrier.png",
+    "skillname": "Celestial Barrier (Duration Increase)"
+  },
+  {
+    "iconname": "knttswcharge.png",
+    "skillname": "Charge"
+  },
+  {
+    "iconname": "couplecheer.png",
+    "skillname": "Cheer of Love"
+  },
+  {
+    "iconname": "chimerascurse.png",
+    "skillname": "Chimera's Curse (Full charge debuff increase)"
+  },
+  {
+    "iconname": "cimetieresscream.png",
+    "skillname": "Cimetiere's Scream (Cimetiere's Scream)"
+  },
+  {
+    "iconname": "asschecircle.png",
+    "skillname": "Circle Healing"
+  },
+  {
+    "iconname": "vagonecleanh.png",
+    "skillname": "Clean Hit"
+  },
+  {
+    "iconname": "clearreflection.png",
+    "skillname": "Clear Reflection"
+  },
+  {
+    "iconname": "concentration.png",
+    "skillname": "Concentration [Nen] (Form Enhancement)"
+  },
+  {
+    "iconname": "condordive.png",
+    "skillname": "Condor Dive (Reduced Cooldown)"
+  },
+  {
+    "iconname": "cooking.png",
+    "skillname": "Cooking"
+  },
+  {
+    "iconname": "powerpalm.png",
+    "skillname": "Cooldown reduction (Cooldown reduction)"
+  },
+  {
+    "iconname": "acryoycounte.png",
+    "skillname": "Counter Attack"
+  },
+  {
+    "iconname": "ragsupfastsh.png",
+    "skillname": "Critical Shot"
+  },
+  {
+    "iconname": "criticalstab.png",
+    "skillname": "Critical Stab (Increased Damage)"
+  },
+  {
+    "iconname": "jstsupswing.png",
+    "skillname": "Critical Swing"
+  },
+  {
+    "iconname": "acryoycross.png",
+    "skillname": "Cross Line"
+  },
+  {
+    "iconname": "crossofblood.png",
+    "skillname": "Cross of Blood (Increased Range)"
+  },
+  {
+    "iconname": "blddblcross.png",
+    "skillname": "Cross Strike"
+  },
+  {
+    "iconname": "psycruciospell.png",
+    "skillname": "Crucio Spell"
+  },
+  {
+    "iconname": "demonlordcurse.png",
+    "skillname": "Curse of the Demon Lord"
+  },
+  {
+    "iconname": "sklking08.png",
+    "skillname": "Curse of the Drowned Rangda"
+  },
+  {
+    "iconname": "bldwicked.png",
+    "skillname": "Dagger from Within"
+  },
+  {
+    "iconname": "elemulavalan.png",
+    "skillname": "Damage"
+  },
+  {
+    "iconname": "damnationsurge.png",
+    "skillname": "Damnation Surge (Increased Duration)"
+  },
+  {
+    "iconname": "acrsupillusi.png",
+    "skillname": "Dark Illusion"
+  },
+  {
+    "iconname": "acryoydeadly.png",
+    "skillname": "Deadly swing"
+  },
+  {
+    "iconname": "bloodaegis.png",
+    "skillname": "Death's Rush"
+  },
+  {
+    "iconname": "debuffdamagereduction.png",
+    "skillname": "Debuff Damage Reduction"
+  },
+  {
+    "iconname": "psydnolgy.png",
+    "skillname": "Demonology"
+  },
+  {
+    "iconname": "devastatingsting.png",
+    "skillname": "Devastating Sting (Far Shot)"
+  },
+  {
+    "iconname": "divineaffliction.png",
+    "skillname": "Divinecross (Increased Duration)"
+  },
+  {
+    "iconname": "doublevision.png",
+    "skillname": "Double Vision"
+  },
+  {
+    "iconname": "dragonskill.png",
+    "skillname": "Dragon's Grace"
+  },
+  {
+    "iconname": "bilbloodfist.png",
+    "skillname": "Drain of Iblis"
+  },
+  {
+    "iconname": "headshot.png",
+    "skillname": "Eagle Eye"
+  },
+  {
+    "iconname": "earthcounter.png",
+    "skillname": "Earth Counter"
+  },
+  {
+    "iconname": "knttswethdvd.png",
+    "skillname": "Earth Divider"
+  },
+  {
+    "iconname": "eleearearmst.png",
+    "skillname": "Earth Mastery"
+  },
+  {
+    "iconname": "eleearearsqk.png",
+    "skillname": "Earthquake"
+  },
+  {
+    "iconname": "electriccounter.png",
+    "skillname": "Electric Counter"
+  },
+  {
+    "iconname": "eleeleeleshk.png",
+    "skillname": "Electric Shock"
+  },
+  {
+    "iconname": "mersupimpowe.png",
+    "skillname": "Empower weapon"
+  },
+  {
+    "iconname": "jstintabsorb.png",
+    "skillname": "Enchant Absorb"
+  },
+  {
+    "iconname": "jstintbleedi.png",
+    "skillname": "Enchant Blood"
+  },
+  {
+    "iconname": "enhancedblinkpool.png",
+    "skillname": "Enhanced Blinkpool"
+  },
+  {
+    "iconname": "enhancedincreasedhprecovery.png",
+    "skillname": "Enhanced HP Recovery"
+  },
+  {
+    "iconname": "increaseddefduringloweredhpmagic.png",
+    "skillname": "Enhanced Magical Defense"
+  },
+  {
+    "iconname": "increaseddefduringloweredhpphysical.png",
+    "skillname": "Enhanced Physical Defense"
+  },
+  {
+    "iconname": "enlightenment.png",
+    "skillname": "Enlightenment (Quick Movement)"
+  },
+  {
+    "iconname": "jstsupescape.png",
+    "skillname": "Escape"
+  },
+  {
+    "iconname": "evastorm.png",
+    "skillname": "EVA Storm"
+  },
+  {
+    "iconname": "executionofjustice.png",
+    "skillname": "Execution of Justice"
+  },
+  {
+    "iconname": "sklelecallofroika.png",
+    "skillname": "Eye of the Storm"
+  },
+  {
+    "iconname": "acrsupfastwa.png",
+    "skillname": "Fast Walker"
+  },
+  {
+    "iconname": "trofortunecircle.png",
+    "skillname": "Feeling Generous"
+  },
+  {
+    "iconname": "couplefieldouting.png",
+    "skillname": "Field Outing"
+  },
+  {
+    "iconname": "firecounter.png",
+    "skillname": "Fire Counter"
+  },
+  {
+    "iconname": "elefirfirmst.png",
+    "skillname": "Fire Mastery"
+  },
+  {
+    "iconname": "magfirestrike.png",
+    "skillname": "Fire Strike"
+  },
+  {
+    "iconname": "elefirfirbrd.png",
+    "skillname": "Firebird"
+  },
+  {
+    "iconname": "firstblood.png",
+    "skillname": "First Blood"
+  },
+  {
+    "iconname": "fishing.png",
+    "skillname": "Fishing"
+  },
+  {
+    "iconname": "ragbowflamea.png",
+    "skillname": "Flame Arrow"
+  },
+  {
+    "iconname": "magfireboomer.png",
+    "skillname": "Flame Ball"
+  },
+  {
+    "iconname": "magfirehotair.png",
+    "skillname": "Flame Geyser"
+  },
+  {
+    "iconname": "flowofsalvation.png",
+    "skillname": "Flow of Salvation (Increased Damage)"
+  },
+  {
+    "iconname": "vagonebrandi.png",
+    "skillname": "Flurry"
+  },
+  {
+    "iconname": "additional6thhitcriticalchance.png",
+    "skillname": "Four Strikes"
+  },
+  {
+    "iconname": "foxskill.png",
+    "skillname": "Fox's Grace"
+  },
+  {
+    "iconname": "gale.png",
+    "skillname": "Gale"
+  },
+  {
+    "iconname": "rinsqugebura.png",
+    "skillname": "Geburah Tiphreth"
+  },
+  {
+    "iconname": "gloriapatri.png",
+    "skillname": "Gloria Patri (Effect Increase)"
+  },
+  {
+    "iconname": "couplegoldenluck.png",
+    "skillname": "Golden Luck"
+  },
+  {
+    "iconname": "lordkgrandrage.png",
+    "skillname": "Grand Rage"
+  },
+  {
+    "iconname": "psygravitywell.png",
+    "skillname": "Gravity Well"
+  },
+  {
+    "iconname": "griffinskill.png",
+    "skillname": "Griffin's Grace"
+  },
+  {
+    "iconname": "sklking05.png",
+    "skillname": "Grinder's Blessing"
+  },
+  {
+    "iconname": "kntsupguard.png",
+    "skillname": "Guard"
+  },
+  {
+    "iconname": "meroneguillo.png",
+    "skillname": "Guillotine"
+  },
+  {
+    "iconname": "gust.png",
+    "skillname": "Gust (Increased Elemental)"
+  },
+  {
+    "iconname": "rincuregvur.png",
+    "skillname": "Gvur Tialla"
+  },
+  {
+    "iconname": "breathoflife.png",
+    "skillname": "Hammer of Judgement"
+  },
+  {
+    "iconname": "couplehappyjump.png",
+    "skillname": "Happy Jump"
+  },
+  {
+    "iconname": "hardenedcarapace.png",
+    "skillname": "Hardened Carapace"
+  },
+  {
+    "iconname": "wndlmadhurricane.png",
+    "skillname": "Harlequin's Charge"
+  },
+  {
+    "iconname": "shadowstrike.png",
+    "skillname": "Harlequin's Greeting"
+  },
+  {
+    "iconname": "asshaste.png",
+    "skillname": "Haste"
+  },
+  {
+    "iconname": "assheahealin.png",
+    "skillname": "Heal"
+  },
+  {
+    "iconname": "asscheheapup.png",
+    "skillname": "Heap Up"
+  },
+  {
+    "iconname": "mersupfury.png",
+    "skillname": "Heart of Fury"
+  },
+  {
+    "iconname": "sklkntsacrifice.png",
+    "skillname": "Heart of Sacrifice"
+  },
+  {
+    "iconname": "heavensstep.png",
+    "skillname": "Heaven's Step (Duration Increase)"
+  },
+  {
+    "iconname": "heavyshot.png",
+    "skillname": "Heavy Shot (Reduced Cooldown)"
+  },
+  {
+    "iconname": "hellfire.png",
+    "skillname": "Hellfire"
+  },
+  {
+    "iconname": "herb gathering.png",
+    "skillname": "Herb Gathering"
+  },
+  {
+    "iconname": "hexeslament.png",
+    "skillname": "Hexe's Lament (Aoe Range)"
+  },
+  {
+    "iconname": "jstyoypenya.png",
+    "skillname": "Hit of Penya"
+  },
+  {
+    "iconname": "rinsuphguard.png",
+    "skillname": "Holyguard"
+  },
+  {
+    "iconname": "hymnreducereceiveddamage.png",
+    "skillname": "Hymn - Damage Reduction"
+  },
+  {
+    "iconname": "hymnliberation.png",
+    "skillname": "Hymn - Liberation"
+  },
+  {
+    "iconname": "hymnperfectperformance.png",
+    "skillname": "Hymn - Perfect Performance"
+  },
+  {
+    "iconname": "iblislife.png",
+    "skillname": "Iblis' Fortitude"
+  },
+  {
+    "iconname": "ragbowicearr.png",
+    "skillname": "Ice Arrow"
+  },
+  {
+    "iconname": "magwaticemis.png",
+    "skillname": "Ice Missile"
+  },
+  {
+    "iconname": "iceshard.png",
+    "skillname": "Ice Shard"
+  },
+  {
+    "iconname": "elewaticeshk.png",
+    "skillname": "Iceshark"
+  },
+  {
+    "iconname": "ignite.png",
+    "skillname": "Ignite (Reduced Cooldown)"
+  },
+  {
+    "iconname": "incinerate.png",
+    "skillname": "Incinerate (Increased Elemental)"
+  },
+  {
+    "iconname": "increasedhprecovery.png",
+    "skillname": "Increased HP Recovery"
+  },
+  {
+    "iconname": "increasednaturalrecovery.png",
+    "skillname": "Increased HP Regeneration"
+  },
+  {
+    "iconname": "mantra.png",
+    "skillname": "Infusion (Intelligent Scaling)"
+  },
+  {
+    "iconname": "elewinvoid.png",
+    "skillname": "Ipuli's Breath"
+  },
+  {
+    "iconname": "ireofibilis.png",
+    "skillname": "Ire of Iblis (Duration Increase)"
+  },
+  {
+    "iconname": "wndlbacksteb.png",
+    "skillname": "Jester's Blast"
+  },
+  {
+    "iconname": "junglefever.png",
+    "skillname": "Jungle Fever"
+  },
+  {
+    "iconname": "acrbowjunkbo.png",
+    "skillname": "Junk Arrow"
+  },
+  {
+    "iconname": "meronekeenwh.png",
+    "skillname": "Keenwheel"
+  },
+  {
+    "iconname": "crabskill.png",
+    "skillname": "King Crab's Grace"
+  },
+  {
+    "iconname": "jstyoybackst.png",
+    "skillname": "Knock back"
+  },
+  {
+    "iconname": "jstintpoison.png",
+    "skillname": "Krrr's Poison"
+  },
+  {
+    "iconname": "kyrieeleison.png",
+    "skillname": "Kyrie Eleison (Range Increase)"
+  },
+  {
+    "iconname": "lastonestanding.png",
+    "skillname": "Last One Standing (Slow Pace)"
+  },
+  {
+    "iconname": "lefthanded.png",
+    "skillname": "Left Handed"
+  },
+  {
+    "iconname": "bldsilence.png",
+    "skillname": "Life Linked"
+  },
+  {
+    "iconname": "magelelgtbal.png",
+    "skillname": "Lightning Ball"
+  },
+  {
+    "iconname": "eleeleelemst.png",
+    "skillname": "Lightning Mastery"
+  },
+  {
+    "iconname": "maglightpalm.png",
+    "skillname": "Lightning Ram"
+  },
+  {
+    "iconname": "maglightshock.png",
+    "skillname": "Lightning Shock"
+  },
+  {
+    "iconname": "elemullgtstm.png",
+    "skillname": "Lightning Storm"
+  },
+  {
+    "iconname": "eleelethunst.png",
+    "skillname": "Lightning Strike"
+  },
+  {
+    "iconname": "lilithsgaze.png",
+    "skillname": "Lillith's Gaze (Slowing)"
+  },
+  {
+    "iconname": "lionskill.png",
+    "skillname": "Lion's Grace"
+  },
+  {
+    "iconname": "couplestroll.png",
+    "skillname": "Madrigal Stroll"
+  },
+  {
+    "iconname": "maelstromstrike.png",
+    "skillname": "Maelstrom Strike"
+  },
+  {
+    "iconname": "maleficdetonation.png",
+    "skillname": "Malefic Detonation"
+  },
+  {
+    "iconname": "markedattack.png",
+    "skillname": "Marked Attack"
+  },
+  {
+    "iconname": "markedprey.png",
+    "skillname": "Marked Prey"
+  },
+  {
+    "iconname": "masterofaxe.png",
+    "skillname": "Master of Axe"
+  },
+  {
+    "iconname": "masterofblade.png",
+    "skillname": "Master of Sword"
+  },
+  {
+    "iconname": "masteroftoxic.png",
+    "skillname": "Master of Toxins"
+  },
+  {
+    "iconname": "psymaxcrisis.png",
+    "skillname": "Maximum Crisis"
+  },
+  {
+    "iconname": "medidate.png",
+    "skillname": "Meditate (Deep Meditation)"
+  },
+  {
+    "iconname": "asschemental.png",
+    "skillname": "Mental Sign"
+  },
+  {
+    "iconname": "magmagmental.png",
+    "skillname": "Mental Strike"
+  },
+  {
+    "iconname": "rinsupanzelr.png",
+    "skillname": "Merkaba Hanzelrusha"
+  },
+  {
+    "iconname": "elemulmeteos.png",
+    "skillname": "Meteo Shower"
+  },
+  {
+    "iconname": "mindshatter.png",
+    "skillname": "Mind Shatter"
+  },
+  {
+    "iconname": "mining.png",
+    "skillname": "Mining"
+  },
+  {
+    "iconname": "mistytouch.png",
+    "skillname": "Misty Touch"
+  },
+  {
+    "iconname": "asschemoonbeam.png",
+    "skillname": "Moon Beam"
+  },
+  {
+    "iconname": "mysteriousenergy.png",
+    "skillname": "Mysterious Energy"
+  },
+  {
+    "iconname": "ragsupnature.png",
+    "skillname": "Nature"
+  },
+  {
+    "iconname": "nenacquisition.png",
+    "skillname": "Nen Acquisition"
+  },
+  {
+    "iconname": "nenoverflow.png",
+    "skillname": "Nen Overflow"
+  },
+  {
+    "iconname": "nenrelease.png",
+    "skillname": "Nen Release"
+  },
+  {
+    "iconname": "nensphere.png",
+    "skillname": "Nen Sphere"
+  },
+  {
+    "iconname": "nenstorage.png",
+    "skillname": "Nen Storage"
+  },
+  {
+    "iconname": "vagoneovercu.png",
+    "skillname": "Over Cutter"
+  },
+  {
+    "iconname": "packtactics.png",
+    "skillname": "Pack Tactics"
+  },
+  {
+    "iconname": "knttaxpaidea.png",
+    "skillname": "Pain Dealer"
+  },
+  {
+    "iconname": "couplepartytogether.png",
+    "skillname": "Party Together"
+  },
+  {
+    "iconname": "assheapatien.png",
+    "skillname": "Patience"
+  },
+  {
+    "iconname": "acrsupblock.png",
+    "skillname": "Perfect Block"
+  },
+  {
+    "iconname": "blddaxhawatt.png",
+    "skillname": "Phantom Pain"
+  },
+  {
+    "iconname": "ragbowpierci.png",
+    "skillname": "Piercing Arrow"
+  },
+  {
+    "iconname": "bilpiercingserpent.png",
+    "skillname": "Piercing Serpent"
+  },
+  {
+    "iconname": "trapmastery.png",
+    "skillname": "Pit"
+  },
+  {
+    "iconname": "eveplaypark.png",
+    "skillname": "PlayPark's Launch Buff"
+  },
+  {
+    "iconname": "ragbowpoison.png",
+    "skillname": "Poison Arrow"
+  },
+  {
+    "iconname": "elewatpoicld.png",
+    "skillname": "Poison Sting"
+  },
+  {
+    "iconname": "assknupowerf.png",
+    "skillname": "Power Fist"
+  },
+  {
+    "iconname": "knttaxpwstum.png",
+    "skillname": "Power Stomp"
+  },
+  {
+    "iconname": "knttwopwswng.png",
+    "skillname": "Power Swing"
+  },
+  {
+    "iconname": "assheapreven.png",
+    "skillname": "Prevention"
+  },
+  {
+    "iconname": "rinsupprotec.png",
+    "skillname": "Protect"
+  },
+  {
+    "iconname": "mershiepanbar.png",
+    "skillname": "Protection"
+  },
+  {
+    "iconname": "mershieprotec.png",
+    "skillname": "Protective Tree Bark"
+  },
+  {
+    "iconname": "psypsybomb.png",
+    "skillname": "Psychic Bomb"
+  },
+  {
+    "iconname": "psypsysquare.png",
+    "skillname": "Psychic Square"
+  },
+  {
+    "iconname": "psypsywall.png",
+    "skillname": "Psychic Wall"
+  },
+  {
+    "iconname": "acryoypullin.png",
+    "skillname": "Pulling"
+  },
+  {
+    "iconname": "asschequicks.png",
+    "skillname": "Quick Step"
+  },
+  {
+    "iconname": "rabbitskill.png",
+    "skillname": "Rabbit's Grace"
+  },
+  {
+    "iconname": "kntsuprage.png",
+    "skillname": "Rage"
+  },
+  {
+    "iconname": "forcegrip.png",
+    "skillname": "Reduced Cooldown"
+  },
+  {
+    "iconname": "staggeringstrike.png",
+    "skillname": "Reduced Cooldown (Reduced Cooldown)"
+  },
+  {
+    "iconname": "kntsuppairef.png",
+    "skillname": "Reflective Shell"
+  },
+  {
+    "iconname": "meronereflex.png",
+    "skillname": "Reflex Hit"
+  },
+  {
+    "iconname": "bldrendingentry.png",
+    "skillname": "Rending Entry"
+  },
+  {
+    "iconname": "repellingshot.png",
+    "skillname": "Repelling Shot (Debuff)"
+  },
+  {
+    "iconname": "asshearesurr.png",
+    "skillname": "Resurrection"
+  },
+  {
+    "iconname": "rinheahealra.png",
+    "skillname": "Rhisis' Assistance"
+  },
+  {
+    "iconname": "riskmanagement.png",
+    "skillname": "Risk Management"
+  },
+  {
+    "iconname": "magrockcrash.png",
+    "skillname": "Rock Crash"
+  },
+  {
+    "iconname": "maglooting.png",
+    "skillname": "Rooting"
+  },
+  {
+    "iconname": "sacrifice.png",
+    "skillname": "Sacrifice"
+  },
+  {
+    "iconname": "elemulsanstm.png",
+    "skillname": "Sandstorm"
+  },
+  {
+    "iconname": "psysnolgy.png",
+    "skillname": "Satanology"
+  },
+  {
+    "iconname": "speedboost.png",
+    "skillname": "Shade's Boost"
+  },
+  {
+    "iconname": "stunimmunity.png",
+    "skillname": "Shade's Support"
+  },
+  {
+    "iconname": "shadeswift.png",
+    "skillname": "Shade's Swiftness"
+  },
+  {
+    "iconname": "shadowmirage.png",
+    "skillname": "Shadow Strike"
+  },
+  {
+    "iconname": "magmagelemen.png",
+    "skillname": "Shelid's Earth"
+  },
+  {
+    "iconname": "rushattack.png",
+    "skillname": "Shield"
+  },
+  {
+    "iconname": "mershiebash.png",
+    "skillname": "Shield Bash"
+  },
+  {
+    "iconname": "shieldcrush.png",
+    "skillname": "Shield Crush (Quick Stun)"
+  },
+  {
+    "iconname": "shieldmastery.png",
+    "skillname": "Shield Mastery"
+  },
+  {
+    "iconname": "ragbowsltaro.png",
+    "skillname": "Silent Arrow"
+  },
+  {
+    "iconname": "acrbowsilent.png",
+    "skillname": "Silent Shot"
+  },
+  {
+    "iconname": "blddswsilent.png",
+    "skillname": "Silent Strike"
+  },
+  {
+    "iconname": "sirenscall.png",
+    "skillname": "Siren's Call"
+  },
+  {
+    "iconname": "skysplitter.png",
+    "skillname": "Sky Splitter (Strong Impact)"
+  },
+  {
+    "iconname": "meronesplmas.png",
+    "skillname": "Slash"
+  },
+  {
+    "iconname": "acryoyslowst.png",
+    "skillname": "Slow Step"
+  },
+  {
+    "iconname": "mersupsmitea.png",
+    "skillname": "Smite Axe"
+  },
+  {
+    "iconname": "smithing.png",
+    "skillname": "Smithing"
+  },
+  {
+    "iconname": "acryoysnitch.png",
+    "skillname": "Snatch"
+  },
+  {
+    "iconname": "meronesenake.png",
+    "skillname": "Sneaker"
+  },
+  {
+    "iconname": "blddblsonbld.png",
+    "skillname": "Sonic Blade"
+  },
+  {
+    "iconname": "bilsonichand.png",
+    "skillname": "Sonichand"
+  },
+  {
+    "iconname": "soulofrhisis.png",
+    "skillname": "Soul of Rhisis"
+  },
+  {
+    "iconname": "meronesphit.png",
+    "skillname": "Special Hit"
+  },
+  {
+    "iconname": "criticaljstyoyomaster.png",
+    "skillname": "Special Yo-Yo Mastery (Multistrike)"
+  },
+  {
+    "iconname": "weakeningstrike.png",
+    "skillname": "Speed Reduction (Nen Enhancement)"
+  },
+  {
+    "iconname": "psyspirits.png",
+    "skillname": "Spirit Bomb"
+  },
+  {
+    "iconname": "rinsupspirit.png",
+    "skillname": "Spirit Fortune"
+  },
+  {
+    "iconname": "blddaxspring.png",
+    "skillname": "Spring Attack"
+  },
+  {
+    "iconname": "couplestaminaboost.png",
+    "skillname": "Stamina Boost"
+  },
+  {
+    "iconname": "bloodarmor.png",
+    "skillname": "Stigma I (Increased Stigma)"
+  },
+  {
+    "iconname": "manaburn.png",
+    "skillname": "Stigma II (Increased Range)"
+  },
+  {
+    "iconname": "stigma3.png",
+    "skillname": "Stigma III (Increased Stigma)"
+  },
+  {
+    "iconname": "stonepillar.png",
+    "skillname": "Stone Pillar (Increased Explosion Range)"
+  },
+  {
+    "iconname": "eleearstnspr.png",
+    "skillname": "Stone Spear"
+  },
+  {
+    "iconname": "asschestoneh.png",
+    "skillname": "Stonehand"
+  },
+  {
+    "iconname": "stormslash.png",
+    "skillname": "Storm Slash (Resistance Reduction)"
+  },
+  {
+    "iconname": "stormstrike.png",
+    "skillname": "Storm Strike (Speed Decrease)"
+  },
+  {
+    "iconname": "stormveilcloak.png",
+    "skillname": "Stormveil Cloak"
+  },
+  {
+    "iconname": "stonefeet.png",
+    "skillname": "Stranglethorns"
+  },
+  {
+    "iconname": "magwindstrong.png",
+    "skillname": "Strongwind"
+  },
+  {
+    "iconname": "burn.png",
+    "skillname": "Sury's Tenacity"
+  },
+  {
+    "iconname": "swampyarea.png",
+    "skillname": "Swampy Area (Range Enhancement)"
+  },
+  {
+    "iconname": "farsight.png",
+    "skillname": "Swift Hands"
+  },
+  {
+    "iconname": "coupleswiftrecovery.png",
+    "skillname": "Swift Recovery"
+  },
+  {
+    "iconname": "meronesmaste.png",
+    "skillname": "Sword Mastery"
+  },
+  {
+    "iconname": "rinsupcross.png",
+    "skillname": "Swordcross"
+  },
+  {
+    "iconname": "magwindswordw.png",
+    "skillname": "Swordwind"
+  },
+  {
+    "iconname": "tempestbarrage.png",
+    "skillname": "Tempest Barrage"
+  },
+  {
+    "iconname": "assknutampin.png",
+    "skillname": "Temping Hole"
+  },
+  {
+    "iconname": "templarcall.png",
+    "skillname": "Templar's Call"
+  },
+  {
+    "iconname": "absorption.png",
+    "skillname": "Tenacity"
+  },
+  {
+    "iconname": "thunderstrike.png",
+    "skillname": "Thunder Strike (Increased Elemental)"
+  },
+  {
+    "iconname": "tidalomen.png",
+    "skillname": "Tidal Omen (Increased Elemental)"
+  },
+  {
+    "iconname": "tigerskill.png",
+    "skillname": "Tiger's Grace"
+  },
+  {
+    "iconname": "touchofrhisis.png",
+    "skillname": "Touch of Rhisis"
+  },
+  {
+    "iconname": "toxicanalogy.png",
+    "skillname": "Toxic Analogy"
+  },
+  {
+    "iconname": "toxicassault.png",
+    "skillname": "Toxic Assault (Increased Toxins)"
+  },
+  {
+    "iconname": "toxiccloud.png",
+    "skillname": "Toxic Cloud (Reduced Cooldown)"
+  },
+  {
+    "iconname": "toxicfury.png",
+    "skillname": "Toxic Fury"
+  },
+  {
+    "iconname": "trapaoe.png",
+    "skillname": "Trap: AoE"
+  },
+  {
+    "iconname": "trapbinding.png",
+    "skillname": "Trap: Binding (Skilled Installation)"
+  },
+  {
+    "iconname": "trapblast.png",
+    "skillname": "Trap: Blast (Proficient Traps)"
+  },
+  {
+    "iconname": "trapdebuff.png",
+    "skillname": "Trap: Debuff (Reduced Cooldown)"
+  },
+  {
+    "iconname": "trapdot.png",
+    "skillname": "Trap: DoT (Proficient Traps)"
+  },
+  {
+    "iconname": "ragbowtriple.png",
+    "skillname": "Triple shot"
+  },
+  {
+    "iconname": "undying.png",
+    "skillname": "Undying"
+  },
+  {
+    "iconname": "unicornskill.png",
+    "skillname": "Unicorn's Grace"
+  },
+  {
+    "iconname": "jstsupvatals.png",
+    "skillname": "Vital Stab"
+  },
+  {
+    "iconname": "voltguard.png",
+    "skillname": "Voltguard"
+  },
+  {
+    "iconname": "watercounter.png",
+    "skillname": "Water Counter"
+  },
+  {
+    "iconname": "elewatwatmst.png",
+    "skillname": "Water Mastery"
+  },
+  {
+    "iconname": "magspringwater.png",
+    "skillname": "Water Well"
+  },
+  {
+    "iconname": "magwaterball.png",
+    "skillname": "Waterball"
+  },
+  {
+    "iconname": "placeholderskill.png",
+    "skillname": "Waterbomb Chance"
+  },
+  {
+    "iconname": "webbed.png",
+    "skillname": "Webbed"
+  },
+  {
+    "iconname": "windcounter.png",
+    "skillname": "Wind Counter"
+  },
+  {
+    "iconname": "magwindcutter.png",
+    "skillname": "Wind Cutter"
+  },
+  {
+    "iconname": "elewinwinmst.png",
+    "skillname": "Wind Mastery"
+  },
+  {
+    "iconname": "elewinwinfil.png",
+    "skillname": "Windfield"
+  },
+  {
+    "iconname": "woodcutting.png",
+    "skillname": "Wood Cutting"
+  },
+  {
+    "iconname": "acrsupyoymaster.png",
+    "skillname": "Yo-Yo Mastery"
+  },
+  {
+    "iconname": "yoyostorm.png",
+    "skillname": "Yo-Yo Storm (Reduced Cooldown)"
+  },
+  {
+    "iconname": "zephyrsgrace.png",
+    "skillname": "Zephyr's Grace"
+  }
+]

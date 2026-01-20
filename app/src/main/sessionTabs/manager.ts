@@ -2,6 +2,8 @@ import { BrowserView, screen } from "electron";
 import type { ViewBounds } from "../../shared/types";
 import { hardenGameContents } from "../security/harden";
 import type { SessionWindowController } from "../windows/sessionWindow";
+import { LAYOUT, TIMINGS } from "../../shared/constants";
+import { logErr } from "../../shared/logger"; // Added import
 type SplitPair = {
     leftId: string;
     rightId: string;
@@ -10,19 +12,18 @@ export function createSessionTabsManager(opts: {
     sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
     flyffUrl: string;
 }) {
-    const logErr = (err: unknown) => console.error("[SessionTabs]", err);
     const sessionViews = new Map<string, BrowserView>();
     const loadedProfiles = new Set<string>();
     let sessionActiveId: string | null = null;
     let sessionSplit: SplitPair | null = null;
-    const defaultSplitRatio = 0.5;
+    const defaultSplitRatio = LAYOUT.DEFAULT_SPLIT_RATIO;
     let sessionSplitRatio = defaultSplitRatio;
     let sessionVisible = true;
     let sessionBounds: ViewBounds = { x: 0, y: 60, width: 1200, height: 700 };
-    const splitGap = 8;
-    const minSplitRatio = 0.2;
-    const maxSplitRatio = 0.8;
-    const hoverPollMs = 120;
+    const splitGap = LAYOUT.SPLIT_GAP;
+    const minSplitRatio = LAYOUT.MIN_SPLIT_RATIO;
+    const maxSplitRatio = LAYOUT.MAX_SPLIT_RATIO;
+    const hoverPollMs = TIMINGS.HOVER_POLL_MS;
     let hoverTimer: NodeJS.Timeout | null = null;
     let lastNotifiedActiveId: string | null = null;
     function clampSplitRatio(ratio: number): number {
@@ -79,7 +80,7 @@ export function createSessionTabsManager(opts: {
             win.webContents.send("sessionTabs:activeChanged", sessionActiveId);
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "SessionTabs");
         }
     }
     function focusActiveView() {
@@ -92,40 +93,103 @@ export function createSessionTabsManager(opts: {
             view.webContents.focus();
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "SessionTabs");
         }
     }
+    function ensureAttached(win: Electron.BrowserWindow, view: BrowserView) {
+        const existing = win.getBrowserViews();
+        if (!existing.includes(view)) {
+            try {
+                win.addBrowserView(view);
+            }
+            catch (err) {
+                logErr(err, "SessionTabs");
+            }
+        }
+    }
+    const lastBoundsMap = new Map<string, string>();
     function applyActiveBrowserView() {
         const win = opts.sessionWindow.get();
         if (!win)
             return;
         sanitizeActiveId();
-        for (const v of win.getBrowserViews()) {
-            try {
-                win.removeBrowserView(v);
-            }
-            catch (err) {
-                logErr(err);
-            }
-        }
-        if (!sessionVisible) {
-            notifyActiveChanged();
-            return;
-        }
         const layout = computeLayoutBounds();
-        if (layout.length === 0) {
+        const layoutIds = new Set(layout.map((l) => l.id));
+        const shouldShow = sessionVisible && layout.length > 0;
+        // When hidden, keep ALL views attached but set bounds to zero
+        // This allows tabs to be created while hidden, then shown later
+        if (!shouldShow) {
+            if (!sessionVisible && sessionViews.size > 0) {
+                // Keep ALL views attached but hide them by setting zero bounds
+                for (const [, view] of sessionViews) {
+                    ensureAttached(win, view);
+                    try {
+                        view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+                    }
+                    catch (err) {
+                        logErr(err, "SessionTabs");
+                    }
+                }
+                notifyActiveChanged();
+                return;
+            }
+            // No views exist - remove any stale views
+            for (const view of win.getBrowserViews()) {
+                try {
+                    win.removeBrowserView(view);
+                }
+                catch (err) {
+                    logErr(err, "SessionTabs");
+                }
+            }
+            lastBoundsMap.clear();
             notifyActiveChanged();
             return;
         }
-        layout.forEach(({ id, bounds }) => {
+        const idByView = new Map<BrowserView, string>();
+        for (const [id, view] of sessionViews) {
+            idByView.set(view, id);
+        }
+        // Remove views that are not part of the current layout
+        for (const view of win.getBrowserViews()) {
+            const id = idByView.get(view);
+            if (!id || !layoutIds.has(id)) {
+                try {
+                    win.removeBrowserView(view);
+                }
+                catch (err) {
+                    logErr(err, "SessionTabs");
+                }
+            }
+            else {
+                try {
+                    view.setAutoResize({ width: false, height: false });
+                }
+                catch (err) {
+                    logErr(err, "SessionTabs");
+                }
+            }
+        }
+        // Attach needed views and update bounds when changed
+        for (const { id, bounds } of layout) {
             const view = sessionViews.get(id);
             if (!view)
-                return;
-            win.addBrowserView(view);
-            view.setBounds(bounds);
-            view.setAutoResize({ width: true, height: true });
-            loadProfileIfNeeded(id);
-        });
+                continue;
+            ensureAttached(win, view);
+            const key = `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`;
+            const prevKey = lastBoundsMap.get(id);
+            if (key !== prevKey) {
+                try {
+                    view.setBounds(bounds);
+                    view.setAutoResize({ width: false, height: false });
+                }
+                catch (err) {
+                    logErr(err, "SessionTabs");
+                }
+                lastBoundsMap.set(id, key);
+            }
+            loadProfile(id);
+        }
         focusActiveView();
         notifyActiveChanged();
     }
@@ -179,19 +243,26 @@ export function createSessionTabsManager(opts: {
                 nodeIntegration: false,
             },
         });
+        try {
+            view.setAutoResize({ width: false, height: false });
+        }
+        catch (err) {
+            logErr(err, "SessionTabs");
+        }
         hardenGameContents(view.webContents);
         sessionViews.set(profileId, view);
         return view;
     }
-    function loadProfileIfNeeded(profileId: string) {
-        const shouldLoad = sessionActiveId === profileId ||
-            (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId));
-        if (!shouldLoad)
+    function loadProfile(profileId: string, loadOpts: { force?: boolean } = {}) {
+        const view = sessionViews.get(profileId);
+        if (!view)
             return;
         if (loadedProfiles.has(profileId))
             return;
-        const view = sessionViews.get(profileId);
-        if (!view)
+        const shouldLoad = loadOpts.force ||
+            sessionActiveId === profileId ||
+            (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId));
+        if (!shouldLoad)
             return;
         const currentUrl = view.webContents.getURL();
         if (currentUrl && currentUrl !== "about:blank") {
@@ -211,17 +282,18 @@ export function createSessionTabsManager(opts: {
                 win.removeBrowserView(view);
             }
             catch (err) {
-                logErr(err);
+                logErr(err, "SessionTabs");
             }
         }
         try {
             view.webContents.destroy();
         }
         catch (err) {
-            logErr(err);
+            logErr(err, "SessionTabs");
         }
         sessionViews.delete(profileId);
         loadedProfiles.delete(profileId);
+        lastBoundsMap.delete(profileId);
         if (sessionSplit && (sessionSplit.leftId === profileId || sessionSplit.rightId === profileId)) {
             const survivor = sessionSplit.leftId === profileId ? sessionSplit.rightId : sessionSplit.leftId;
             sessionSplit = null;
@@ -232,9 +304,49 @@ export function createSessionTabsManager(opts: {
             sessionActiveId = null;
         }
     }
-    async function open(profileId: string) {
+    function unloadSessionView(profileId: string) {
+        loadedProfiles.delete(profileId);
+        const view = sessionViews.get(profileId);
+        if (!view)
+            return false;
+        const win = opts.sessionWindow.get();
+        if (win) {
+            try {
+                win.removeBrowserView(view);
+            }
+            catch (err) {
+                logErr(err, "SessionTabs");
+            }
+        }
+        try {
+            view.webContents.destroy();
+        }
+        catch (err) {
+            logErr(err, "SessionTabs");
+        }
+        sessionViews.delete(profileId);
+        lastBoundsMap.delete(profileId);
+        return true;
+    }
+    const OPEN_TIMEOUT_MS = TIMINGS.VIEW_LOAD_TIMEOUT_MS;
+
+    async function open(profileId: string): Promise<boolean> {
         const win = await opts.sessionWindow.ensure();
-        ensureSessionView(profileId);
+        const view = ensureSessionView(profileId);
+        const webContents = view.webContents;
+        if (!webContents || webContents.isDestroyed()) {
+            logErr(`Cannot open session tab; webContents missing for profile ${profileId}`, "SessionTabs");
+            return false;
+        }
+        const timeout = setTimeout(() => {
+            logErr(`View load timeout after ${OPEN_TIMEOUT_MS}ms for profile ${profileId}`, "SessionTabs");
+        }, OPEN_TIMEOUT_MS);
+        const clearLoadWatch = () => {
+            clearTimeout(timeout);
+        };
+        webContents.once("did-finish-load", clearLoadWatch);
+        webContents.once("destroyed", clearLoadWatch);
+        loadProfile(profileId, { force: true });
         sessionActiveId = profileId;
         sessionSplit = null;
         applyActiveBrowserView();
@@ -257,6 +369,17 @@ export function createSessionTabsManager(opts: {
         stopHoverActivation();
         return true;
     }
+    function logout(profileId: string) {
+        unloadSessionView(profileId);
+        applyActiveBrowserView();
+        return true;
+    }
+    function login(profileId: string) {
+        ensureSessionView(profileId);
+        loadedProfiles.delete(profileId);
+        applyActiveBrowserView();
+        return true;
+    }
     function close(profileId: string) {
         destroySessionView(profileId);
         applyActiveBrowserView();
@@ -268,12 +391,35 @@ export function createSessionTabsManager(opts: {
         return true;
     }
     function setVisible(visible: boolean) {
+        const wasVisible = sessionVisible;
         sessionVisible = !!visible;
-        if (!sessionVisible)
+        if (!sessionVisible) {
             stopHoverActivation();
-        else
+        }
+        else {
             startHoverActivation();
+        }
         applyActiveBrowserView();
+        // When becoming visible, force focus on active view to trigger render
+        if (!wasVisible && sessionVisible) {
+            const win = opts.sessionWindow.get();
+            if (win && !win.isDestroyed()) {
+                // Re-apply bounds to all visible views to ensure proper rendering
+                const layout = computeLayoutBounds();
+                for (const { id, bounds } of layout) {
+                    const view = sessionViews.get(id);
+                    if (!view) continue;
+                    try {
+                        view.setBounds(bounds);
+                        view.setAutoResize({ width: false, height: false });
+                    }
+                    catch (err) {
+                        logErr(err, "SessionTabs");
+                    }
+                }
+                focusActiveView();
+            }
+        }
         return true;
     }
     async function setSplit(pair: {
@@ -322,6 +468,7 @@ export function createSessionTabsManager(opts: {
             destroySessionView(id);
         sessionViews.clear();
         loadedProfiles.clear();
+        lastBoundsMap.clear();
         sessionActiveId = null;
         sessionSplit = null;
         sessionSplitRatio = defaultSplitRatio;
@@ -357,6 +504,8 @@ export function createSessionTabsManager(opts: {
         setSplit,
         setSplitRatio,
         reset,
+        logout,
+        login,
         getActiveView,
         getViewByProfile,
         getActiveId,

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Killfeed</title>
+  <link rel="stylesheet" href="ui_sidepanel.css">
+</head>
+<body>
+  <div class="sidepanel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <h1>Killfeed</h1>
+      <select id="profileSelector" class="profile-selector">
+        <option value="">Select Profile...</option>
+      </select>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content">
+      <div class="layout-controls">
+        <div class="rows-control">
+          <label for="rowsInput">Reihen</label>
+          <input id="rowsInput" type="number" min="1" max="6" step="1" value="2" />
+        </div>
+        <div class="layout-scale">
+          <div class="scale-label">Overlay-Größe</div>
+          <div class="scale-row">
+            <input id="scaleInput" type="range" min="0.6" max="1.6" step="0.05" value="1" />
+            <span id="scaleValue" class="scale-value">1.00x</span>
+          </div>
+          <div class="scale-hint">0.6x – 1.6x</div>
+        </div>
+      </div>
+
+      <div class="scroll-section">
+        <div class="section-title">Charakter</div>
+        <div class="char-card">
+          <label for="charNameInput">Charaktername</label>
+          <input id="charNameInput" type="text" class="char-input" maxlength="64" placeholder="Charname eingeben" />
+          <div id="charNameStatus" class="char-status">Noch nicht gespeichert</div>
+        </div>
+      </div>
+
+      <!-- Badge Visibility Section -->
+      <div class="scroll-section">
+        <div class="section-title">Badge Visibility</div>
+        <div id="badgeList" class="badge-list">
+          <!-- Badges rendered here -->
+        </div>
+      </div>
+
+      <!-- Monster Tracking Section -->
+      <div class="scroll-section">
+        <div class="section-title">Monster Tracking</div>
+        <div id="monstersContainer">
+          <!-- Monster accordions rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer">
+      <span id="sessionInfo" class="session-info">No data</span>
+      <button id="resetSessionBtn" class="reset-btn">Reset Session</button>
+      <button id="toggleAllBtn" class="toggle-all-btn">Hide All</button>
+    </div>
+  </div>
+
+  <script src="ui_sidepanel.js"></script>
+</body>
+</html>
