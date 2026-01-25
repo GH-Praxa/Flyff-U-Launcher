@@ -1970,6 +1970,7 @@ app.whenReady().then(async () => {
 
         autoUpdater.autoDownload = false;
         autoUpdater.autoInstallOnAppQuit = true;
+        autoUpdater.disableDifferentialDownload = true; // our artifacts do not ship blockmaps
 
         autoUpdater.on("update-available", async (info) => {
             const result = await dialog.showMessageBox({
@@ -1983,7 +1984,20 @@ app.whenReady().then(async () => {
             });
 
             if (result.response === 0) {
-                autoUpdater.downloadUpdate();
+                await dialog.showMessageBox({
+                    type: "info",
+                    title: t("update.available.title"),
+                    message: t("update.available.detail"),
+                    detail: t("update.ready.detail"),
+                    buttons: [t("update.later")],
+                    defaultId: 0,
+                });
+                autoUpdater
+                    .downloadUpdate()
+                    .catch((err) => {
+                        logErr(err, "AutoUpdater");
+                        dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")} (${String(err)})`);
+                    });
             }
         });
 
