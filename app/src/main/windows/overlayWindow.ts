@@ -30,6 +30,20 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
     win.setIgnoreMouseEvents(true);
     // Keep overlay above the host surface so badges/ROIs stay visible
     win.setAlwaysOnTop(true, "screen-saver");
+
+    // Track move state to hide overlay during drag (prevents flicker)
+    let moveTimeout: NodeJS.Timeout | null = null;
+
+    const onParentMove = () => {
+        if (win.isDestroyed()) return;
+        win.setOpacity(0);
+        if (moveTimeout) clearTimeout(moveTimeout);
+        moveTimeout = setTimeout(() => {
+            if (win.isDestroyed()) return;
+            win.setOpacity(1);
+        }, 100);
+    };
+
     const syncVisibility = () => {
         if (win.isDestroyed())
             return;
@@ -44,6 +58,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
             win.hide();
         }
     };
+    parent.on("move", onParentMove);
     parent.on("focus", syncVisibility);
     parent.on("blur", syncVisibility);
     parent.on("show", syncVisibility);
@@ -98,36 +113,11 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
     background:transparent;
     pointer-events:none;
   }
-  #supportExpBadge{
-    position:fixed;
-    top:12px;
-    right:12px;
-    padding:6px 10px;
-    border-radius:10px;
-    background:rgba(0,0,0,0.55);
-    color:white;
-    font: 13px 'Segoe UI', Arial, sans-serif;
-    box-shadow:0 6px 18px rgba(0,0,0,0.45);
-    border:1px solid rgba(255,170,80,0.65);
-    min-width:120px;
-    text-align:right;
-    pointer-events:none;
-    z-index:3;
-    opacity:0.85;
-    transition:opacity 0.2s ease;
-  }
-  #supportExpBadge.stale{
-    opacity:0.55;
-  }
-  #supportExpBadge.empty{
-    opacity:0.35;
-  }
 </style>
 </head>
 <body>
   <div id="roiLayer"></div>
   <div id="pluginOverlays"></div>
-  <div id="supportExpBadge" aria-live="polite"></div>
 
 <script>
   const DEBUG_OVERLAY = ${debugOverlay};
@@ -156,7 +146,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
   const ROI_KEYS = ["lvl", "charname", "exp", "lauftext", "rmExp", "enemyName", "enemyHp"];
   const showFighter = OVERLAY_ROLE !== "support";
   const showSupport = OVERLAY_ROLE !== "fighter";
-  const showSupportBadge = OVERLAY_ROLE === "fighter";
   const ROI_COLORS = {
     lvl: "rgba(0,150,255,0.9)",
     charname: "rgba(255,215,0,0.9)",
@@ -181,14 +170,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
   let supportRoiVis = null;
   let currentOverlayProfileId = null;
   let currentSupportProfileId = null;
-  let supportExpValue = null;
-  let supportExpUpdatedAt = 0;
-  let lastSupportExpFetch = 0;
   const pluginFrames = [];
-  const supportBadge = document.getElementById("supportExpBadge");
-  if (supportBadge && !showSupportBadge) {
-    supportBadge.style.display = "none";
-  }
 
   // Expose plugin channel invoker for plugin overlays
   window.invokePluginChannel = async function(pluginId, channel, ...args) {
@@ -205,20 +187,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
     }
     return res ?? null;
   };
-
-  function renderSupportBadge(){
-    if (!showSupportBadge || !supportBadge) return;
-    if (!supportExpValue) {
-      supportBadge.textContent = "RM EXP: --";
-      supportBadge.classList.add("empty");
-      supportBadge.classList.remove("stale");
-      return;
-    }
-    const stale = (Date.now() - supportExpUpdatedAt) > 1500;
-    supportBadge.textContent = "RM EXP: " + supportExpValue;
-    supportBadge.classList.toggle("stale", stale);
-    supportBadge.classList.remove("empty");
-  }
 
   function renderRois(){
     if(DEBUG_OVERLAY) {
@@ -296,13 +264,12 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
         roiLayer.append(div);
       }
     }
-    renderSupportBadge();
   }
 
   async function refreshRois(){
     try{
       const pid = showFighter ? await invokeMain("profiles:getOverlayTargetId") : null;
-      const shouldLoadSupport = showSupport || showSupportBadge;
+      const shouldLoadSupport = showSupport;
       const supportPid = shouldLoadSupport ? await invokeMain("profiles:getOverlaySupportTargetId") : null;
       if(DEBUG_OVERLAY) console.log("[ROI Overlay] refreshRois profileId:", pid, "supportPid:", supportPid);
 
@@ -324,16 +291,10 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
         currentSupportProfileId = null;
         supportRoiData = null;
         supportRoiVis = null;
-        supportExpValue = null;
-        supportExpUpdatedAt = 0;
-        lastSupportExpFetch = 0;
       } else if (supportPid !== currentSupportProfileId) {
         currentSupportProfileId = supportPid;
         supportRoiData = null;
         supportRoiVis = null;
-        supportExpValue = null;
-        supportExpUpdatedAt = 0;
-        lastSupportExpFetch = 0;
       }
 
       // Load fighter profile ROIs
@@ -358,26 +319,6 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
         if(DEBUG_OVERLAY) console.log("[ROI Overlay] loaded support data:", data, "vis:", vis);
         supportRoiData = data;
         supportRoiVis = vis || {};
-        if (showSupportBadge && supportPid) {
-          const now = Date.now();
-          if (now - lastSupportExpFetch > 350) {
-            lastSupportExpFetch = now;
-            try{
-              const ocr = await invokeMain("ocr:getLatest", supportPid);
-              const val = (ocr && typeof ocr.rmExp === "string" && ocr.rmExp.trim())
-                ? ocr.rmExp.trim()
-                : (ocr && typeof ocr.exp === "string" ? ocr.exp.trim() : "");
-              supportExpValue = val || null;
-              supportExpUpdatedAt = ocr?.updatedAt || Date.now();
-            }catch(_err){
-              supportExpValue = null;
-            }
-          }
-        } else {
-          supportExpValue = null;
-          supportExpUpdatedAt = 0;
-          lastSupportExpFetch = 0;
-        }
       }
 
       renderRois();

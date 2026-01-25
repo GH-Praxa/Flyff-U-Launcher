@@ -59,7 +59,7 @@
       modalTitle: "Choose icon",
       modalSub: "Buffs, items, skills from the icons folder",
       clearIcon: "No icon",
-      searchPlaceholder: "Search buff name...",
+      searchPlaceholder: "Search...",
     },
     de: {
       title: "CD-Timer",
@@ -99,7 +99,7 @@
       modalTitle: "Icon auswählen",
       modalSub: "Buffs, Items, Skills aus dem Icons-Ordner",
       clearIcon: "Kein Icon",
-      searchPlaceholder: "Buff-Name suchen...",
+      searchPlaceholder: "Suche...",
     },
     pl: {
       title: "CD-Timer",
@@ -139,7 +139,7 @@
       modalTitle: "Wybierz ikonę",
       modalSub: "Buffy, przedmioty, umiejętności z folderu icons",
       clearIcon: "Brak ikony",
-      searchPlaceholder: "Szukaj buffa...",
+      searchPlaceholder: "Szukaj...",
     },
     fr: {
       title: "CD-Timer",
@@ -179,7 +179,7 @@
       modalTitle: "Choisir une icône",
       modalSub: "Buffs, objets, compétences du dossier icons",
       clearIcon: "Pas d'icône",
-      searchPlaceholder: "Chercher un buff...",
+      searchPlaceholder: "Recherche...",
     },
     ru: {
       title: "CD-Timer",
@@ -219,7 +219,7 @@
       modalTitle: "Выбрать иконку",
       modalSub: "Баффы, предметы, умения из папки icons",
       clearIcon: "Нет иконки",
-      searchPlaceholder: "Поиск баффа...",
+      searchPlaceholder: "Поиск...",
     },
     tr: {
       title: "CD-Timer",
@@ -259,7 +259,7 @@
       modalTitle: "Simge seç",
       modalSub: "icons klasöründeki buff, eşya, yetenekler",
       clearIcon: "Simge yok",
-      searchPlaceholder: "Buff adı ara...",
+      searchPlaceholder: "Ara...",
     },
     cn: {
       title: "冷却计时器",
@@ -299,7 +299,7 @@
       modalTitle: "选择图标",
       modalSub: "来自 icons 文件夹的增益、物品、技能",
       clearIcon: "无图标",
-      searchPlaceholder: "搜索增益名称...",
+      searchPlaceholder: "搜索...",
     },
     jp: {
       title: "CDタイマー",
@@ -339,7 +339,7 @@
       modalTitle: "アイコンを選択",
       modalSub: "icons フォルダーのバフ・アイテム・スキル",
       clearIcon: "アイコンなし",
-      searchPlaceholder: "バフ名で検索...",
+      searchPlaceholder: "検索...",
     },
   };
 
@@ -348,6 +348,7 @@
 
   const badgeListEl = document.getElementById("badgeList");
   const addBtn = document.getElementById("addBtn");
+  const addBtnBottom = document.getElementById("addBtnBottom");
   const expireAllBtn = document.getElementById("expireAllBtn");
   const allActiveToggle = document.getElementById("allActiveToggle");
   const overlayColumnsInput = document.getElementById("overlayColumns");
@@ -378,6 +379,7 @@
     if (allActiveLabel) allActiveLabel.textContent = L.allActive;
     if (expireAllBtn) expireAllBtn.textContent = L.expireAll;
     if (addBtn) addBtn.textContent = L.add;
+    if (addBtnBottom) addBtnBottom.textContent = L.add;
 
     const overlayLabel = document.querySelector(".overlay-text .label");
     if (overlayLabel) overlayLabel.textContent = L.overlayPos;
@@ -415,7 +417,7 @@
   let pollInterval = null;
   let hotkeyCapture = null;
   let iconTargetBadge = null;
-  let iconTab = "items";
+  let iconTab = "all";
   let iconSearchTerm = "";
   const collapsed = new Map(); // badgeId -> boolean
 
@@ -905,10 +907,9 @@
 
   function renderIconTabs() {
     const categories = [
-      { id: "items", label: L.items },
       { id: "all", label: L.all },
-      { id: "buffs", label: L.buffs },
       { id: "skills", label: L.skills },
+      { id: "items", label: L.items },
     ];
     iconTabsEl.innerHTML = "";
     categories.forEach((cat) => {
@@ -1051,6 +1052,7 @@
     applyStaticTranslations();
     attachPickerEvents();
     addBtn?.addEventListener("click", createBadge);
+    addBtnBottom?.addEventListener("click", createBadge);
     expireAllBtn?.addEventListener("click", expireAll);
     allActiveToggle?.addEventListener("change", (e) => {
       setAllActive(!!e.target?.checked);

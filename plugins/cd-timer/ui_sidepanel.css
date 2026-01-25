@@ -232,6 +232,27 @@ button.primary:hover {
   filter: brightness(1.05);
 }
 
+.add-bottom-rail {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 4px 2px;
+  background: linear-gradient(180deg, rgba(11,18,32,0), rgba(11,18,32,0.9));
+  backdrop-filter: blur(2px);
+  border-top: 1px solid var(--stroke);
+  margin-top: 6px;
+  z-index: 5;
+}
+
+.add-bottom-btn {
+  min-width: 44px;
+  height: 36px;
+  padding-inline: 14px;
+  font-size: 18px;
+  box-shadow: 0 8px 16px rgba(46,204,113,0.28);
+}
+
 .badge-list {
   display: flex;
   flex-direction: column;
