@@ -40,7 +40,7 @@ const githubIcon = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="ht
     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 0.3C5.37 0.3 0 5.67 0 12.3c0 5.29 3.44 9.78 8.21 11.37.6.1.82-.26.82-.58 0-.28-.01-1.05-.02-2.05-3.34.72-4.04-1.61-4.04-1.61-.55-1.37-1.34-1.73-1.34-1.73-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.25 1.86 1.25 1.08 1.85 2.84 1.31 3.53 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.48-1.33-5.48-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.58 11.58 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.62-5.5 5.91.43.37.81 1.1.81 2.22 0 1.6-.02 2.89-.02 3.29 0 .32.22.69.83.57A12.03 12.03 0 0 0 24 12.3C24 5.67 18.63 0.3 12 0.3Z" fill="#fff"/>
   </svg>`)}`;
 const settingsIcon = "⚙";
-const GITHUB_REPO_URL = "https://github.com/Sparx94/Flyff-U-Launcher";
+const GITHUB_REPO_URL = "https://github.com/GH-Praxa/Flyff-U-Launcher/releases";
 const GITHUB_PACKAGE_URL = "https://raw.githubusercontent.com/Sparx94/Flyff-U-Launcher/1.0/app/package.json";
 const FLYFF_URL = "https://universe.flyff.com/play";
 const NEWS_BASE_URL = "https://universe.flyff.com";
@@ -988,7 +988,7 @@ async function renderLauncher(root: HTMLElement) {
             container.append(errorEl);
         }
     }
-    function openConfigModal(defaultStyleTab: "theme" | "tabActive" = "theme", defaultTab: "style" | "plugins" | "client" = "style") {
+    function openConfigModal(defaultStyleTab: "theme" | "tabActive" = "theme", defaultTab: "style" | "plugins" | "client" | "patchnotes" = "style") {
         const overlay = el("div", "modalOverlay");
         const modal = el("div", "modal configModal");
         const headerEl = el("div", "modalHeader", t("config.title"));
@@ -997,7 +997,8 @@ async function renderLauncher(root: HTMLElement) {
         const tabStyle = el("button", "configTab", t("config.tab.style"));
         const tabPlugins = el("button", "configTab", t("config.tab.plugins" as TranslationKey));
         const tabClient = el("button", "configTab", t("config.tab.client" as TranslationKey));
-        tabs.append(tabStyle, tabPlugins, tabClient);
+        const tabPatchnotes = el("button", "configTab", t("config.tab.patchnotes" as TranslationKey));
+        tabs.append(tabStyle, tabPlugins, tabClient, tabPatchnotes);
         const content = el("div", "configContent");
         // Style pane
         const styleTabs = el("div", "configSubTabs");
@@ -1043,8 +1044,12 @@ delayRow.append(delayLabelWrap, delayInputWrap);
 clientSection.append(clientTitle, clientRow);
 clientSection.append(delayRow);
 clientPane.append(clientSection);
+        // Patchnotes pane
+        const patchnotesPane = el("div", "patchnotesPane");
+        const patchnotesContent = el("div", "patchnotesContent");
+        patchnotesPane.append(patchnotesContent);
         // Tab content
-        content.append(stylePane, pluginsPane, clientPane);
+        content.append(stylePane, pluginsPane, clientPane, patchnotesPane);
         const refreshFullscreenCheckbox = async () => {
             const settings = await loadClientSettings();
             fullscreenCheckbox.checked = settings.startFullscreen;
@@ -1080,21 +1085,67 @@ clientPane.append(clientSection);
             }
         });
         body.append(tabs, content);
+        // Simple markdown to HTML converter for patchnotes
+        function markdownToHtml(md: string): string {
+            return md
+                // Escape HTML first
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                // Headers
+                .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+                .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+                .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+                // Bold
+                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                // Italic
+                .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                // Inline code
+                .replace(/`([^`]+)`/g, "<code>$1</code>")
+                // Horizontal rule
+                .replace(/^---$/gm, "<hr>")
+                // List items
+                .replace(/^- (.+)$/gm, "<li>$1</li>")
+                // Wrap consecutive list items in ul
+                .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
+                // Paragraphs (lines that are not already wrapped)
+                .replace(/^(?!<[h1-6ul]|<li|<hr)(.+)$/gm, "<p>$1</p>")
+                // Clean up empty paragraphs
+                .replace(/<p><\/p>/g, "")
+                // Clean up newlines
+                .replace(/\n/g, "");
+        }
+        // Load patchnotes content
+        async function loadPatchnotes() {
+            patchnotesContent.innerHTML = "<div class='muted'>Loading...</div>";
+            try {
+                const md = await window.api.patchnotesGet(currentLocale);
+                patchnotesContent.innerHTML = markdownToHtml(md);
+            } catch (err) {
+                patchnotesContent.innerHTML = `<div class='muted'>Error loading patchnotes: ${String(err)}</div>`;
+            }
+        }
         // Main tab switching
-        function selectMainTab(tab: "style" | "plugins" | "client") {
+        function selectMainTab(tab: "style" | "plugins" | "client" | "patchnotes") {
             tabStyle.classList.toggle("active", tab === "style");
             tabPlugins.classList.toggle("active", tab === "plugins");
             tabClient.classList.toggle("active", tab === "client");
+            tabPatchnotes.classList.toggle("active", tab === "patchnotes");
             stylePane.style.display = tab === "style" ? "" : "none";
             pluginsPane.style.display = tab === "plugins" ? "" : "none";
             clientPane.style.display = tab === "client" ? "" : "none";
+            patchnotesPane.style.display = tab === "patchnotes" ? "" : "none";
             if (tab === "plugins") {
                 loadPluginsList();
+            }
+            if (tab === "patchnotes") {
+                loadPatchnotes();
             }
         }
         tabStyle.addEventListener("click", () => selectMainTab("style"));
         tabPlugins.addEventListener("click", () => selectMainTab("plugins"));
         tabClient.addEventListener("click", () => selectMainTab("client"));
+        tabPatchnotes.addEventListener("click", () => selectMainTab("patchnotes"));
         // Load and render plugins list
         async function loadPluginsList() {
             pluginsList.innerHTML = "";
@@ -1109,6 +1160,7 @@ clientPane.append(clientSection);
                     return;
                 }
                 for (const plugin of plugins) {
+                    const isKillfeed = plugin.id === "killfeed";
                     const card = el("div", "pluginCard");
                     const cardHeader = el("div", "pluginCardHeader");
                     const info = el("div", "pluginInfo");
@@ -1136,7 +1188,7 @@ clientPane.append(clientSection);
                     }
                     // Action buttons
                     const actions = el("div", "pluginActions");
-                    if (plugin.hasSettingsUI && plugin.permissions?.includes("settings:ui") && plugin.enabled) {
+                    if (!isKillfeed && plugin.hasSettingsUI && plugin.permissions?.includes("settings:ui") && plugin.enabled) {
                         const uiBtn = el("button", "btn pluginBtn", t("config.plugins.openUI" as TranslationKey));
                         uiBtn.addEventListener("click", async () => {
                             // Directly launch Python UI without dialog
@@ -1191,7 +1243,7 @@ clientPane.append(clientSection);
                     }
                     card.append(actions);
                     // Error display
-                    if (plugin.error) {
+                    if (!isKillfeed && plugin.error) {
                         const errorEl = el("div", "pluginError", plugin.error);
                         card.append(errorEl);
                     }
@@ -3003,6 +3055,12 @@ async function renderSession(root: HTMLElement) {
                     ordered.includes(layout.split.leftId) &&
                     ordered.includes(layout.split.rightId);
                 if (hasSplitIds) {
+                    // Give the last opened tab the same delay budget before creating split,
+                    // so its BrowserView can finish booting/rendering like earlier tabs.
+                    const delayMs = getLayoutDelayMs();
+                    if (delayMs > 0) {
+                        await sleep(delayMs);
+                    }
                     await applySplit({
                         leftId: layout.split.leftId,
                         rightId: layout.split.rightId,
@@ -3286,8 +3344,9 @@ async function renderSession(root: HTMLElement) {
             const prompt = el("div", "modalHint", t("close.prompt"));
             const targetHint = targetLabel ? el("div", "modalHint", `${t("close.target")} ${targetLabel}`) : null;
             const actions = el("div", "manageActions");
-            const btnTab = el("button", "btn primary", t("close.optionTab")) as HTMLButtonElement;
-            const btnWindow = el("button", "btn", t("close.optionWindow")) as HTMLButtonElement;
+            // All actions except cancel are styled as danger (red) for clear emphasis
+            const btnTab = el("button", "btn danger", t("close.optionTab")) as HTMLButtonElement;
+            const btnWindow = el("button", "btn danger", t("close.optionWindow")) as HTMLButtonElement;
             const btnApp = el("button", "btn danger", t("close.optionApp")) as HTMLButtonElement;
             const btnCancel = el("button", "btn", t("close.optionCancel")) as HTMLButtonElement;
             let done = false;

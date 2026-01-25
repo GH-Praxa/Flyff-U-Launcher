@@ -15,7 +15,7 @@ export const URLS = {
     /** Base domain */
     FLYFF_BASE: "https://universe.flyff.com",
     /** GitHub repository */
-    GITHUB_REPO: "https://github.com/Sparx94/Flyff-U-Launcher",
+    GITHUB_REPO: "https://github.com/GH-Praxa/Flyff-U-Launcher/releases",
     /** Package.json for version check */
     GITHUB_PACKAGE: "https://raw.githubusercontent.com/Sparx94/Flyff-U-Launcher/1.0/app/package.json",
 } as const;

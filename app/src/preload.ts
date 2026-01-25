@@ -97,6 +97,7 @@ contextBridge.exposeInMainWorld("api", {
     clientSettingsPatch: (patch: ClientSettingsPatch) => unwrapIpc<ClientSettings>(ipcRenderer.invoke("clientSettings:patch", patch)),
     featuresGet: () => unwrapIpc(ipcRenderer.invoke("features:get")),
     featuresPatch: (patch: Partial<FeatureFlags>) => unwrapIpc(ipcRenderer.invoke("features:patch", patch)),
+    patchnotesGet: (locale: string) => unwrapIpc<string>(ipcRenderer.invoke("patchnotes:get", locale)),
     onThemeUpdate: (cb: (payload: ThemePushPayload) => void) => {
         ipcRenderer.on("theme:update", (_e, payload: ThemePushPayload) => cb(payload));
     },
@@ -168,6 +169,7 @@ const allowedInvoke = new Set<string>([
     "tabActiveColor:save",
     "features:get",
     "features:patch",
+    "patchnotes:get",
     "ocr:getLatest",
     "ocr:getTimers",
     "ocr:setTimer",

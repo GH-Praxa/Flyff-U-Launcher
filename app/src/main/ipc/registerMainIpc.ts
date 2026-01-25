@@ -11,6 +11,7 @@ import { registerNewsHandlers } from "./handlers/news";
 import { registerRoiHandlers } from "./handlers/roi";
 import { registerFeatureHandlers, type FeatureStore } from "./handlers/features";
 import { registerClientSettingsHandlers } from "./handlers/clientSettings";
+import { registerPatchnotesHandlers } from "./handlers/patchnotes";
 import type { ClientSettingsStore } from "../clientSettings/store";
 import type { ClientSettings } from "../../shared/schemas";
 import { logErr } from "../../shared/logger";
@@ -83,6 +84,8 @@ export function registerMainIpc(opts: RegisterMainIpcOptions): void {
         roiVisibilityGet: opts.roiVisibilityGet,
         roiVisibilitySet: opts.roiVisibilitySet,
     });
+
+    registerPatchnotesHandlers(safeHandle);
 }
 
 // Re-export types that may be needed externally

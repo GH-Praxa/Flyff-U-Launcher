@@ -31,12 +31,35 @@ export function createSessionTabsManager(opts: {
             return sessionSplitRatio;
         return Math.min(maxSplitRatio, Math.max(minSplitRatio, ratio));
     }
+    /**
+     * Ensure split state does not reference missing views.
+     * If one side vanished (e.g., tab closed) collapse split gracefully.
+     */
+    function pruneInvalidSplit(): void {
+        if (!sessionSplit)
+            return;
+        const leftExists = sessionViews.has(sessionSplit.leftId);
+        const rightExists = sessionViews.has(sessionSplit.rightId);
+        if (leftExists && rightExists)
+            return;
+        if (leftExists) {
+            sessionActiveId = sessionSplit.leftId;
+        }
+        else if (rightExists) {
+            sessionActiveId = sessionSplit.rightId;
+        }
+        sessionSplit = null;
+    }
     function getLayoutIds(): string[] {
         if (sessionSplit)
             return [sessionSplit.leftId, sessionSplit.rightId];
-        return sessionActiveId ? [sessionActiveId] : [];
+        if (sessionActiveId && sessionViews.has(sessionActiveId))
+            return [sessionActiveId];
+        const first = sessionViews.keys().next();
+        return !first.done ? [first.value] : [];
     }
     function sanitizeActiveId(): void {
+        pruneInvalidSplit();
         const visibleIds = getLayoutIds();
         if (visibleIds.length === 0) {
             sessionActiveId = null;
