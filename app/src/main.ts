@@ -9,12 +9,24 @@ import { app, BrowserWindow, session, ipcMain, globalShortcut, dialog, type Nati
 import path from "path";
 import fs from "fs";
 import fsp from "fs/promises";
+import { execSync } from "child_process";
 import squirrelStartup from "electron-squirrel-startup";
 import { autoUpdater } from "electron-updater";
 
 // Handle Squirrel startup (Windows installer)
 if (squirrelStartup) {
     app.quit();
+}
+
+// Fix Windows registry version display after Squirrel updates
+if (process.platform === "win32" && app.isPackaged) {
+    try {
+        const appVersion = app.getVersion();
+        const regKey = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\FlyffULauncher";
+        execSync(`reg add "${regKey}" /v DisplayVersion /t REG_SZ /d "${appVersion}" /f`, { stdio: "ignore" });
+    } catch {
+        // Ignore registry update errors
+    }
 }
 
 // Fix Windows DWM flicker/ghost window issue
