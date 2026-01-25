@@ -1984,14 +1984,19 @@ app.whenReady().then(async () => {
             });
 
             if (result.response === 0) {
+                logWarn("User accepted update, starting download...", "AutoUpdater");
                 // Start download immediately - progress shown in taskbar
-                autoUpdater.downloadUpdate().catch((err) => {
-                    logErr(err, "AutoUpdater");
-                    // Reset taskbar progress on error
-                    const win = BrowserWindow.getAllWindows()[0];
-                    if (win) win.setProgressBar(-1);
-                    dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")} (${String(err)})`);
-                });
+                autoUpdater.downloadUpdate()
+                    .then(() => {
+                        logWarn("downloadUpdate() resolved successfully", "AutoUpdater");
+                    })
+                    .catch((err) => {
+                        logErr(err, "AutoUpdater downloadUpdate");
+                        // Reset taskbar progress on error
+                        const win = BrowserWindow.getAllWindows()[0];
+                        if (win) win.setProgressBar(-1);
+                        dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
+                    });
             }
         });
 
@@ -2002,20 +2007,27 @@ app.whenReady().then(async () => {
             const win = BrowserWindow.getAllWindows()[0];
             if (win) {
                 win.setProgressBar(progress.percent / 100);
+                win.setTitle(`Flyff Universe Launcher - Downloading update: ${percent}%`);
             }
         });
 
         autoUpdater.on("update-downloaded", () => {
             logWarn("Update downloaded, installing...", "AutoUpdater");
-            // Clear taskbar progress
+            // Clear taskbar progress and reset title
             const win = BrowserWindow.getAllWindows()[0];
-            if (win) win.setProgressBar(-1);
+            if (win) {
+                win.setProgressBar(-1);
+                win.setTitle("Flyff Universe Launcher");
+            }
             // Auto-install and restart
             autoUpdater.quitAndInstall();
         });
 
         autoUpdater.on("error", (err) => {
-            logErr(err, "AutoUpdater");
+            logErr(err, "AutoUpdater error event");
+            const win = BrowserWindow.getAllWindows()[0];
+            if (win) win.setProgressBar(-1);
+            dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
         });
 
         // Check for updates on startup
