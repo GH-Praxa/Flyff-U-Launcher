@@ -10,6 +10,7 @@ import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import { PublisherGithub } from "@electron-forge/publisher-github";
 import fs from "fs";
+import crypto from "crypto";
 
 const iconPath = path.resolve(__dirname, "src/assets/icons/flyff.ico");
 const WIX_UPGRADE_CODE = "f3dd0e42-5e61-4709-b2ad-820051fa8d2a"; // keep stable so MSI upgrades replace existing installs
@@ -54,6 +55,28 @@ if (fs.existsSync(defaultPluginsDir)) {
     console.warn("Default plugins directory not found at", defaultPluginsDir);
 }
 
+const writeLatestYml = (artifactPath: string, version: string): string => {
+    const fileName = path.basename(artifactPath);
+    const dir = path.dirname(artifactPath);
+    const stat = fs.statSync(artifactPath);
+    const sha512 = crypto.createHash("sha512").update(fs.readFileSync(artifactPath)).digest("base64");
+    const releaseDate = new Date().toISOString();
+    const content = [
+        `version: ${version}`,
+        `releaseName: v${version}`,
+        `releaseDate: "${releaseDate}"`,
+        `path: ${fileName}`,
+        `sha512: ${sha512}`,
+        "files:",
+        `  - url: ${fileName}`,
+        `    sha512: ${sha512}`,
+        `    size: ${stat.size}`,
+    ].join("\n");
+    const target = path.join(dir, "latest.yml");
+    fs.writeFileSync(target, content, "utf-8");
+    return target;
+};
+
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
@@ -61,6 +84,24 @@ const config: ForgeConfig = {
         extraResource,
     },
     rebuildConfig: {},
+    hooks: {
+        // Electron-Updater erwartet eine latest.yml pro Release.
+        // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make für Squirrel.Windows.
+        postMake: async (_forgeConfig, makeResults) => {
+            for (const result of makeResults) {
+                // Only care about Windows Squirrel artifacts (contain a .nupkg)
+                const fullNupkg = result.artifacts.find(
+                    (artifact) => artifact.toLowerCase().endsWith(".nupkg") && artifact.toLowerCase().includes("squirrel")
+                );
+                if (!fullNupkg) continue;
+
+                const version = result.packageJSON?.version ?? "0.0.0";
+                const latestPath = writeLatestYml(fullNupkg, version);
+                // Ensure publisher uploads latest.yml as part of artifacts
+                result.artifacts.push(latestPath);
+            }
+        },
+    },
     makers: [
         new MakerSquirrel({
             name: "FlyffULauncher",

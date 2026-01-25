@@ -1957,6 +1957,17 @@ app.whenReady().then(async () => {
             return text;
         };
 
+        const feedConfig = {
+            provider: "github",
+            owner: "GH-Praxa",
+            repo: "Flyff-U-Launcher",
+        };
+        if (process.env.GH_TOKEN) {
+            // Allows private repo updates without baking a token into the app
+            (feedConfig as Record<string, string>).token = process.env.GH_TOKEN;
+        }
+        autoUpdater.setFeedURL(feedConfig);
+
         autoUpdater.autoDownload = false;
         autoUpdater.autoInstallOnAppQuit = true;
 
