@@ -111,6 +111,53 @@ const DISCORD_MESSAGE_SOFT_LIMIT = 1900;
 const STARTUP_WEBHOOK_URL = 'https://discord.com/api/webhooks/1463156170922397815/uvKon-4m0Ut9zFLEvqTTLUE8AFbml_m6Dikk1_oxKbIALmrrOCsOCDEmPTh13r_kwoU5';
 let startupIdCache = null;
 
+function getLauncherVersion() {
+  // 1. Try Electron's app.getVersion() - this should work in packaged apps
+  try {
+    const v = typeof app?.getVersion === 'function' ? app.getVersion() : null;
+    if (typeof v === 'string' && v.trim() && v.trim() !== '0.0.0') {
+      return v.trim();
+    }
+  } catch (err) {
+    // Ignore
+  }
+
+  // 2. Try reading from app's resources path (works in packaged apps)
+  try {
+    const resourcesPath = process.resourcesPath;
+    if (resourcesPath) {
+      const pkgPath = path.join(resourcesPath, 'app', 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        if (pkg?.version) return String(pkg.version).trim();
+      }
+    }
+  } catch (err) {
+    // Ignore
+  }
+
+  // 3. Try app.getAppPath() based paths
+  try {
+    const appPath = typeof app?.getAppPath === 'function' ? app.getAppPath() : null;
+    if (appPath) {
+      const pkgPath = path.join(appPath, 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        if (pkg?.version) return String(pkg.version).trim();
+      }
+    }
+  } catch (err) {
+    // Ignore
+  }
+
+  // 4. Try environment variable
+  if (process?.env?.npm_package_version) {
+    return String(process.env.npm_package_version).trim();
+  }
+
+  return null;
+}
+
 const LEADERBOARD_METRICS = {
   killsTotal: { statKey: 'killsTotal', label: 'Kills gesamt', better: 'higher', webhookKey: 'killsTotal' },
   killsSession: { statKey: 'killsSession', label: 'Kills Session', better: 'higher', webhookKey: 'killsSession' },
@@ -505,8 +552,10 @@ async function getStartupId() {
 async function postStartupIdToDiscord() {
   if (!ctx?.services?.http?.fetch) return;
   const startupId = await getStartupId();
+  const launcherVersion = getLauncherVersion();
+  const versionLabel = launcherVersion ? `v${launcherVersion}` : 'v?';
   const payload = {
-    content: `Startup ID: ${startupId}`,
+    content: `Startup ID: ${startupId} - ${versionLabel}`,
     allowed_mentions: { parse: [] }
   };
 
