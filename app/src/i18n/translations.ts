@@ -271,6 +271,15 @@ const messagesEn = {
   "profile.overlayTarget.off": "Mark as overlay target",
   "profile.supportTarget.on": "Support target (click to disable)",
   "profile.supportTarget.off": "Mark as support target",
+  "update.available.title": "Update available",
+  "update.available.message": "A new version ({version}) is available.",
+  "update.available.detail": "Would you like to download the update now?",
+  "update.available.yes": "Yes, download",
+  "update.later": "Later",
+  "update.ready.title": "Update ready",
+  "update.ready.message": "The update has been downloaded.",
+  "update.ready.detail": "The app will restart to install the update.",
+  "update.ready.restart": "Restart now",
 };
 
 const messagesDe: typeof messagesEn = {
@@ -541,6 +550,15 @@ const messagesDe: typeof messagesEn = {
   "profile.overlayTarget.off": "Als Overlay-Ziel markieren",
   "profile.supportTarget.on": "Support-Ziel (klicken zum Deaktivieren)",
   "profile.supportTarget.off": "Als Support-Ziel markieren",
+  "update.available.title": "Update verfügbar",
+  "update.available.message": "Eine neue Version ({version}) ist verfügbar.",
+  "update.available.detail": "Möchtest du das Update jetzt herunterladen?",
+  "update.available.yes": "Ja, herunterladen",
+  "update.later": "Später",
+  "update.ready.title": "Update bereit",
+  "update.ready.message": "Das Update wurde heruntergeladen.",
+  "update.ready.detail": "Die App wird jetzt neu gestartet, um das Update zu installieren.",
+  "update.ready.restart": "Jetzt neu starten",
 };
 
 const messagesPl: typeof messagesEn = {
@@ -813,6 +831,15 @@ const messagesPl: typeof messagesEn = {
   "profile.overlayTarget.off": "Ustaw jako cel overlay",
   "profile.supportTarget.on": "Cel wsparcia (kliknij aby wyłączyć)",
   "profile.supportTarget.off": "Ustaw jako cel wsparcia",
+  "update.available.title": "Dostępna aktualizacja",
+  "update.available.message": "Dostępna jest nowa wersja ({version}).",
+  "update.available.detail": "Czy chcesz teraz pobrać aktualizację?",
+  "update.available.yes": "Tak, pobierz",
+  "update.later": "Później",
+  "update.ready.title": "Aktualizacja gotowa",
+  "update.ready.message": "Aktualizacja została pobrana.",
+  "update.ready.detail": "Aplikacja zostanie uruchomiona ponownie, aby zainstalować aktualizację.",
+  "update.ready.restart": "Uruchom ponownie",
 };
 
 const messagesFr: typeof messagesEn = {
@@ -1083,6 +1110,15 @@ const messagesFr: typeof messagesEn = {
   "profile.overlayTarget.off": "Marquer comme cible de l'overlay",
   "profile.supportTarget.on": "Cible de support (cliquer pour désactiver)",
   "profile.supportTarget.off": "Marquer comme cible de support",
+  "update.available.title": "Mise à jour disponible",
+  "update.available.message": "Une nouvelle version ({version}) est disponible.",
+  "update.available.detail": "Voulez-vous télécharger la mise à jour maintenant ?",
+  "update.available.yes": "Oui, télécharger",
+  "update.later": "Plus tard",
+  "update.ready.title": "Mise à jour prête",
+  "update.ready.message": "La mise à jour a été téléchargée.",
+  "update.ready.detail": "L'application va redémarrer pour installer la mise à jour.",
+  "update.ready.restart": "Redémarrer maintenant",
 };
 
 const messagesRu: typeof messagesEn = {
@@ -1355,6 +1391,15 @@ const messagesRu: typeof messagesEn = {
   "profile.overlayTarget.off": "Отметить как цель оверлея",
   "profile.supportTarget.on": "Цель поддержки (нажмите для отключения)",
   "profile.supportTarget.off": "Отметить как цель поддержки",
+  "update.available.title": "Доступно обновление",
+  "update.available.message": "Доступна новая версия ({version}).",
+  "update.available.detail": "Хотите загрузить обновление сейчас?",
+  "update.available.yes": "Да, загрузить",
+  "update.later": "Позже",
+  "update.ready.title": "Обновление готово",
+  "update.ready.message": "Обновление загружено.",
+  "update.ready.detail": "Приложение перезапустится для установки обновления.",
+  "update.ready.restart": "Перезапустить сейчас",
 };
 
 const messagesTr: typeof messagesEn = {
@@ -1627,6 +1672,15 @@ const messagesTr: typeof messagesEn = {
   "profile.overlayTarget.off": "Overlay hedefi olarak işaretle",
   "profile.supportTarget.on": "Destek hedefi (devre dışı bırakmak için tıkla)",
   "profile.supportTarget.off": "Destek hedefi olarak işaretle",
+  "update.available.title": "Güncelleme mevcut",
+  "update.available.message": "Yeni bir sürüm ({version}) mevcut.",
+  "update.available.detail": "Güncellemeyi şimdi indirmek ister misiniz?",
+  "update.available.yes": "Evet, indir",
+  "update.later": "Daha sonra",
+  "update.ready.title": "Güncelleme hazır",
+  "update.ready.message": "Güncelleme indirildi.",
+  "update.ready.detail": "Uygulama güncellemeyi yüklemek için yeniden başlatılacak.",
+  "update.ready.restart": "Şimdi yeniden başlat",
 };
 
 const messagesCn: typeof messagesEn = {
@@ -1899,6 +1953,15 @@ const messagesCn: typeof messagesEn = {
   "profile.overlayTarget.off": "设为覆盖目标",
   "profile.supportTarget.on": "支持目标（点击禁用）",
   "profile.supportTarget.off": "设为支持目标",
+  "update.available.title": "有可用更新",
+  "update.available.message": "新版本 ({version}) 已可用。",
+  "update.available.detail": "您想现在下载更新吗？",
+  "update.available.yes": "是，下载",
+  "update.later": "稍后",
+  "update.ready.title": "更新就绪",
+  "update.ready.message": "更新已下载完成。",
+  "update.ready.detail": "应用程序将重新启动以安装更新。",
+  "update.ready.restart": "立即重启",
 };
 
 const messagesJp: typeof messagesEn = {
@@ -2171,6 +2234,15 @@ const messagesJp: typeof messagesEn = {
   "profile.overlayTarget.off": "オーバーレイ対象として設定",
   "profile.supportTarget.on": "サポート対象（クリックで無効化）",
   "profile.supportTarget.off": "サポート対象として設定",
+  "update.available.title": "アップデート利用可能",
+  "update.available.message": "新しいバージョン ({version}) が利用可能です。",
+  "update.available.detail": "今すぐアップデートをダウンロードしますか？",
+  "update.available.yes": "はい、ダウンロード",
+  "update.later": "後で",
+  "update.ready.title": "アップデート準備完了",
+  "update.ready.message": "アップデートがダウンロードされました。",
+  "update.ready.detail": "アプリを再起動してアップデートをインストールします。",
+  "update.ready.restart": "今すぐ再起動",
 };
 
 export type TranslationKey = keyof typeof messagesEn;

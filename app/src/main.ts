@@ -5,11 +5,12 @@
  * EXP-Tracker, Questlog, Buff-Wecker are loaded as plugins from userData/plugins/
  */
 
-import { app, BrowserWindow, session, ipcMain, globalShortcut, type NativeImage } from "electron";
+import { app, BrowserWindow, session, ipcMain, globalShortcut, dialog, type NativeImage } from "electron";
 import path from "path";
 import fs from "fs";
 import fsp from "fs/promises";
 import squirrelStartup from "electron-squirrel-startup";
+import { autoUpdater } from "electron-updater";
 
 // Handle Squirrel startup (Windows installer)
 if (squirrelStartup) {
@@ -41,6 +42,7 @@ import { acquireSharedOcrWorker, releaseAllOcrWorkers } from "./main/ocr/workerP
 import { OcrTimerScheduler } from "./main/ocr/timerScheduler";
 import type { OcrKind, PythonOcrWorker } from "./main/ocr/pythonWorker";
 import { DEFAULT_LOCALE, type ClientSettings, type Locale } from "./shared/schemas";
+import { translations, type TranslationKey } from "./i18n/translations";
 import {
     getDefaultOcrTimers,
     loadAllOcrTimers,
@@ -1940,6 +1942,70 @@ app.whenReady().then(async () => {
             });
         }
     });
+
+    // =========================================================================
+    // Auto-Update (only in Production)
+    // =========================================================================
+    if (app.isPackaged) {
+        const t = (key: TranslationKey, replacements?: Record<string, string>): string => {
+            let text = translations[clientLocale]?.[key] ?? translations.en[key] ?? key;
+            if (replacements) {
+                for (const [k, v] of Object.entries(replacements)) {
+                    text = text.replace(`{${k}}`, v);
+                }
+            }
+            return text;
+        };
+
+        autoUpdater.autoDownload = false;
+        autoUpdater.autoInstallOnAppQuit = true;
+
+        autoUpdater.on("update-available", async (info) => {
+            const result = await dialog.showMessageBox({
+                type: "info",
+                title: t("update.available.title"),
+                message: t("update.available.message", { version: info.version }),
+                detail: t("update.available.detail"),
+                buttons: [t("update.available.yes"), t("update.later")],
+                defaultId: 0,
+                cancelId: 1,
+            });
+
+            if (result.response === 0) {
+                autoUpdater.downloadUpdate();
+            }
+        });
+
+        autoUpdater.on("download-progress", (progress) => {
+            const percent = Math.round(progress.percent);
+            logWarn(`Download progress: ${percent}%`, "AutoUpdater");
+        });
+
+        autoUpdater.on("update-downloaded", async () => {
+            const result = await dialog.showMessageBox({
+                type: "info",
+                title: t("update.ready.title"),
+                message: t("update.ready.message"),
+                detail: t("update.ready.detail"),
+                buttons: [t("update.ready.restart"), t("update.later")],
+                defaultId: 0,
+                cancelId: 1,
+            });
+
+            if (result.response === 0) {
+                autoUpdater.quitAndInstall();
+            }
+        });
+
+        autoUpdater.on("error", (err) => {
+            logErr(err, "AutoUpdater");
+        });
+
+        // Check for updates on startup
+        autoUpdater.checkForUpdates().catch((err) => {
+            logErr(err, "AutoUpdater");
+        });
+    }
 });
 
 // ============================================================================

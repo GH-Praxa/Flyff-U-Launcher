@@ -3,6 +3,10 @@
   "productName": "Flyff-U-Launcher",
   "version": "2.0.2",
   "description": "My Electron application description",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GH-Praxa/Flyff-U-Launcher.git"
+  },
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -28,6 +32,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/plugin-vite": "^7.10.2",
+    "@electron-forge/publisher-github": "^7.11.1",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
@@ -44,6 +49,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
+    "electron-updater": "^6.7.3",
     "zod": "^4.2.1"
   }
 }

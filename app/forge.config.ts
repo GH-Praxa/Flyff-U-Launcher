@@ -8,6 +8,7 @@ import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
+import { PublisherGithub } from "@electron-forge/publisher-github";
 import fs from "fs";
 
 const iconPath = path.resolve(__dirname, "src/assets/icons/flyff.ico");
@@ -138,6 +139,16 @@ const config: ForgeConfig = {
             [FuseV1Options.EnableNodeCliInspectArguments]: false,
             [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
             [FuseV1Options.OnlyLoadAppFromAsar]: true,
+        }),
+    ],
+    publishers: [
+        new PublisherGithub({
+            repository: {
+                owner: "GH-Praxa",
+                name: "Flyff-U-Launcher",
+            },
+            prerelease: false,
+            draft: true,
         }),
     ],
 };
