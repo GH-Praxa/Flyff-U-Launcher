@@ -529,6 +529,8 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
 <script>
   const STR = ${stringsJson};
+  // Locale shortcut so later script sections (plugin iframe bridge, lang attribute) can use it safely
+  const locale = STR.locale;
   const fmt = (text, params = {}) => typeof text === "string"
     ? text.replace(/\\{(\\w+)\\}/g, (_m, k) => Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : "")
     : "";
