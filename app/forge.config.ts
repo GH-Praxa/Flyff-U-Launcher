@@ -55,11 +55,11 @@ if (fs.existsSync(defaultPluginsDir)) {
     console.warn("Default plugins directory not found at", defaultPluginsDir);
 }
 
-const writeLatestYml = (artifactPath: string, version: string): string => {
-    const fileName = path.basename(artifactPath);
-    const dir = path.dirname(artifactPath);
-    const stat = fs.statSync(artifactPath);
-    const sha512 = crypto.createHash("sha512").update(fs.readFileSync(artifactPath)).digest("base64");
+const writeLatestYml = (setupExePath: string, version: string): string => {
+    const fileName = path.basename(setupExePath);
+    const dir = path.dirname(setupExePath);
+    const stat = fs.statSync(setupExePath);
+    const sha512 = crypto.createHash("sha512").update(fs.readFileSync(setupExePath)).digest("base64");
     const releaseDate = new Date().toISOString();
     const content = [
         `version: ${version}`,
@@ -89,14 +89,12 @@ const config: ForgeConfig = {
         // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make für Squirrel.Windows.
         postMake: async (_forgeConfig, makeResults) => {
             for (const result of makeResults) {
-                // Only care about Windows Squirrel artifacts (.nupkg, usually "*-full.nupkg")
-                const fullNupkg =
-                    result.artifacts.find((artifact) => artifact.toLowerCase().endsWith("-full.nupkg")) ??
-                    result.artifacts.find((artifact) => artifact.toLowerCase().endsWith(".nupkg"));
-                if (!fullNupkg) continue;
+                // Use the Squirrel setup executable as the download target (electron-updater expects .exe on Windows)
+                const setupExe = result.artifacts.find((artifact) => artifact.toLowerCase().endsWith("setup.exe"));
+                if (!setupExe) continue;
 
                 const version = result.packageJSON?.version ?? "0.0.0";
-                const latestPath = writeLatestYml(fullNupkg, version);
+                const latestPath = writeLatestYml(setupExe, version);
                 // Ensure publisher uploads latest.yml as part of artifacts
                 result.artifacts.push(latestPath);
             }
