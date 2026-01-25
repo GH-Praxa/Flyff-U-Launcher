@@ -126,6 +126,9 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
             backgroundThrottling: false,
         },
     });
+    // Track move state to hide panel during drag (prevents flicker)
+    let moveTimeout: NodeJS.Timeout | null = null;
+
     const syncToParentBounds = () => {
         try {
             const parentBounds = parent.getContentBounds();
@@ -138,12 +141,28 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
             /* ignore resize errors */
         }
     };
+
+    const onParentMove = () => {
+        if (win.isDestroyed()) return;
+        // Hide during movement
+        win.setOpacity(0);
+        // Clear previous timeout
+        if (moveTimeout) clearTimeout(moveTimeout);
+        // Show again after movement stops
+        moveTimeout = setTimeout(() => {
+            if (win.isDestroyed()) return;
+            syncToParentBounds();
+            win.setOpacity(1);
+        }, 100);
+    };
+
     syncToParentBounds();
     parent.on("resize", syncToParentBounds);
-    parent.on("move", syncToParentBounds);
+    parent.on("move", onParentMove);
     win.on("closed", () => {
+        if (moveTimeout) clearTimeout(moveTimeout);
         parent.removeListener("resize", syncToParentBounds);
-        parent.removeListener("move", syncToParentBounds);
+        parent.removeListener("move", onParentMove);
     });
     win.setMenu(null);
     // Pipe renderer console output to main log for easier debugging of blank panel issues

@@ -560,7 +560,14 @@ app.whenReady().then(async () => {
             roiOverlayParent = host.parent;
             scheduleTimersForProfile(profileId);
             roiOverlayWindow.setBounds(host.bounds);
-            roiOverlayWindow.show();
+            // Only show overlay if host window or sidepanel is focused (hide for launcher main window and external apps)
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            const hostFocused = focusedWindow && (focusedWindow.id === host.parent.id || focusedWindow === sidePanelWindow);
+            if (hostFocused) {
+                roiOverlayWindow.show();
+            } else {
+                roiOverlayWindow.hide();
+            }
         } catch (err) {
             logErr(err, "ROI Overlay Sync");
         }
@@ -568,7 +575,7 @@ app.whenReady().then(async () => {
 
     const ensureRoiOverlay = () => {
         if (roiOverlaySyncInterval) return roiOverlayWindow;
-        roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), 500);
+        roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), 50);
         void syncRoiOverlay();
         return roiOverlayWindow;
     };
@@ -610,7 +617,14 @@ app.whenReady().then(async () => {
             roiSupportOverlayParent = host.parent;
             scheduleTimersForProfile(profileId);
             roiSupportOverlayWindow.setBounds(host.bounds);
-            roiSupportOverlayWindow.show();
+            // Only show overlay if host window or sidepanel is focused (hide for launcher main window and external apps)
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            const hostFocused = focusedWindow && (focusedWindow.id === host.parent.id || focusedWindow === sidePanelWindow);
+            if (hostFocused) {
+                roiSupportOverlayWindow.show();
+            } else {
+                roiSupportOverlayWindow.hide();
+            }
         } catch (err) {
             logErr(err, "ROI Support Overlay Sync");
         }
@@ -618,7 +632,7 @@ app.whenReady().then(async () => {
 
     const ensureRoiSupportOverlay = () => {
         if (roiSupportOverlaySyncInterval) return roiSupportOverlayWindow;
-        roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), 500);
+        roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), 50);
         void syncRoiSupportOverlay();
         return roiSupportOverlayWindow;
     };
