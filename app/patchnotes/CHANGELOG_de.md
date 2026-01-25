@@ -13,7 +13,7 @@
 
 - Letzter Tab im Layout erhält nun ausreichend Ladezeit, bevor der Splitscreen aktiviert wird.
 
-- Alle Aktionen (außer Abbrechen) sind jetzt als Danger-Buttons (rot) markiert
+- Alle Aktionen im Beenden Dialog (außer Abbrechen) sind jetzt als Danger-Buttons (rot) markiert
 → „Abbrechen“ bleibt bewusst neutral.
 
 - Patchnotes-Tab im Einstellungsmenü hinzugefügt

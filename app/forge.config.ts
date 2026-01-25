@@ -31,6 +31,15 @@ if (fs.existsSync(appUpdateYml)) {
     extraResource.push(appUpdateYml);
 }
 
+// Ensure patchnotes are available in packaged builds (outside asar)
+const patchnotesDir = path.resolve(__dirname, "patchnotes");
+if (fs.existsSync(patchnotesDir)) {
+    extraResource.push(patchnotesDir);
+} else {
+    // eslint-disable-next-line no-console
+    console.warn("Patchnotes directory not found at", patchnotesDir, "- bundle will skip it.");
+}
+
 const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
 if (fs.existsSync(tesseractDir)) {
     extraResource.push(tesseractDir);

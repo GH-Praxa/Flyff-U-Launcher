@@ -13,7 +13,7 @@
 
 - Last tab in layout now receives sufficient loading time before split screen is activated.
 
-- All actions (except Cancel) are now marked as danger buttons (red)
+- All actions in exit dialog (except Cancel) are now marked as danger buttons (red)
 → "Cancel" intentionally remains neutral.
 
 - Patchnotes tab added to settings menu
