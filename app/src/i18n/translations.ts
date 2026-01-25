@@ -280,6 +280,8 @@ const messagesEn = {
   "update.ready.message": "The update has been downloaded.",
   "update.ready.detail": "The app will restart to install the update.",
   "update.ready.restart": "Restart now",
+  "update.error.title": "Update Error",
+  "update.error.detail": "Failed to download update.",
 };
 
 const messagesDe: typeof messagesEn = {
@@ -559,6 +561,8 @@ const messagesDe: typeof messagesEn = {
   "update.ready.message": "Das Update wurde heruntergeladen.",
   "update.ready.detail": "Die App wird jetzt neu gestartet, um das Update zu installieren.",
   "update.ready.restart": "Jetzt neu starten",
+  "update.error.title": "Update-Fehler",
+  "update.error.detail": "Update konnte nicht heruntergeladen werden.",
 };
 
 const messagesPl: typeof messagesEn = {
@@ -840,6 +844,8 @@ const messagesPl: typeof messagesEn = {
   "update.ready.message": "Aktualizacja została pobrana.",
   "update.ready.detail": "Aplikacja zostanie uruchomiona ponownie, aby zainstalować aktualizację.",
   "update.ready.restart": "Uruchom ponownie",
+  "update.error.title": "Błąd aktualizacji",
+  "update.error.detail": "Nie udało się pobrać aktualizacji.",
 };
 
 const messagesFr: typeof messagesEn = {
@@ -1119,6 +1125,8 @@ const messagesFr: typeof messagesEn = {
   "update.ready.message": "La mise à jour a été téléchargée.",
   "update.ready.detail": "L'application va redémarrer pour installer la mise à jour.",
   "update.ready.restart": "Redémarrer maintenant",
+  "update.error.title": "Erreur de mise à jour",
+  "update.error.detail": "Échec du téléchargement de la mise à jour.",
 };
 
 const messagesRu: typeof messagesEn = {
@@ -1400,6 +1408,8 @@ const messagesRu: typeof messagesEn = {
   "update.ready.message": "Обновление загружено.",
   "update.ready.detail": "Приложение перезапустится для установки обновления.",
   "update.ready.restart": "Перезапустить сейчас",
+  "update.error.title": "Ошибка обновления",
+  "update.error.detail": "Не удалось загрузить обновление.",
 };
 
 const messagesTr: typeof messagesEn = {
@@ -1681,6 +1691,8 @@ const messagesTr: typeof messagesEn = {
   "update.ready.message": "Güncelleme indirildi.",
   "update.ready.detail": "Uygulama güncellemeyi yüklemek için yeniden başlatılacak.",
   "update.ready.restart": "Şimdi yeniden başlat",
+  "update.error.title": "Güncelleme hatası",
+  "update.error.detail": "Güncelleme indirilemedi.",
 };
 
 const messagesCn: typeof messagesEn = {
@@ -1962,6 +1974,8 @@ const messagesCn: typeof messagesEn = {
   "update.ready.message": "更新已下载完成。",
   "update.ready.detail": "应用程序将重新启动以安装更新。",
   "update.ready.restart": "立即重启",
+  "update.error.title": "更新错误",
+  "update.error.detail": "下载更新失败。",
 };
 
 const messagesJp: typeof messagesEn = {
@@ -2243,6 +2257,8 @@ const messagesJp: typeof messagesEn = {
   "update.ready.message": "アップデートがダウンロードされました。",
   "update.ready.detail": "アプリを再起動してアップデートをインストールします。",
   "update.ready.restart": "今すぐ再起動",
+  "update.error.title": "アップデートエラー",
+  "update.error.detail": "アップデートのダウンロードに失敗しました。",
 };
 
 export type TranslationKey = keyof typeof messagesEn;

@@ -24,6 +24,13 @@ const KILL_APP_SEQUENCE = `
 `;
 
 const extraResource: string[] = [];
+
+// app-update.yml is required by electron-updater
+const appUpdateYml = path.resolve(__dirname, "resources", "app-update.yml");
+if (fs.existsSync(appUpdateYml)) {
+    extraResource.push(appUpdateYml);
+}
+
 const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
 if (fs.existsSync(tesseractDir)) {
     extraResource.push(tesseractDir);
