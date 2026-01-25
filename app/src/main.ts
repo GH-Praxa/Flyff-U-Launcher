@@ -1984,42 +1984,34 @@ app.whenReady().then(async () => {
             });
 
             if (result.response === 0) {
-                await dialog.showMessageBox({
-                    type: "info",
-                    title: t("update.available.title"),
-                    message: t("update.available.detail"),
-                    detail: t("update.ready.detail"),
-                    buttons: [t("update.later")],
-                    defaultId: 0,
+                // Start download immediately - progress shown in taskbar
+                autoUpdater.downloadUpdate().catch((err) => {
+                    logErr(err, "AutoUpdater");
+                    // Reset taskbar progress on error
+                    const win = BrowserWindow.getAllWindows()[0];
+                    if (win) win.setProgressBar(-1);
+                    dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")} (${String(err)})`);
                 });
-                autoUpdater
-                    .downloadUpdate()
-                    .catch((err) => {
-                        logErr(err, "AutoUpdater");
-                        dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")} (${String(err)})`);
-                    });
             }
         });
 
         autoUpdater.on("download-progress", (progress) => {
             const percent = Math.round(progress.percent);
             logWarn(`Download progress: ${percent}%`, "AutoUpdater");
+            // Show progress in Windows taskbar
+            const win = BrowserWindow.getAllWindows()[0];
+            if (win) {
+                win.setProgressBar(progress.percent / 100);
+            }
         });
 
-        autoUpdater.on("update-downloaded", async () => {
-            const result = await dialog.showMessageBox({
-                type: "info",
-                title: t("update.ready.title"),
-                message: t("update.ready.message"),
-                detail: t("update.ready.detail"),
-                buttons: [t("update.ready.restart"), t("update.later")],
-                defaultId: 0,
-                cancelId: 1,
-            });
-
-            if (result.response === 0) {
-                autoUpdater.quitAndInstall();
-            }
+        autoUpdater.on("update-downloaded", () => {
+            logWarn("Update downloaded, installing...", "AutoUpdater");
+            // Clear taskbar progress
+            const win = BrowserWindow.getAllWindows()[0];
+            if (win) win.setProgressBar(-1);
+            // Auto-install and restart
+            autoUpdater.quitAndInstall();
         });
 
         autoUpdater.on("error", (err) => {
