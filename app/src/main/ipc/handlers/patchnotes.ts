@@ -6,14 +6,14 @@ import { SUPPORTED_LOCALES, type Locale } from "../../../shared/schemas";
 
 /**
  * Gets the path to the patchnotes folder.
- * In development, uses the app path; in production, uses the resources folder.
+ * Works for both development and packaged (asar) builds.
+ *
+ * In packaged builds `app.getAppPath()` resolves to `<resources>/app.asar`,
+ * so we can append `patchnotes` and still read files inside the archive.
  */
 function getPatchnotesPath(): string {
-    if (app.isPackaged) {
-        return path.join(process.resourcesPath, "app", "patchnotes");
-    }
-    // In development, use app.getAppPath() which points to the app folder
-    return path.join(app.getAppPath(), "patchnotes");
+    const appPath = app.getAppPath();
+    return path.join(appPath, "patchnotes");
 }
 
 /**
