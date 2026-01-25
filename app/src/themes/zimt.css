@@ -1,0 +1,18 @@
+:root.theme-zimt{
+  --bg: #1a1005;
+  --panel: #241509;
+  --panel2: #1f1208;
+  --stroke: #5b3a12;
+  --text: #f6e6c2;
+  --muted: #cda66a;
+  --blue: #e0ac3a;
+  --blue2: #f2c86c;
+  --danger: #ff7a45;
+  --shadow: 0 10px 40px rgba(0,0,0,0.45);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #9ac46b;
+  --accent-rgb: 224,172,58;
+  --danger-rgb: 255,122,69;
+  --green-rgb: 154,196,107;
+}

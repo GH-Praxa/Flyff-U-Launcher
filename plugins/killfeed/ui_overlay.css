@@ -1,0 +1,225 @@
+/**
+ * Killfeed Plugin - Overlay UI Styles
+ * Transparent overlay with draggable badges
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-app-region: no-drag;
+  pointer-events: none;
+}
+
+.overlay-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  padding: 10px;
+}
+
+.overlay-container.hidden {
+  display: none;
+}
+
+/* Badge grid */
+.badge-grid {
+  display: grid;
+  gap: 6px;
+  pointer-events: auto;
+  align-items: start;
+  justify-items: start;
+  justify-content: start;
+}
+
+.badge-grid.hidden {
+  display: none;
+}
+
+/* Individual badge */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(var(--tab-active-rgb, 99, 102, 241), 0.5);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  cursor: grab;
+  transition: transform 0.1s, box-shadow 0.1s;
+  pointer-events: auto;
+}
+
+.badge:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.badge.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.badge.hidden {
+  display: none;
+}
+
+.badge-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-value {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(var(--tab-active-rgb, 99, 102, 241));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Special badge styles */
+.badge[data-badge-key="killsSession"] .badge-value,
+.badge[data-badge-key="killsTotal"] .badge-value {
+  color: #22c55e;
+}
+
+.badge[data-badge-key="expPerHour"] .badge-value,
+.badge[data-badge-key="expSession"] .badge-value {
+  color: #3b82f6;
+}
+
+.badge[data-badge-key="killsToLevel"] .badge-value {
+  color: #f59e0b;
+}
+
+.badge[data-badge-key="timeSinceLastKill"] .badge-value {
+  color: #ef4444;
+}
+
+/* Last 3 kills badge - special layout */
+.badge.last3kills {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.badge.last3kills .badge-label {
+  margin-bottom: 2px;
+}
+
+.badge.last3kills .kill-entry {
+  display: flex;
+  justify-content: space-between;
+  width: max-content;
+  min-width: 140px;
+  font-size: 11px;
+  gap: 8px;
+}
+
+.badge.last3kills .monster-name {
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge.last3kills .kill-exp {
+  color: #22c55e;
+  font-family: 'Consolas', monospace;
+}
+
+.badge.action-badge {
+  gap: 8px;
+}
+
+.badge .reset-btn {
+  padding: 4px 8px;
+  background: rgba(255, 99, 132, 0.2);
+  border: 1px solid rgba(255, 99, 132, 0.6);
+  color: #ffe5eb;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.badge .reset-btn:hover {
+  background: rgba(255, 99, 132, 0.35);
+}
+
+/* Toggle button (optional - if placed in overlay) */
+.toggle-btn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(var(--tab-active-rgb, 99, 102, 241), 0.5);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s;
+}
+
+.toggle-btn:hover {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.3);
+}
+
+.toggle-btn.off {
+  background: rgba(0,0,0,0.5);
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.3);
+  color: rgba(255,255,255,0.7);
+}
+
+/* Drop indicator during drag */
+.drop-indicator {
+  position: absolute;
+  width: 2px;
+  height: 30px;
+  background: rgb(var(--tab-active-rgb, 99, 102, 241));
+  pointer-events: none;
+  display: none;
+}
+
+.drop-indicator.visible {
+  display: block;
+}
+
+/* Compact mode styles */
+.badge-grid.compact .badge {
+  padding: 2px 6px;
+}
+
+.badge-grid.compact .badge-label {
+  display: none;
+}
+
+.badge-grid.compact .badge-value {
+  font-size: 12px;
+}
+
+/* Animation for value changes */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.badge-value.updated {
+  animation: pulse 0.3s ease-out;
+}

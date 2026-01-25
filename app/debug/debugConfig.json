@@ -1,0 +1,10 @@
+{
+  "startup": false,
+  "roiOverlaySync": false,
+  "resolveOverlayHost": false,
+  "ocr": false,
+  "ipc": false,
+  "plugins": false,
+  "themes": false,
+  "sessions": false
+}

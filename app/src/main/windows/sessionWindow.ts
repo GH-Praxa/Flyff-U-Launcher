@@ -3,13 +3,18 @@ import type { LoadView } from "../viewLoader";
 export function createSessionWindowController(opts: {
     preloadPath: string;
     loadView: LoadView;
+    shouldMaximize?: () => Promise<boolean>;
 }) {
     let sessionWindow: BrowserWindow | null = null;
     const onClosedHandlers: Array<() => void> = [];
     let skipClosePrompt = false;
-    async function ensure() {
-        if (sessionWindow && !sessionWindow.isDestroyed())
+    let windowIsNew = false;
+    async function ensure(params?: Record<string, string>): Promise<BrowserWindow> {
+        if (sessionWindow && !sessionWindow.isDestroyed()) {
+            windowIsNew = false;
             return sessionWindow;
+        }
+        windowIsNew = true;
         sessionWindow = new BrowserWindow({
             width: 1380,
             height: 860,
@@ -48,12 +53,22 @@ export function createSessionWindowController(opts: {
                 }
             }
         });
-        sessionWindow.once("ready-to-show", () => {
-            if (sessionWindow && !sessionWindow.isDestroyed()) {
-                sessionWindow.show();
+        sessionWindow.once("ready-to-show", async () => {
+            if (!sessionWindow || sessionWindow.isDestroyed())
+                return;
+            if (opts.shouldMaximize) {
+                try {
+                    if (await opts.shouldMaximize()) {
+                        sessionWindow.maximize();
+                    }
+                }
+                catch (err) {
+                    console.error("[SessionWindow] maximize failed", err);
+                }
             }
+            sessionWindow.show();
         });
-        await opts.loadView(sessionWindow, "session");
+        await opts.loadView(sessionWindow, "session", params);
         sessionWindow.on("closed", () => {
             sessionWindow = null;
             skipClosePrompt = false;
@@ -84,6 +99,9 @@ export function createSessionWindowController(opts: {
         skipClosePrompt = true;
         win.close();
     }
-    return { ensure, get, onClosed, allowCloseWithoutPrompt, closeWithoutPrompt };
+    function isNew(): boolean {
+        return windowIsNew;
+    }
+    return { ensure, get, onClosed, allowCloseWithoutPrompt, closeWithoutPrompt, isNew };
 }
 export type SessionWindowController = ReturnType<typeof createSessionWindowController>;

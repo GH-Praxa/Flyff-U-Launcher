@@ -1,6 +1,8 @@
 import { app } from "electron";
-import fs from "fs/promises";
 import path from "path";
+import { generateId } from "../../shared/utils";
+import { createFileStore } from "../../shared/fileStore";
+
 export type TabLayoutSplit = {
     leftId: string;
     rightId: string;
@@ -14,6 +16,7 @@ export type TabLayout = {
     tabs: string[];
     split?: TabLayoutSplit | null;
     activeId?: string | null;
+    loggedOutChars?: string[];
 };
 export type TabLayoutInput = {
     id?: string;
@@ -21,90 +24,77 @@ export type TabLayoutInput = {
     tabs: string[];
     split?: TabLayoutSplit | null;
     activeId?: string | null;
+    loggedOutChars?: string[];
 };
-function layoutsPath() {
-    return path.join(app.getPath("userData"), "tabLayouts.json");
-}
-function newId() {
-    return Math.random().toString(36).slice(2, 10);
-}
-function clampRatio(r: any) {
+
+function clampRatio(r: unknown) {
     const n = Number(r);
     if (!Number.isFinite(n))
         return undefined;
     return Math.min(0.8, Math.max(0.2, n));
 }
-function normalizeSplit(v: any): TabLayoutSplit | null {
+function normalizeSplit(v: unknown): TabLayoutSplit | null {
     if (!v || typeof v !== "object")
         return null;
-    if (!v.leftId || !v.rightId || typeof v.leftId !== "string" || typeof v.rightId !== "string")
+    const obj = v as Record<string, unknown>;
+    if (!obj.leftId || !obj.rightId || typeof obj.leftId !== "string" || typeof obj.rightId !== "string")
         return null;
-    const ratio = clampRatio(v.ratio);
-    return { leftId: v.leftId, rightId: v.rightId, ratio: ratio ?? undefined };
+    const ratio = clampRatio(obj.ratio);
+    return { leftId: obj.leftId, rightId: obj.rightId, ratio: ratio ?? undefined };
 }
-function normalizeLayout(v: any): TabLayout | null {
+function normalizeLayout(v: unknown): TabLayout | null {
     if (!v || typeof v !== "object")
         return null;
-    const tabs = Array.isArray(v.tabs) ? v.tabs.map((t) => String(t)).filter(Boolean) : [];
+    const obj = v as Record<string, unknown>;
+    const tabs = Array.isArray(obj.tabs) ? obj.tabs.map((t) => String(t)).filter(Boolean) : [];
     if (tabs.length === 0)
         return null;
-    const createdAt = typeof v.createdAt === "string" ? v.createdAt : new Date().toISOString();
-    const updatedAt = typeof v.updatedAt === "string" ? v.updatedAt : createdAt;
+    const createdAt = typeof obj.createdAt === "string" ? obj.createdAt : new Date().toISOString();
+    const updatedAt = typeof obj.updatedAt === "string" ? obj.updatedAt : createdAt;
+    const loggedOutChars = Array.isArray(obj.loggedOutChars)
+        ? obj.loggedOutChars.map((t) => String(t)).filter(Boolean)
+        : [];
     return {
-        id: String(v.id ?? newId()),
-        name: String(v.name ?? "Layout"),
+        id: String(obj.id ?? generateId()),
+        name: String(obj.name ?? "Layout"),
         createdAt,
         updatedAt,
         tabs,
-        split: normalizeSplit(v.split),
-        activeId: typeof v.activeId === "string" ? v.activeId : null,
+        split: normalizeSplit(obj.split),
+        activeId: typeof obj.activeId === "string" ? obj.activeId : null,
+        loggedOutChars,
     };
 }
-async function readLayouts(): Promise<TabLayout[]> {
-    try {
-        const raw = await fs.readFile(layoutsPath(), "utf-8");
-        const parsed = JSON.parse(raw);
-        const arr = Array.isArray(parsed) ? parsed : [];
-        return arr.map(normalizeLayout).filter(Boolean) as TabLayout[];
-    }
-    catch {
-        return [];
-    }
-}
-async function writeLayouts(ls: TabLayout[]) {
-    await fs.writeFile(layoutsPath(), JSON.stringify(ls, null, 2), "utf-8");
-}
+
+const layoutStore = createFileStore<TabLayout>({
+    getPath: () => path.join(app.getPath("userData"), "tabLayouts.json"),
+    normalize: normalizeLayout,
+});
 export function createTabLayoutsStore() {
     return {
         async list(): Promise<TabLayout[]> {
-            return await readLayouts();
+            return layoutStore.read();
         },
         async get(layoutId: string): Promise<TabLayout | null> {
-            const all = await readLayouts();
-            return all.find((l) => l.id === layoutId) ?? null;
+            return layoutStore.findById(layoutId);
         },
         async save(input: TabLayoutInput): Promise<TabLayout[]> {
             const normalized = normalizeLayout(input);
             if (!normalized)
                 throw new Error("invalid layout");
-            const all = await readLayouts();
             const now = new Date().toISOString();
-            let next: TabLayout[];
-            const existing = input.id ? all.find((l) => l.id === input.id) : null;
-            if (existing) {
-                next = all.map((l) => (l.id === existing.id ? { ...normalized, createdAt: existing.createdAt, updatedAt: now } : l));
-            }
-            else {
-                next = [...all, { ...normalized, id: newId(), createdAt: now, updatedAt: now }];
-            }
-            await writeLayouts(next);
-            return next;
+            return layoutStore.update((all) => {
+                const existing = input.id ? all.find((l) => l.id === input.id) : null;
+                if (existing) {
+                    // Preserve name and createdAt when updating, only update if new name provided
+                    const updatedName = input.name?.trim() || existing.name;
+                    return all.map((l) => (l.id === existing.id ? { ...normalized, name: updatedName, createdAt: existing.createdAt, updatedAt: now } : l));
+                }
+                return [...all, { ...normalized, id: generateId(), createdAt: now, updatedAt: now }];
+            });
         },
         async delete(layoutId: string): Promise<TabLayout[]> {
-            const all = await readLayouts();
-            const next = all.filter((l) => l.id !== layoutId);
-            await writeLayouts(next);
-            return next;
+            return layoutStore.update((all) => all.filter((l) => l.id !== layoutId));
         },
     };
 }

@@ -1,0 +1,259 @@
+import { BrowserWindow } from "electron";
+export function createOverlayWindow(parent: BrowserWindow, opts?: {
+    preloadPath?: string;
+}) {
+    const win = new BrowserWindow({
+        parent,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        show: true,
+        focusable: false,
+        skipTaskbar: true,
+        hasShadow: false,
+        alwaysOnTop: true,
+        backgroundColor: "#00000000",
+        webPreferences: {
+            preload: opts?.preloadPath,
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false,
+        },
+    });
+    win.setIgnoreMouseEvents(true, { forward: true });
+    win.setAlwaysOnTop(true, "floating");
+    win.webContents.on("console-message", (_event, level, message) => {
+        console.log(`[OverlayWindow console][${level}] ${message}`);
+    });
+    const html = `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+  #roiLayer{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index: 1;
+  }
+  .roiBox{
+    position:absolute;
+    border:2px dashed rgba(0,150,255,0.85);
+    background: rgba(0,150,255,0.15);
+    border-radius:4px;
+  }
+  #pluginOverlays{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index: 2;
+  }
+  #pluginOverlays iframe{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:none;
+    background:transparent;
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+  <div id="roiLayer"></div>
+  <div id="pluginOverlays"></div>
+
+<script>
+  const ipcBridge = window.ipc;
+  if(!ipcBridge){
+    throw new Error("ipc bridge missing");
+  }
+
+  // Unwrap IpcResult format {ok, data, error}
+  async function invokeMain(channel, ...args) {
+    const result = await ipcBridge.invoke(channel, ...args);
+    if (result && typeof result === "object" && "ok" in result) {
+      if (result.ok) {
+        return result.data;
+      } else {
+        throw new Error(result.error || "IPC call failed");
+      }
+    }
+    return result;
+  }
+
+  const roiLayer = document.getElementById("roiLayer");
+  const pluginContainer = document.getElementById("pluginOverlays");
+  const ROI_KEYS = ["lvl", "charname", "exp", "lauftext"];
+  let roiData = null;
+  let roiVis = null;
+  let currentOverlayProfileId = null;
+  const pluginFrames = [];
+
+  // Expose plugin channel invoker for plugin overlays
+  window.invokePluginChannel = async function(pluginId, channel, ...args) {
+    if (!ipcBridge?.invoke) throw new Error("IPC not available");
+    const res = await ipcBridge.invoke("plugins:invokeChannel", pluginId, channel, ...args);
+    if (res && typeof res === "object") {
+      if ("ok" in res) {
+        return res.ok ? (res.data ?? null) : Promise.reject(new Error(res.error || "plugin invoke failed"));
+      }
+      const inner = res.data;
+      if (inner && typeof inner === "object" && "ok" in inner) {
+        return inner.ok ? (inner.data ?? null) : Promise.reject(new Error(inner.error || "plugin invoke failed"));
+      }
+    }
+    return res ?? null;
+  };
+
+  function renderRois(){
+    console.log("[ROI Overlay] renderRois", { roiData, roiVis });
+    if(!roiLayer) return;
+    roiLayer.innerHTML = "";
+    if(!roiData || !roiVis) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    ROI_KEYS.forEach((k) => {
+      if (!roiVis[k]) return;
+      const r = roiData[k];
+      if (!r) return;
+      const div = document.createElement("div");
+      div.className = "roiBox";
+      div.style.left = (r.x * w) + "px";
+      div.style.top = (r.y * h) + "px";
+      div.style.width = ((r.width ?? r.w) * w) + "px";
+      div.style.height = ((r.height ?? r.h) * h) + "px";
+      console.log("[ROI Overlay] added box", k);
+      roiLayer.append(div);
+    });
+  }
+
+  async function refreshRois(){
+    try{
+      const pid = await invokeMain("profiles:getOverlayTargetId");
+      console.log("[ROI Overlay] refreshRois profileId:", pid);
+      if (pid !== currentOverlayProfileId) {
+        currentOverlayProfileId = pid;
+        rebindPluginOverlays();
+      }
+      if(!pid){
+        roiData = null;
+        roiVis = null;
+        renderRois();
+        return;
+      }
+      const data = await invokeMain("roi:load", pid);
+      const vis = await invokeMain("roi:visibility:get", pid);
+      console.log("[ROI Overlay] loaded data:", data, "vis:", vis);
+      roiData = data;
+      roiVis = vis || {};
+      renderRois();
+    }catch(err){
+      console.error("[ROI Overlay] refreshRois failed", err);
+    }
+  }
+
+  function rebindPluginFrame(frame){
+    try{
+      const targetId = currentOverlayProfileId || "default";
+      const win = frame?.contentWindow;
+      if (win && typeof win.KillfeedOverlay?.bind === "function") {
+        win.KillfeedOverlay.bind("overlay-host", targetId);
+      }
+    }catch(err){
+      console.warn("[OverlayWindow] plugin rebind failed", err);
+    }
+  }
+
+  function rebindPluginOverlays(){
+    pluginFrames.forEach(rebindPluginFrame);
+  }
+
+  async function loadPluginOverlays(){
+    if(!pluginContainer) return;
+    let views = [];
+    try{
+      const result = await invokeMain("plugins:getOverlayViews");
+      views = result?.data ?? result ?? [];
+      console.log("[OverlayWindow] plugin overlay views", Array.isArray(views) ? views.map(v => v.pluginId) : views);
+    }catch(err){
+      console.warn("[OverlayWindow] load plugin overlays failed", err);
+      return;
+    }
+
+    pluginFrames.length = 0;
+    pluginContainer.innerHTML = "";
+
+    const scriptCloseTag = "</scr" + "ipt>";
+    views.forEach((view) => {
+      try{
+        let html = view.html;
+        const stripCss = new RegExp("<link[^>]*ui_overlay\\.css[^>]*>", "i");
+        const stripJs = new RegExp("<script[^>]*ui_overlay\\.js[^>]*>" + scriptCloseTag, "i");
+        html = html.replace(stripCss, "");
+        html = html.replace(stripJs, "");
+        if (view.baseHref && html.includes("<head>") && !/<base\\s/i.test(html)) {
+          html = html.replace("<head>", "<head><base href='" + view.baseHref + "'>");
+        }
+        if (view.css) {
+          html = html.replace("</head>", "<style>" + view.css + "</style></head>");
+        }
+        if (view.js) {
+          html = html.replace("</body>", "<script>" + view.js + scriptCloseTag + "</body>");
+        }
+        const pluginIdLiteral = JSON.stringify(view.pluginId);
+        const bridgeScript =
+          "<script>" +
+          "window.plugin=window.plugin||{};" +
+          "if(!window.plugin.ipc){" +
+          "window.plugin.ipc={" +
+          "invoke:function(channel){" +
+          "var args=Array.prototype.slice.call(arguments,1);" +
+          "return parent.invokePluginChannel(" + pluginIdLiteral + ",channel,...args);" +
+          "}" +
+          "};" +
+          "}" +
+          scriptCloseTag;
+        if (html.includes("</head>")) {
+          html = html.replace("</head>", bridgeScript + "</head>");
+        } else {
+          html = bridgeScript + html;
+        }
+
+        const iframe = document.createElement("iframe");
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        iframe.srcdoc = html;
+        iframe.dataset.pluginId = view.pluginId;
+        iframe.addEventListener("load", () => rebindPluginFrame(iframe));
+        pluginContainer.appendChild(iframe);
+        pluginFrames.push(iframe);
+        console.log("[OverlayWindow] plugin overlay injected", view.pluginId);
+      }catch(err){
+        console.warn("[OverlayWindow] failed to inline plugin overlay", err);
+      }
+    });
+
+    console.log("[OverlayWindow] pluginFrames count", pluginFrames.length);
+    rebindPluginOverlays();
+  }
+
+  window.addEventListener("resize", renderRois);
+  const refreshInterval = setInterval(refreshRois, 2000);
+
+  // Clean up interval when window is closed
+  window.addEventListener("beforeunload", () => {
+    clearInterval(refreshInterval);
+  });
+
+  loadPluginOverlays().catch((err) => console.warn("[OverlayWindow] plugin overlays init failed", err));
+  refreshRois();
+</script>
+</body>
+</html>
+`.trim();
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch((err) => console.error("[OverlayWindow] load failed", err));
+    return win;
+}

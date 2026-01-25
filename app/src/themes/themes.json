@@ -1,0 +1,121 @@
+[
+  {
+    "id": "toffee",
+    "nameKey": "config.theme.toffee",
+    "descriptionKey": "config.theme.toffeeDesc",
+    "swatches": ["#0b1220", "#2c6bff", "#e6eefc"],
+    "tabActive": "#2ecc71"
+  },
+  {
+    "id": "zimt",
+    "nameKey": "config.theme.zimt",
+    "descriptionKey": "config.theme.zimtDesc",
+    "swatches": ["#1a1005", "#e0ac3a", "#f6e6c2"],
+    "tabActive": "#9ac46b"
+  },
+  {
+    "id": "flyff-gold",
+    "nameKey": "config.theme.flyffGold",
+    "descriptionKey": "config.theme.flyffGoldDesc",
+    "swatches": ["#2c1a0e", "#f6c25d", "#ffeac4"],
+    "tabActive": "#9fcf7a"
+  },
+  {
+    "id": "legacy-gold",
+    "nameKey": "config.theme.legacyGold",
+    "descriptionKey": "config.theme.legacyGoldDesc",
+    "swatches": ["#120b07", "#f5c15d", "#f7e7cb"],
+    "tabActive": "#f5c15d"
+  },
+  {
+    "id": "flyff-classic",
+    "nameKey": "config.theme.flyffClassic",
+    "descriptionKey": "config.theme.flyffClassicDesc",
+    "swatches": ["#090408", "#ff8c56", "#ffd8c6"],
+    "tabActive": "#ff8c56"
+  },
+  {
+    "id": "aurora-pulse",
+    "nameKey": "config.theme.auroraPulse",
+    "descriptionKey": "config.theme.auroraPulseDesc",
+    "swatches": ["#031014", "#78f1ff", "#f186ff"],
+    "tabActive": "#8fffcb"
+  },
+  {
+    "id": "cyberpunk",
+    "nameKey": "config.theme.cyberpunk",
+    "descriptionKey": "config.theme.cyberpunkDesc",
+    "swatches": ["#030314", "#5b74ff", "#ff4588"],
+    "tabActive": "#ff4588"
+  },
+  {
+    "id": "crimson-ember",
+    "nameKey": "config.theme.crimsonEmber",
+    "descriptionKey": "config.theme.crimsonEmberDesc",
+    "swatches": ["#040002", "#ff5c4a", "#ffa042"],
+    "tabActive": "#ff5c4a"
+  },
+  {
+    "id": "hologrid",
+    "nameKey": "config.theme.hologrid",
+    "descriptionKey": "config.theme.hologridDesc",
+    "swatches": ["#080a12", "#6df4ff", "#7affd8"],
+    "tabActive": "#6df4ff"
+  },
+  {
+    "id": "kinetic-pulse",
+    "nameKey": "config.theme.kineticPulse",
+    "descriptionKey": "config.theme.kineticPulseDesc",
+    "swatches": ["#05070d", "#4c6bff", "#ff5b99"],
+    "tabActive": "#ff5b99"
+  },
+  {
+    "id": "midnight-neon",
+    "nameKey": "config.theme.midnightNeon",
+    "descriptionKey": "config.theme.midnightNeonDesc",
+    "swatches": ["#030918", "#47c7ff", "#ce43ee"],
+    "tabActive": "#ce43ee"
+  },
+  {
+    "id": "neo-classic",
+    "nameKey": "config.theme.neoClassic",
+    "descriptionKey": "config.theme.neoClassicDesc",
+    "swatches": ["#12131a", "#5fb4ff", "#ff7373"],
+    "tabActive": "#5fb4ff"
+  },
+  {
+    "id": "rainfall-drift",
+    "nameKey": "config.theme.rainfallDrift",
+    "descriptionKey": "config.theme.rainfallDriftDesc",
+    "swatches": ["#0c1118", "#5babff", "#5ff5d7"],
+    "tabActive": "#5ff5d7"
+  },
+  {
+    "id": "retro-synth",
+    "nameKey": "config.theme.retroSynth",
+    "descriptionKey": "config.theme.retroSynthDesc",
+    "swatches": ["#0a0414", "#ff6ec7", "#3ad1ff"],
+    "tabActive": "#ff6ec7"
+  },
+  {
+    "id": "solar-wake",
+    "nameKey": "config.theme.solarWake",
+    "descriptionKey": "config.theme.solarWakeDesc",
+    "swatches": ["#06060b", "#55d4ff", "#ff5f3d"],
+    "tabActive": "#ffb855"
+  },
+  {
+    "id": "thunderstorm",
+    "nameKey": "config.theme.thunderstorm",
+    "descriptionKey": "config.theme.thunderstormDesc",
+    "swatches": ["#050916", "#68a6ff", "#ffeb59"],
+    "tabActive": "#ffeb59"
+  },
+  {
+    "id": "wood-grain",
+    "nameKey": "config.theme.woodGrain",
+    "descriptionKey": "config.theme.woodGrainDesc",
+    "swatches": ["#1a1309", "#d2a16b", "#86c186"],
+    "tabActive": "#86c186"
+  }
+]

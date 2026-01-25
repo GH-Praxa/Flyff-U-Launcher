@@ -1,0 +1,304 @@
+{
+  "base_url": "https://api.flyff.com",
+  "endpoints": [
+    {
+      "name": "data version",
+      "path": "/version/data",
+      "enabled": true,
+      "write_pretty": true,
+      "path_template": "/version"
+    },
+    {
+      "name": "api version",
+      "path": "/version/api",
+      "enabled": true,
+      "write_pretty": true,
+      "path_template": "/version"
+    },
+    {
+      "name": "class",
+      "path": "/class",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "join_with": ",",
+        "path_template": "/class/{id}",
+        "per_id": true,
+        "dest_subdir": "class_parameter"
+      },
+      "icons": [
+        {
+          "filename_field": "icon",
+          "styles": ["messenger", "old_female", "old_male", "target"],
+          "path_template": "/image/class/{style}/{fileName}"
+        },
+        {
+          "filename_field": "tree",
+          "styles": ["tree"],
+          "path_template": "/image/class/{style}/{fileName}",
+          "dest_subdir": "tree",
+          "include_style_dir": false
+        }
+      ]
+    },
+    {
+      "name": "monster",
+      "path": "/monster",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/monster/{id}",
+        "dest_subdir": "monster_parameter"
+      },
+      "icons": [
+        {
+          "filename_field": "icon",
+          "styles": [""],
+          "path_template": "/image/monster/{fileName}",
+          "dest_subdir": "icons",
+          "include_style_dir": false
+        }
+      ]
+    },
+    {
+      "name": "item",
+      "path": "/item",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/item/{id}",
+        "dest_subdir": "item_parameter"
+      },
+      "icons": [
+        {
+          "filename_field": "icon",
+          "styles": [""],
+          "path_template": "/image/item/{fileName}",
+          "dest_subdir": "icons",
+          "include_style_dir": false
+        }
+      ]
+    },
+    {
+      "name": "equipset",
+      "path": "/equipset",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/equipset/{id}",
+        "dest_subdir": "equipset_parameter"
+      }
+    },
+    {
+      "name": "world",
+      "path": "/world",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/world/{id}",
+        "dest_subdir": "world_parameter"
+      },
+      "icons": [
+        {
+          "filename_template": "{worldTileName}{tileX}-{tileY}-0.png",
+          "styles": [""],
+          "path_template": "/image/world/{fileName}",
+          "dest_subdir": "tiles",
+          "include_style_dir": false,
+          "tile_grid": true,
+          "tile_name_field": "tileName",
+          "tile_size_field": "tileSize",
+          "width_field": "width",
+          "height_field": "height"
+        }
+      ]
+    },
+    {
+      "name": "skill",
+      "path": "/skill",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/skill/{id}",
+        "dest_subdir": "skill_parameter"
+      },
+      "icons": [
+        {
+          "filename_field": "icon",
+          "styles": ["colored", "old"],
+          "path_template": "/image/skill/{style}/{fileName}",
+          "dest_subdir": "icons",
+          "include_style_dir": true
+        }
+      ]
+    },
+    {
+      "name": "partyskill",
+      "path": "/partyskill",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/partyskill/{id}",
+        "dest_subdir": "partyskill_parameter"
+      }
+    },
+    {
+      "name": "npc",
+      "path": "/npc",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/npc/{id}",
+        "dest_subdir": "npc_parameter",
+        "join_with": ","
+      },
+      "icons": [
+        {
+          "filename_field": "image",
+          "styles": [""],
+          "path_template": "/image/npc/{fileName}",
+          "dest_subdir": "icons",
+          "include_style_dir": false
+        }
+      ]
+    },
+    {
+      "name": "quest",
+      "path": "/quest",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/quest/{id}",
+        "dest_subdir": "quest_parameter"
+      }
+    },
+    {
+      "name": "pk",
+      "path": "/pk",
+      "enabled": true,
+      "write_pretty": true
+    },
+    {
+      "name": "achievement",
+      "path": "/achievement",
+      "enabled": true,
+      "write_pretty": true,
+      "bulk_ids": {
+        "id_field": "id",
+        "per_id": true,
+        "path_template": "/achievement/{id}",
+        "dest_subdir": "achievement_parameter"
+      }
+    },
+    {
+            "name": "upgradelevelbonus",
+            "path": "/upgradelevelbonus",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "skillawake",
+            "path": "/skillawake",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "statawake",
+            "path": "/statawake",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "raisedpet",
+            "path": "/raisedpet",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "dungeon",
+            "path": "/dungeon",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "exchangemenus",
+            "path": "/exchangemenus",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "housing",
+            "path": "/housing/templates",
+            "enabled": true,
+            "write_pretty": true,
+            "bulk_ids": {
+              "id_field": "id",
+              "per_id": true,
+              "path_template": "/housing/templates/{id}",
+              "dest_subdir": "housing_parameter"
+            },
+            "icons": [
+              {
+                "filename_field": "icon",
+                "styles": [""],
+                "path_template": "/image/housing/{fileName}",
+                "dest_subdir": "icons",
+                "include_style_dir": false
+              }
+            ]
+          },
+          {
+            "name": "housingpacks",
+            "path": "/housing/packs",
+            "enabled": true,
+            "write_pretty": true,
+            "bulk_ids": {
+              "id_field": "id",
+              "per_id": true,
+              "path_template": "/housing/packs/{id}",
+              "dest_subdir": "housingpacks_parameter"
+            }
+          },
+          {
+            "name": "couple",
+            "path": "/couple",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "lifestyle",
+            "path": "/lifestyle",
+            "enabled": true,
+            "write_pretty": true
+          },
+          {
+            "name": "lifestylerecipe",
+            "path": "/lifestyle/recipe",
+            "enabled": true,
+            "write_pretty": true,
+            "bulk_ids": {
+              "id_field": "id",
+              "per_id": true,
+              "path_template": "/lifestyle/recipe/{id}",
+              "dest_subdir": "lifestylerecipe_parameter"
+            }
+          }
+        ]
+      }

@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow } from "electron";
 import { hardenWebviews } from "../security/harden";
 import type { LoadView } from "../viewLoader";
 import flyffIcon from "../../assets/icons/flyff.png";
@@ -24,7 +24,9 @@ export function createLauncherWindow(opts: {
     win.setMenuBarVisibility(false);
     win.setMenu(null);
     hardenWebviews(win);
-    win.webContents.openDevTools({ mode: "detach" });
+    // if (!app.isPackaged) {
+    //     win.webContents.openDevTools({ mode: "detach" });
+    // }
 
     // Fix Windows DWM flicker/ghost window during move/resize
     if (process.platform === "win32") {

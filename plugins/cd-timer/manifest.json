@@ -1,0 +1,42 @@
+{
+  "id": "cd-timer",
+  "name": "CD-Timer",
+  "version": "1.0.10",
+  "minLauncherVersion": "1.2.0",
+  "author": "Praxa",
+  "description": "Cooldown-Timer mit Hotkey-Steuerung und Overlay-Anzeige, benötigt API-Fetch: Items, Skills",
+  "main": "main.js",
+  "requires": ["storage", "profiles", "sessionWindow", "sessionTabs"],
+  "permissions": [
+    "ipc:register",
+    "storage:read",
+    "storage:write",
+    "ui:overlay"
+  ],
+  "ui": {
+    "sidepanelTab": {
+      "label": "CD-Timer",
+      "entry": "ui_sidepanel.html"
+    },
+    "overlay": {
+      "entry": "ui_overlay.html",
+      "transparent": true
+    }
+  },
+  "ipcChannels": [
+    "badge:list",
+    "badge:create",
+    "badge:update",
+    "badge:delete",
+    "badge:expireall",
+    "badge:enableall",
+    "timer:start",
+    "timer:state",
+    "overlay:state",
+    "overlay:update",
+    "icons:list",
+    "hotkeys:pause",
+    "hotkeys:resume",
+    "collapse:set"
+  ]
+}

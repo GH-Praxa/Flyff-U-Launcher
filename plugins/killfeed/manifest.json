@@ -1,0 +1,51 @@
+{
+  "id": "killfeed",
+  "name": "Killfeed",
+  "version": "1.1.1",
+  "minLauncherVersion": "1.2.0",
+  "author": "Praxa",
+  "description": "Kill-Tracker mit Overlay, benötigt API-Fetch: Monster",
+  "main": "main.js",
+  "requires": ["storage", "profiles", "http"],
+  "permissions": [
+    "ipc:register",
+    "storage:read",
+    "storage:write",
+    "window:create",
+    "settings:ui",
+    "ui:overlay",
+    "network:fetch"
+  ],
+  "settingsUI": {
+    "entry": "ui_settings.html",
+    "width": 480,
+    "height": 400
+  },
+  "ui": {
+    "sidepanelTab": {
+      "label": "Killfeed",
+      "entry": "ui_sidepanel.html"
+    },
+    "overlay": {
+      "entry": "ui_overlay.html",
+      "transparent": true
+    }
+  },
+  "ipcChannels": [
+    "cfg:get",
+    "cfg:set",
+    "cfg:reset",
+    "overlay:bind",
+    "overlay:toggle:all",
+    "overlay:request:state",
+    "panel:bind:profile",
+    "panel:request:state",
+    "session:reset",
+    "vis:set",
+    "layout:set",
+    "char:get",
+    "char:set",
+    "discord:publish",
+    "debug:dump:state"
+  ]
+}

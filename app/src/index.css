@@ -273,16 +273,18 @@ html, body{
 }
 
 .layoutMenu{
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
+  position: fixed;
+  left: 0;
+  top: 0;
   background: var(--panel);
   border: 1px solid var(--stroke);
   border-radius: var(--radius2);
   box-shadow: var(--shadow);
   padding: 10px;
   min-width: 240px;
-  z-index: 5;
+  max-height: min(420px, 70vh);
+  overflow: auto;
+  z-index: 1200;
   display:flex;
   flex-direction: column;
   gap: 8px;
@@ -657,7 +659,9 @@ html, body{
   overflow: auto;
   min-height: 0;
   flex: 1 1 auto;
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: none;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
 }
 
 
@@ -714,9 +718,11 @@ html, body{
   background: rgba(255,255,255,0.03);
   border-radius: var(--radius);
   padding: 8px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
   margin-bottom: 12px;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
+  content-visibility: auto;
+  contain-intrinsic-size: 220px 120px;
 }
 
 
@@ -1647,7 +1653,216 @@ html, body{
 
 
 .btn.pink-text:hover {
-  color: #FF69B4;         
+  color: #FF69B4;
   opacity: 0.9;
 }
 
+/* ========= Plugin Management Styles ========= */
+
+.pluginsPane{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pluginsTitle{
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.pluginsList{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.pluginsEmpty,
+.pluginsLoading,
+.pluginsError{
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pluginCard{
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius2);
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pluginCardHeader{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pluginInfo{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pluginName{
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pluginVersion{
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 1px 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+}
+
+.pluginAuthor{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pluginDescription{
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.pluginStatus{
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pluginStatus.running{
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.pluginStatus.stopped{
+  background: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+.pluginStatus.error{
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.pluginStatus.disabled{
+  background: rgba(127, 140, 141, 0.15);
+  color: #7f8c8d;
+  border: 1px solid rgba(127, 140, 141, 0.3);
+}
+
+.pluginStatus.loading{
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.pluginActions{
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pluginBtn{
+  padding: 6px 12px;
+  font-size: 12px;
+  min-width: 70px;
+}
+
+.pluginError{
+  font-size: 11px;
+  color: #e74c3c;
+  padding: 6px 10px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.pluginUiOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 24px;
+}
+
+.pluginUiContainer{
+  width: 900px;
+  max-width: 96vw;
+  height: 640px;
+  max-height: 90vh;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.pluginUiHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--stroke);
+  background: rgba(var(--accent-rgb),0.06);
+}
+
+.pluginUiTitle{
+  font-weight: 800;
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: 0.2px;
+}
+
+.pluginUiClose{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--stroke);
+  color: var(--text);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pluginUiClose:hover{
+  background: rgba(255,255,255,0.12);
+}
+
+.pluginUiFrame{
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: var(--bg);
+}

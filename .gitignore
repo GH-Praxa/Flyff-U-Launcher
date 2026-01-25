@@ -4,3 +4,44 @@ AGENTS.md
 buff-wecker-local/
 app/buff-wecker-local/
 
+# Build and packaging
+/.build-tmp/
+build-temp/
+/.tmp/
+/app/.tmp/
+/app/.appdata/
+/app/dist/
+/app/.wix/
+
+# IDE and editors
+/.idea/
+/.vscode/
+/plugins/**/.idea/
+
+# Development tools
+/.claude/
+/app/.claude/
+/app/src/main/.claude/
+
+# Python cache
+/app/ocr/__pycache__/
+/app/ocr/debug/
+
+# Temporary files
+tmpclaude-*
+/app/tmpclaude-*
+nul
+*.nul
+/.tmp_view.txt
+/testwrite.root
+
+# Debug scripts (development only)
+/__tmp_patch_overlay.js
+/tmp_replace.py
+
+# Test images (not needed in production)
+/app/test/
+
+# Local data files
+/git_acl_*.txt
+
