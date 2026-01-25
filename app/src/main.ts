@@ -2031,9 +2031,14 @@ app.whenReady().then(async () => {
         });
 
         // Check for updates on startup
-        autoUpdater.checkForUpdates().catch((err) => {
-            logErr(err, "AutoUpdater");
-        });
+        autoUpdater.checkForUpdates()
+            .then((result) => {
+                logWarn(`Update check result: ${JSON.stringify(result?.updateInfo?.version ?? "no update")}`, "AutoUpdater");
+            })
+            .catch((err) => {
+                logErr(err, "AutoUpdater checkForUpdates");
+                dialog.showErrorBox("Update Check Failed", `Could not check for updates:\n\n${String(err)}`);
+            });
     }
 });
 
