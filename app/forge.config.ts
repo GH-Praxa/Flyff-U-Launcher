@@ -89,10 +89,10 @@ const config: ForgeConfig = {
         // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make für Squirrel.Windows.
         postMake: async (_forgeConfig, makeResults) => {
             for (const result of makeResults) {
-                // Only care about Windows Squirrel artifacts (contain a .nupkg)
-                const fullNupkg = result.artifacts.find(
-                    (artifact) => artifact.toLowerCase().endsWith(".nupkg") && artifact.toLowerCase().includes("squirrel")
-                );
+                // Only care about Windows Squirrel artifacts (.nupkg, usually "*-full.nupkg")
+                const fullNupkg =
+                    result.artifacts.find((artifact) => artifact.toLowerCase().endsWith("-full.nupkg")) ??
+                    result.artifacts.find((artifact) => artifact.toLowerCase().endsWith(".nupkg"));
                 if (!fullNupkg) continue;
 
                 const version = result.packageJSON?.version ?? "0.0.0";
