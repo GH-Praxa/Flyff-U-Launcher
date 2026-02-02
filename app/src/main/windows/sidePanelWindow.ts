@@ -135,8 +135,18 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
             const current = win.getContentSize();
             const currentWidth = Array.isArray(current) ? current[0] : win.getBounds().width;
             const width = Math.max(260, Math.min(620, currentWidth || 420));
-            win.setContentSize(width, parentBounds.height);
-            win.setPosition(parentBounds.x + parentBounds.width - width, parentBounds.y);
+            const height = parentBounds.height;
+            const x = parentBounds.x + parentBounds.width - width;
+            const y = parentBounds.y;
+
+            // Skip if nothing changed to avoid focus interruptions on Windows
+            const curBounds = win.getBounds();
+            if (curBounds.x === x && curBounds.y === y && curBounds.width === width && curBounds.height === height) {
+                return;
+            }
+
+            win.setContentSize(width, height);
+            win.setPosition(x, y);
         } catch (_err) {
             /* ignore resize errors */
         }

@@ -7,9 +7,10 @@
 
 import { createProfilesStore } from "./profiles/store";
 import { createLauncherWindow } from "./windows/launcherWindow";
-import { createSessionWindowController } from "./windows/sessionWindow";
+import { createSessionWindowController, createSessionWindow } from "./windows/sessionWindow";
 import { createInstanceWindow } from "./windows/instanceWindow";
 import { createInstanceRegistry } from "./windows/instanceRegistry";
+import { createSessionRegistry } from "./windows/sessionRegistry";
 import { createSessionTabsManager } from "./sessionTabs/manager";
 import { createTabLayoutsStore } from "./sessionTabs/layoutStore";
 import { createThemeStore } from "./themeStore";
@@ -30,12 +31,14 @@ export type CoreServices = {
     themes: ReturnType<typeof createThemeStore>;
     features: ReturnType<typeof createFeatureStore>;
     clientSettings: ReturnType<typeof createClientSettingsStore>;
-    sessionWindow: ReturnType<typeof createSessionWindowController>;
-    sessionTabs: ReturnType<typeof createSessionTabsManager>;
+    sessionWindow: ReturnType<typeof createSessionWindowController>; // Legacy singleton
+    sessionTabs: ReturnType<typeof createSessionTabsManager>; // Legacy singleton manager
+    sessionRegistry: ReturnType<typeof createSessionRegistry>; // Multi-window registry
     instances: ReturnType<typeof createInstanceRegistry>;
     roiStore: ReturnType<typeof createRoiStore>;
     roiController: ReturnType<typeof createRoiController>;
     createInstanceWindow: (profileId: string) => Promise<void>;
+    createTabWindow: (opts?: { name?: string }) => Promise<string>; // Returns windowId
     createLauncherWindow: typeof createLauncherWindow;
 };
 
@@ -80,13 +83,19 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         flyffUrl: opts.flyffUrl,
     });
 
-    // Reset tabs when session window is closed
-    sessionWindow.onClosed(() => sessionTabs.reset());
+    // Reset tabs when session window is closed and restore visibility for next launch
+    sessionWindow.onClosed(() => {
+        sessionTabs.setVisible(true);
+        sessionTabs.reset();
+    });
 
     // Instance registry
     const instances = createInstanceRegistry();
     const activeInstances = new Map<string, number>();
     const instanceIdCounters = new Map<string, number>();
+
+    // Session window registry for multi-window support
+    const sessionRegistry = createSessionRegistry();
     const allocateInstancePartition = (profileId: string) => {
         const active = activeInstances.get(profileId) ?? 0;
         activeInstances.set(profileId, active + 1);
@@ -123,6 +132,43 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         preloadPath: opts.preloadPath,
         followIntervalMs: opts.followIntervalMs,
     });
+
+    // Tab window factory for multi-window support
+    const createTabWindowBound = async (windowOpts?: { name?: string }): Promise<string> => {
+        const settings = await clientSettings.get();
+        const windowId = `session-${Date.now()}`;
+
+        const win = await createSessionWindow({
+            preloadPath: opts.preloadPath,
+            loadView: opts.loadView,
+            shouldMaximize: async () => settings.startFullscreen,
+            windowId,
+            params: { windowId }, // Pass windowId as URL parameter
+        });
+
+        // Create a window-specific SessionWindowController wrapper
+        const windowController = {
+            ensure: async () => win,
+            get: () => win.isDestroyed() ? null : win,
+        };
+
+        const tabsManager = createSessionTabsManager({
+            sessionWindow: windowController,
+            flyffUrl: opts.flyffUrl,
+            windowId,
+        });
+
+        // Reset tabs when window is closed
+        win.on("closed", () => {
+            tabsManager.setVisible(true);
+            tabsManager.reset();
+        });
+
+        // Register in registry
+        const id = sessionRegistry.register(win, tabsManager, { name: windowOpts?.name });
+
+        return id;
+    };
 
     // Instance window factory
     const createInstanceWindowBound = async (profileId: string) => {
@@ -171,10 +217,12 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         clientSettings,
         sessionWindow,
         sessionTabs,
+        sessionRegistry,
         instances,
         roiStore,
         roiController,
         createInstanceWindow: createInstanceWindowBound,
+        createTabWindow: createTabWindowBound,
         createLauncherWindow,
     };
 }

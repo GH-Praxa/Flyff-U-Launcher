@@ -2,40 +2,121 @@
 
 ---
 
-## 🆕 Version 2.1.1
-### ✨ Verbesserungen
-
-- Overlays überlagern keine externen Fenster mehr
-→ Bei Inaktivität des Fensters werden sie automatisch ausgeblendet.
-
-- Flackern der Overlays beim Verschieben des Fensters behoben
-→ Auch hier werden Overlays nun korrekt ausgeblendet.
-
-- Letzter Tab im Layout erhält nun ausreichend Ladezeit, bevor der Splitscreen aktiviert wird.
-
-- Alle Aktionen im Beenden Dialog (außer Abbrechen) sind jetzt als Danger-Buttons (rot) markiert
-→ „Abbrechen“ bleibt bewusst neutral.
-
-- Patchnotes-Tab im Einstellungsmenü hinzugefügt
-→ Anzeige erfolgt in der jeweils gewählten Sprache.
+## 🆕 Version 2.2.0
 
 ### ➕ Neue Funktionen
 
-- „+“-Button am Ende des CD-Timers hinzugefügt.
+**Layouts**
+- Layout-Funktion überarbeitet, unterstützte Spielanzeigen:
+  - 1x1 Einzelfenster
+  - 1x2 Splitscreen
+  - 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4 Multiscreens
+- Progressbar in Tab-Leiste eingefügt, welcher den Fortschritt beim Öffnen der Spielscreens zeigt
+- Multi-Window-System: Mehrere unabhängige Session-Fenster können geöffnet werden
 
-### 🧹 Aufräumarbeiten / Cleanup
+**Hotkeys** — frei belegbare Tastenkombinationen (2-3 Tasten)
+- Overlays ausblenden
+- Sidepanel ein/aus
+- Tab-Leiste ein/aus
+- Screenshot des aktiven Fensters in `C:\Users\<USER>\Pictures\Flyff-U-Launcher\` speichern
+- Letzter Tab / Nächster Tab
+- Nächste Fenster-Instanz
+- CD-Timer auf 00:00 setzen, Icons warten auf Klick
+- FCoins-Rechner öffnen
+- Premium-Einkaufsliste öffnen
 
-- Ungenutzter Reiter im Icon-Dialog entfernt.
+**Neue Client Settings**
+- Launcher-Breite / Launcher-Höhe
+- Grid-Tabs sequentiell laden
+- Tab-Anzeige für Layouts
+- Aktiven Grid-View hervorheben
+- Layouts bei Änderungen aktualisieren
+- Dauer Statusmeldungen
+- FCoins-Wechselkurs
+- Tab-Layout-Anzeigemodus (Kompakt, Gruppiert, Getrennt, Mini-Grid)
 
-- Ungenutztes „RM-EXP“-Badge oben rechts entfernt.
+**Menüs & Tools**
+- Neues Menü "Tools (Sternsymbol)" zur Tab-Leiste hinzugefügt.
+  Das Menü blendet die Browserview aus, die Charaktere bleiben eingeloggt.
+  - Interne Tools: FCoins zu Penya Rechner, Premium-Einkaufsliste
+  - Externe Links: Flyff Universe Homepage, Flyffipedia, Flyffulator, Skillulator
+- Neues Menü in der Tab-Leiste (Tastatur) zeigt die festgelegten Hotkeys an.
+  Das Menü blendet die Browserview aus, die Charaktere bleiben eingeloggt.
 
-- Ungenutzter Button unter Einstellungen → Plugins → Killfeed entfernt.
+**Dokumentation**
+- Neuer Tab im Einstellungsmenü "Dokumentation" mit Erklärungen in verschiedenen Sprachen:
+  - Profil erstellen, Layout erstellen, Datenpfade & Persistent, API-Fetch,
+    CD-Timer, Killfeed, FCoins <-> Penya, Premium-Einkaufsliste
+- Der Text ist in alle verfügbaren Sprachen übersetzt. Bilder fehlen teilweise noch.
+  Fallback: englisches UI → deutsches UI.
+
+**Sonstiges**
+- Neues Theme "Steel Ruby" hinzugefügt
+- Launcher zeigt unter dem Newsfeed eine Liste bereits geöffneter Profile an
+- Spendenfunktion in Einstellungen → Support hinzugefügt
+- Schließen-Dialog bei MultiTabs enthält die Option "In einzelne Tabs auflösen"
+- Beim Öffnen eines Profils, während bereits eine Session aktiv ist, wird abgefragt, ob es zum aktuellen Fenster hinzugefügt oder ein neues Fenster erstellt werden soll
+
+### 🧹 Aufräumarbeiten
+
+- Das Fenster des Launchers hat nun eine Mindestgröße und ist bis dahin responsiv
+- Standard-Fenstergröße des Launchers von 980×640 auf 1200×970 geändert
+- "X" Button im Einstellungsmenü hinzugefügt
+- Größe des Einstellungsfensters angepasst
+- "Manage" Menü für Profile und Layouts geändert. Diese enthalten "Umbenennen" und "Löschen"
+- "Profile" Button in der Layoutauswahl hinzugefügt. Dieser zeigt enthaltene Profile des Layouts an
+- Icon für den Button zum Vergrößern der Tab-Leiste hinzugefügt
+- Anzeige des aktiven Tab im schließen Dialog hervorgehoben
+
+### 🐛 Fehlerbehebungen
+
+- Fehler behoben welcher beim Tabwechsel zum ausblenden des Spiels geführt hat
+
+### 🐛 Bekannte Fehler
+
+- Es kommt vor, dass Texteingabem im Sidepanel nicht korrekt ankommen
+- Overlays werden in Dialogfenstern z.b. "Schließen" und "Layout auswählen" angezeigt
+- Das Sidepanel wird im Fenstermodus nicht angezeigt
+
+
 ---
+
+## 🆕 Version 2.1.1
+
+### ✨ Verbesserungen
+
+- Overlays überlagern keine externen Fenster mehr.
+  Bei Inaktivität des Fensters werden sie automatisch ausgeblendet.
+- Flackern der Overlays beim Verschieben des Fensters behoben.
+  Auch hier werden Overlays nun korrekt ausgeblendet.
+- Letzter Tab im Layout erhält nun ausreichend Ladezeit, bevor der Splitscreen aktiviert wird.
+- Alle Aktionen im Beenden-Dialog (außer Abbrechen) sind jetzt als Danger-Buttons (rot) markiert.
+  „Abbrechen" bleibt bewusst neutral.
+- Patchnotes-Tab im Einstellungsmenü hinzugefügt.
+  Anzeige erfolgt in der jeweils gewählten Sprache.
+
+### ➕ Neue Funktionen
+
+- „+"-Button am Ende des CD-Timers hinzugefügt
+
+### 🧹 Aufräumarbeiten
+
+- Ungenutzter Reiter im Icon-Dialog entfernt
+- Ungenutztes „RM-EXP"-Badge oben rechts entfernt
+
+---
+
 ## 🔄 Version 2.1.0
+
 ### 🚀 Neuerungen
 
-- Updates können nun direkt über den Launcher durchgeführt werden.
+- Updates können nun direkt über den Launcher durchgeführt werden
+
 ---
+
 ## 🔄 Version 2.0.2
-- Fehler behoben welcher das Sidepanel leer anzeigt.
+
+### 🐛 Fehlerbehebungen
+
+- Fehler behoben, welcher das Sidepanel leer anzeigt
 - Fehler in der Übersetzung korrigiert

@@ -40,7 +40,23 @@ describe("Session IPC handlers", () => {
         setSplitRatio: ReturnType<typeof vi.fn>;
         reset: ReturnType<typeof vi.fn>;
     };
+    let sessionRegistry: {
+        list: ReturnType<typeof vi.fn>;
+        get: ReturnType<typeof vi.fn>;
+        getWindow: ReturnType<typeof vi.fn>;
+        getTabsManager: ReturnType<typeof vi.fn>;
+        listMetadata: ReturnType<typeof vi.fn>;
+        rename: ReturnType<typeof vi.fn>;
+        close: ReturnType<typeof vi.fn>;
+        getFirst: ReturnType<typeof vi.fn>;
+        has: ReturnType<typeof vi.fn>;
+        setInitialProfileId: ReturnType<typeof vi.fn>;
+        getInitialProfileId: ReturnType<typeof vi.fn>;
+        updateWindowTitle: ReturnType<typeof vi.fn>;
+    };
+    let profiles: { list: ReturnType<typeof vi.fn> };
     let createInstanceWindow: ReturnType<typeof vi.fn>;
+    let createTabWindow: ReturnType<typeof vi.fn>;
     const win = {
         show: vi.fn(),
         focus: vi.fn(),
@@ -75,12 +91,34 @@ describe("Session IPC handlers", () => {
             reset: vi.fn(),
         };
 
+        profiles = {
+            list: vi.fn().mockResolvedValue([]),
+        };
+
+        sessionRegistry = {
+            list: vi.fn().mockReturnValue([]),
+            get: vi.fn().mockReturnValue(null),
+            getWindow: vi.fn().mockReturnValue(null),
+            getTabsManager: vi.fn().mockReturnValue(null),
+            listMetadata: vi.fn().mockReturnValue([]),
+            rename: vi.fn().mockReturnValue(true),
+            close: vi.fn().mockReturnValue(true),
+            getFirst: vi.fn().mockReturnValue(null),
+            has: vi.fn().mockReturnValue(false),
+        setInitialProfileId: vi.fn(),
+        getInitialProfileId: vi.fn().mockReturnValue(undefined),
+        updateWindowTitle: vi.fn().mockReturnValue(true),
+    };
+
+    const getLocale = vi.fn().mockResolvedValue("en");
+
         createInstanceWindow = vi.fn().mockResolvedValue(undefined);
+        createTabWindow = vi.fn().mockResolvedValue("session-123");
 
         const safeHandle = createSafeHandle(handlers);
         registerSessionHandlers(
             safeHandle,
-            { sessionTabs, sessionWindow, createInstanceWindow },
+            { sessionTabs, sessionWindow, sessionRegistry, profiles, createInstanceWindow, createTabWindow, getLocale },
             logErr,
         );
     });
@@ -91,7 +129,7 @@ describe("Session IPC handlers", () => {
         return h;
     }
 
-    it("öffnet Tab und sendet IPC an Renderer", async () => {
+    it("oeffnet Tab und sendet IPC an Renderer", async () => {
         const openTab = handler("session:openTab");
 
         await expect(openTab({} as IpcEvent, "profile-1")).resolves.toBe(true);
@@ -101,7 +139,7 @@ describe("Session IPC handlers", () => {
         expect(win.webContents.send).toHaveBeenCalledWith("session:openTab", "profile-1");
     });
 
-    it("wirft ValidationError bei ungültiger ID", async () => {
+    it("wirft ValidationError bei ungueltiger ID", async () => {
         const openTab = handler("session:openTab");
 
         await expect(openTab({} as IpcEvent, "")).rejects.toBeInstanceOf(ValidationError);
@@ -113,18 +151,60 @@ describe("Session IPC handlers", () => {
         await expect(setSplit({} as IpcEvent, { primary: "a", secondary: "b", ratio: 2 })).rejects.toBeInstanceOf(ValidationError);
     });
 
-    it("schließt Session-Window ohne Prompt", async () => {
+    it("schliesst Session-Window ohne Prompt (Legacy)", async () => {
         const close = handler("sessionWindow:close");
 
         await expect(close({} as IpcEvent)).resolves.toBe(true);
         expect(sessionWindow.closeWithoutPrompt).toHaveBeenCalled();
     });
 
-    it("ruft app.quit über IPC auf", async () => {
+    it("schliesst aktuelles Multi-Window ohne Prompt", async () => {
+        const secondaryWin: any = {
+            webContents: {},
+            close: vi.fn(),
+            isDestroyed: vi.fn().mockReturnValue(false),
+            __allowCloseWithoutPrompt: vi.fn(),
+        };
+        sessionRegistry.list.mockReturnValue([
+            {
+                id: "session-99",
+                name: undefined,
+                createdAt: "",
+                window: secondaryWin,
+                tabsManager: {} as any,
+                initialProfileId: undefined,
+            },
+        ]);
+
+        const close = handler("sessionWindow:close");
+
+        await expect(close({ sender: secondaryWin.webContents } as unknown as IpcEvent)).resolves.toBe(true);
+
+        expect(secondaryWin.__allowCloseWithoutPrompt).toHaveBeenCalled();
+        expect(secondaryWin.close).toHaveBeenCalled();
+        expect(sessionWindow.closeWithoutPrompt).not.toHaveBeenCalled();
+    });
+
+    it("ruft app.quit ueber IPC auf und umgeht alle Prompts", async () => {
         const quit = handler("app:quit");
+        const secondaryWin: any = {
+            isDestroyed: vi.fn().mockReturnValue(false),
+            __allowCloseWithoutPrompt: vi.fn(),
+        };
+        sessionRegistry.list.mockReturnValue([
+            {
+                id: "session-2",
+                name: undefined,
+                createdAt: "",
+                window: secondaryWin,
+                tabsManager: {} as any,
+                initialProfileId: undefined,
+            },
+        ]);
 
         await expect(quit({} as IpcEvent)).resolves.toBe(true);
         expect(sessionWindow.allowCloseWithoutPrompt).toHaveBeenCalled();
+        expect(secondaryWin.__allowCloseWithoutPrompt).toHaveBeenCalled();
         expect(electronApp.quit).toHaveBeenCalled();
     });
 });

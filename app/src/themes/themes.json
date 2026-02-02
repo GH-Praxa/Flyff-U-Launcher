@@ -56,6 +56,13 @@
     "tabActive": "#ff5c4a"
   },
   {
+    "id": "steel-ruby",
+    "nameKey": "config.theme.steelRuby",
+    "descriptionKey": "config.theme.steelRubyDesc",
+    "swatches": ["#0e1014", "#d65a54", "#f3f4f6"],
+    "tabActive": "#e96268"
+  },
+  {
     "id": "hologrid",
     "nameKey": "config.theme.hologrid",
     "descriptionKey": "config.theme.hologridDesc",

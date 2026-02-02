@@ -1,41 +1,120 @@
-# 📦 Patchnotes
+﻿# 📦 Patchnotes
+
+---
+
+## 🆕 Version 2.2.0
+
+### ➕ New Features
+
+**Layouts**
+- Layout function revised; supported game displays:
+  - 1x1 single window
+  - 1x2 split screen
+  - 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4 multi-screens
+- Progress bar added to the tab bar showing the progress while opening game screens
+- Multi-window system: multiple independent session windows can be opened
+
+**Hotkeys** — freely assignable key combinations (2-3 keys)
+- Hide overlays
+- Side panel on/off
+- Tab bar on/off
+- Save screenshot of the active window to `C:\Users\<USER>\Pictures\Flyff-U-Launcher\`
+- Previous tab / Next tab
+- Next window instance
+- Reset CD timer to 00:00, icons wait for click
+- Open FCoins calculator
+- Open premium shopping list
+
+**New Client Settings**
+- Launcher width / Launcher height
+- Load grid tabs sequentially
+- Tab display for layouts
+- Highlight active grid view
+- Refresh layouts when changes occur
+- Status message duration
+- FCoins exchange rate
+- Tab layout display mode (Compact, Grouped, Separate, Mini-grid)
+
+**Menus & Tools**
+- New menu "Tools (star icon)" added to the tab bar. The menu hides the browser view; characters stay logged in.
+  - Internal tools: FCoins to Penya calculator, premium shopping list
+  - External links: Flyff Universe homepage, Flyffipedia, Flyffulator, Skillulator
+- New menu in the tab bar (keyboard icon) shows the configured hotkeys. The menu hides the browser view; characters stay logged in.
+
+**Documentation**
+- New tab in the settings menu "Documentation" with explanations in various languages:
+  - Create profile, create layout, data paths & persistence, API fetch,
+    CD timer, killfeed, FCoins <-> Penya, premium shopping list
+- The text is translated into all available languages. Some images are still missing.
+  Fallback: English UI → German UI.
+
+**Miscellaneous**
+- New theme "Steel Ruby" added
+- Launcher shows a list of already opened profiles below the newsfeed
+- Donation feature added in Settings → Support
+- Close dialog in multi-tabs contains the option "Split into individual tabs"
+- When opening a profile while a session is already active, you are asked whether to add it to the current window or create a new window
+
+### 🧹 Cleanup
+
+- The launcher window now has a minimum size and is responsive up to that point
+- Default launcher window size changed from 980×640 to 1200×970
+- "X" button added in the settings menu
+- Settings window size adjusted
+- "Manage" menu for profiles and layouts changed. They now include "Rename" and "Delete"
+- "Profile" button added in the layout selection. It shows profiles contained in the layout
+- Icon added for the button to enlarge the tab bar
+- Highlighted the active tab in the close dialog
+
+### 🐛 Bug Fixes
+
+- Fixed a bug that caused the game to be hidden when switching tabs
+
+### 🐛 Known Issues
+
+- Occasionally, text inputs in the side panel are not received correctly
+- Overlays appear in dialog windows, e.g., "Close" and "Select layout"
+- The side panel is not displayed in windowed mode
+
 
 ---
 
 ## 🆕 Version 2.1.1
+
 ### ✨ Improvements
 
-- Overlays no longer overlap external windows
-→ They are automatically hidden when the window is inactive.
-
-- Fixed overlay flickering when moving the window
-→ Overlays are now correctly hidden during movement.
-
-- Last tab in layout now receives sufficient loading time before split screen is activated.
-
-- All actions in exit dialog (except Cancel) are now marked as danger buttons (red)
-→ "Cancel" intentionally remains neutral.
-
-- Patchnotes tab added to settings menu
-→ Display is shown in the currently selected language.
+- Overlays no longer overlap external windows.
+  When the window is inactive they are hidden automatically.
+- Overlay flickering when moving the window fixed.
+  Overlays are now correctly hidden during movement.
+- Last tab in the layout now gets enough loading time before split screen is activated.
+- All actions in the exit dialog (except Cancel) are now marked as danger buttons (red).
+  "Cancel" deliberately stays neutral.
+- Patchnotes tab added in the settings menu.
+  Display uses the currently selected language.
 
 ### ➕ New Features
 
-- "+" button added at the end of the CD timer.
+- "+" button added at the end of the CD timer
 
 ### 🧹 Cleanup
 
-- Removed unused tab in icon dialog.
+- Unused tab in the icon dialog removed
+- Unused "RM-EXP" badge in the top right removed
 
-- Removed unused "RM-EXP" badge in top right corner.
-
-- Removed unused button under Settings → Plugins → Killfeed.
 ---
+
 ## 🔄 Version 2.1.0
+
 ### 🚀 New Features
 
-- Updates can now be performed directly through the launcher.
+- Updates can now be carried out directly via the launcher
+
 ---
+
 ## 🔄 Version 2.0.2
-- Fixed bug that showed the sidepanel as empty.
-- Fixed translation errors.
+
+### 🐛 Bug Fixes
+
+- Fixed a bug that showed the side panel as empty
+- Fixed translation errors

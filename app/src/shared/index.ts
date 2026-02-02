@@ -10,7 +10,7 @@ export { generateId, suppressError, safeCallback } from "./utils";
 export { logWarn, logErr, logDebug } from "./logger";
 
 // Constants
-export { TIMINGS, LAYOUT, VALIDATION } from "./constants";
+export { TIMINGS, LAYOUT, GRID_CONFIGS } from "./constants";
 
 // Schemas and types
 export {

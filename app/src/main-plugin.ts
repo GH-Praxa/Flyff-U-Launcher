@@ -5,7 +5,7 @@
  * Core functionality only - EXP-Tracker, Questlog, Buff-Wecker loaded as plugins.
  */
 
-import { app, BrowserWindow, session, ipcMain, globalShortcut } from "electron";
+import { app, BrowserWindow, session, ipcMain, globalShortcut, screen } from "electron";
 import path from "path";
 import fs from "fs";
 import fsp from "fs/promises";
@@ -29,11 +29,13 @@ import { applyCSP } from "./main/security/harden";
 import { logWarn, logErr } from "./shared/logger";
 import { createCoreServices, createPluginServiceAdapters } from "./main/coreServices";
 import { createPluginHost } from "./main/plugin";
-import { URLS, TIMINGS } from "./shared/constants";
+import { URLS, TIMINGS, LAYOUT } from "./shared/constants";
 import { createSidePanelButtonController } from "./main/windows/sidePanelButtonController";
 import { createSidePanelWindow } from "./main/windows/sidePanelWindow";
 import { createRoiVisibilityStore } from "./main/roi/roiVisibilityStore";
 import { DEFAULT_LOCALE, type ClientSettings, type Locale } from "./shared/schemas";
+import { DEFAULT_HOTKEYS, chordToAccelerator, normalizeHotkeySettings } from "./shared/hotkeys";
+import { fitLauncherSizeToWorkArea, normalizeLauncherSize } from "./shared/launcherSize";
 
 // Vite declarations
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -49,6 +51,10 @@ let launcherWindow: BrowserWindow | null = null;
 let pluginHost: ReturnType<typeof createPluginHost> | null = null;
 let sidePanelButton: ReturnType<typeof createSidePanelButtonController> | null = null;
 let sidePanelWindow: BrowserWindow | null = null;
+const registeredHotkeys: string[] = [];
+const SCREENSHOT_DIR = path.join(app.getPath("pictures"), "Flyff-U-Launcher");
+let toastDurationMs = 5000;
+let launcherSize = normalizeLauncherSize();
 
 // ============================================================================
 // App Ready
@@ -168,10 +174,18 @@ app.whenReady().then(async () => {
 
     let overlayClickThrough = false;
     let clientLocale: Locale = DEFAULT_LOCALE;
+    let overlayHotkeys = normalizeHotkeySettings(DEFAULT_HOTKEYS, DEFAULT_HOTKEYS);
     try {
         const clientSettingsSnap = await services.clientSettings.get();
         overlayClickThrough = !!clientSettingsSnap.overlayButtonPassthrough;
         clientLocale = clientSettingsSnap.locale ?? DEFAULT_LOCALE;
+        overlayHotkeys = normalizeHotkeySettings(clientSettingsSnap.hotkeys, DEFAULT_HOTKEYS);
+        toastDurationMs = Math.min(60, Math.max(1, clientSettingsSnap.toastDurationSeconds ?? 5)) * 1000;
+        launcherSize = normalizeLauncherSize({
+            width: clientSettingsSnap.launcherWidth,
+            height: clientSettingsSnap.launcherHeight,
+        });
+        services.sessionTabs.setActiveGridBorderEnabled?.(clientSettingsSnap.gridActiveBorder ?? false);
     } catch (err) {
         logErr(err, "ClientSettings");
     }
@@ -180,6 +194,22 @@ app.whenReady().then(async () => {
         if (settings.locale) {
             clientLocale = settings.locale;
         }
+        overlayHotkeys = normalizeHotkeySettings(settings.hotkeys, DEFAULT_HOTKEYS);
+        toastDurationMs = Math.min(60, Math.max(1, settings.toastDurationSeconds ?? 5)) * 1000;
+        launcherSize = normalizeLauncherSize({
+            width: settings.launcherWidth,
+            height: settings.launcherHeight,
+        });
+        services.sessionTabs.setActiveGridBorderEnabled?.(settings.gridActiveBorder ?? false);
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            const display = screen.getDisplayMatching(launcherWindow.getBounds()) ?? screen.getPrimaryDisplay();
+            const nextSize = fitLauncherSizeToWorkArea(launcherSize, display?.workAreaSize);
+            const minWidth = Math.min(display.workAreaSize.width, LAYOUT.LAUNCHER_MIN_WIDTH);
+            const minHeight = Math.min(display.workAreaSize.height, LAYOUT.LAUNCHER_MIN_HEIGHT);
+            launcherWindow.setMinimumSize(minWidth, minHeight);
+            launcherWindow.setSize(nextSize.width, nextSize.height);
+        }
+        registerHotkeys();
     };
 
     sidePanelButton = createSidePanelButtonController({
@@ -243,23 +273,87 @@ app.whenReady().then(async () => {
         void toggleSidePanel(payload as { focusTab?: string; profileId?: string });
     });
 
-    const shortcut = "Control+Shift+O";
-    const shortcutRegistered = globalShortcut.register(shortcut, () => {
-        const focused = BrowserWindow.getFocusedWindow();
-        const sessionWin = services.sessionWindow.get();
-        if (!sessionWin || sessionWin.isDestroyed())
-            return;
-        if (!focused)
-            return;
-        const sideWin = sidePanelWindow && !sidePanelWindow.isDestroyed() ? sidePanelWindow : null;
-        if (focused && focused.id !== sessionWin.id && (!sideWin || focused.id !== sideWin.id)) {
-            return;
+    const clearRegisteredHotkeys = () => {
+        for (const acc of registeredHotkeys) {
+            globalShortcut.unregister(acc);
         }
-        void toggleSidePanel({ profileId: sidePanelButton?.getActiveProfileId?.() ?? undefined, focusTab: "roi" });
+        registeredHotkeys.length = 0;
+    };
+
+    const captureFocusedWindowScreenshot = async () => {
+        const target = BrowserWindow.getFocusedWindow();
+        if (!target)
+            return;
+        try {
+            const settingsSnap = await services.clientSettings.get().catch(() => null);
+            const effectiveTtlMs = Math.min(60, Math.max(1, settingsSnap?.toastDurationSeconds ?? toastDurationMs / 1000)) * 1000;
+            const image = await target.webContents.capturePage();
+            const buffer = image.toPNG();
+            await fsp.mkdir(SCREENSHOT_DIR, { recursive: true });
+            const file = path.join(SCREENSHOT_DIR, `screenshot-${Date.now()}.png`);
+            await fsp.writeFile(file, buffer);
+            logWarn(`Screenshot saved: ${file}`, "Hotkey:screenshotWindow");
+            const payload = {
+                message: translations[clientLocale]["toast.screenshot.saved"],
+                tone: "success",
+                ttlMs: effectiveTtlMs,
+            } as const;
+            try {
+                target.webContents.send("toast:show", payload);
+            } catch {
+                /* ignore */
+            }
+            const sessionWin = services.sessionWindow.get();
+            if (sessionWin && !sessionWin.isDestroyed() && sessionWin.webContents.id !== target.webContents.id) {
+                sessionWin.webContents.send("toast:show", payload);
+            }
+        }
+        catch (err) {
+            logErr(err, "Hotkey:screenshotWindow");
+        }
+    };
+
+    const registerHotkeys = () => {
+        clearRegisteredHotkeys();
+        const register = (chord: ReturnType<typeof normalizeHotkeySettings>["sidePanelToggle"], handler: () => void, label: string) => {
+            const accel = chordToAccelerator(chord ?? null);
+            if (!accel)
+                return;
+            const ok = globalShortcut.register(accel, handler);
+            if (ok) {
+                registeredHotkeys.push(accel);
+            }
+            else {
+                logWarn(`Global shortcut ${accel} could not be registered`, `Hotkey:${label}`);
+            }
+        };
+        register(overlayHotkeys.sidePanelToggle ?? null, () => {
+            const focused = BrowserWindow.getFocusedWindow();
+            const sessionWin = services.sessionWindow.get();
+            if (!sessionWin || sessionWin.isDestroyed())
+                return;
+            if (!focused)
+                return;
+            const sideWin = sidePanelWindow && !sidePanelWindow.isDestroyed() ? sidePanelWindow : null;
+            if (focused.id !== sessionWin.id && (!sideWin || focused.id !== sideWin.id)) {
+                return;
+            }
+            void toggleSidePanel({ profileId: sidePanelButton?.getActiveProfileId?.() ?? undefined, focusTab: "roi" });
+        }, "sidePanelToggle");
+        register(overlayHotkeys.screenshotWindow ?? null, () => { void captureFocusedWindowScreenshot(); }, "screenshotWindow");
+    };
+
+    registerHotkeys();
+
+    // IPC handlers to pause/resume hotkeys during recording
+    ipcMain.handle("hotkeys:pause", () => {
+        clearRegisteredHotkeys();
+        return { ok: true };
     });
-    if (!shortcutRegistered) {
-        logWarn("Global shortcut Ctrl+Shift+O could not be registered", "Main");
-    }
+    ipcMain.handle("hotkeys:resume", () => {
+        registerHotkeys();
+        return { ok: true };
+    });
 
     // Get launcher version from package.json
     const launcherVersion = app.getVersion();
@@ -290,8 +384,8 @@ app.whenReady().then(async () => {
     // Type casts needed because CoreServices types differ slightly from IPC handler types
     registerMainIpc({
         profiles: services.profiles,
-        sessionTabs: services.sessionTabs as unknown as import("./main/ipc/registerMainIpc").SessionTabsManager,
-        sessionWindow: services.sessionWindow as unknown as import("./main/ipc/registerMainIpc").SessionWindowController,
+        sessionTabs: services.sessionTabs as unknown as Parameters<typeof registerMainIpc>[0]["sessionTabs"],
+        sessionWindow: services.sessionWindow as unknown as Parameters<typeof registerMainIpc>[0]["sessionWindow"],
         tabLayouts: services.tabLayouts,
         themes: services.themes,
         features: services.features,
@@ -365,6 +459,15 @@ app.whenReady().then(async () => {
         },
         roiVisibilityGet: async (profileId) => roiVisibilityStore.get(profileId),
         roiVisibilitySet: async (profileId, key, visible) => roiVisibilityStore.set(profileId, { [key]: visible }),
+        showToast: (message, tone = "info") => {
+            const target = launcherWindow;
+            if (!target || target.isDestroyed()) return;
+            try {
+                target.webContents.send("toast:show", { message, tone, ttlMs: toastDurationMs });
+            } catch {
+                /* ignore */
+            }
+        },
     });
 
     // Register plugin management IPC handlers
@@ -384,6 +487,8 @@ app.whenReady().then(async () => {
     launcherWindow = services.createLauncherWindow({
         preloadPath,
         loadView,
+        width: launcherSize.width,
+        height: launcherSize.height,
         onClosed: () => (launcherWindow = null),
     });
 
@@ -393,6 +498,8 @@ app.whenReady().then(async () => {
             launcherWindow = services.createLauncherWindow({
                 preloadPath,
                 loadView,
+                width: launcherSize.width,
+                height: launcherSize.height,
                 onClosed: () => (launcherWindow = null),
             });
         }

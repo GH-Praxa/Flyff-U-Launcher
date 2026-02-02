@@ -166,6 +166,8 @@ declare global {
             themeCurrent: () => Promise<ThemePushPayload | null>;
             onThemeUpdate: (cb: (payload: ThemePushPayload) => void) => void;
             sessionWindowClose: () => Promise<boolean>;
+            overlaysHideForDialog: () => Promise<void>;
+            overlaysShowAfterDialog: () => Promise<void>;
             appQuit: () => Promise<boolean>;
             // Plugin management
             pluginsList: () => Promise<PluginStateInfo[]>;
@@ -182,6 +184,7 @@ declare global {
             pluginsGetSettingsUI: (pluginId: string) => Promise<{ url: string; width?: number; height?: number }>;
             pluginsInvokeChannel: (pluginId: string, channel: string, ...args: unknown[]) => Promise<unknown>;
             onPluginStateChanged: (cb: (state: PluginStateInfo) => void) => () => void;
+            onTabBarToggle: (cb: () => void) => () => void;
         };
         ipc?: {
             send: (channel: string, payload?: unknown) => void;

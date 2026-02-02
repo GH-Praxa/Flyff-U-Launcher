@@ -44,8 +44,16 @@ contextBridge.exposeInMainWorld("api", {
     profilesGetOverlaySupportTargetId: () => unwrapIpc(ipcRenderer.invoke("profiles:getOverlaySupportTargetId")),
     profilesSetOverlayTarget: (profileId: string | null, iconKey?: string) => unwrapIpc(ipcRenderer.invoke("profiles:setOverlayTarget", profileId, iconKey)),
     profilesSetOverlaySupportTarget: (profileId: string | null, iconKey?: string) => unwrapIpc(ipcRenderer.invoke("profiles:setOverlaySupportTarget", profileId, iconKey)),
-    openTab: (profileId: string) => unwrapIpc(ipcRenderer.invoke("session:openTab", profileId)),
+    openTab: (profileId: string, windowId?: string) => unwrapIpc(ipcRenderer.invoke("session:openTab", profileId, windowId)),
+    openTabWithLayout: (profileId: string, layoutType: string, windowId?: string) => unwrapIpc(ipcRenderer.invoke("session:openTabWithLayout", profileId, layoutType, windowId)),
+    createWindowWithLayout: (layout: import("./shared/schemas").MultiViewLayout, windowId: string, initialProfileId?: string) => unwrapIpc(ipcRenderer.invoke("session:createWindowWithLayout", layout, windowId, initialProfileId)),
     openWindow: (profileId: string) => unwrapIpc(ipcRenderer.invoke("instance:openWindow", profileId)),
+    // Multi-window management
+    createTabWindow: (name?: string) => unwrapIpc(ipcRenderer.invoke("session:createTabWindow", name)) as Promise<string>,
+    listTabWindows: () => unwrapIpc(ipcRenderer.invoke("session:listTabWindows")) as Promise<import("./shared/schemas").TabWindowMetadata[]>,
+    closeTabWindow: (windowId: string) => unwrapIpc(ipcRenderer.invoke("session:closeTabWindow", windowId)),
+    renameTabWindow: (windowId: string, newName: string) => unwrapIpc(ipcRenderer.invoke("session:renameTabWindow", windowId, newName)),
+    updateWindowTitle: (layoutTypes: string[]) => unwrapIpc(ipcRenderer.invoke("session:updateWindowTitle", layoutTypes)),
     sessionTabsOpen: (profileId: string) => unwrapIpc(ipcRenderer.invoke("sessionTabs:open", profileId)),
     sessionTabsSwitch: (profileId: string) => unwrapIpc(ipcRenderer.invoke("sessionTabs:switch", profileId)),
     sessionTabsLogout: (profileId: string) => unwrapIpc(ipcRenderer.invoke("sessionTabs:logout", profileId)),
@@ -53,6 +61,19 @@ contextBridge.exposeInMainWorld("api", {
     sessionTabsClose: (profileId: string) => unwrapIpc(ipcRenderer.invoke("sessionTabs:close", profileId)),
     sessionTabsSetBounds: (bounds: Rect) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setBounds", bounds)),
     sessionTabsSetVisible: (visible: boolean) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setVisible", visible)),
+    sessionTabsGetOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getOpenProfiles")) as Promise<string[]>,
+    sessionTabsGetAllOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getAllOpenProfiles")) as Promise<string[]>,
+    sessionTabsSetMultiLayout: (
+        layout: import("./shared/schemas").MultiViewLayout | null,
+        options?: { ensureViews?: boolean; allowMissingViews?: boolean }
+    ) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setMultiLayout", layout, options)),
+    sessionTabsOpenInCell: (
+        position: number,
+        profileId: string,
+        options?: { activate?: boolean; forceLoad?: boolean }
+    ) => unwrapIpc(ipcRenderer.invoke("sessionTabs:openInCell", position, profileId, options)),
+    sessionTabsUpdateCell: (position: number, profileId: string | null) =>
+        unwrapIpc(ipcRenderer.invoke("sessionTabs:updateCell", position, profileId)),
     sessionTabsSetSplit: (pair: {
         primary: string;
         secondary: string;
@@ -60,7 +81,12 @@ contextBridge.exposeInMainWorld("api", {
     } | null) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setSplit", pair)),
     sessionTabsSetSplitRatio: (ratio: number) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setSplitRatio", ratio)),
     sessionTabsReset: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:reset")),
+    sessionTabsShowLayoutMenu: (coords: { x: number; y: number }) =>
+        unwrapIpc(ipcRenderer.invoke("sessionTabs:showLayoutMenu", coords)),
+    sessionTabsGetOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getOpenProfiles")),
     sessionWindowClose: () => unwrapIpc(ipcRenderer.invoke("sessionWindow:close")),
+    overlaysHideForDialog: () => ipcRenderer.invoke("overlays:hideForDialog"),
+    overlaysShowAfterDialog: () => ipcRenderer.invoke("overlays:showAfterDialog"),
     appQuit: () => unwrapIpc(ipcRenderer.invoke("app:quit")),
     tabLayoutsList: () => unwrapIpc(ipcRenderer.invoke("tabLayouts:list")),
     tabLayoutsGet: (id: string) => unwrapIpc(ipcRenderer.invoke("tabLayouts:get", id)),
@@ -74,11 +100,20 @@ contextBridge.exposeInMainWorld("api", {
     onOpenTab: (cb: (profileId: string) => void) => {
         ipcRenderer.on("session:openTab", (_e, profileId: string) => cb(profileId));
     },
+    onOpenTabWithLayout: (cb: (profileId: string, layoutType: string) => void) => {
+        ipcRenderer.on("session:openTabWithLayout", (_e, profileId: string, layoutType: string) => cb(profileId, layoutType));
+    },
     onSessionActiveChanged: (cb: (profileId: string | null) => void) => {
         ipcRenderer.on("sessionTabs:activeChanged", (_e, profileId: string | null) => cb(profileId));
     },
     onSessionWindowCloseRequested: (cb: () => void) => {
         ipcRenderer.on("sessionWindow:closeRequested", () => cb());
+    },
+    onLayoutsChanged: (cb: () => void) => {
+        ipcRenderer.on("tabLayouts:changed", () => cb());
+    },
+    onLayoutCreated: (cb: (layout: import("./shared/schemas").MultiViewLayout) => void) => {
+        ipcRenderer.on("session:layoutCreated", (_e, layout: import("./shared/schemas").MultiViewLayout) => cb(layout));
     },
     fetchNewsPage: (path?: string) => unwrapIpc(ipcRenderer.invoke("news:fetch", path)),
     fetchNewsArticle: (url: string) => unwrapIpc(ipcRenderer.invoke("news:fetchArticle", url)),
@@ -95,9 +130,12 @@ contextBridge.exposeInMainWorld("api", {
     tabActiveColorSave: (color: string | null) => unwrapIpc(ipcRenderer.invoke("tabActiveColor:save", color)),
     clientSettingsGet: () => unwrapIpc<ClientSettings>(ipcRenderer.invoke("clientSettings:get")),
     clientSettingsPatch: (patch: ClientSettingsPatch) => unwrapIpc<ClientSettings>(ipcRenderer.invoke("clientSettings:patch", patch)),
+    hotkeysPause: () => ipcRenderer.invoke("hotkeys:pause"),
+    hotkeysResume: () => ipcRenderer.invoke("hotkeys:resume"),
     featuresGet: () => unwrapIpc(ipcRenderer.invoke("features:get")),
     featuresPatch: (patch: Partial<FeatureFlags>) => unwrapIpc(ipcRenderer.invoke("features:patch", patch)),
     patchnotesGet: (locale: string) => unwrapIpc<string>(ipcRenderer.invoke("patchnotes:get", locale)),
+    documentationGet: (locale: string) => unwrapIpc<{ content: string; assetsPath: string }>(ipcRenderer.invoke("documentation:get", locale)),
     onThemeUpdate: (cb: (payload: ThemePushPayload) => void) => {
         ipcRenderer.on("theme:update", (_e, payload: ThemePushPayload) => cb(payload));
     },
@@ -142,6 +180,35 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.on("plugins:stateChanged", wrapped);
         return () => ipcRenderer.removeListener("plugins:stateChanged", wrapped);
     },
+    onTabHotkeyNavigate: (cb: (payload: { side?: "left" | "right"; dir: "prev" | "next" }) => void) => {
+        const wrapped = (_e: IpcRendererEvent, payload: { side?: "left" | "right"; dir: "prev" | "next" }) => cb(payload);
+        ipcRenderer.on("clientHotkey:navigate", wrapped);
+        return () => ipcRenderer.removeListener("clientHotkey:navigate", wrapped);
+    },
+    onTabBarToggle: (cb: () => void) => {
+        const wrapped = () => cb();
+        ipcRenderer.on("clientHotkey:toggleTabBar", wrapped);
+        return () => ipcRenderer.removeListener("clientHotkey:toggleTabBar", wrapped);
+    },
+    onShowFcoinConverter: (cb: () => void) => {
+        const wrapped = () => cb();
+        ipcRenderer.on("clientHotkey:showFcoinConverter", wrapped);
+        return () => ipcRenderer.removeListener("clientHotkey:showFcoinConverter", wrapped);
+    },
+    onShowShoppingList: (cb: () => void) => {
+        const wrapped = () => cb();
+        ipcRenderer.on("clientHotkey:showShoppingList", wrapped);
+        return () => ipcRenderer.removeListener("clientHotkey:showShoppingList", wrapped);
+    },
+    // Shopping List
+    shoppingListSearch: (query: string, locale: string) => unwrapIpc(ipcRenderer.invoke("shoppingList:search", query, locale)),
+    shoppingListIcon: (iconFilename: string) => unwrapIpc<string | null>(ipcRenderer.invoke("shoppingList:icon", iconFilename)),
+    shoppingListSavePrice: (itemId: number | string, price: number) => unwrapIpc(ipcRenderer.invoke("shoppingList:savePrice", itemId, price)),
+    onToast: (cb: (payload: { message: string; tone?: "info" | "success" | "error"; ttlMs?: number }) => void) => {
+        const wrapped = (_e: IpcRendererEvent, payload: { message: string; tone?: "info" | "success" | "error"; ttlMs?: number }) => cb(payload);
+        ipcRenderer.on("toast:show", wrapped);
+        return () => ipcRenderer.removeListener("toast:show", wrapped);
+    },
 });
 // Note: overlay/hud/buff-wecker channels removed - will be handled by plugins
 const allowedSend = new Set<string>([
@@ -170,6 +237,7 @@ const allowedInvoke = new Set<string>([
     "features:get",
     "features:patch",
     "patchnotes:get",
+    "documentation:get",
     "ocr:getLatest",
     "ocr:getTimers",
     "ocr:setTimer",
@@ -194,8 +262,12 @@ const allowedInvoke = new Set<string>([
     "plugins:getSidepanelTabs",
     "plugins:getOverlayViews",
     "profiles:setOverlaySupportTarget",
+    // Shopping List
+    "shoppingList:search",
+    "shoppingList:icon",
+    "shoppingList:savePrice",
 ]);
-const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged"]);
+const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show"]);
 contextBridge.exposeInMainWorld("ipc", {
     send: (channel: string, payload?: unknown) => {
         if (!allowedSend.has(channel))

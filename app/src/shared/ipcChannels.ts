@@ -27,6 +27,7 @@ export const IPC_CHANNELS = {
     SESSION_TABS_CLOSE: "sessionTabs:close",
     SESSION_TABS_SET_BOUNDS: "sessionTabs:setBounds",
     SESSION_TABS_SET_VISIBLE: "sessionTabs:setVisible",
+    SESSION_TABS_GET_OPEN: "sessionTabs:getOpenProfiles",
     SESSION_TABS_SET_SPLIT: "sessionTabs:setSplit",
     SESSION_TABS_SET_SPLIT_RATIO: "sessionTabs:setSplitRatio",
     SESSION_TABS_RESET: "sessionTabs:reset",
@@ -36,6 +37,15 @@ export const IPC_CHANNELS = {
     SESSION_WINDOW_CLOSE: "sessionWindow:close",
     SESSION_WINDOW_CLOSE_REQUESTED: "sessionWindow:closeRequested",
     SESSION_APPLY_LAYOUT: "session:applyLayout",
+
+    // Multi-window management
+    SESSION_CREATE_TAB_WINDOW: "session:createTabWindow",
+    SESSION_LIST_TAB_WINDOWS: "session:listTabWindows",
+    SESSION_CLOSE_TAB_WINDOW: "session:closeTabWindow",
+    SESSION_RENAME_TAB_WINDOW: "session:renameTabWindow",
+    SESSION_OPEN_TAB_WITH_LAYOUT: "session:openTabWithLayout",
+    SESSION_CREATE_WINDOW_WITH_LAYOUT: "session:createWindowWithLayout",
+    SESSION_UPDATE_WINDOW_TITLE: "session:updateWindowTitle",
 
     // Instance window
     INSTANCE_OPEN_WINDOW: "instance:openWindow",
@@ -71,6 +81,10 @@ export const IPC_CHANNELS = {
     TAB_ACTIVE_COLOR_LOAD: "tabActiveColor:load",
     TAB_ACTIVE_COLOR_SAVE: "tabActiveColor:save",
 
+    // Overlay dialog visibility
+    OVERLAYS_HIDE_FOR_DIALOG: "overlays:hideForDialog",
+    OVERLAYS_SHOW_AFTER_DIALOG: "overlays:showAfterDialog",
+
     // HUD/Overlay controls
     OVERLAY_TOGGLE_EDIT: "overlay:toggleEdit",
     OVERLAY_SET_BOUNDS: "overlay:setBounds",
@@ -83,6 +97,11 @@ export const IPC_CHANNELS = {
     HUDPANEL_SET_WIDTH: "hudpanel:setWidth",
     SIDEPANEL_TOGGLE: "sidepanel:toggle",
     EXP_UPDATE: "exp:update",
+
+    // Shopping List
+    SHOPPING_LIST_SEARCH: "shoppingList:search",
+    SHOPPING_LIST_ICON: "shoppingList:icon",
+    SHOPPING_LIST_SAVE_PRICE: "shoppingList:savePrice",
 
     // Buff-Wecker (optional module)
     BUFF_WECKER_SHOW_PANEL: "buff-wecker/show-panel",

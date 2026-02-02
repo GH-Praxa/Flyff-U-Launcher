@@ -25,6 +25,7 @@ let badges = [];
 let overlay = { ...DEFAULT_OVERLAY };
 let started = false;
 let hotkeysPaused = false;
+let focusPaused = false;
 let collapseState = {};
 
 const activeTimers = new Map(); // badgeId -> { startedAt, durationMs, remainingMs, interval }
@@ -468,7 +469,36 @@ function suspendHotkeys() {
 function resumeHotkeys() {
   if (!hotkeysPaused) return;
   hotkeysPaused = false;
-  refreshHotkeys();
+  if (!focusPaused) {
+    refreshHotkeys();
+  }
+}
+
+// Suspend global shortcuts when a child window (e.g. side panel) gains focus,
+// so keystrokes reach the focused window instead of being swallowed.
+function onBrowserWindowFocus(_event, win) {
+  if (!started || !win || win.isDestroyed()) return;
+  const isChildWindow = !!win.getParentWindow();
+  if (isChildWindow && !focusPaused) {
+    focusPaused = true;
+    // Unregister all global shortcuts so keys pass through to the child window
+    for (const accelerator of Array.from(hotkeyGroups.keys())) {
+      try {
+        globalShortcut.unregister(accelerator);
+      } catch (err) {
+        warn("Failed to unregister hotkey during focus suspend", accelerator, err?.message || err);
+      }
+    }
+    hotkeyGroups.clear();
+    hotkeyByBadge.clear();
+    log("Hotkeys suspended (child window focused)");
+  } else if (!isChildWindow && focusPaused) {
+    focusPaused = false;
+    if (!hotkeysPaused) {
+      refreshHotkeys();
+    }
+    log("Hotkeys resumed (main window focused)");
+  }
 }
 
 async function handleHotkeyPress(accelerator) {
@@ -511,7 +541,7 @@ async function handleHotkeyPress(accelerator) {
 
 function registerHotkey(badge) {
   unregisterHotkey(badge.id);
-  if (!started || hotkeysPaused || !badge.enabled || !badge.hotkey) return;
+  if (!started || hotkeysPaused || focusPaused || !badge.enabled || !badge.hotkey) return;
 
   const accelerator = badge.hotkey;
   let group = hotkeyGroups.get(accelerator);
@@ -541,7 +571,7 @@ function registerHotkey(badge) {
 }
 
 function refreshHotkeys() {
-  if (hotkeysPaused) return;
+  if (hotkeysPaused || focusPaused) return;
   for (const accelerator of Array.from(hotkeyGroups.keys())) {
     try {
       globalShortcut.unregister(accelerator);
@@ -1085,12 +1115,16 @@ async function init(context) {
 
 async function start() {
   started = true;
+  focusPaused = false;
   refreshHotkeys();
+  app.on("browser-window-focus", onBrowserWindowFocus);
   log("CD-Timer started");
 }
 
 async function stop() {
   started = false;
+  app.removeListener("browser-window-focus", onBrowserWindowFocus);
+  focusPaused = false;
   for (const timerId of Array.from(activeTimers.keys())) {
     stopTimer(timerId, { clearExpired: false });
   }

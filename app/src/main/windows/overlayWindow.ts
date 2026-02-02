@@ -1,11 +1,16 @@
 import { BrowserWindow } from "electron";
 import { debugLog, getDebugConfig } from "../debugConfig";
 import type { Locale } from "../../shared/schemas";
+export type OverlayWindowHandle = BrowserWindow & {
+    /** Re-bind the move handler to a new parent window. */
+    updateParent(newParent: BrowserWindow): void;
+};
+
 export function createOverlayWindow(parent: BrowserWindow, opts?: {
     preloadPath?: string;
     role?: "fighter" | "support";
     locale?: Locale;
-}) {
+}): OverlayWindowHandle {
     const overlayLocale = opts?.locale || "en";
     const win = new BrowserWindow({
         parent,
@@ -33,6 +38,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
 
     // Track move state to hide overlay during drag (prevents flicker)
     let moveTimeout: NodeJS.Timeout | null = null;
+    let currentParent: BrowserWindow = parent;
 
     const onParentMove = () => {
         if (win.isDestroyed()) return;
@@ -44,28 +50,19 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
         }, 100);
     };
 
-    const syncVisibility = () => {
-        if (win.isDestroyed())
-            return;
-        const shouldShow = parent.isVisible() && parent.isFocused();
-        if (shouldShow) {
-            if (!win.isVisible()) {
-                win.showInactive();
-            }
-            win.setAlwaysOnTop(true, "screen-saver");
-        }
-        else {
-            win.hide();
-        }
+    currentParent.on("move", onParentMove);
+
+    // Visibility is managed entirely by the sync loop in overlays.ts.
+    // This avoids conflicts from stale parent references after setParentWindow.
+
+    const handle = win as OverlayWindowHandle;
+    handle.updateParent = (newParent: BrowserWindow) => {
+        if (newParent === currentParent) return;
+        currentParent.removeListener("move", onParentMove);
+        currentParent = newParent;
+        currentParent.on("move", onParentMove);
+        win.setParentWindow(newParent);
     };
-    parent.on("move", onParentMove);
-    parent.on("focus", syncVisibility);
-    parent.on("blur", syncVisibility);
-    parent.on("show", syncVisibility);
-    parent.on("hide", syncVisibility);
-    parent.on("minimize", syncVisibility);
-    parent.on("restore", syncVisibility);
-    syncVisibility();
     win.webContents.on("console-message", (_event, level, message) => {
         // Always log overlay console messages for debugging
         console.log(`[OverlayWindow][${level}] ${message}`);
@@ -439,5 +436,5 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
         console.error("[OverlayWindow] did-fail-load:", errorCode, errorDescription);
     });
 
-    return win;
+    return handle;
 }

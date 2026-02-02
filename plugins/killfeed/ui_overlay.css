@@ -29,7 +29,8 @@ body {
 }
 
 .overlay-container.hidden {
-  display: none;
+  opacity: 0;
+  pointer-events: none !important;
 }
 
 /* Badge grid */
@@ -43,7 +44,8 @@ body {
 }
 
 .badge-grid.hidden {
-  display: none;
+  opacity: 0;
+  pointer-events: none !important;
 }
 
 /* Individual badge */

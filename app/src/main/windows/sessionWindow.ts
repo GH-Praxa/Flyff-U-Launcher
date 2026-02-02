@@ -1,5 +1,96 @@
 import { BrowserWindow } from "electron";
 import type { LoadView } from "../viewLoader";
+
+/**
+ * Creates a single session window (factory function for multi-window support).
+ */
+export async function createSessionWindow(opts: {
+    preloadPath: string;
+    loadView: LoadView;
+    shouldMaximize?: () => Promise<boolean>;
+    windowId: string;
+    params?: Record<string, string>;
+}): Promise<BrowserWindow> {
+    const win = new BrowserWindow({
+        width: 1380,
+        height: 860,
+        show: false,
+        backgroundColor: "#0b1220",
+        autoHideMenuBar: true,
+        webPreferences: {
+            preload: opts.preloadPath,
+            contextIsolation: true,
+            nodeIntegration: false,
+            backgroundThrottling: false,
+        },
+    });
+
+    win.setMaxListeners(0);
+    win.setMenuBarVisibility(false);
+    win.setAutoHideMenuBar(true);
+
+    let skipClosePrompt = false;
+
+    win.on("close", (e) => {
+        if (win.isDestroyed()) return;
+        if (skipClosePrompt) {
+            skipClosePrompt = false;
+            return;
+        }
+        e.preventDefault();
+        try {
+            win.webContents.send("sessionWindow:closeRequested", opts.windowId);
+        } catch (err) {
+            console.error("[SessionWindow]", err);
+            skipClosePrompt = true;
+            try {
+                win.close();
+            } catch (err2) {
+                console.error("[SessionWindow]", err2);
+            }
+        }
+    });
+
+    win.once("ready-to-show", async () => {
+        if (win.isDestroyed()) return;
+        if (opts.shouldMaximize) {
+            try {
+                if (await opts.shouldMaximize()) {
+                    win.maximize();
+                }
+            } catch (err) {
+                console.error("[SessionWindow] maximize failed", err);
+            }
+        }
+        win.show();
+    });
+
+    win.webContents.setWindowOpenHandler(() => ({
+        action: "allow",
+        overrideBrowserWindowOptions: {
+            autoHideMenuBar: true,
+            menuBarVisible: false,
+        },
+    }));
+    win.webContents.on("did-create-window", (child) => {
+        child.setMenu(null);
+        child.setMenuBarVisibility(false);
+    });
+
+    await opts.loadView(win, "session", opts.params);
+
+    // Expose method to allow closing without prompt
+    (win as any).__allowCloseWithoutPrompt = () => {
+        skipClosePrompt = true;
+    };
+
+    return win;
+}
+
+/**
+ * Legacy singleton controller for backward compatibility.
+ * @deprecated Use createSessionWindow and SessionRegistry instead for multi-window support.
+ */
 export function createSessionWindowController(opts: {
     preloadPath: string;
     loadView: LoadView;
@@ -31,6 +122,17 @@ export function createSessionWindowController(opts: {
         sessionWindow.setMaxListeners(0);
         sessionWindow.setMenuBarVisibility(false);
         sessionWindow.setAutoHideMenuBar(true);
+        sessionWindow.webContents.setWindowOpenHandler(() => ({
+            action: "allow",
+            overrideBrowserWindowOptions: {
+                autoHideMenuBar: true,
+                menuBarVisible: false,
+            },
+        }));
+        sessionWindow.webContents.on("did-create-window", (child) => {
+            child.setMenu(null);
+            child.setMenuBarVisibility(false);
+        });
         sessionWindow.on("close", (e) => {
             if (!sessionWindow || sessionWindow.isDestroyed())
                 return;

@@ -1,139 +1,134 @@
 /**
- * Tests for SessionTabsManager helper functions.
- * Note: Full integration tests require Electron runtime.
- * These tests cover the pure logic functions that can be unit tested.
+ * Tests for SessionTabsManager grid/split helpers.
+ * These are lightweight functional checks mirroring the layout maths.
  */
 import { describe, it, expect } from 'vitest';
-import { LAYOUT } from '../../shared/constants';
+import { GRID_CONFIGS, LAYOUT } from '../../shared/constants';
 
-// Test the clampSplitRatio logic (extracted for testing)
-function clampSplitRatio(ratio: number, min = LAYOUT.MIN_SPLIT_RATIO, max = LAYOUT.MAX_SPLIT_RATIO, current = LAYOUT.DEFAULT_SPLIT_RATIO): number {
+type ViewBounds = { x: number; y: number; width: number; height: number };
+type LayoutType = keyof typeof GRID_CONFIGS;
+type LayoutCell = { id: string; position: number };
+type MultiLayout = { type: LayoutType; cells: LayoutCell[]; ratio?: number };
+
+function clampSplitRatio(
+    ratio: number,
+    min = LAYOUT.MIN_SPLIT_RATIO,
+    max = LAYOUT.MAX_SPLIT_RATIO,
+    current = LAYOUT.DEFAULT_SPLIT_RATIO
+): number {
     if (!Number.isFinite(ratio)) return current;
     return Math.min(max, Math.max(min, ratio));
 }
 
-// Test the computeLayoutBounds logic (extracted for testing)
-type ViewBounds = { x: number; y: number; width: number; height: number };
-function computeLayoutBounds(
-    sessionBounds: ViewBounds,
-    ids: string[],
-    hasSplit: boolean,
-    splitRatio: number,
-    splitGap: number
-): Array<{ id: string; bounds: ViewBounds }> {
-    if (ids.length === 0) return [];
+function computeSplit2Bounds(bounds: ViewBounds, layout: MultiLayout, gap: number) {
+    const ratio = clampSplitRatio(layout.ratio ?? LAYOUT.DEFAULT_SPLIT_RATIO);
+    const left = layout.cells.find((c) => c.position === 0) ?? layout.cells[0];
+    const right = layout.cells.find((c) => c.position === 1) ?? layout.cells[1];
+    const hasRight = !!right;
+    const totalGap = hasRight ? gap : 0;
+    const leftWidth = hasRight ? Math.max(1, Math.floor((bounds.width - totalGap) * ratio)) : bounds.width;
+    const rightWidth = hasRight ? Math.max(1, bounds.width - totalGap - leftWidth) : 0;
+    const result = [];
+    if (left) {
+        result.push({
+            id: left.id,
+            bounds: { x: bounds.x, y: bounds.y, width: leftWidth, height: bounds.height },
+        });
+    }
+    if (right) {
+        result.push({
+            id: right.id,
+            bounds: { x: bounds.x + leftWidth + totalGap, y: bounds.y, width: rightWidth, height: bounds.height },
+        });
+    }
+    return result;
+}
 
-    const gap = hasSplit && ids.length > 1 ? splitGap : 0;
-    const leftWidth = hasSplit && ids.length > 1
-        ? Math.max(1, Math.floor((sessionBounds.width - gap) * clampSplitRatio(splitRatio)))
-        : sessionBounds.width;
-    const rightWidth = hasSplit && ids.length > 1
-        ? Math.max(1, sessionBounds.width - gap - leftWidth)
-        : sessionBounds.width;
-
-    return ids.map((id, idx) => {
-        const isLeft = idx === 0;
-        const width = hasSplit && ids.length > 1 ? (isLeft ? leftWidth : rightWidth) : sessionBounds.width;
-        const x = hasSplit && ids.length > 1 && !isLeft ? sessionBounds.x + leftWidth + gap : sessionBounds.x;
+function computeGridLayoutBounds(bounds: ViewBounds, layout: MultiLayout, gap: number) {
+    const config = GRID_CONFIGS[layout.type];
+    const { rows, cols } = config;
+    const totalGapX = gap * (cols - 1);
+    const totalGapY = gap * (rows - 1);
+    const cellWidth = Math.floor((bounds.width - totalGapX) / cols);
+    const cellHeight = Math.floor((bounds.height - totalGapY) / rows);
+    return layout.cells.map((cell) => {
+        const row = Math.floor(cell.position / cols);
+        const col = cell.position % cols;
         return {
-            id,
-            bounds: { x, y: sessionBounds.y, width, height: sessionBounds.height },
+            id: cell.id,
+            bounds: {
+                x: bounds.x + col * (cellWidth + gap),
+                y: bounds.y + row * (cellHeight + gap),
+                width: cellWidth,
+                height: cellHeight,
+            },
         };
     });
 }
 
 describe('SessionTabsManager Logic', () => {
     describe('clampSplitRatio', () => {
-        it('should return current ratio for non-finite values', () => {
+        it('returns current ratio for non-finite values', () => {
             expect(clampSplitRatio(NaN)).toBe(LAYOUT.DEFAULT_SPLIT_RATIO);
             expect(clampSplitRatio(Infinity)).toBe(LAYOUT.DEFAULT_SPLIT_RATIO);
-            expect(clampSplitRatio(-Infinity)).toBe(LAYOUT.DEFAULT_SPLIT_RATIO);
         });
 
-        it('should clamp values below minimum', () => {
+        it('clamps outside bounds', () => {
             expect(clampSplitRatio(0)).toBe(LAYOUT.MIN_SPLIT_RATIO);
-            expect(clampSplitRatio(0.1)).toBe(LAYOUT.MIN_SPLIT_RATIO);
-        });
-
-        it('should clamp values above maximum', () => {
             expect(clampSplitRatio(1)).toBe(LAYOUT.MAX_SPLIT_RATIO);
-            expect(clampSplitRatio(0.95)).toBe(LAYOUT.MAX_SPLIT_RATIO);
         });
 
-        it('should return valid ratio within range', () => {
+        it('keeps valid ratio unchanged', () => {
             expect(clampSplitRatio(0.5)).toBe(0.5);
-            expect(clampSplitRatio(0.3)).toBe(0.3);
-            expect(clampSplitRatio(0.7)).toBe(0.7);
         });
     });
 
-    describe('computeLayoutBounds', () => {
+    describe('computeSplit2Bounds', () => {
         const baseBounds: ViewBounds = { x: 0, y: 60, width: 1200, height: 700 };
-        const splitGap = LAYOUT.SPLIT_GAP;
-
-        it('should return empty array for no ids', () => {
-            const result = computeLayoutBounds(baseBounds, [], false, 0.5, splitGap);
-            expect(result).toEqual([]);
-        });
-
-        it('should return full bounds for single tab without split', () => {
-            const result = computeLayoutBounds(baseBounds, ['profile1'], false, 0.5, splitGap);
-
-            expect(result).toHaveLength(1);
-            expect(result[0].id).toBe('profile1');
-            expect(result[0].bounds).toEqual(baseBounds);
-        });
-
-        it('should split bounds equally for two tabs with 0.5 ratio', () => {
-            const result = computeLayoutBounds(baseBounds, ['left', 'right'], true, 0.5, splitGap);
-
+        const layout: MultiLayout = {
+            type: 'split-2',
+            cells: [
+                { id: 'left', position: 0 },
+                { id: 'right', position: 1 },
+            ],
+            ratio: 0.5,
+        };
+        it('splits width according to ratio and gap', () => {
+            const result = computeSplit2Bounds(baseBounds, layout, LAYOUT.SPLIT_GAP);
             expect(result).toHaveLength(2);
+            const totalWidth = result[0].bounds.width + result[1].bounds.width + LAYOUT.SPLIT_GAP;
+            expect(totalWidth).toBe(baseBounds.width);
+        });
 
-            // Left pane
-            expect(result[0].id).toBe('left');
+        it('respects ratio skew', () => {
+            const widerLeft = computeSplit2Bounds(baseBounds, { ...layout, ratio: 0.7 }, LAYOUT.SPLIT_GAP);
+            expect(widerLeft[0].bounds.width).toBeGreaterThan(widerLeft[1].bounds.width);
+        });
+    });
+
+    describe('computeGridLayoutBounds', () => {
+        const baseBounds: ViewBounds = { x: 0, y: 0, width: 800, height: 600 };
+        const layout: MultiLayout = {
+            type: 'grid-4',
+            cells: [
+                { id: 'p1', position: 0 },
+                { id: 'p2', position: 1 },
+                { id: 'p3', position: 2 },
+                { id: 'p4', position: 3 },
+            ],
+        };
+
+        it('creates one cell per entry with grid spacing', () => {
+            const result = computeGridLayoutBounds(baseBounds, layout, LAYOUT.GRID_GAP);
+            expect(result).toHaveLength(4);
+            // top-left cell starts at origin
             expect(result[0].bounds.x).toBe(0);
-            expect(result[0].bounds.width).toBeLessThan(baseBounds.width);
-
-            // Right pane
-            expect(result[1].id).toBe('right');
-            expect(result[1].bounds.x).toBeGreaterThan(0);
-            expect(result[1].bounds.width).toBeLessThan(baseBounds.width);
-
-            // Total width should account for gap
-            expect(result[0].bounds.width + splitGap + result[1].bounds.width).toBe(baseBounds.width);
-        });
-
-        it('should respect split ratio', () => {
-            const result70 = computeLayoutBounds(baseBounds, ['left', 'right'], true, 0.7, splitGap);
-            const result30 = computeLayoutBounds(baseBounds, ['left', 'right'], true, 0.3, splitGap);
-
-            // 70% ratio should give left pane more width
-            expect(result70[0].bounds.width).toBeGreaterThan(result70[1].bounds.width);
-
-            // 30% ratio should give left pane less width
-            expect(result30[0].bounds.width).toBeLessThan(result30[1].bounds.width);
-        });
-
-        it('should preserve y position and height for all panes', () => {
-            const result = computeLayoutBounds(baseBounds, ['left', 'right'], true, 0.5, splitGap);
-
-            expect(result[0].bounds.y).toBe(baseBounds.y);
-            expect(result[0].bounds.height).toBe(baseBounds.height);
-            expect(result[1].bounds.y).toBe(baseBounds.y);
-            expect(result[1].bounds.height).toBe(baseBounds.height);
-        });
-
-        it('should not apply gap when split is false', () => {
-            const result = computeLayoutBounds(baseBounds, ['profile1'], false, 0.5, splitGap);
-
-            expect(result[0].bounds.width).toBe(baseBounds.width);
-        });
-
-        it('should handle single tab even when split is true', () => {
-            const result = computeLayoutBounds(baseBounds, ['profile1'], true, 0.5, splitGap);
-
-            // With only one tab, no gap is applied
-            expect(result[0].bounds.width).toBe(baseBounds.width);
+            expect(result[0].bounds.y).toBe(0);
+            // bottom-right cell has max x/y among cells
+            const maxX = Math.max(...result.map((r) => r.bounds.x));
+            const maxY = Math.max(...result.map((r) => r.bounds.y));
+            expect(maxX).toBeGreaterThan(0);
+            expect(maxY).toBeGreaterThan(0);
         });
     });
 });

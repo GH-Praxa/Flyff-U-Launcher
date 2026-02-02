@@ -55,9 +55,17 @@ export const TIMINGS = {
 
 export const LAYOUT = {
     /** Launcher window width */
-    LAUNCHER_WIDTH: 980,
+    LAUNCHER_WIDTH: 1200,
     /** Launcher window height */
-    LAUNCHER_HEIGHT: 640,
+    LAUNCHER_HEIGHT: 970,
+    /** Minimum launcher window width */
+    LAUNCHER_MIN_WIDTH: 880,
+    /** Minimum launcher window height */
+    LAUNCHER_MIN_HEIGHT: 540,
+    /** Maximum launcher window width */
+    LAUNCHER_MAX_WIDTH: 2560,
+    /** Maximum launcher window height */
+    LAUNCHER_MAX_HEIGHT: 1440,
     /** Instance window width */
     INSTANCE_WIDTH: 1280,
     /** Instance window height */
@@ -72,6 +80,25 @@ export const LAYOUT = {
     MAX_SPLIT_RATIO: 0.8,
     /** Default split ratio (50%) */
     DEFAULT_SPLIT_RATIO: 0.5,
+    /** Grid gap zwischen BrowserViews (gleich SPLIT_GAP) */
+    GRID_GAP: 8,
+    /** Mindestbreite einer Grid-Zelle */
+    MIN_CELL_WIDTH: 200,
+    /** Mindesth\u00f6he einer Grid-Zelle */
+    MIN_CELL_HEIGHT: 150,
+} as const;
+
+// Grid Konfigurationen f\u00fcr Multi-View Layouts
+export const GRID_CONFIGS = {
+    "single": { rows: 1, cols: 1, maxViews: 1 },
+    "split-2": { rows: 1, cols: 2, maxViews: 2 },
+    "row-3": { rows: 1, cols: 3, maxViews: 3 },
+    "row-4": { rows: 1, cols: 4, maxViews: 4 },
+    "grid-4": { rows: 2, cols: 2, maxViews: 4 },
+    "grid-5": { rows: 2, cols: 3, maxViews: 5 },
+    "grid-6": { rows: 2, cols: 3, maxViews: 6 },
+    "grid-7": { rows: 2, cols: 4, maxViews: 7 },
+    "grid-8": { rows: 2, cols: 4, maxViews: 8 },
 } as const;
 
 // ============================================================================

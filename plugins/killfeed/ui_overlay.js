@@ -539,6 +539,7 @@
    * Bind overlay to a profile/browserview
    */
   async function bind(browserViewId, profileId) {
+    console.log('[KF Overlay] bind called:', browserViewId, profileId);
     currentBrowserViewId = browserViewId;
     currentProfileId = profileId;
 
@@ -546,7 +547,7 @@
       await unwrap(window.plugin.ipc.invoke('overlay:bind', browserViewId, profileId));
       await requestState();
     } catch (err) {
-      console.error('Failed to bind overlay:', err);
+      console.error('[KF Overlay] Failed to bind:', err);
     }
   }
 
@@ -554,11 +555,13 @@
    * Request current state
    */
   async function requestState() {
-    if (!currentProfileId) return;
+    if (!currentProfileId) { console.warn('[KF Overlay] requestState: no profileId'); return; }
 
     try {
-      const data = unwrap(await window.plugin.ipc.invoke('overlay:request:state', currentProfileId));
-      if (!data || !data.stats) return;
+      const raw = await window.plugin.ipc.invoke('overlay:request:state', currentProfileId);
+      const data = unwrap(raw);
+      console.log('[KF Overlay] requestState raw=', JSON.stringify(raw)?.slice(0,200), 'data=', data ? Object.keys(data) : null, 'overlayVisible=', data?.layout?.overlayVisible);
+      if (!data || !data.stats) { console.warn('[KF Overlay] requestState: no data/stats', data); return; }
 
       currentStats = data.stats;
 
@@ -596,7 +599,7 @@
         updateVisibility();
       }
     } catch (err) {
-      console.error('Failed to request state:', err);
+      console.error('[KF Overlay] Failed to request state:', err);
     }
   }
 

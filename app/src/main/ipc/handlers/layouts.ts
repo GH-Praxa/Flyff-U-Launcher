@@ -2,6 +2,7 @@
  * IPC handlers for tab layout operations.
  */
 import type { BrowserWindow } from "electron";
+import { BrowserWindow as BW } from "electron";
 import { SafeHandle, IpcEvent, assertValidId, NotFoundError, assertValid } from "../common";
 import { TabLayout, TabLayoutInput, TabLayoutInputSchema } from "../../../shared/schemas";
 
@@ -14,13 +15,32 @@ export type TabLayoutsStore = {
 
 export type SessionWindowController = {
     ensure: (params?: Record<string, string>) => Promise<BrowserWindow>;
+    get: () => BrowserWindow | null;
+    closeWithoutPrompt: () => void;
     isNew: () => boolean;
+};
+
+export type SessionTabsController = {
+    hasLoadedProfile: (profileId: string) => boolean;
+    getLoadedProfileIds: () => string[];
+    reset: () => void;
 };
 
 export type LayoutHandlerOptions = {
     tabLayouts: TabLayoutsStore;
     sessionWindow: SessionWindowController;
+    sessionTabs: SessionTabsController;
+    /** Send toast to launcher window */
+    showToast?: (message: string, tone?: "info" | "success" | "error") => void;
 };
+
+function broadcastLayoutsChanged(): void {
+    for (const win of BW.getAllWindows()) {
+        if (!win.isDestroyed()) {
+            win.webContents.send("tabLayouts:changed");
+        }
+    }
+}
 
 export function registerLayoutHandlers(
     safeHandle: SafeHandle,
@@ -55,14 +75,16 @@ export function registerLayoutHandlers(
         };
 
         assertValid(TabLayoutInputSchema, normalized, "tab layout input");
-        return await opts.tabLayouts.save(normalized);
+        const result = await opts.tabLayouts.save(normalized);
+        broadcastLayoutsChanged();
+        return result;
     });
-
-
 
     safeHandle("tabLayouts:delete", async (_e: IpcEvent, layoutId: string) => {
         assertValidId(layoutId, "layoutId");
-        return await opts.tabLayouts.delete(layoutId);
+        const result = await opts.tabLayouts.delete(layoutId);
+        broadcastLayoutsChanged();
+        return result;
     });
 
     // Allows renderer to pull any pending layout if the apply event was missed (e.g. during startup races)
@@ -90,13 +112,44 @@ export function registerLayoutHandlers(
                 throw new NotFoundError("layout not found");
             }
 
+            // Extract profile IDs from layout (tabs array contains all profile IDs)
+            const layoutProfileIds = layout.tabs;
+
+            // Check if any profile in the layout is already online
+            const alreadyOnlineProfiles = layoutProfileIds.filter(id =>
+                opts.sessionTabs.hasLoadedProfile(id)
+            );
+
+            if (alreadyOnlineProfiles.length > 0) {
+                // Show toast message about already online profiles
+                const profileList = alreadyOnlineProfiles.join(", ");
+                if (opts.showToast) {
+                    opts.showToast(
+                        alreadyOnlineProfiles.length === 1
+                            ? `Profil "${profileList}" ist bereits online`
+                            : `Profile "${profileList}" sind bereits online`,
+                        "error"
+                    );
+                }
+                return false;
+            }
+
+            // If a session window exists, close it and reset tabs to start fresh
+            const existingWin = opts.sessionWindow.get();
+            if (existingWin && !existingWin.isDestroyed()) {
+                opts.sessionTabs.reset();
+                opts.sessionWindow.closeWithoutPrompt();
+                // Small delay to ensure window is fully closed before creating new one
+                await new Promise<void>(resolve => setTimeout(resolve, 100));
+            }
+
             // Only update pending if this is the most recent request
             if (applyTimestamp >= pendingLayoutTimestamp) {
                 pendingLayout = layout;
                 pendingLayoutTimestamp = applyTimestamp;
             }
 
-            // Ensure window exists (passing layoutId for query params) and focus it
+            // Create new window (passing layoutId for query params) and focus it
             const win = await opts.sessionWindow.ensure({ layoutId });
             const windowIsNew = opts.sessionWindow.isNew();
             win.show();

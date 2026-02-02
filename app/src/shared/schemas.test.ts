@@ -260,6 +260,27 @@ describe('Schemas', () => {
             };
             expect(TabLayoutSchema.safeParse(layout).success).toBe(true);
         });
+
+        it('should accept layout with multi-view grid', () => {
+            const layout = {
+                id: 'layout-2',
+                name: 'Grid Layout',
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: '2024-01-01T00:00:00Z',
+                tabs: ['p1', 'p2', 'p3', 'p4'],
+                split: {
+                    type: 'grid-4',
+                    cells: [
+                        { id: 'p1', position: 0 },
+                        { id: 'p2', position: 1 },
+                        { id: 'p3', position: 2 },
+                        { id: 'p4', position: 3 },
+                    ],
+                    activePosition: 1,
+                },
+            };
+            expect(TabLayoutSchema.safeParse(layout).success).toBe(true);
+        });
     });
 
     describe('TabLayoutInputSchema', () => {

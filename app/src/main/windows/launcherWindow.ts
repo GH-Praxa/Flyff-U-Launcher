@@ -1,16 +1,26 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import { hardenWebviews } from "../security/harden";
 import type { LoadView } from "../viewLoader";
 import flyffIcon from "../../assets/icons/flyff.png";
 import { LAYOUT, TIMINGS } from "../../shared/constants";
+import { fitLauncherSizeToWorkArea, normalizeLauncherSize } from "../../shared/launcherSize";
 export function createLauncherWindow(opts: {
     preloadPath: string;
     loadView: LoadView;
     onClosed?: () => void;
+    width?: number;
+    height?: number;
 }) {
+    const requestedSize = normalizeLauncherSize({ width: opts.width, height: opts.height });
+    const workArea = screen.getPrimaryDisplay().workAreaSize;
+    const { width, height } = fitLauncherSizeToWorkArea(requestedSize, workArea);
+    const minWidth = Math.min(workArea.width, LAYOUT.LAUNCHER_MIN_WIDTH);
+    const minHeight = Math.min(workArea.height, LAYOUT.LAUNCHER_MIN_HEIGHT);
     const win = new BrowserWindow({
-        width: LAYOUT.LAUNCHER_WIDTH,
-        height: LAYOUT.LAUNCHER_HEIGHT,
+        width,
+        height,
+        minWidth,
+        minHeight,
         show: false,
         backgroundColor: "#0b1220",
         webPreferences: {
@@ -23,6 +33,17 @@ export function createLauncherWindow(opts: {
     });
     win.setMenuBarVisibility(false);
     win.setMenu(null);
+    win.webContents.setWindowOpenHandler(() => ({
+        action: "allow",
+        overrideBrowserWindowOptions: {
+            autoHideMenuBar: true,
+            menuBarVisible: false,
+        },
+    }));
+    win.webContents.on("did-create-window", (child) => {
+        child.setMenu(null);
+        child.setMenuBarVisibility(false);
+    });
     hardenWebviews(win);
     // if (!app.isPackaged) {
     //     win.webContents.openDevTools({ mode: "detach" });

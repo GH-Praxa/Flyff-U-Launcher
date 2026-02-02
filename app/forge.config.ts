@@ -40,6 +40,15 @@ if (fs.existsSync(patchnotesDir)) {
     console.warn("Patchnotes directory not found at", patchnotesDir, "- bundle will skip it.");
 }
 
+// Ensure docs are available in packaged builds (outside asar)
+const docsDir = path.resolve(__dirname, "docs");
+if (fs.existsSync(docsDir)) {
+    extraResource.push(docsDir);
+} else {
+    // eslint-disable-next-line no-console
+    console.warn("Docs directory not found at", docsDir, "- bundle will skip it.");
+}
+
 const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
 if (fs.existsSync(tesseractDir)) {
     extraResource.push(tesseractDir);

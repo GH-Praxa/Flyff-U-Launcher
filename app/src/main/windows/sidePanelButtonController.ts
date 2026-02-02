@@ -8,9 +8,12 @@ type Bounds = { x: number; y: number; width: number; height: number };
 
 type PositionMap = Record<string, { offsetX: number; offsetY: number }>;
 
+type TabsLike = { getBounds(profileId: string): Bounds; getActiveId?: () => string | null; isActive?: (id: string) => boolean };
+
 export function createSidePanelButtonController(opts: {
     sessionWindow: { get(): BrowserWindow | null };
-    sessionTabs: { getBounds(profileId: string): Bounds; getActiveId?: () => string | null; isActive?: (id: string) => boolean };
+    sessionTabs: TabsLike;
+    getRegistryEntries?: () => Array<{ window: BrowserWindow; tabsManager: TabsLike }>;
     profiles: { getOverlayTargetId(): Promise<string | null> };
     preloadPath?: string;
     pollMs?: number;
@@ -24,10 +27,31 @@ export function createSidePanelButtonController(opts: {
     let followTimer: NodeJS.Timeout | null = null;
     let posCache: PositionMap = {};
     let lastProfileId: string | null = null;
+    let currentParent: BrowserWindow | null = null;
+    let currentTabs: TabsLike = opts.sessionTabs;
     let parentListenersAttached = false;
     let onParentMove: (() => void) | null = null;
     let onParentResize: (() => void) | null = null;
     let clickThrough = !!opts.clickThrough;
+
+    /** Resolve parent window + tabs for a profile. Updates currentParent/currentTabs. */
+    function resolveHost(profileId: string): BrowserWindow | null {
+        const sessionWin = opts.sessionWindow.get();
+        if (sessionWin && !sessionWin.isDestroyed() &&
+            (typeof opts.sessionTabs.isActive !== "function" || opts.sessionTabs.isActive(profileId))) {
+            currentParent = sessionWin;
+            currentTabs = opts.sessionTabs;
+            return sessionWin;
+        }
+        for (const entry of (opts.getRegistryEntries?.() ?? [])) {
+            if (entry.window.isDestroyed()) continue;
+            if (typeof entry.tabsManager.isActive === "function" && !entry.tabsManager.isActive(profileId)) continue;
+            currentParent = entry.window;
+            currentTabs = entry.tabsManager;
+            return entry.window;
+        }
+        return null;
+    }
 
     function updateButtonProfileId(profileId: string | null) {
         if (!win || win.isDestroyed())
@@ -90,7 +114,7 @@ export function createSidePanelButtonController(opts: {
                 wnd.setFocusable(!clickThrough);
             }
             if (clickThrough && wnd.isFocused()) {
-                opts.sessionWindow.get()?.focus();
+                (currentParent && !currentParent.isDestroyed() ? currentParent : opts.sessionWindow.get())?.focus();
             }
             void wnd.webContents.executeJavaScript(
                 clickThrough
@@ -155,7 +179,7 @@ export function createSidePanelButtonController(opts: {
 
     function detachParentListeners(): void {
         if (!parentListenersAttached) return;
-        const parent = opts.sessionWindow.get();
+        const parent = currentParent;
         if (parent && !parent.isDestroyed()) {
             if (onParentMove) parent.off("move", onParentMove);
             if (onParentResize) parent.off("resize", onParentResize);
@@ -168,9 +192,9 @@ export function createSidePanelButtonController(opts: {
 
     function persistPosition() {
         if (!win || !activeProfile) return;
-        const parent = opts.sessionWindow.get();
-        if (!parent) return;
-        const view = opts.sessionTabs.getBounds(activeProfile);
+        const parent = currentParent;
+        if (!parent || parent.isDestroyed()) return;
+        const view = currentTabs.getBounds(activeProfile);
         const content = parent.getContentBounds();
         const wb = win.getBounds();
         const baseX = content.x + view.x;
@@ -182,9 +206,9 @@ export function createSidePanelButtonController(opts: {
     }
 
     function moveToProfile(profileId: string): void {
-        const parent = opts.sessionWindow.get();
+        const parent = resolveHost(profileId);
         if (!parent) return;
-        const view = opts.sessionTabs.getBounds(profileId);
+        const view = currentTabs.getBounds(profileId);
         const offset = getOffset(profileId, view);
         const content = parent.getContentBounds();
         const x = Math.round(content.x + view.x + offset.offsetX);
@@ -202,21 +226,22 @@ export function createSidePanelButtonController(opts: {
 
     async function tick(): Promise<void> {
         const overlayTargetId = await opts.profiles.getOverlayTargetId();
-        const activeId = opts.sessionTabs.getActiveId?.() ?? null;
-        const isActiveTarget = Boolean(
-            overlayTargetId &&
-            activeId &&
-            activeId === overlayTargetId &&
-            (typeof opts.sessionTabs.isActive !== "function" || opts.sessionTabs.isActive(overlayTargetId))
-        );
-        if (!isActiveTarget) {
+        if (!overlayTargetId) {
             activeProfile = null;
             lastProfileId = null;
-            if (win && !win.isDestroyed()) {
-                win.hide();
-            }
+            if (win && !win.isDestroyed()) win.hide();
             return;
         }
+
+        // Check if profile is active in any window (legacy or registry)
+        const host = resolveHost(overlayTargetId);
+        if (!host) {
+            activeProfile = null;
+            lastProfileId = null;
+            if (win && !win.isDestroyed()) win.hide();
+            return;
+        }
+
         activeProfile = overlayTargetId;
         lastProfileId = overlayTargetId;
         moveToProfile(overlayTargetId);

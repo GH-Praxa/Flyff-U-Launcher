@@ -2,30 +2,18 @@ import { app } from "electron";
 import path from "path";
 import { generateId } from "../../shared/utils";
 import { createFileStore } from "../../shared/fileStore";
-
-export type TabLayoutSplit = {
-    leftId: string;
-    rightId: string;
-    ratio?: number;
-};
-export type TabLayout = {
-    id: string;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-    tabs: string[];
-    split?: TabLayoutSplit | null;
-    activeId?: string | null;
-    loggedOutChars?: string[];
-};
-export type TabLayoutInput = {
-    id?: string;
-    name: string;
-    tabs: string[];
-    split?: TabLayoutSplit | null;
-    activeId?: string | null;
-    loggedOutChars?: string[];
-};
+import { GRID_CONFIGS } from "../../shared/constants";
+import {
+    MultiViewLayoutSchema,
+    SavedLayoutTabSchema,
+    isLegacySplit,
+    migrateToMultiView,
+    type MultiViewLayout,
+    type SavedLayoutTab,
+    type TabLayout,
+    type TabLayoutInput,
+    type TabLayoutSplit,
+} from "../../shared/schemas";
 
 function clampRatio(r: unknown) {
     const n = Number(r);
@@ -34,14 +22,65 @@ function clampRatio(r: unknown) {
     return Math.min(0.8, Math.max(0.2, n));
 }
 function normalizeSplit(v: unknown): TabLayoutSplit | null {
-    if (!v || typeof v !== "object")
+    if (v === null || v === undefined)
         return null;
-    const obj = v as Record<string, unknown>;
-    if (!obj.leftId || !obj.rightId || typeof obj.leftId !== "string" || typeof obj.rightId !== "string")
+    if (isLegacySplit(v)) {
+        const migrated = migrateToMultiView({
+            leftId: String((v as { leftId: string }).leftId),
+            rightId: String((v as { rightId: string }).rightId),
+            ratio: clampRatio((v as { ratio?: number }).ratio),
+        });
+        return { ...migrated, ratio: clampRatio(migrated.ratio) };
+    }
+    const parsed = MultiViewLayoutSchema.safeParse(v);
+    if (!parsed.success)
         return null;
-    const ratio = clampRatio(obj.ratio);
-    return { leftId: obj.leftId, rightId: obj.rightId, ratio: ratio ?? undefined };
+    const layout = parsed.data;
+    const config = GRID_CONFIGS[layout.type];
+    const maxPositions = config.rows * config.cols;
+    const unique = new Map<number, { id: string; position: number }>();
+    for (const cell of layout.cells) {
+        const pos = Math.max(0, Math.min(maxPositions - 1, cell.position));
+        if (!unique.has(pos)) {
+            unique.set(pos, { id: cell.id, position: pos });
+        }
+    }
+    const cells = Array.from(unique.values()).sort((a, b) => a.position - b.position).slice(0, config.maxViews);
+    if (cells.length === 0)
+        return null;
+    const ratio = layout.type === "split-2" ? clampRatio(layout.ratio) : undefined;
+    const activePosition = layout.activePosition !== undefined && cells.some((c) => c.position === layout.activePosition)
+        ? layout.activePosition
+        : cells[0].position;
+    return {
+        type: layout.type,
+        cells,
+        ratio,
+        activePosition,
+    } as MultiViewLayout;
 }
+function normalizeLayoutsArray(v: unknown): SavedLayoutTab[] | undefined {
+    if (!Array.isArray(v) || v.length === 0)
+        return undefined;
+    const result: SavedLayoutTab[] = [];
+    for (const item of v) {
+        if (!item || typeof item !== "object")
+            continue;
+        const obj = item as Record<string, unknown>;
+        const layoutData = normalizeSplit(obj.layout);
+        if (!layoutData || !("type" in layoutData))
+            continue;
+        const parsed = SavedLayoutTabSchema.safeParse({
+            name: typeof obj.name === "string" ? obj.name : undefined,
+            layout: layoutData,
+        });
+        if (parsed.success) {
+            result.push(parsed.data);
+        }
+    }
+    return result.length > 0 ? result : undefined;
+}
+
 function normalizeLayout(v: unknown): TabLayout | null {
     if (!v || typeof v !== "object")
         return null;
@@ -61,6 +100,7 @@ function normalizeLayout(v: unknown): TabLayout | null {
         updatedAt,
         tabs,
         split: normalizeSplit(obj.split),
+        layouts: normalizeLayoutsArray(obj.layouts),
         activeId: typeof obj.activeId === "string" ? obj.activeId : null,
         loggedOutChars,
     };

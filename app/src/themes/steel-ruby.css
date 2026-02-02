@@ -1,0 +1,139 @@
+﻿:root.theme-steel-ruby{
+  --bg: #0e1014;
+  --panel: #14181f;
+  --panel2: #1b2028;
+  --stroke: #2b313c;
+  --text: #f3f4f6;
+  --muted: #a9adb8;
+  --blue: #d65a54;
+  --blue2: #f08a82;
+  --danger: #e35d63;
+  --shadow: 0 14px 36px rgba(0,0,0,0.55);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #48d6a6;
+  --accent-rgb: 214,90,84;
+  --danger-rgb: 227,93,99;
+  --green-rgb: 72,214,166;
+}
+
+.theme-steel-ruby body{
+  background:
+    radial-gradient(circle at 18% 22%, rgba(var(--accent-rgb),0.10), transparent 36%),
+    radial-gradient(circle at 82% 12%, rgba(var(--danger-rgb),0.12), transparent 40%),
+    linear-gradient(180deg, #0e1014 0%, #0b0d11 55%, #10131a 100%);
+}
+
+.theme-steel-ruby #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.14), rgba(0,0,0,0.82));
+  border-bottom-color: var(--stroke);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04);
+}
+
+.theme-steel-ruby #app.sessionRoot .tabBtn{
+  border-color: rgba(var(--accent-rgb),0.35);
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.26));
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  height: 34px;
+  gap: 10px;
+  box-shadow:
+    0 8px 18px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.theme-steel-ruby #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.5);
+  background: linear-gradient(145deg, rgba(var(--accent-rgb),0.12), rgba(0,0,0,0.30));
+  box-shadow:
+    0 10px 20px rgba(0,0,0,0.38),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+  transform: translateY(-1px);
+}
+.theme-steel-ruby #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.28);
+}
+.theme-steel-ruby #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(145deg, rgba(var(--tab-active-rgb),0.26), rgba(0,0,0,0.32));
+  border-color: rgba(var(--tab-active-rgb),0.78);
+  box-shadow:
+    0 0 0 1px rgba(var(--tab-active-rgb),0.30),
+    0 10px 22px rgba(0,0,0,0.44),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+  transform: translateY(-1px);
+}
+
+.theme-steel-ruby #app.sessionRoot .tabBtn .layoutTabChip{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(var(--accent-rgb),0.32);
+  border-radius: 12px;
+  padding: 3px 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.theme-steel-ruby #app.sessionRoot .tabBtn .tabClose{
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.theme-steel-ruby .btn.primary{
+  background: linear-gradient(135deg, #d95c5a, #f08a7c);
+  border-color: rgba(255,255,255,0.35);
+  color: #120b0c;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 14px 30px rgba(0,0,0,0.45);
+}
+.theme-steel-ruby .btn.primary:hover{
+  background: linear-gradient(135deg, #e46c6b, #f5a093);
+  border-color: rgba(255,255,255,0.45);
+}
+.theme-steel-ruby .topbar .btn.primary{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(var(--accent-rgb),0.3);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.18), 0 10px 20px rgba(0,0,0,0.35);
+}
+.theme-steel-ruby .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(var(--accent-rgb),0.55);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.32), 0 12px 24px rgba(0,0,0,0.45);
+}
+
+.theme-steel-ruby .panel{
+  background: linear-gradient(145deg, rgba(20,24,31,0.94), rgba(23,28,36,0.98));
+  border-color: rgba(255,255,255,0.04);
+  box-shadow: inset 0 0 16px rgba(0,0,0,0.35);
+}
+
+.theme-steel-ruby .input, .theme-steel-ruby .select, .theme-steel-ruby .textarea{
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.08);
+  color: var(--text);
+}
+.theme-steel-ruby .input:focus, .theme-steel-ruby .select:focus, .theme-steel-ruby .textarea:focus{
+  border-color: rgba(var(--accent-rgb),0.55);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.18);
+}
+
+.theme-steel-ruby .badge, .theme-steel-ruby .pill{
+  background: rgba(var(--accent-rgb),0.12);
+  color: var(--text);
+  border-color: rgba(var(--accent-rgb),0.32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 16px rgba(0,0,0,0.28);
+  border-radius: 999px;
+}
+
+.theme-steel-ruby .badge.jobBadge{
+  padding: 4px 12px 4px 10px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.22));
+  border: 1px solid rgba(var(--accent-rgb),0.32);
+  letter-spacing: 0.02em;
+}
+
+.theme-steel-ruby .jobBadgeIcon{
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.30), rgba(var(--accent-rgb),0.08));
+  border: 1px solid rgba(var(--accent-rgb),0.40);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.32);
+}
+
