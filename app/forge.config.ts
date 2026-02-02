@@ -102,6 +102,7 @@ const writeLatestYml = (setupExePath: string, version: string): string => {
     return target;
 };
 
+const isPrerelease = process.env.PUBLISH_PRERELEASE === "true";
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
@@ -211,8 +212,10 @@ const config: ForgeConfig = {
                 owner: "GH-Praxa",
                 name: "Flyff-U-Launcher",
             },
-            prerelease: false,
-            draft: true,
+            // Wenn der Workflow mit input `prerelease=true` läuft, veröffentlichen wir als Pre-Release
+            // und heben den Draft-Status auf, damit electron-updater die Version zum Testen ziehen kann.
+            prerelease: isPrerelease,
+            draft: !isPrerelease,
         }),
     ],
 };

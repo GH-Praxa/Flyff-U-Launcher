@@ -4,13 +4,26 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      use_self_hosted:
+        description: "Run on a self-hosted Windows runner (fallback if hosted is busy)"
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: "Mark GitHub release as pre-release (for testing update channel)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.use_self_hosted && fromJson('["self-hosted","windows"]') || fromJson('["windows-2022"]') }}
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -31,4 +44,5 @@ jobs:
         working-directory: app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
         run: npm run publish
