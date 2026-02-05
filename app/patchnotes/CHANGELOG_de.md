@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 2.3.0
+
+### 🐛 Fehlerbehebungen
+
+- OCR-Werte (Sidepanel) werden jetzt korrekt erkannt, wenn das Spiel in einem separaten Multi-Window-Fenster läuft
+- ROI-Kalibrierung öffnet nicht mehr fälschlicherweise eine neue Session, sondern nutzt das bestehende Spielfenster
+
+### ✨ Verbesserungen
+
+- Dokumentations-Accordions verwenden jetzt native HTML5-Elemente (kein JavaScript mehr nötig)
+
+---
+
 ## 🆕 Version 2.2.0
 
 ### ➕ Neue Funktionen

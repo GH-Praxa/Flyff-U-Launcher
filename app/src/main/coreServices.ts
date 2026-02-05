@@ -131,6 +131,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         overlayTarget: null, // No direct overlay dependency in core
         preloadPath: opts.preloadPath,
         followIntervalMs: opts.followIntervalMs,
+        sessionRegistry,
     });
 
     // Tab window factory for multi-window support

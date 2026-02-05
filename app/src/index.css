@@ -3186,6 +3186,11 @@ html, body{
   font-size: 14px;
   font-weight: 600;
   transition: background 0.15s ease;
+  list-style: none;
+}
+
+.docAccordionHeader::-webkit-details-marker{
+  display: none;
 }
 
 .docAccordionHeader:hover{
@@ -3202,20 +3207,15 @@ html, body{
   color: var(--muted);
 }
 
-.docAccordion.open .docAccordionIcon{
+details.docAccordion[open] .docAccordionIcon{
   transform: rotate(90deg);
 }
 
 .docAccordionContent{
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
   padding: 0 16px;
 }
 
-.docAccordion.open .docAccordionContent{
-  /* allow very long documentation sections without cutting off content */
-  max-height: 9999px;
+details.docAccordion[open] .docAccordionContent{
   padding: 16px;
   border-top: 1px solid var(--stroke);
 }

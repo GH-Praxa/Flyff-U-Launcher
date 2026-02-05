@@ -321,6 +321,7 @@ app.whenReady().then(async () => {
             roiStore: services.roiStore,
             sessionTabs: services.sessionTabs,
             sessionWindow: services.sessionWindow,
+            sessionRegistry: services.sessionRegistry,
             instances: {
                 get: (id: string) => {
                     const inst = services.instances.get(id);

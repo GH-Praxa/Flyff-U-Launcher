@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Sürüm 2.3.0
+
+### 🐛 Düzeltmeler
+
+- OCR değerleri (yan panel) artık oyun ayrı bir çoklu pencere oturumunda çalışırken doğru algılanıyor
+- ROI kalibrasyonu artık yanlışlıkla yeni bir oturum açmıyor, mevcut oyun penceresini kullanıyor
+
+### ✨ İyileştirmeler
+
+- Dokümantasyon akordeonları artık yerel HTML5 öğelerini kullanıyor (JavaScript artık gerekli değil)
+
+---
+
 ## 🆕 Sürüm 2.2.0
 
 ### ➕ Yeni Özellikler

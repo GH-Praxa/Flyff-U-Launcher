@@ -7238,7 +7238,7 @@ async function renderLauncher(root: HTMLElement) {
 
 
 
-                processed += `<div class="docAccordion"><button class="docAccordionHeader"><span class="docAccordionTitle">${escapeHtml(title)}</span><span class="docAccordionIcon">&#9654;</span></button><div class="docAccordionContent">${body}</div></div>`;
+                processed += `<details class="docAccordion"><summary class="docAccordionHeader"><span class="docAccordionTitle">${escapeHtml(title)}</span><span class="docAccordionIcon">&#9654;</span></summary><div class="docAccordionContent">${body}</div></details>`;
 
 
 
@@ -7722,39 +7722,6 @@ async function renderLauncher(root: HTMLElement) {
 
 
 
-                // Add click handlers for accordion headers
-
-
-
-                docsContent.querySelectorAll(".docAccordionHeader").forEach((btn) => {
-
-
-
-                    btn.addEventListener("click", () => {
-
-
-
-                        const accordion = btn.parentElement;
-
-
-
-                        if (accordion) {
-
-
-
-                            accordion.classList.toggle("open");
-
-
-
-                        }
-
-
-
-                    });
-
-
-
-                });
 
                 // Add click handlers for action links (e.g. action:openPlugin:api-fetch)
                 docsContent.querySelectorAll<HTMLAnchorElement>(".docActionLink").forEach((link) => {

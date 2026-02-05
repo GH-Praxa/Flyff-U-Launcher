@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 2.3.0
+
+### 🐛 Corrections
+
+- Les valeurs OCR (panneau latéral) sont désormais correctement détectées lorsque le jeu est lancé dans une fenêtre multi-fenêtres distincte
+- La calibration ROI n'ouvre plus par erreur une nouvelle session mais utilise la fenêtre de jeu existante
+
+### ✨ Améliorations
+
+- Les accordéons de la documentation utilisent désormais des éléments HTML5 natifs (plus de JavaScript nécessaire)
+
+---
+
 ## 🆕 Version 2.2.0
 
 ### ➕ Nouvelles fonctionnalités

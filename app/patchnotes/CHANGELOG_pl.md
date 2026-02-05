@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Wersja 2.3.0
+
+### 🐛 Poprawki
+
+- Wartości OCR (panel boczny) są teraz poprawnie wykrywane, gdy gra działa w osobnym oknie multi-window
+- Kalibracja ROI nie otwiera już błędnie nowej sesji, lecz używa istniejącego okna gry
+
+### ✨ Ulepszenia
+
+- Akordeony dokumentacji korzystają teraz z natywnych elementów HTML5 (JavaScript nie jest już potrzebny)
+
+---
+
 ## 🆕 Wersja 2.2.0
 
 ### ➕ Nowe funkcje

@@ -33,6 +33,12 @@ export type OverlayTargetController = {
     refreshFromStore(): Promise<void>;
 };
 
+/** Entry from the multi-window session registry */
+export type SessionRegistryEntry = {
+    window: BrowserWindow;
+    tabsManager: SessionTabsManager;
+};
+
 /** Options for creating the ROI controller */
 export interface RoiControllerOptions {
     instances: InstanceRegistry;
@@ -42,6 +48,11 @@ export interface RoiControllerOptions {
     overlayTarget: OverlayTargetController | null;
     preloadPath: string;
     followIntervalMs?: number;
+    /** Multi-window session registry – when present, ROI will search all
+     *  session windows for the target profile before opening a new one. */
+    sessionRegistry?: {
+        list(): SessionRegistryEntry[];
+    };
 }
 
 /**
@@ -56,6 +67,7 @@ export function createRoiController(options: RoiControllerOptions) {
         overlayTarget,
         preloadPath,
         followIntervalMs = TIMINGS.OVERLAY_FOLLOW_MS,
+        sessionRegistry,
     } = options;
 
     // When calibrating only a subset (currently rmExp for supporter),
@@ -81,13 +93,33 @@ export function createRoiController(options: RoiControllerOptions) {
 
     /**
      * Opens the ROI calibrator for a profile.
-     * Tries instance window first, falls back to session tab.
+     * Tries instance window first, then all session windows (legacy + registry),
+     * falls back to opening a new session tab in the legacy window.
      */
     async function open(profileId: string, roiKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp"): Promise<boolean> {
+        // 1. Try instance window
         const inst = instances.get(profileId);
         if (inst && !inst.isDestroyed()) {
             return openFromInstance(profileId, inst, roiKey);
         }
+
+        // 2. Try legacy singleton session tabs
+        const legacyView = sessionTabs.getViewByProfile(profileId);
+        if (legacyView) {
+            return openFromSessionTab(profileId, roiKey);
+        }
+
+        // 3. Try multi-window session registry
+        if (sessionRegistry) {
+            for (const entry of sessionRegistry.list()) {
+                const regView = entry.tabsManager.getViewByProfile(profileId);
+                if (regView && entry.window && !entry.window.isDestroyed()) {
+                    return openFromRegistryEntry(profileId, entry, roiKey);
+                }
+            }
+        }
+
+        // 4. Fallback: open in legacy session tab (creates new tab)
         return openFromSessionTab(profileId, roiKey);
     }
 
@@ -125,6 +157,89 @@ export function createRoiController(options: RoiControllerOptions) {
                 debugLog("ocr", "[ROI CALIB MAIN] roiStore.set completed");
                 await overlayTarget?.refreshFromStore();
                 debugLog("ocr", "[ROI CALIB MAIN] refreshFromStore completed");
+            },
+            follow: { getBounds: getFollowBounds, intervalMs: followIntervalMs },
+        });
+
+        return true;
+    }
+
+    async function openFromRegistryEntry(
+        profileId: string,
+        entry: SessionRegistryEntry,
+        roiKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp",
+    ): Promise<boolean> {
+        const win = entry.window;
+        const tabs = entry.tabsManager;
+        win.show();
+        win.focus();
+
+        const view = tabs.getViewByProfile(profileId);
+        if (!view) return false;
+
+        tabs.switchTo(profileId);
+        await new Promise((r) => setTimeout(r, 200));
+
+        const v2 = tabs.getViewByProfile(profileId);
+        if (!v2) return false;
+
+        const viewBounds = tabs.getBounds(profileId);
+        const contentBounds = win.getContentBounds();
+
+        debugLog("ocr", "[ROI CONTROLLER] openFromRegistryEntry viewBounds:", JSON.stringify(viewBounds));
+        debugLog("ocr", "[ROI CONTROLLER] openFromRegistryEntry contentBounds:", JSON.stringify(contentBounds));
+
+        let screenshot = await v2.webContents.capturePage();
+
+        if (screenshot.isEmpty()) {
+            debugLog("ocr", "[ROI CONTROLLER] Registry BrowserView screenshot empty, trying window capture");
+            const winScreenshot = await win.webContents.capturePage();
+            if (!winScreenshot.isEmpty()) {
+                screenshot = winScreenshot.crop({
+                    x: viewBounds.x,
+                    y: viewBounds.y,
+                    width: viewBounds.width,
+                    height: viewBounds.height,
+                });
+            }
+        }
+
+        const existing = await roiStore.get(profileId);
+
+        const getFollowBounds = () => {
+            if (!win || win.isDestroyed()) return null;
+            const vb = tabs.getBounds(profileId);
+            const cb = win.getContentBounds();
+            return {
+                x: cb.x + vb.x,
+                y: cb.y + vb.y,
+                width: vb.width,
+                height: vb.height,
+            };
+        };
+
+        const filteredExisting = roiKey === "rmExp" ? { rmExp: existing?.rmExp } : existing;
+        const allowedKeys = roiKey === "rmExp" ? ["rmExp"] as const : undefined;
+
+        await openRoiCalibratorWindow({
+            profileId,
+            parent: win,
+            skipParent: true,
+            bounds: {
+                x: contentBounds.x + viewBounds.x,
+                y: contentBounds.y + viewBounds.y,
+                width: viewBounds.width,
+                height: viewBounds.height,
+            },
+            screenshotPng: screenshot.toPNG(),
+            existing: filteredExisting,
+            preloadPath,
+            activeKey: roiKey,
+            allowedKeys,
+            onSave: async (rois: HudRois) => {
+                debugLog("ocr", "[ROI CALIB MAIN] onSave registry profileId:", profileId, "rois:", JSON.stringify(rois));
+                await persistRois(profileId, rois, roiKey);
+                await overlayTarget?.refreshFromStore();
             },
             follow: { getBounds: getFollowBounds, intervalMs: followIntervalMs },
         });

@@ -27,23 +27,37 @@ import {
 } from "./manualLevelStore";
 
 // ─── Types ──────────────────────────────────────────────────────────
+type SessionTabsLike = {
+    getViewByProfile(profileId: string): {
+        getBounds(): { x: number; y: number; width: number; height: number };
+        webContents: { capturePage(rect: { x: number; y: number; width: number; height: number }): Promise<NativeImage> };
+    } | null;
+    getBounds(profileId: string): { x: number; y: number; width: number; height: number };
+};
+
+type SessionWindowLike = {
+    get(): BrowserWindow | null;
+};
+
+export interface SessionRegistryEntry {
+    window: BrowserWindow;
+    tabsManager: SessionTabsLike;
+}
+
 export interface OcrSystemDeps {
     services: {
         roiStore: {
             get(profileId: string): Promise<Record<string, { x: number; y: number; w: number; h: number }> | null>;
         };
-        sessionTabs: {
-            getViewByProfile(profileId: string): {
-                getBounds(): { x: number; y: number; width: number; height: number };
-                webContents: { capturePage(rect: { x: number; y: number; width: number; height: number }): Promise<NativeImage> };
-            } | null;
-            getBounds(profileId: string): { x: number; y: number; width: number; height: number };
-        };
-        sessionWindow: {
-            get(): BrowserWindow | null;
-        };
+        sessionTabs: SessionTabsLike;
+        sessionWindow: SessionWindowLike;
         instances: {
             get(profileId: string): BrowserWindow | null;
+        };
+        /** Multi-window session registry – when present, OCR will search all
+         *  session windows (not just the legacy singleton) for the target profile. */
+        sessionRegistry?: {
+            list(): SessionRegistryEntry[];
         };
     };
     getPluginEventBus: () => {
@@ -371,24 +385,49 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     };
 
     // ── Capture context builder ─────────────────────────────────
+    const tryBuildFromView = (
+        view: NonNullable<ReturnType<SessionTabsLike["getViewByProfile"]>>,
+        hostWin: BrowserWindow,
+        tabs: SessionTabsLike,
+        profileId: string,
+    ) => {
+        if (!hostWin || hostWin.isDestroyed() || hostWin.isMinimized() || !hostWin.isVisible()) return null;
+        const liveBounds = view.getBounds();
+        const viewBounds = tabs.getBounds(profileId);
+        if (liveBounds.width <= 0 || liveBounds.height <= 0 || viewBounds.width <= 0 || viewBounds.height <= 0) return null;
+        return {
+            win: hostWin,
+            width: Math.min(viewBounds.width, liveBounds.width),
+            height: Math.min(viewBounds.height, liveBounds.height),
+            offsetX: viewBounds.x,
+            offsetY: viewBounds.y,
+            grab: (rect: { x: number; y: number; width: number; height: number }) => view.webContents.capturePage(rect),
+        };
+    };
+
     const buildCaptureCtx = (profileId: string) => {
+        // 1. Try legacy singleton session tabs
         const view = services.sessionTabs.getViewByProfile(profileId);
         if (view) {
             const hostWin = services.sessionWindow.get();
-            const attached = !!hostWin && !hostWin.isDestroyed() && (hostWin as unknown as { getBrowserViews(): unknown[] }).getBrowserViews().includes(view);
-            if (!hostWin || hostWin.isDestroyed() || hostWin.isMinimized() || !hostWin.isVisible() || !attached) return null;
-            const liveBounds = view.getBounds();
-            const viewBounds = services.sessionTabs.getBounds(profileId);
-            if (liveBounds.width <= 0 || liveBounds.height <= 0 || viewBounds.width <= 0 || viewBounds.height <= 0) return null;
-            return {
-                win: hostWin,
-                width: Math.min(viewBounds.width, liveBounds.width),
-                height: Math.min(viewBounds.height, liveBounds.height),
-                offsetX: viewBounds.x,
-                offsetY: viewBounds.y,
-                grab: (rect: { x: number; y: number; width: number; height: number }) => view.webContents.capturePage(rect),
-            };
+            if (hostWin) {
+                const ctx = tryBuildFromView(view, hostWin, services.sessionTabs, profileId);
+                if (ctx) return ctx;
+            }
         }
+
+        // 2. Try multi-window session registry
+        if (services.sessionRegistry) {
+            for (const entry of services.sessionRegistry.list()) {
+                const regView = entry.tabsManager.getViewByProfile(profileId);
+                if (regView && entry.window && !entry.window.isDestroyed()) {
+                    const ctx = tryBuildFromView(regView, entry.window, entry.tabsManager, profileId);
+                    if (ctx) return ctx;
+                }
+            }
+        }
+
+        // 3. Try instance windows
         const inst = services.instances.get(profileId);
         if (inst && !inst.isDestroyed() && inst.isVisible() && !inst.isMinimized()) {
             const bounds = inst.getBounds();

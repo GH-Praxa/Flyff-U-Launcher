@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 2.3.0
+
+### 🐛 Bug Fixes
+
+- OCR values (side panel) are now correctly detected when the game runs in a separate multi-window session
+- ROI calibration no longer incorrectly opens a new session but uses the existing game window
+
+### ✨ Improvements
+
+- Documentation accordions now use native HTML5 elements (no JavaScript required)
+
+---
+
 ## 🆕 Version 2.2.0
 
 ### ➕ New Features
