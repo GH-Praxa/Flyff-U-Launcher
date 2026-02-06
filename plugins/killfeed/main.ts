@@ -116,7 +116,7 @@ function configureBundledTesseract(): void {
         process.env.PATH = tesseractDir + path.delimiter + (process.env.PATH || "");
         const tessdata = path.join(tesseractDir, "tessdata");
         if (fs.existsSync(tessdata)) {
-            process.env.TESSDATA_PREFIX = tesseractDir;
+            process.env.TESSDATA_PREFIX = tessdata;
         }
         console.log("[Tesseract] Bundled tesseract configured:", process.env.TESSERACT_EXE);
     } else {

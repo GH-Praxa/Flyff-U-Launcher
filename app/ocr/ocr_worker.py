@@ -34,10 +34,10 @@ if _TESSERACT_EXE and os.path.isfile(_TESSERACT_EXE):
     # Ensure DLLs next to tesseract.exe are found by Windows
     if _tess_dir not in os.environ.get("PATH", ""):
         os.environ["PATH"] = _tess_dir + os.pathsep + os.environ.get("PATH", "")
-    # Set TESSDATA_PREFIX to the directory containing tessdata/
+    # TESSDATA_PREFIX must point directly to the tessdata/ folder (where .traineddata files are)
     _candidate = Path(_tess_dir) / "tessdata"
     if _candidate.exists():
-        os.environ["TESSDATA_PREFIX"] = _tess_dir
+        os.environ["TESSDATA_PREFIX"] = str(_candidate)
 elif _TESSERACT_EXE:
     print(f"[Python OCR] WARNING: TESSERACT_EXE set but not found: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
 

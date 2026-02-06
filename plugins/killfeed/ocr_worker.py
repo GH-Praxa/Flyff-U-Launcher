@@ -25,7 +25,7 @@ if TESSERACT_EXE and os.path.isfile(TESSERACT_EXE):
         os.environ["PATH"] = _tess_dir + os.pathsep + os.environ.get("PATH", "")
     candidate = Path(_tess_dir) / "tessdata"
     if candidate.exists():
-        os.environ["TESSDATA_PREFIX"] = _tess_dir
+        os.environ["TESSDATA_PREFIX"] = str(candidate)
 
 # Debug mode: set FLYFF_OCR_DEBUG=1 to save debug images
 DEBUG_MODE = os.environ.get("FLYFF_OCR_DEBUG", "0") == "1"
