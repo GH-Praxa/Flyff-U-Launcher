@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       use_self_hosted:
-        description: "Auf self-hosted Windows Runner ausführen (Standard: ja)"
+        description: "Auf self-hosted Windows Runner ausführen (Standard: nein)"
         required: false
-        default: true
+        default: false
         type: boolean
       prerelease:
         description: "Mark GitHub release as pre-release (for testing update channel)"
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build-windows:
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.use_self_hosted == false && fromJson('["windows-2022"]') || fromJson('["self-hosted","windows"]') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.use_self_hosted) && fromJson('["self-hosted","windows"]') || fromJson('["windows-2022"]') }}
     timeout-minutes: 90
 
     steps:
