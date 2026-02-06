@@ -13,9 +13,16 @@ from collections import Counter
 from typing import Optional, Tuple
 from pathlib import Path
 
-import numpy as np
-import cv2
-import pytesseract
+try:
+    import numpy as np
+    import cv2
+    import pytesseract
+except ImportError as _imp_err:
+    # Report import failure via stdout so Electron can see it, then exit
+    sys.stdout.write(json.dumps({"id": 0, "ok": False, "error": f"ImportError: {_imp_err}"}) + "\n")
+    sys.stdout.flush()
+    print(f"[Python OCR] FATAL: {_imp_err}", file=sys.stderr, flush=True)
+    sys.exit(1)
 
 # ---------------------------------------------------------------------------
 # Configure bundled Tesseract (set by Electron via environment variables)

@@ -166,6 +166,32 @@ function configureBundledTesseract(): void {
     }
 }
 
+function writeTesseractDiagnostic(): void {
+    try {
+        const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+        fs.mkdirSync(diagDir, { recursive: true });
+        const lines: string[] = [
+            `timestamp=${new Date().toISOString()}`,
+            `isPackaged=${app.isPackaged}`,
+            `resourcesPath=${process.resourcesPath}`,
+            `TESSERACT_EXE=${process.env.TESSERACT_EXE ?? "<not set>"}`,
+            `TESSERACT_EXE_exists=${process.env.TESSERACT_EXE ? fs.existsSync(process.env.TESSERACT_EXE) : "N/A"}`,
+            `TESSDATA_PREFIX=${process.env.TESSDATA_PREFIX ?? "<not set>"}`,
+            `TESSDATA_PREFIX_exists=${process.env.TESSDATA_PREFIX ? fs.existsSync(path.join(process.env.TESSDATA_PREFIX, "tessdata")) : "N/A"}`,
+        ];
+        // Check if Python is available
+        try {
+            const pyResult = require("child_process").execFileSync("python", ["--version"], { timeout: 5000, encoding: "utf-8" });
+            lines.push(`python_version=${pyResult.trim()}`);
+        } catch (e: unknown) {
+            lines.push(`python_version=FAILED: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        fs.writeFileSync(path.join(diagDir, "electron_diagnostic.txt"), lines.join("\n"), "utf-8");
+    } catch {
+        // Best-effort diagnostic
+    }
+}
+
 // ============================================================================
 // App Ready
 // ============================================================================
@@ -183,6 +209,7 @@ app.whenReady().then(async () => {
 
     // Prepare bundled assets (Tesseract, default plugins)
     configureBundledTesseract();
+    writeTesseractDiagnostic();
     await copyDefaultPlugins(pluginsDir);
 
     // Load debug configuration

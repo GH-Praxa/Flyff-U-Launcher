@@ -1,5 +1,7 @@
 import { spawn, execFile, type ChildProcessWithoutNullStreams } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
+import { app } from "electron";
 import { LIMITS } from "../../shared/constants";
 import { logWarn } from "../../shared/logger";
 import { debugLog } from "../debugConfig";
@@ -112,7 +114,7 @@ export class PythonOcrWorker {
         }
 
         this.proc = spawn(this.opts.pythonExe, [this.opts.scriptPath], {
-            stdio: ["pipe", "pipe", "inherit"],
+            stdio: ["pipe", "pipe", "pipe"],
             windowsHide: true,
             env: procEnv,
         });
@@ -122,8 +124,26 @@ export class PythonOcrWorker {
             debugLog("ocr", `[OCR Worker] stdout received ${chunk.length} bytes: ${chunk.slice(0, 100)}...`);
             this.onStdout(chunk);
         });
+        // Capture stderr and write to diagnostic file
+        let stderrBuf = "";
+        this.proc.stderr?.setEncoding("utf8");
+        this.proc.stderr?.on("data", (chunk: string) => {
+            stderrBuf += chunk;
+            // Keep only last 4KB
+            if (stderrBuf.length > 4096) stderrBuf = stderrBuf.slice(-4096);
+        });
         this.proc.on("exit", (code) => {
             debugLog("ocr", `[OCR Worker] Python process EXITED code=${code}`);
+            // Write stderr to diagnostic file for debugging
+            try {
+                const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+                fs.mkdirSync(diagDir, { recursive: true });
+                fs.writeFileSync(
+                    path.join(diagDir, "python_stderr.txt"),
+                    `exit_code=${code}\npython=${this.opts.pythonExe}\nscript=${this.opts.scriptPath}\n\n${stderrBuf}`,
+                    "utf-8"
+                );
+            } catch { /* best effort */ }
             for (const { reject, t } of this.pending.values()) {
                 clearTimeout(t);
                 reject(new Error(`Python OCR exited (code=${code ?? "?"})`));
@@ -133,6 +153,16 @@ export class PythonOcrWorker {
         });
         this.proc.on("error", (err) => {
             debugLog("ocr", `[OCR Worker] Python process ERROR: ${err.message}`);
+            // Write spawn error to diagnostic file
+            try {
+                const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+                fs.mkdirSync(diagDir, { recursive: true });
+                fs.writeFileSync(
+                    path.join(diagDir, "python_spawn_error.txt"),
+                    `error=${err.message}\npython=${this.opts.pythonExe}\nscript=${this.opts.scriptPath}`,
+                    "utf-8"
+                );
+            } catch { /* best effort */ }
         });
     }
     async stop(): Promise<void> {
