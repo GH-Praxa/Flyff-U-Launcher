@@ -8,6 +8,7 @@
 
 - OCR-Werte (Sidepanel) werden jetzt korrekt erkannt, wenn das Spiel in einem separaten Multi-Window-Fenster läuft
 - ROI-Kalibrierung öffnet nicht mehr fälschlicherweise eine neue Session, sondern nutzt das bestehende Spielfenster
+- OCR nutzt jetzt zuverlässig das mitgelieferte Tesseract — eine separate Installation ist nicht mehr nötig
 
 ### ✨ Verbesserungen
 

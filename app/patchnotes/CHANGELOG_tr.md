@@ -8,6 +8,7 @@
 
 - OCR değerleri (yan panel) artık oyun ayrı bir çoklu pencere oturumunda çalışırken doğru algılanıyor
 - ROI kalibrasyonu artık yanlışlıkla yeni bir oturum açmıyor, mevcut oyun penceresini kullanıyor
+- OCR artık güvenilir şekilde dahili Tesseract'ı kullanıyor — ayrı bir kurulum artık gerekli değil
 
 ### ✨ İyileştirmeler
 

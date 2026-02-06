@@ -21,14 +21,25 @@ import pytesseract
 # Configure bundled Tesseract (set by Electron via environment variables)
 # ---------------------------------------------------------------------------
 _TESSERACT_EXE = os.environ.get("TESSERACT_EXE")
+_TESSDATA_DIR: Optional[str] = None
 if _TESSERACT_EXE and os.path.isfile(_TESSERACT_EXE):
     pytesseract.pytesseract.tesseract_cmd = _TESSERACT_EXE
-    # Derive TESSDATA_PREFIX from the exe location if not already set
-    if not os.environ.get("TESSDATA_PREFIX"):
-        _candidate = Path(_TESSERACT_EXE).parent / "tessdata"
-        if _candidate.exists():
-            # Tesseract expects TESSDATA_PREFIX to be the *parent* of tessdata/
-            os.environ["TESSDATA_PREFIX"] = str(Path(_TESSERACT_EXE).parent)
+    _tess_dir = str(Path(_TESSERACT_EXE).parent)
+    # Ensure DLLs next to tesseract.exe are found by Windows
+    if _tess_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = _tess_dir + os.pathsep + os.environ.get("PATH", "")
+    # Resolve tessdata directory
+    _candidate = Path(_tess_dir) / "tessdata"
+    if _candidate.exists():
+        _TESSDATA_DIR = str(_candidate)
+        if not os.environ.get("TESSDATA_PREFIX"):
+            os.environ["TESSDATA_PREFIX"] = _tess_dir
+    print(f"[Python OCR] Using bundled Tesseract: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
+    print(f"[Python OCR] TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX')}", file=sys.stderr, flush=True)
+elif _TESSERACT_EXE:
+    print(f"[Python OCR] WARNING: TESSERACT_EXE set but file not found: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
+else:
+    print("[Python OCR] No bundled Tesseract, falling back to system PATH", file=sys.stderr, flush=True)
 
 def _resolve_debug_dir() -> Path:
     """Resolve where debug artifacts should be stored (defaults to AppData/userData)."""
@@ -98,6 +109,8 @@ def _as_bgr(png_bytes: bytes) -> Optional[np.ndarray]:
 
 def _ocr_line(img: np.ndarray, whitelist: Optional[str] = None, timeout: float = 1.5) -> str:
     cfg = "--oem 3 --psm 7"
+    if _TESSDATA_DIR:
+        cfg += f' --tessdata-dir "{_TESSDATA_DIR}"'
     if whitelist:
         cfg += f" -c tessedit_char_whitelist={whitelist}"
     try:

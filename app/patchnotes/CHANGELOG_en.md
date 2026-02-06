@@ -8,6 +8,7 @@
 
 - OCR values (side panel) are now correctly detected when the game runs in a separate multi-window session
 - ROI calibration no longer incorrectly opens a new session but uses the existing game window
+- OCR now reliably uses the bundled Tesseract — a separate installation is no longer required
 
 ### ✨ Improvements
 

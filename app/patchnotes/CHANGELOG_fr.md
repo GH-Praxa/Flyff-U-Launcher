@@ -8,6 +8,7 @@
 
 - Les valeurs OCR (panneau latéral) sont désormais correctement détectées lorsque le jeu est lancé dans une fenêtre multi-fenêtres distincte
 - La calibration ROI n'ouvre plus par erreur une nouvelle session mais utilise la fenêtre de jeu existante
+- L'OCR utilise désormais de manière fiable le Tesseract intégré — une installation séparée n'est plus nécessaire
 
 ### ✨ Améliorations
 

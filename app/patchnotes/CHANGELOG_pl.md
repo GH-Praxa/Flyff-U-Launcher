@@ -8,6 +8,7 @@
 
 - Wartości OCR (panel boczny) są teraz poprawnie wykrywane, gdy gra działa w osobnym oknie multi-window
 - Kalibracja ROI nie otwiera już błędnie nowej sesji, lecz używa istniejącego okna gry
+- OCR teraz niezawodnie korzysta z dołączonego Tesseract — oddzielna instalacja nie jest już wymagana
 
 ### ✨ Ulepszenia
 

@@ -126,14 +126,19 @@ async function copyDefaultPlugins(targetDir: string): Promise<void> {
 }
 
 function configureBundledTesseract(): void {
-    const exePath = resolveResourcePath("tesseract", "tesseract.exe");
+    const tesseractDir = resolveResourcePath("tesseract");
+    const exePath = path.join(tesseractDir, "tesseract.exe");
     if (fs.existsSync(exePath)) {
         process.env.TESSERACT_EXE = exePath;
-        const tessdata = resolveResourcePath("tesseract", "tessdata");
+        // Add tesseract dir to PATH so Windows can find the DLLs (libtesseract-5.dll etc.)
+        process.env.PATH = tesseractDir + path.delimiter + (process.env.PATH || "");
+        const tessdata = path.join(tesseractDir, "tessdata");
         if (fs.existsSync(tessdata)) {
-            // Tesseract expects TESSDATA_PREFIX to be the *parent* of the tessdata/ folder
-            process.env.TESSDATA_PREFIX = resolveResourcePath("tesseract");
+            process.env.TESSDATA_PREFIX = tesseractDir;
         }
+        console.log("[Tesseract] Bundled tesseract configured:", exePath);
+    } else {
+        console.warn("[Tesseract] Bundled tesseract.exe not found at:", exePath);
     }
 }
 
