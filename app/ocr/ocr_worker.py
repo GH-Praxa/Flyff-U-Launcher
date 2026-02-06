@@ -34,34 +34,6 @@ if _TESSERACT_EXE and os.path.isfile(_TESSERACT_EXE):
 elif _TESSERACT_EXE:
     print(f"[Python OCR] WARNING: TESSERACT_EXE set but not found: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
 
-def _tesseract_selftest() -> None:
-    """Run tesseract --version at startup and write diagnostic to ocr-debug/."""
-    diag_lines = []
-    diag_lines.append(f"TESSERACT_EXE={os.environ.get('TESSERACT_EXE', '<not set>')}")
-    diag_lines.append(f"tesseract_cmd={pytesseract.pytesseract.tesseract_cmd}")
-    diag_lines.append(f"TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX', '<not set>')}")
-    diag_lines.append(f"PATH (first 500)={os.environ.get('PATH', '')[:500]}")
-    try:
-        import subprocess
-        cmd = pytesseract.pytesseract.tesseract_cmd
-        result = subprocess.run(
-            [cmd, "--version"],
-            capture_output=True, text=True, timeout=10
-        )
-        diag_lines.append(f"tesseract --version OK:\n{result.stdout.strip()}\n{result.stderr.strip()}")
-    except Exception as e:
-        diag_lines.append(f"tesseract --version FAILED: {e}")
-    diag_text = "\n".join(diag_lines)
-    print(f"[Python OCR] Diagnostics:\n{diag_text}", file=sys.stderr, flush=True)
-    try:
-        diag_dir = _resolve_debug_dir()
-        diag_dir.mkdir(parents=True, exist_ok=True)
-        (diag_dir / "tesseract_diagnostic.txt").write_text(diag_text, encoding="utf-8")
-    except Exception:
-        pass
-
-_tesseract_selftest()
-
 def _resolve_debug_dir() -> Path:
     """Resolve where debug artifacts should be stored (defaults to AppData/userData)."""
     custom = os.environ.get("FLYFF_OCR_DEBUG_DIR")
@@ -76,6 +48,33 @@ def _resolve_debug_dir() -> Path:
         return Path(appdata) / "Flyff-U-Launcher" / "ocr-debug"
 
     return Path.home() / ".flyff-u-launcher" / "ocr-debug"
+
+# ---------------------------------------------------------------------------
+# Startup self-test: verify tesseract is callable and write diagnostic file
+# ---------------------------------------------------------------------------
+def _tesseract_selftest() -> None:
+    import subprocess as _sp
+    diag = []
+    diag.append(f"TESSERACT_EXE={os.environ.get('TESSERACT_EXE', '<not set>')}")
+    diag.append(f"tesseract_cmd={pytesseract.pytesseract.tesseract_cmd}")
+    diag.append(f"TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX', '<not set>')}")
+    diag.append(f"PATH (first 500)={os.environ.get('PATH', '')[:500]}")
+    try:
+        r = _sp.run([pytesseract.pytesseract.tesseract_cmd, "--version"],
+                     capture_output=True, text=True, timeout=10)
+        diag.append(f"tesseract --version exit={r.returncode}\n{(r.stdout or '').strip()}\n{(r.stderr or '').strip()}")
+    except Exception as e:
+        diag.append(f"tesseract --version FAILED: {e}")
+    text = "\n".join(diag)
+    print(f"[Python OCR] Diagnostics:\n{text}", file=sys.stderr, flush=True)
+    try:
+        d = _resolve_debug_dir()
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "tesseract_diagnostic.txt").write_text(text, encoding="utf-8")
+    except Exception:
+        pass
+
+_tesseract_selftest()
 
 # Debug mode: set FLYFF_OCR_DEBUG=1 to save debug images
 DEBUG_MODE = os.environ.get("FLYFF_OCR_DEBUG", "0") == "1"
