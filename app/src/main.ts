@@ -150,19 +150,25 @@ async function copyDefaultPlugins(targetDir: string): Promise<void> {
 }
 
 function configureBundledTesseract(): void {
-    const tesseractDir = resolveResourcePath("tesseract");
-    const exePath = path.join(tesseractDir, "tesseract.exe");
-    if (fs.existsSync(exePath)) {
-        process.env.TESSERACT_EXE = exePath;
+    // In packaged builds: process.resourcesPath/tesseract/
+    // In dev mode: __dirname is .vite/build/, so we need to check app/resources/tesseract/
+    const candidates = [
+        resolveResourcePath("tesseract"),
+        path.resolve(__dirname, "..", "resources", "tesseract"),
+        path.resolve(__dirname, "..", "..", "resources", "tesseract"),
+    ];
+    const tesseractDir = candidates.find((dir) => fs.existsSync(path.join(dir, "tesseract.exe")));
+    if (tesseractDir) {
+        process.env.TESSERACT_EXE = path.join(tesseractDir, "tesseract.exe");
         // Add tesseract dir to PATH so Windows can find the DLLs (libtesseract-5.dll etc.)
         process.env.PATH = tesseractDir + path.delimiter + (process.env.PATH || "");
         const tessdata = path.join(tesseractDir, "tessdata");
         if (fs.existsSync(tessdata)) {
             process.env.TESSDATA_PREFIX = tesseractDir;
         }
-        console.log("[Tesseract] Bundled tesseract configured:", exePath);
+        console.log("[Tesseract] Bundled tesseract configured:", process.env.TESSERACT_EXE);
     } else {
-        console.warn("[Tesseract] Bundled tesseract.exe not found at:", exePath);
+        console.warn("[Tesseract] Bundled tesseract.exe not found in:", candidates.join(", "));
     }
 }
 
