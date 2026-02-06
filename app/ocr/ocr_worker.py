@@ -21,25 +21,46 @@ import pytesseract
 # Configure bundled Tesseract (set by Electron via environment variables)
 # ---------------------------------------------------------------------------
 _TESSERACT_EXE = os.environ.get("TESSERACT_EXE")
-_TESSDATA_DIR: Optional[str] = None
 if _TESSERACT_EXE and os.path.isfile(_TESSERACT_EXE):
     pytesseract.pytesseract.tesseract_cmd = _TESSERACT_EXE
     _tess_dir = str(Path(_TESSERACT_EXE).parent)
     # Ensure DLLs next to tesseract.exe are found by Windows
     if _tess_dir not in os.environ.get("PATH", ""):
         os.environ["PATH"] = _tess_dir + os.pathsep + os.environ.get("PATH", "")
-    # Resolve tessdata directory
+    # Set TESSDATA_PREFIX to the directory containing tessdata/
     _candidate = Path(_tess_dir) / "tessdata"
     if _candidate.exists():
-        _TESSDATA_DIR = str(_candidate)
-        if not os.environ.get("TESSDATA_PREFIX"):
-            os.environ["TESSDATA_PREFIX"] = _tess_dir
-    print(f"[Python OCR] Using bundled Tesseract: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
-    print(f"[Python OCR] TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX')}", file=sys.stderr, flush=True)
+        os.environ["TESSDATA_PREFIX"] = _tess_dir
 elif _TESSERACT_EXE:
-    print(f"[Python OCR] WARNING: TESSERACT_EXE set but file not found: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
-else:
-    print("[Python OCR] No bundled Tesseract, falling back to system PATH", file=sys.stderr, flush=True)
+    print(f"[Python OCR] WARNING: TESSERACT_EXE set but not found: {_TESSERACT_EXE}", file=sys.stderr, flush=True)
+
+def _tesseract_selftest() -> None:
+    """Run tesseract --version at startup and write diagnostic to ocr-debug/."""
+    diag_lines = []
+    diag_lines.append(f"TESSERACT_EXE={os.environ.get('TESSERACT_EXE', '<not set>')}")
+    diag_lines.append(f"tesseract_cmd={pytesseract.pytesseract.tesseract_cmd}")
+    diag_lines.append(f"TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX', '<not set>')}")
+    diag_lines.append(f"PATH (first 500)={os.environ.get('PATH', '')[:500]}")
+    try:
+        import subprocess
+        cmd = pytesseract.pytesseract.tesseract_cmd
+        result = subprocess.run(
+            [cmd, "--version"],
+            capture_output=True, text=True, timeout=10
+        )
+        diag_lines.append(f"tesseract --version OK:\n{result.stdout.strip()}\n{result.stderr.strip()}")
+    except Exception as e:
+        diag_lines.append(f"tesseract --version FAILED: {e}")
+    diag_text = "\n".join(diag_lines)
+    print(f"[Python OCR] Diagnostics:\n{diag_text}", file=sys.stderr, flush=True)
+    try:
+        diag_dir = _resolve_debug_dir()
+        diag_dir.mkdir(parents=True, exist_ok=True)
+        (diag_dir / "tesseract_diagnostic.txt").write_text(diag_text, encoding="utf-8")
+    except Exception:
+        pass
+
+_tesseract_selftest()
 
 def _resolve_debug_dir() -> Path:
     """Resolve where debug artifacts should be stored (defaults to AppData/userData)."""
@@ -109,8 +130,6 @@ def _as_bgr(png_bytes: bytes) -> Optional[np.ndarray]:
 
 def _ocr_line(img: np.ndarray, whitelist: Optional[str] = None, timeout: float = 1.5) -> str:
     cfg = "--oem 3 --psm 7"
-    if _TESSDATA_DIR:
-        cfg += f' --tessdata-dir "{_TESSDATA_DIR}"'
     if whitelist:
         cfg += f" -c tessedit_char_whitelist={whitelist}"
     try:

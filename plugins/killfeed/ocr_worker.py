@@ -18,18 +18,14 @@ import cv2
 import pytesseract
 
 TESSERACT_EXE = os.environ.get("TESSERACT_EXE")
-_TESSDATA_DIR: Optional[str] = None
 if TESSERACT_EXE and os.path.isfile(TESSERACT_EXE):
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE
     _tess_dir = str(Path(TESSERACT_EXE).parent)
-    # Ensure DLLs next to tesseract.exe are found by Windows
     if _tess_dir not in os.environ.get("PATH", ""):
         os.environ["PATH"] = _tess_dir + os.pathsep + os.environ.get("PATH", "")
     candidate = Path(_tess_dir) / "tessdata"
     if candidate.exists():
-        _TESSDATA_DIR = str(candidate)
-        if not os.environ.get("TESSDATA_PREFIX"):
-            os.environ["TESSDATA_PREFIX"] = _tess_dir
+        os.environ["TESSDATA_PREFIX"] = _tess_dir
 
 # Debug mode: set FLYFF_OCR_DEBUG=1 to save debug images
 DEBUG_MODE = os.environ.get("FLYFF_OCR_DEBUG", "0") == "1"
@@ -58,8 +54,6 @@ def _as_bgr(png_bytes: bytes) -> Optional[np.ndarray]:
 
 def _ocr_line(img: np.ndarray, whitelist: Optional[str] = None, psm: int = 7, oem: int = 3) -> str:
     cfg = f"--oem {oem} --psm {psm}"
-    if _TESSDATA_DIR:
-        cfg += f' --tessdata-dir "{_TESSDATA_DIR}"'
     if whitelist:
         cfg += f" -c tessedit_char_whitelist={whitelist}"
     txt = pytesseract.image_to_string(img, config=cfg) or ""
