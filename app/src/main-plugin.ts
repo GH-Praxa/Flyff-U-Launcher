@@ -131,7 +131,8 @@ function configureBundledTesseract(): void {
         process.env.TESSERACT_EXE = exePath;
         const tessdata = resolveResourcePath("tesseract", "tessdata");
         if (fs.existsSync(tessdata)) {
-            process.env.TESSDATA_PREFIX = tessdata;
+            // Tesseract expects TESSDATA_PREFIX to be the *parent* of the tessdata/ folder
+            process.env.TESSDATA_PREFIX = resolveResourcePath("tesseract");
         }
     }
 }

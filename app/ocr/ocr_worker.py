@@ -17,6 +17,19 @@ import numpy as np
 import cv2
 import pytesseract
 
+# ---------------------------------------------------------------------------
+# Configure bundled Tesseract (set by Electron via environment variables)
+# ---------------------------------------------------------------------------
+_TESSERACT_EXE = os.environ.get("TESSERACT_EXE")
+if _TESSERACT_EXE and os.path.isfile(_TESSERACT_EXE):
+    pytesseract.pytesseract.tesseract_cmd = _TESSERACT_EXE
+    # Derive TESSDATA_PREFIX from the exe location if not already set
+    if not os.environ.get("TESSDATA_PREFIX"):
+        _candidate = Path(_TESSERACT_EXE).parent / "tessdata"
+        if _candidate.exists():
+            # Tesseract expects TESSDATA_PREFIX to be the *parent* of tessdata/
+            os.environ["TESSDATA_PREFIX"] = str(Path(_TESSERACT_EXE).parent)
+
 def _resolve_debug_dir() -> Path:
     """Resolve where debug artifacts should be stored (defaults to AppData/userData)."""
     custom = os.environ.get("FLYFF_OCR_DEBUG_DIR")

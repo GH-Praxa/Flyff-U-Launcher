@@ -23,7 +23,8 @@ if TESSERACT_EXE:
     if not os.environ.get("TESSDATA_PREFIX"):
         candidate = Path(TESSERACT_EXE).parent / "tessdata"
         if candidate.exists():
-            os.environ["TESSDATA_PREFIX"] = str(candidate)
+            # Tesseract expects TESSDATA_PREFIX to be the *parent* of tessdata/
+            os.environ["TESSDATA_PREFIX"] = str(Path(TESSERACT_EXE).parent)
 
 # Debug mode: set FLYFF_OCR_DEBUG=1 to save debug images
 DEBUG_MODE = os.environ.get("FLYFF_OCR_DEBUG", "0") == "1"
