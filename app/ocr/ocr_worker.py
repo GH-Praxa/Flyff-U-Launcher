@@ -49,33 +49,6 @@ def _resolve_debug_dir() -> Path:
 
     return Path.home() / ".flyff-u-launcher" / "ocr-debug"
 
-# ---------------------------------------------------------------------------
-# Startup self-test: verify tesseract is callable and write diagnostic file
-# ---------------------------------------------------------------------------
-def _tesseract_selftest() -> None:
-    import subprocess as _sp
-    diag = []
-    diag.append(f"TESSERACT_EXE={os.environ.get('TESSERACT_EXE', '<not set>')}")
-    diag.append(f"tesseract_cmd={pytesseract.pytesseract.tesseract_cmd}")
-    diag.append(f"TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX', '<not set>')}")
-    diag.append(f"PATH (first 500)={os.environ.get('PATH', '')[:500]}")
-    try:
-        r = _sp.run([pytesseract.pytesseract.tesseract_cmd, "--version"],
-                     capture_output=True, text=True, timeout=10)
-        diag.append(f"tesseract --version exit={r.returncode}\n{(r.stdout or '').strip()}\n{(r.stderr or '').strip()}")
-    except Exception as e:
-        diag.append(f"tesseract --version FAILED: {e}")
-    text = "\n".join(diag)
-    print(f"[Python OCR] Diagnostics:\n{text}", file=sys.stderr, flush=True)
-    try:
-        d = _resolve_debug_dir()
-        d.mkdir(parents=True, exist_ok=True)
-        (d / "tesseract_diagnostic.txt").write_text(text, encoding="utf-8")
-    except Exception:
-        pass
-
-_tesseract_selftest()
-
 # Debug mode: set FLYFF_OCR_DEBUG=1 to save debug images
 DEBUG_MODE = os.environ.get("FLYFF_OCR_DEBUG", "0") == "1"
 DEBUG_DIR = _resolve_debug_dir()
@@ -98,12 +71,33 @@ def _save_debug(name: str, img: np.ndarray) -> None:
         except:
             pass
 
-# Test: Write a file at startup to confirm worker is running
+# Write startup diagnostic (no subprocess calls - those can hang on Windows DLL dialogs)
 try:
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)
-    (DEBUG_DIR / "worker_started.txt").write_text("OCR worker started successfully")
-except Exception:
-    pass
+    _diag = [
+        f"worker_started=true",
+        f"TESSERACT_EXE={os.environ.get('TESSERACT_EXE', '<not set>')}",
+        f"tesseract_cmd={pytesseract.pytesseract.tesseract_cmd}",
+        f"TESSDATA_PREFIX={os.environ.get('TESSDATA_PREFIX', '<not set>')}",
+        f"exe_exists={os.path.isfile(pytesseract.pytesseract.tesseract_cmd)}",
+    ]
+    _tess_cmd = pytesseract.pytesseract.tesseract_cmd
+    if os.path.isfile(_tess_cmd):
+        _p = Path(_tess_cmd).parent
+        _dlls = [f.name for f in _p.iterdir() if f.suffix == '.dll']
+        _diag.append(f"dll_count={len(_dlls)}")
+        _td = _p / "tessdata"
+        _diag.append(f"tessdata_exists={_td.exists()}")
+        if _td.exists():
+            _traineddata = [f.name for f in _td.iterdir() if f.suffix == '.traineddata']
+            _diag.append(f"traineddata={_traineddata}")
+    (DEBUG_DIR / "tesseract_diagnostic.txt").write_text("\n".join(_diag), encoding="utf-8")
+except Exception as _e:
+    try:
+        DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+        (DEBUG_DIR / "diagnostic_error.txt").write_text(str(_e), encoding="utf-8")
+    except Exception:
+        pass
 
 FLOAT_RE = re.compile(r"\d+(?:[.,]\d+)?")
 
@@ -133,9 +127,18 @@ def _ocr_line(img: np.ndarray, whitelist: Optional[str] = None, timeout: float =
         cfg += f" -c tessedit_char_whitelist={whitelist}"
     try:
         txt = pytesseract.image_to_string(img, config=cfg, timeout=timeout) or ""
-    except RuntimeError as e:
-        # Tesseract timeout inside worker -> signal empty so caller can retry fast
-        _save_debug("tess_timeout", img)
+    except Exception as e:
+        # Log ALL tesseract errors (not just timeout) so we can diagnose failures
+        print(f"[Python OCR] pytesseract error: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        try:
+            DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+            (DEBUG_DIR / "last_ocr_error.txt").write_text(
+                f"{type(e).__name__}: {e}\ncmd={pytesseract.pytesseract.tesseract_cmd}\ncfg={cfg}",
+                encoding="utf-8"
+            )
+        except Exception:
+            pass
+        _save_debug("tess_error", img)
         return ""
     return txt.strip()
 
