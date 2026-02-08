@@ -20,6 +20,7 @@ const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     seqGridLoad: false,
     gridActiveBorder: false,
     autoSaveLayouts: true,
+    persistGameUiPositions: false,
     tabLayoutDisplay: "compact",
     fcoinRate: 200_000_000,
 };
@@ -100,6 +101,10 @@ function normalize(raw: unknown): NormalizedSettingsResult {
                 typeof obj.autoSaveLayouts === "boolean"
                     ? obj.autoSaveLayouts
                     : DEFAULT_CLIENT_SETTINGS.autoSaveLayouts,
+            persistGameUiPositions:
+                typeof obj.persistGameUiPositions === "boolean"
+                    ? obj.persistGameUiPositions
+                    : DEFAULT_CLIENT_SETTINGS.persistGameUiPositions,
             tabLayoutDisplay: normalizeTabLayoutDisplay(obj.tabLayoutDisplay),
             fcoinRate:
                 typeof obj.fcoinRate === "number" && obj.fcoinRate > 0
@@ -163,6 +168,9 @@ export function createClientSettingsStore() {
             }
             if (typeof patch.autoSaveLayouts === "boolean") {
                 next.autoSaveLayouts = patch.autoSaveLayouts;
+            }
+            if (typeof patch.persistGameUiPositions === "boolean") {
+                next.persistGameUiPositions = patch.persistGameUiPositions;
             }
             if (typeof patch.tabLayoutDisplay === "string") {
                 next.tabLayoutDisplay = normalizeTabLayoutDisplay(patch.tabLayoutDisplay);

@@ -59,6 +59,8 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
 
     autoSaveLayouts: true,
 
+    persistGameUiPositions: false,
+
     tabLayoutDisplay: "compact",
 
     fcoinRate: 200_000_000,
@@ -334,6 +336,8 @@ export async function loadClientSettings(): Promise<ClientSettings> {
             gridActiveBorder: !!settings.gridActiveBorder,
 
             autoSaveLayouts: settings.autoSaveLayouts ?? DEFAULT_CLIENT_SETTINGS.autoSaveLayouts,
+
+            persistGameUiPositions: !!settings.persistGameUiPositions,
 
             tabLayoutDisplay: normalizeTabLayoutDisplay(settings.tabLayoutDisplay),
 

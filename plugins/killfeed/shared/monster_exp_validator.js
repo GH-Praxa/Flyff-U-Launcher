@@ -1,11 +1,13 @@
 const path = require('path');
 const fs = require('fs/promises');
 
-// Lazy loader for monster EXP tables from api_fetch data.
-// Keeps everything in-memory after first access; no per-tick I/O.
+// Monster EXP table loader.
+// Pre-loads all tables eagerly at startup for instant validation.
+// Falls back to parallel bulk-load on cache miss.
 
 let baseDir = null;
 let fileListPromise = null;
+let preloadPromise = null;
 const nameToId = new Map();   // lower-case name -> id
 const idToTable = new Map();  // id -> numeric array
 const missingNames = new Set();
@@ -54,24 +56,41 @@ async function loadTableById(id) {
   }
 }
 
+/**
+ * Eagerly load ALL monster tables into memory.
+ * After this completes, all lookups are pure in-memory Map hits (< 1ms).
+ * Safe to call multiple times; concurrent calls share the same Promise.
+ */
+async function preloadAll() {
+  if (!baseDir) return;
+  if (preloadPromise) return preloadPromise;
+  preloadPromise = (async () => {
+    const files = await getFileList();
+    const ids = files
+      .filter(f => f.toLowerCase().endsWith('.json'))
+      .map(f => path.basename(f, '.json'));
+    // Load all files in parallel (I/O-bound, benefits from concurrency)
+    await Promise.all(ids.map(id => loadTableById(id)));
+  })();
+  return preloadPromise;
+}
+
 async function findTableByName(monsterName) {
   const normalized = normalizeName(monsterName);
   if (!normalized || missingNames.has(normalized)) return null;
 
+  // Fast path: already in cache
   const knownId = nameToId.get(normalized);
   if (knownId) {
     return loadTableById(knownId);
   }
 
-  const files = await getFileList();
-  for (const file of files) {
-    if (!file.toLowerCase().endsWith('.json')) continue;
-    const id = path.basename(file, '.json');
-    await loadTableById(id);
-    const mappedId = nameToId.get(normalized);
-    if (mappedId) {
-      return idToTable.get(mappedId) || null;
-    }
+  // Slow path: bulk-load all remaining files in parallel (not one-by-one)
+  await preloadAll();
+
+  const mappedId = nameToId.get(normalized);
+  if (mappedId) {
+    return idToTable.get(mappedId) || null;
   }
 
   missingNames.add(normalized);
@@ -102,4 +121,5 @@ async function isWithinAllowed(monsterName, level, deltaExp) {
 module.exports = {
   init,
   isWithinAllowed,
+  preloadAll,
 };

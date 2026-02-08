@@ -1,6 +1,7 @@
 import { BrowserView, screen } from "electron";
 import type { ViewBounds } from "../../shared/types";
 import { hardenGameContents } from "../security/harden";
+import { registerUiPositionInjection } from "./uiPositionInjector";
 import type { SessionWindowController } from "../windows/sessionWindow";
 import { GRID_CONFIGS, LAYOUT, TIMINGS } from "../../shared/constants";
 import { logErr } from "../../shared/logger"; // Added import
@@ -32,6 +33,8 @@ export function createSessionTabsManager(opts: {
     const activeBorderCssByView = new Map<BrowserView, string>();
     let hoverBorderTargetId: string | null = null;
     let lastLayoutSnapshot: Array<{ id: string; position: number }> = [];
+    const uiPositionCleanups = new Map<string, () => void>();
+    let uiPositionPersistenceEnabled = false;
     const ACTIVE_BORDER_CSS = `
         html, body {
             outline: 3px solid #2ecc71 !important;
@@ -491,6 +494,11 @@ export function createSessionTabsManager(opts: {
             logErr(err, "SessionTabs");
         }
         hardenGameContents(view.webContents);
+        const cleanup = registerUiPositionInjection(
+            view.webContents,
+            () => uiPositionPersistenceEnabled,
+        );
+        uiPositionCleanups.set(profileId, cleanup);
         sessionViews.set(profileId, view);
         return view;
     }
@@ -521,6 +529,8 @@ export function createSessionTabsManager(opts: {
         const view = sessionViews.get(profileId);
         if (!view)
             return;
+        const uiCleanup = uiPositionCleanups.get(profileId);
+        if (uiCleanup) { uiCleanup(); uiPositionCleanups.delete(profileId); }
         removeActiveBorder(view);
         const win = opts.sessionWindow.get();
         if (win) {
@@ -563,6 +573,8 @@ export function createSessionTabsManager(opts: {
         const view = sessionViews.get(profileId);
         if (!view)
             return false;
+        const uiCleanup = uiPositionCleanups.get(profileId);
+        if (uiCleanup) { uiCleanup(); uiPositionCleanups.delete(profileId); }
         removeActiveBorder(view);
         const win = opts.sessionWindow.get();
         if (win) {
@@ -1042,6 +1054,8 @@ export function createSessionTabsManager(opts: {
         activeBorderCssByView.clear();
         hoverBorderTargetId = null;
         lastLayoutSnapshot = [];
+        for (const cleanup of uiPositionCleanups.values()) cleanup();
+        uiPositionCleanups.clear();
         stopHoverActivation();
     }
     function getActiveView(): BrowserView | null {
@@ -1071,6 +1085,12 @@ export function createSessionTabsManager(opts: {
     function hasLoadedProfile(profileId: string): boolean {
         return loadedProfiles.has(profileId);
     }
+    function setUiPositionPersistenceEnabled(enabled: boolean) {
+        uiPositionPersistenceEnabled = !!enabled;
+    }
+    function getUiPositionPersistenceEnabled(): boolean {
+        return uiPositionPersistenceEnabled;
+    }
     return {
         open,
         openInCell,
@@ -1079,6 +1099,8 @@ export function createSessionTabsManager(opts: {
         setBounds,
         setVisible,
         setActiveGridBorderEnabled,
+        setUiPositionPersistenceEnabled,
+        getUiPositionPersistenceEnabled,
         setMultiLayout,
         updateCell,
         setSplit,

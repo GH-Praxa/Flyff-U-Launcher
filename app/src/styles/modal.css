@@ -59,6 +59,9 @@
   display:flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .modalHint{
@@ -103,6 +106,7 @@
 .layoutGrid{
   display: grid;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .gridCellBtn{
@@ -156,6 +160,27 @@
   opacity: 0.5;
 }
 
+.cellPickerContainer{
+  margin-top: 12px;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cellPickerContainer:empty{
+  flex: 0;
+  margin: 0;
+}
+
+.cellPickerLabel{
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
 .cellPickerMenu{
   display: flex;
   flex-direction: column;
@@ -164,8 +189,8 @@
   background: rgba(0,0,0,0.55);
   border-radius: 10px;
   padding: 8px;
-  margin-top: 50px;
-  max-height: 45vh;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
 }
 

@@ -1,5 +1,23 @@
 # 📦 Patchnotes
 
+## 🆕 Version 2.3.0
+
+### ➕ Neue Funktionen
+
+### ✨ Verbesserungen
+- "Layout auswählen" Dialog Design optimiert
+- "Profile verwalten (ausloggen)" Dialog Design optimiert
+
+### 🧹 Aufräumarbeiten
+
+### 🐛 Fehlerbehebungen
+- Overlays überlagern den Schließen-Dialog nicht mehr
+
+### 🐛 Bekannte Fehler
+
+
+
+
 ---
 
 ## 🆕 Version 2.3.0

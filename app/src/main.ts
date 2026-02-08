@@ -258,6 +258,9 @@ app.whenReady().then(async () => {
             height: clientSettingsSnap.launcherHeight,
         });
         services.sessionTabs.setActiveGridBorderEnabled?.(clientSettingsSnap.gridActiveBorder ?? false);
+        const uiPosEnabled = clientSettingsSnap.persistGameUiPositions ?? false;
+        console.log("[UiPosPersist] Initial setting:", uiPosEnabled);
+        services.sessionTabs.setUiPositionPersistenceEnabled?.(uiPosEnabled);
     } catch (err) {
         logErr(err, "ClientSettings");
     }
@@ -402,6 +405,11 @@ app.whenReady().then(async () => {
             height: settings.launcherHeight,
         });
         services.sessionTabs.setActiveGridBorderEnabled?.(settings.gridActiveBorder ?? false);
+        services.sessionTabs.setUiPositionPersistenceEnabled?.(settings.persistGameUiPositions ?? false);
+        // Also propagate to all multi-window tab managers
+        for (const entry of services.sessionRegistry.list()) {
+            entry.tabsManager.setUiPositionPersistenceEnabled?.(settings.persistGameUiPositions ?? false);
+        }
         if (launcherWindow && !launcherWindow.isDestroyed()) {
             const display = screen.getDisplayMatching(launcherWindow.getBounds()) ?? screen.getPrimaryDisplay();
             const nextSize = fitLauncherSizeToWorkArea(launcherSize, display?.workAreaSize);

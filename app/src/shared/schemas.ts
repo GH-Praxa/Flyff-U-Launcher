@@ -143,6 +143,8 @@ export const ClientSettingsSchema = z.object({
     gridActiveBorder: z.boolean(),
     /** Legt fest, ob Layouts bei Änderungen automatisch gespeichert werden sollen. */
     autoSaveLayouts: z.boolean(),
+    /** Speichert die Positionen verschobener In-Game-UI-Elemente persistent per localStorage. */
+    persistGameUiPositions: z.boolean(),
     tabLayoutDisplay: z.enum(["compact", "grouped", "separated", "mini-grid"]),
     fcoinRate: z.number().positive(),
 });

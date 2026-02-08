@@ -917,6 +917,69 @@ def ocr_lvl(bgr: np.ndarray) -> Tuple[Optional[int], str]:
 
     return None, fallback_raw
 
+def ocr_hp(bgr: np.ndarray) -> str:
+    """OCR HP bar text (white digits like '305/305' on red/green bar)."""
+    h, w = bgr.shape[:2]
+    _save_debug("hp_00_input", bgr)
+    whitelist = "0123456789/"
+
+    def try_img(img: np.ndarray, name: str) -> str:
+        _save_debug(f"hp_{name}", img)
+        raw = _ocr_line(img, whitelist=whitelist, timeout=1.0)
+        return raw
+
+    # Method 1: Extract white/bright text via HSV (low saturation, high value)
+    for scale in [5.0, 7.0]:
+        white_mask = _extract_white_text_mask(bgr, scale=scale)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        white_mask = cv2.dilate(white_mask, kernel, iterations=1)
+        raw = try_img(white_mask, f"white_{scale}")
+        if raw and "/" in raw:
+            return raw
+        raw = try_img(255 - white_mask, f"white_{scale}_inv")
+        if raw and "/" in raw:
+            return raw
+
+    # Method 2: Bright text extraction (simple brightness threshold)
+    for scale in [5.0, 7.0]:
+        bright_mask = _extract_bright_text_mask(bgr, scale=scale)
+        raw = try_img(bright_mask, f"bright_{scale}")
+        if raw and "/" in raw:
+            return raw
+        raw = try_img(255 - bright_mask, f"bright_{scale}_inv")
+        if raw and "/" in raw:
+            return raw
+
+    # Method 3: Per-channel approach - use the channel with best text contrast
+    # On red bar: blue/green channels have dark bar, bright text
+    # On green bar: red/blue channels have dark bar, bright text
+    for ch_idx, ch_name in [(0, "blue"), (1, "green"), (2, "red")]:
+        channel = bgr[:, :, ch_idx]
+        for scale in [5.0, 7.0]:
+            scaled = cv2.resize(channel, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+            _, th = cv2.threshold(scaled, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            raw = try_img(th, f"ch_{ch_name}_{scale}")
+            if raw and "/" in raw:
+                return raw
+            raw = try_img(255 - th, f"ch_{ch_name}_{scale}_inv")
+            if raw and "/" in raw:
+                return raw
+
+    # Method 4: Grayscale fallback
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    for scale in [5.0, 7.0]:
+        scaled = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+        _, th = cv2.threshold(scaled, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        raw = try_img(th, f"gray_otsu_{scale}")
+        if raw and "/" in raw:
+            return raw
+        raw = try_img(255 - th, f"gray_otsu_{scale}_inv")
+        if raw and "/" in raw:
+            return raw
+
+    return ""
+
+
 def process(png_bytes: bytes, kind: str) -> dict:
     bgr = _as_bgr(png_bytes)
     if bgr is None:
@@ -955,6 +1018,10 @@ def process(png_bytes: bytes, kind: str) -> dict:
         if not raw:
             raw = _ocr_line(255 - th_otsu, whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ", timeout=1.0)
         return {"ok": True, "raw": raw, "value": raw.strip() if raw else None, "unit": None}
+
+    if kind == "enemyhp":
+        raw = ocr_hp(bgr)
+        return {"ok": bool(raw), "raw": raw, "value": raw or None, "unit": None}
 
     if kind == "enemyname":
         # Monster name: allow letters, spaces, hyphen

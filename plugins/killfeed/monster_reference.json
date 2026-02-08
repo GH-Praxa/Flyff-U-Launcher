@@ -4,7958 +4,9095 @@
     "name": "Furious Mr. Pumpkin",
     "level": 0,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4454
   },
   {
     "id": 7905,
     "name": "Lord Big Muscle",
     "level": 0,
     "element": "fire",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 8974,
     "name": "Lord Clockworks Alpha",
     "level": 0,
     "element": "none",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 4166,
     "name": "Lord Drakul",
     "level": 0,
     "element": "wind",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 2019,
     "name": "Lord Iblis Leanes",
     "level": 0,
     "element": "wind",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 2331,
     "name": "Lord Krrr",
     "level": 0,
     "element": "electricity",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 4894,
     "name": "Lord Lykanos",
     "level": 0,
     "element": "water",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 9059,
     "name": "Lord Meteonyker",
     "level": 0,
     "element": "fire",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 3713,
     "name": "Lord Mia",
     "level": 0,
     "element": "water",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 9868,
     "name": "Lord Mushmoot",
     "level": 0,
     "element": "electricity",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 7523,
     "name": "Lord Pumpkin",
     "level": 0,
     "element": "earth",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 3595,
     "name": "Lord Red Meteonyker",
     "level": 0,
     "element": "fire",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 1710,
     "name": "Lord Ripper",
     "level": 0,
     "element": "earth",
-    "rank": "worldboss"
+    "rank": "worldboss",
+    "hp": 100000000
   },
   {
     "id": 10339,
     "name": "[Event] Leyena",
     "level": 1,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 11048,
     "name": "[Event] Pirate ship",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 999999999
   },
   {
     "id": 3947,
     "name": "Aibatt",
     "level": 1,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 148
   },
   {
     "id": 3582,
     "name": "Baby Mochomochi",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 7745,
     "name": "Buur",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 7759,
     "name": "Clockworks Butler",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 9918,
     "name": "Deviant Mr. Pumpkin",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 3159,
     "name": "Earl Vermelho",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 13458,
     "name": "Eggcellent",
     "level": 1,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 25
   },
   {
     "id": 13459,
     "name": "Fliegendes Ei",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 19168,
     "name": "Goldenes Aibatt",
     "level": 1,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 100
   },
   {
     "id": 2630,
     "name": "Goldenes Aibatt",
     "level": 1,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 8305,
     "name": "Gray Earl",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 4193,
     "name": "Grumpy elf",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 15312,
     "name": "Kalgas",
     "level": 1,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1500000000
   },
   {
     "id": 1728,
     "name": "Master Demian",
     "level": 1,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3700000
   },
   {
     "id": 5101,
     "name": "Master Keakoon",
     "level": 1,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3700000
   },
   {
     "id": 8196,
     "name": "Master Muffrin",
     "level": 1,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3700000
   },
   {
     "id": 29806,
     "name": "Mechamochi",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 6323,
     "name": "Mr Zombie",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 9220,
     "name": "Mrs Zombie",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 10801,
     "name": "null",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2
   },
   {
     "id": 18819,
     "name": "null",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2
   },
   {
     "id": 3932,
     "name": "Saphyryan",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 16259,
     "name": "Silber Aibatt",
     "level": 1,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 5745,
     "name": "Small Aibatt",
     "level": 1,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 120
   },
   {
     "id": 14981,
     "name": "Thief Santa",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 12973,
     "name": "Wild Turkey",
     "level": 1,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5
   },
   {
     "id": 19629,
     "name": "Yeti",
     "level": 1,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 2087,
     "name": "Captain Aibatt",
     "level": 2,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 190
   },
   {
     "id": 2159,
     "name": "Mushpang",
     "level": 3,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 348
   },
   {
     "id": 2169,
     "name": "Small Mushpang",
     "level": 3,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 305
   },
   {
     "id": 308,
     "name": "Captain Mushpang",
     "level": 4,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 373
   },
   {
     "id": 7349,
     "name": "Burudeng",
     "level": 5,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 745
   },
   {
     "id": 3403,
     "name": "Giant Aibatt",
     "level": 5,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 14326
   },
   {
     "id": 6688,
     "name": "Small Burudeng",
     "level": 5,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 745
   },
   {
     "id": 1825,
     "name": "Captain Burudeng",
     "level": 6,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 793
   },
   {
     "id": 928,
     "name": "Giant Mushpang",
     "level": 6,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 19764
   },
   {
     "id": 16911,
     "name": "Lord Mushpang",
     "level": 6,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 19764
   },
   {
     "id": 26,
     "name": "Pukepuke",
     "level": 7,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 1112
   },
   {
     "id": 5858,
     "name": "Small Pukepuke",
     "level": 7,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1112
   },
   {
     "id": 8093,
     "name": "Violet Aibatt",
     "level": 7,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 17191
   },
   {
     "id": 6047,
     "name": "Captain Pukepuke",
     "level": 8,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1180
   },
   {
     "id": 8793,
     "name": "Peakyturtle",
     "level": 8,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 1370
   },
   {
     "id": 5827,
     "name": "Small Peakyturtle",
     "level": 8,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1370
   },
   {
     "id": 5903,
     "name": "Violet Mushpang",
     "level": 8,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 23716
   },
   {
     "id": 4338,
     "name": "Captain Peakyturtle",
     "level": 9,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1445
   },
   {
     "id": 365,
     "name": "Demian",
     "level": 9,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 1454
   },
   {
     "id": 4004,
     "name": "Giant Burudeng",
     "level": 9,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 24323
   },
   {
     "id": 8412,
     "name": "Urchin Demian",
     "level": 9,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1454
   },
   {
     "id": 14585,
     "name": "Artifact",
     "level": 10,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 100000000
   },
   {
     "id": 9520,
     "name": "Bad Demian",
     "level": 10,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1529
   },
   {
     "id": 6755,
     "name": "Doridoma",
     "level": 11,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 1851
   },
   {
     "id": 3260,
     "name": "Giant Pukepuke",
     "level": 11,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 31556
   },
   {
     "id": 6349,
     "name": "Small Doridoma",
     "level": 11,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1851
   },
   {
     "id": 7703,
     "name": "Violet Burudeng",
     "level": 11,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 29187
   },
   {
     "id": 8034,
     "name": "Captain Doridoma",
     "level": 12,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1939
   },
   {
     "id": 8016,
     "name": "Giant Peakyturtle",
     "level": 12,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 36132
   },
   {
     "id": 6172,
     "name": "Giant Demian",
     "level": 13,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 39177
   },
   {
     "id": 9998,
     "name": "Lawolf",
     "level": 13,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2297
   },
   {
     "id": 16175,
     "name": "Lord Demian",
     "level": 13,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 39177
   },
   {
     "id": 298,
     "name": "Violet Pukepuke",
     "level": 13,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 37867
   },
   {
     "id": 413,
     "name": "Young Lawolf",
     "level": 13,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2297
   },
   {
     "id": 5571,
     "name": "Grownup Lawolf",
     "level": 14,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2398
   },
   {
     "id": 5263,
     "name": "Violet Peakyturtle",
     "level": 14,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 43358
   },
   {
     "id": 7119,
     "name": "1st Class Fefern",
     "level": 15,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2320
   },
   {
     "id": 9718,
     "name": "Babari",
     "level": 15,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2578
   },
   {
     "id": 6091,
     "name": "Brazenface Pukepuke",
     "level": 15,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 300
   },
   {
     "id": 2685,
     "name": "Chaner",
     "level": 15,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2578
   },
   {
     "id": 4052,
     "name": "Criminal Fefern",
     "level": 15,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2578
   },
   {
     "id": 8990,
     "name": "Erons Catcher",
     "level": 15,
     "element": "none",
-    "rank": "material"
+    "rank": "material",
+    "hp": 100000
   },
   {
     "id": 19130,
     "name": "Event Greemong",
     "level": 15,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 6905,
     "name": "Fefern",
     "level": 15,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2320
   },
   {
     "id": 2130,
     "name": "Giant Doridoma",
     "level": 15,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 47784
   },
   {
     "id": 627,
     "name": "Guru Catcher",
     "level": 15,
     "element": "none",
-    "rank": "material"
+    "rank": "material",
+    "hp": 100000
   },
   {
     "id": 84,
     "name": "Krasec Catcher",
     "level": 15,
     "element": "none",
-    "rank": "material"
+    "rank": "material",
+    "hp": 100000
   },
   {
     "id": 4827,
     "name": "Mine Catcher",
     "level": 15,
     "element": "none",
-    "rank": "material"
+    "rank": "material",
+    "hp": 100000
   },
   {
     "id": 8386,
     "name": "Rookie Cloudberry Carrie",
     "level": 15,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3800
   },
   {
     "id": 5145,
     "name": "Seido",
     "level": 15,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2578
   },
   {
     "id": 6472,
     "name": "Shuraiture",
     "level": 15,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2578
   },
   {
     "id": 5357,
     "name": "Violet Demian",
     "level": 15,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 47012
   },
   {
     "id": 6123,
     "name": "2nd Class Fefern",
     "level": 16,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2415
   },
   {
     "id": 767,
     "name": "Cute Nyangnyang",
     "level": 17,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3080
   },
   {
     "id": 7545,
     "name": "Giant Lawolf",
     "level": 17,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 52852
   },
   {
     "id": 6413,
     "name": "Nyangnyang",
     "level": 17,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3080
   },
   {
     "id": 6235,
     "name": "Violet Doridoma",
     "level": 17,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 57340
   },
   {
     "id": 7006,
     "name": "Creep Nyangnyang",
     "level": 18,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3197
   },
   {
     "id": 2120,
     "name": "Bang",
     "level": 19,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2994
   },
   {
     "id": 2699,
     "name": "Captain Bang",
     "level": 19,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2994
   },
   {
     "id": 9568,
     "name": "Giant Fefern",
     "level": 19,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 52145
   },
   {
     "id": 2250,
     "name": "Violet Lawolf",
     "level": 19,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 63422
   },
   {
     "id": 22669,
     "name": "[Event] Christmas Aibatt",
     "level": 20,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10
   },
   {
     "id": 27486,
     "name": "[Event] Giant Mr. Pumpkin",
     "level": 20,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3101
   },
   {
     "id": 16510,
     "name": "[Event] Giggle Box",
     "level": 20,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2481
   },
   {
     "id": 21158,
     "name": "[Event] Mr. Pumpkin",
     "level": 20,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2481
   },
   {
     "id": 12789,
     "name": "[Event] Violet Giggle Box",
     "level": 20,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3101
   },
   {
     "id": 1597,
     "name": "Ant Turtle",
     "level": 20,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3101
   },
   {
     "id": 2486,
     "name": "Boss Bang",
     "level": 20,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3101
   },
   {
     "id": 5154,
     "name": "Mothbee",
     "level": 20,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3404
   },
   {
     "id": 9131,
     "name": "Small Mothbee",
     "level": 20,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3404
   },
   {
     "id": 7749,
     "name": "Captain Mothbee",
     "level": 21,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3521
   },
   {
     "id": 5896,
     "name": "Flybat",
     "level": 21,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 4555
   },
   {
     "id": 5870,
     "name": "Giant Nyangnyang",
     "level": 21,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 65032
   },
   {
     "id": 3415,
     "name": "Mutant Fefern",
     "level": 21,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3802
   },
   {
     "id": 3047,
     "name": "Small Flybat",
     "level": 21,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 4555
   },
   {
     "id": 1418,
     "name": "Small Wagsaac",
     "level": 21,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3802
   },
   {
     "id": 3041,
     "name": "Violet Fefern",
     "level": 21,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 62574
   },
   {
     "id": 1252,
     "name": "Wagsaac",
     "level": 21,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3802
   },
   {
     "id": 10657,
     "name": "[Event] Captain Flybat",
     "level": 22,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4707
   },
   {
     "id": 9412,
     "name": "Captain Flybat",
     "level": 22,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4707
   },
   {
     "id": 9782,
     "name": "Captain Wagsaac",
     "level": 22,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3928
   },
   {
     "id": 8179,
     "name": "Criminal Wagsaac",
     "level": 22,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3928
   },
   {
     "id": 7898,
     "name": "Member of the Violet Magician Troupe",
     "level": 22,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2972
   },
   {
     "id": 9137,
     "name": "Mutant Fefern King",
     "level": 22,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3928
   },
   {
     "id": 15980,
     "name": "Craken",
     "level": 23,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2050
   },
   {
     "id": 4910,
     "name": "Craken",
     "level": 23,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20500
   },
   {
     "id": 1808,
     "name": "Giant Bang",
     "level": 23,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 63106
   },
   {
     "id": 16408,
     "name": "Höhlen-Larve",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1642
   },
   {
     "id": 4906,
     "name": "Höhlen-Larve",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 16420
   },
   {
     "id": 3769,
     "name": "Höhlen-Nightmist",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 19000
   },
   {
     "id": 8687,
     "name": "Höhlen-Nightmist",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1900
   },
   {
     "id": 11661,
     "name": "Höhlenmensch-Häuptling",
     "level": 23,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 87250
   },
   {
     "id": 1237,
     "name": "Höhlenmensch-Häuptling",
     "level": 23,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 872500
   },
   {
     "id": 19375,
     "name": "Königin der Langbeine",
     "level": 23,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 30000
   },
   {
     "id": 8124,
     "name": "Königin der Langbeine",
     "level": 23,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 300000
   },
   {
     "id": 9224,
     "name": "Little Mia",
     "level": 23,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3921
   },
   {
     "id": 7517,
     "name": "Mia",
     "level": 23,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3921
   },
   {
     "id": 4198,
     "name": "Mutant Nyangnyang",
     "level": 23,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3921
   },
   {
     "id": 15032,
     "name": "Nightmist Empress",
     "level": 23,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 35000
   },
   {
     "id": 7109,
     "name": "Nightmist Empress",
     "level": 23,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 350000
   },
   {
     "id": 16448,
     "name": "Radioaktive Langbeine",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1750
   },
   {
     "id": 8445,
     "name": "Radioaktive Langbeine",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 17500
   },
   {
     "id": 16539,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1580
   },
   {
     "id": 9745,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 23,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 15800
   },
   {
     "id": 512,
     "name": "Violet Nyangnyang",
     "level": 23,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 78038
   },
   {
     "id": 3209,
     "name": "Captain Mia",
     "level": 24,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4044
   },
   {
     "id": 6345,
     "name": "Mutant Nyangnyang Queen",
     "level": 24,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4044
   },
   {
     "id": 18355,
     "name": "[Event] Giant Wagsaac",
     "level": 25,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 75204
   },
   {
     "id": 19371,
     "name": "[Event] Mr. Pumpkin",
     "level": 25,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 4454
   },
   {
     "id": 60,
     "name": "Big Muscle",
     "level": 25,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 228733
   },
   {
     "id": 402,
     "name": "Giant Flybat",
     "level": 25,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 90245
   },
   {
     "id": 2766,
     "name": "Giant Mothbee",
     "level": 25,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 75204
   },
   {
     "id": 9182,
     "name": "Giant Wagsaac",
     "level": 25,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 75204
   },
   {
     "id": 26424,
     "name": "Lord Mothbee",
     "level": 25,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 75204
   },
   {
     "id": 5269,
     "name": "Mr Pumpkin",
     "level": 25,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 4454
   },
   {
     "id": 5566,
     "name": "Mutant Bang",
     "level": 25,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 4454
   },
   {
     "id": 3716,
     "name": "Mutant Giant 2nd Class Fefern",
     "level": 25,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 75204
   },
   {
     "id": 2553,
     "name": "Organigor",
     "level": 25,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2972
   },
   {
     "id": 761,
     "name": "Stale Mr Pumpkin",
     "level": 25,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 4454
   },
   {
     "id": 2532,
     "name": "Violet Bang",
     "level": 25,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 75727
   },
   {
     "id": 2484,
     "name": "Mutant Boss Bang",
     "level": 26,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4586
   },
   {
     "id": 9350,
     "name": "Rotten Mr Pumpkin",
     "level": 26,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4586
   },
   {
     "id": 1682,
     "name": "Criminal Mr Pumpkin",
     "level": 27,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4700
   },
   {
     "id": 3491,
     "name": "Giant Mia",
     "level": 27,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 82948
   },
   {
     "id": 7328,
     "name": "Mutant Giant Nyangnyang",
     "level": 27,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 82948
   },
   {
     "id": 6658,
     "name": "Red Mantis B",
     "level": 27,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 4601
   },
   {
     "id": 6035,
     "name": "Red Mantis C",
     "level": 27,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 4601
   },
   {
     "id": 8276,
     "name": "Violet Flybat",
     "level": 27,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 108294
   },
   {
     "id": 8539,
     "name": "Violet Mothbee",
     "level": 27,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 90244
   },
   {
     "id": 9134,
     "name": "Violet Wagsaac",
     "level": 27,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 90244
   },
   {
     "id": 5377,
     "name": "Red Mantis A",
     "level": 28,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4730
   },
   {
     "id": 4300,
     "name": "Small Zendros",
     "level": 28,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5003
   },
   {
     "id": 3089,
     "name": "Zendros",
     "level": 28,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5003
   },
   {
     "id": 1009,
     "name": "Beast Mr Pumpkin",
     "level": 29,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 88035
   },
   {
     "id": 6696,
     "name": "Captain Zendros",
     "level": 29,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5137
   },
   {
     "id": 1490,
     "name": "Giant Mr Pumpkin",
     "level": 29,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 88035
   },
   {
     "id": 5466,
     "name": "Jack The Hammer",
     "level": 29,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5003
   },
   {
     "id": 2979,
     "name": "Mutant Giant Bang King",
     "level": 29,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 88035
   },
   {
     "id": 3310,
     "name": "Small Jack The Hammer",
     "level": 29,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5003
   },
   {
     "id": 7877,
     "name": "Violet Mia",
     "level": 29,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 99537
   },
   {
     "id": 10364,
     "name": "[Event] Creper",
     "level": 30,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5422
   },
   {
     "id": 18339,
     "name": "[Event] Violet Creper",
     "level": 30,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 8133
   },
   {
     "id": 22,
     "name": "Captain Jack The Hammer",
     "level": 30,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5137
   },
   {
     "id": 6949,
     "name": "Hammer Kick",
     "level": 30,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5137
   },
   {
     "id": 1439,
     "name": "Master of the Violet Magician Troupe",
     "level": 30,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5780
   },
   {
     "id": 6633,
     "name": "Troupe Member of Red Bang",
     "level": 30,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5737
   },
   {
     "id": 3882,
     "name": "Vice Veduque",
     "level": 30,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 3000
   },
   {
     "id": 4591,
     "name": "Giant Red Mantis",
     "level": 31,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 93121
   },
   {
     "id": 4080,
     "name": "Giggle Box",
     "level": 31,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5422
   },
   {
     "id": 3639,
     "name": "Small Giggle Box",
     "level": 31,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5422
   },
   {
     "id": 840,
     "name": "Violet Mr. Pumpkin",
     "level": 31,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 105642
   },
   {
     "id": 7587,
     "name": "Captain Giggle Box",
     "level": 32,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5560
   },
   {
     "id": 4270,
     "name": "Criminal Giggle Box",
     "level": 32,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5560
   },
   {
     "id": 5517,
     "name": "Worm Veduque",
     "level": 32,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 47000
   },
   {
     "id": 10974,
     "name": "[Event] Giant Jack the Hammer",
     "level": 33,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 101552
   },
   {
     "id": 3537,
     "name": "Bucrow",
     "level": 33,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6761
   },
   {
     "id": 4120,
     "name": "Giant Jack The Hammer",
     "level": 33,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 101552
   },
   {
     "id": 8332,
     "name": "Giant Zendros",
     "level": 33,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 101552
   },
   {
     "id": 6255,
     "name": "Heartless Bang",
     "level": 33,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 400
   },
   {
     "id": 22950,
     "name": "Lord Zendros",
     "level": 33,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 101552
   },
   {
     "id": 1733,
     "name": "Rock Muscle",
     "level": 33,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5857
   },
   {
     "id": 4164,
     "name": "Small Bucrow",
     "level": 33,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6761
   },
   {
     "id": 6598,
     "name": "Small Rock Muscle",
     "level": 33,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5857
   },
   {
     "id": 1826,
     "name": "Violet Red Mantis",
     "level": 33,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 111745
   },
   {
     "id": 6566,
     "name": "Captain Bucrow",
     "level": 34,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6926
   },
   {
     "id": 2784,
     "name": "Captain Rock Muscle",
     "level": 34,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6000
   },
   {
     "id": 5752,
     "name": "Captain Neparuba",
     "level": 35,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6309
   },
   {
     "id": 9217,
     "name": "Cloudberry Carrier",
     "level": 35,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6600
   },
   {
     "id": 5169,
     "name": "Gangard",
     "level": 35,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5880
   },
   {
     "id": 6848,
     "name": "Giant Giggle Box",
     "level": 35,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 106638
   },
   {
     "id": 8889,
     "name": "Hobo",
     "level": 35,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6309
   },
   {
     "id": 2676,
     "name": "Krrr",
     "level": 35,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 472500
   },
   {
     "id": 9208,
     "name": "Neparuba",
     "level": 35,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6309
   },
   {
     "id": 421,
     "name": "Serus Uriel",
     "level": 35,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 100000
   },
   {
     "id": 7751,
     "name": "Small Hobo",
     "level": 35,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6309
   },
   {
     "id": 5083,
     "name": "Troupe Leader of Red Bang",
     "level": 35,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 5880
   },
   {
     "id": 587,
     "name": "Violet Jack the Hammer",
     "level": 35,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 121862
   },
   {
     "id": 5894,
     "name": "Violet Zendros",
     "level": 35,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 121862
   },
   {
     "id": 3876,
     "name": "Boss Neparuba",
     "level": 36,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6457
   },
   {
     "id": 596,
     "name": "Captain Hobo",
     "level": 36,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6457
   },
   {
     "id": 307,
     "name": "Small Mushpoie",
     "level": 36,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6309
   },
   {
     "id": 14414,
     "name": "[Event] Dumb Bull",
     "level": 37,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6605
   },
   {
     "id": 11141,
     "name": "[Event] Giant Bucrow",
     "level": 37,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 136456
   },
   {
     "id": 6227,
     "name": "Criminal Hobo",
     "level": 37,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6600
   },
   {
     "id": 1357,
     "name": "DumbBull",
     "level": 37,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6605
   },
   {
     "id": 2187,
     "name": "Giant Bucrow",
     "level": 37,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 136456
   },
   {
     "id": 3936,
     "name": "Giant Rock Muscle",
     "level": 37,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 113713
   },
   {
     "id": 7388,
     "name": "Small DumbBull",
     "level": 37,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6605
   },
   {
     "id": 9849,
     "name": "Violet Giggle Box",
     "level": 37,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 127965
   },
   {
     "id": 3436,
     "name": "Captain DumbBull",
     "level": 38,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6753
   },
   {
     "id": 2774,
     "name": "Giant Hobo",
     "level": 39,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 118131
   },
   {
     "id": 2181,
     "name": "Small Totemia",
     "level": 39,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 6675
   },
   {
     "id": 2755,
     "name": "Totemia",
     "level": 39,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 6675
   },
   {
     "id": 3990,
     "name": "Violet Bucrow",
     "level": 39,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 163747
   },
   {
     "id": 2898,
     "name": "Violet Rock Muscle",
     "level": 39,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 136455
   },
   {
     "id": 1841,
     "name": "Captain Totemia",
     "level": 40,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6819
   },
   {
     "id": 5776,
     "name": "Giant Neparuba",
     "level": 40,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 118131
   },
   {
     "id": 23,
     "name": "Grand Master of the Violet Magician Troupe",
     "level": 40,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 141012
   },
   {
     "id": 8005,
     "name": "Lord Bang",
     "level": 40,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 147015
   },
   {
     "id": 21196,
     "name": "Lord Neparuba",
     "level": 40,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 118131
   },
   {
     "id": 7942,
     "name": "Cardpuppet",
     "level": 41,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 7450
   },
   {
     "id": 3165,
     "name": "Giant DumbBull",
     "level": 41,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 131912
   },
   {
     "id": 25222,
     "name": "Lord Dumb Bull",
     "level": 41,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 131912
   },
   {
     "id": 6042,
     "name": "Maid Cardpuppet",
     "level": 41,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 7450
   },
   {
     "id": 6769,
     "name": "Violet Hobo",
     "level": 41,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 141757
   },
   {
     "id": 2999,
     "name": "Criminal Cardpuppet",
     "level": 42,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7632
   },
   {
     "id": 4820,
     "name": "Flybrigen",
     "level": 42,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 7614
   },
   {
     "id": 8011,
     "name": "Manager Cardpuppet",
     "level": 42,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7625
   },
   {
     "id": 4992,
     "name": "Small Flybrigen",
     "level": 42,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 7614
   },
   {
     "id": 8857,
     "name": "Violet Neparuba",
     "level": 42,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 141757
   },
   {
     "id": 19871,
     "name": "[Event] Giant Totemia",
     "level": 43,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 136998
   },
   {
     "id": 11840,
     "name": "[Event] Scorpicon",
     "level": 43,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 9981
   },
   {
     "id": 8186,
     "name": "Captain Flybrigen",
     "level": 43,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7769
   },
   {
     "id": 6007,
     "name": "Giant Totemia",
     "level": 43,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 136998
   },
   {
     "id": 28209,
     "name": "Lord Totemia",
     "level": 43,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 136998
   },
   {
     "id": 3718,
     "name": "Scorpicon",
     "level": 43,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 9981
   },
   {
     "id": 2736,
     "name": "Small Scorpicon",
     "level": 43,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 9981
   },
   {
     "id": 3143,
     "name": "Small Tombstone Bearer",
     "level": 43,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 7769
   },
   {
     "id": 4190,
     "name": "Tombstone Bearer",
     "level": 43,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 7769
   },
   {
     "id": 5012,
     "name": "Violet Dumb Bull",
     "level": 43,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 158294
   },
   {
     "id": 6932,
     "name": "Captain Scorpicon",
     "level": 44,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10181
   },
   {
     "id": 9262,
     "name": "Captain Tombstone Bearer",
     "level": 44,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7925
   },
   {
     "id": 13028,
     "name": "Alte Spur",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5444
   },
   {
     "id": 777,
     "name": "Alte Spur",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 54441
   },
   {
     "id": 5982,
     "name": "Basque",
     "level": 45,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 8260
   },
   {
     "id": 11153,
     "name": "Bolt Otem",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5873
   },
   {
     "id": 2621,
     "name": "Bolt Otem",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 58739
   },
   {
     "id": 9203,
     "name": "Boss Cardpuppet",
     "level": 45,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 144760
   },
   {
     "id": 6894,
     "name": "Craken",
     "level": 45,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 58739
   },
   {
     "id": 16057,
     "name": "Empfindsamer Baumkrieger",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5014
   },
   {
     "id": 3640,
     "name": "Empfindsamer Baumkrieger",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 50143
   },
   {
     "id": 11835,
     "name": "Enraged Gorilla",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 85959
   },
   {
     "id": 2378,
     "name": "Enraged Gorilla",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 859599
   },
   {
     "id": 15738,
     "name": "Grunt-Gorilla",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4704
   },
   {
     "id": 2505,
     "name": "Grunt-Gorilla",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 47049
   },
   {
     "id": 1937,
     "name": "Hadeseor",
     "level": 45,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 2972
   },
   {
     "id": 2387,
     "name": "Höhlen-Larve",
     "level": 45,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 47049
   },
   {
     "id": 679,
     "name": "Höhlen-Nightmist",
     "level": 45,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 54441
   },
   {
     "id": 711,
     "name": "Höhlenmensch-Häuptling",
     "level": 45,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 2500000
   },
   {
     "id": 3591,
     "name": "Ivillis Crasher",
     "level": 45,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 16520
   },
   {
     "id": 3566,
     "name": "Ivillis Guarder",
     "level": 45,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 165200
   },
   {
     "id": 5801,
     "name": "Königin der Langbeine",
     "level": 45,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 859599
   },
   {
     "id": 8844,
     "name": "Mushmoot",
     "level": 45,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 843750
   },
   {
     "id": 5356,
     "name": "Nightmist Empress",
     "level": 45,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 1002865
   },
   {
     "id": 17615,
     "name": "Overgrown Broodmother",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 70000
   },
   {
     "id": 7525,
     "name": "Overgrown Broodmother",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 700000
   },
   {
     "id": 6055,
     "name": "Phantum Basque",
     "level": 45,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 8260
   },
   {
     "id": 2753,
     "name": "Radioaktive Langbeine",
     "level": 45,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 50143
   },
   {
     "id": 17307,
     "name": "Sentient Tree Guardian",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 100286
   },
   {
     "id": 2749,
     "name": "Sentient Tree Guardian",
     "level": 45,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 1002865
   },
   {
     "id": 10441,
     "name": "Spiderling",
     "level": 45,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1509
   },
   {
     "id": 6154,
     "name": "Spiderling",
     "level": 45,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 15091
   },
   {
     "id": 16503,
     "name": "Tempelwächter",
     "level": 45,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 250000
   },
   {
     "id": 9085,
     "name": "Tempelwächter",
     "level": 45,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 2500000
   },
   {
     "id": 3670,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 45,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 45272
   },
   {
     "id": 13716,
     "name": "Übergroße Spinne",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4527
   },
   {
     "id": 8202,
     "name": "Übergroße Spinne",
     "level": 45,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 45272
   },
   {
     "id": 4098,
     "name": "Violet Totemia",
     "level": 45,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 164397
   },
   {
     "id": 2640,
     "name": "Giant Flybrigen",
     "level": 46,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 147628
   },
   {
     "id": 25530,
     "name": "Lord Flybrigen",
     "level": 46,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 147628
   },
   {
     "id": 879,
     "name": "Lumping Basque",
     "level": 46,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8419
   },
   {
     "id": 5259,
     "name": "Criminal Basque",
     "level": 47,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8500
   },
   {
     "id": 3103,
     "name": "Giant Scorpicon",
     "level": 47,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 179794
   },
   {
     "id": 5557,
     "name": "Giant Tombstone Bearer",
     "level": 47,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 149828
   },
   {
     "id": 4862,
     "name": "Prankster",
     "level": 47,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 8579
   },
   {
     "id": 8606,
     "name": "Small Mage Prankster",
     "level": 47,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 8579
   },
   {
     "id": 1189,
     "name": "Tough RockMuscle",
     "level": 47,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 500
   },
   {
     "id": 9052,
     "name": "Violet Cardpuppet",
     "level": 47,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 173712
   },
   {
     "id": 8433,
     "name": "Master Mage Prankster",
     "level": 48,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8739
   },
   {
     "id": 4366,
     "name": "Violet Flybrigen",
     "level": 48,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 177153
   },
   {
     "id": 16942,
     "name": "[Event] Wheelem",
     "level": 49,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 8899
   },
   {
     "id": 7155,
     "name": "Giant Basque",
     "level": 49,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 154915
   },
   {
     "id": 2308,
     "name": "Rockepeller",
     "level": 49,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 18947
   },
   {
     "id": 4625,
     "name": "Rough Wheelem",
     "level": 49,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 8899
   },
   {
     "id": 4579,
     "name": "Small Rockepeller",
     "level": 49,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 18947
   },
   {
     "id": 8854,
     "name": "Violet Scorpicon",
     "level": 49,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 215752
   },
   {
     "id": 9823,
     "name": "Violet Tombstone Bearer",
     "level": 49,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 179793
   },
   {
     "id": 8789,
     "name": "Wheelem",
     "level": 49,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 8899
   },
   {
     "id": 7343,
     "name": "Bouncing Wheelem",
     "level": 50,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 9059
   },
   {
     "id": 8570,
     "name": "Captain Rockepeller",
     "level": 50,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 19289
   },
   {
     "id": 8659,
     "name": "Ivillis Poisoner",
     "level": 50,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 19240
   },
   {
     "id": 1531,
     "name": "Giantmage Prankster",
     "level": 51,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 163345
   },
   {
     "id": 5974,
     "name": "Leyena",
     "level": 51,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 9620
   },
   {
     "id": 8330,
     "name": "Small Leyena",
     "level": 51,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 9620
   },
   {
     "id": 8297,
     "name": "Small Trangfoma",
     "level": 51,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 11217
   },
   {
     "id": 8096,
     "name": "Trangfoma",
     "level": 51,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 11217
   },
   {
     "id": 6625,
     "name": "Violet Basque",
     "level": 51,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 185898
   },
   {
     "id": 7042,
     "name": "Captain Leyena",
     "level": 52,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 9788
   },
   {
     "id": 4814,
     "name": "Captain Trangfoma",
     "level": 52,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11413
   },
   {
     "id": 9451,
     "name": "Criminal Leyena",
     "level": 52,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 9788
   },
   {
     "id": 18095,
     "name": "[Event] Giant Wheelem",
     "level": 53,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 168432
   },
   {
     "id": 9315,
     "name": "Giant Rockepeller",
     "level": 53,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 168432
   },
   {
     "id": 2665,
     "name": "Giant Wheelem",
     "level": 53,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 168432
   },
   {
     "id": 4571,
     "name": "Ivillis Red Totem",
     "level": 53,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 15947
   },
   {
     "id": 24144,
     "name": "Lord Rockepeller",
     "level": 53,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 168432
   },
   {
     "id": 1711,
     "name": "Small Steamwalker",
     "level": 53,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 9956
   },
   {
     "id": 5224,
     "name": "Steamwalker",
     "level": 53,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 9956
   },
   {
     "id": 3916,
     "name": "Violet Prankster",
     "level": 53,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 196014
   },
   {
     "id": 8834,
     "name": "Captain Steamwalker",
     "level": 54,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10125
   },
   {
     "id": 11078,
     "name": "[Event] Steel Knight",
     "level": 55,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 10294
   },
   {
     "id": 5484,
     "name": "Giant Leyena",
     "level": 55,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 181405
   },
   {
     "id": 4967,
     "name": "Giant Trangfoma",
     "level": 55,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 217686
   },
   {
     "id": 2671,
     "name": "Ivillis Quaker",
     "level": 55,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 268580
   },
   {
     "id": 2984,
     "name": "Ivillis Recker",
     "level": 55,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 24510
   },
   {
     "id": 19453,
     "name": "Lord Trangfoma",
     "level": 55,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 217686
   },
   {
     "id": 9212,
     "name": "Small Steel Knight",
     "level": 55,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10294
   },
   {
     "id": 8408,
     "name": "Small Zombiger",
     "level": 55,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 12492
   },
   {
     "id": 9017,
     "name": "Steel Knight",
     "level": 55,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 10294
   },
   {
     "id": 3589,
     "name": "Violet Rockepeller",
     "level": 55,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 202118
   },
   {
     "id": 345,
     "name": "Violet Wheelem",
     "level": 55,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 202118
   },
   {
     "id": 9762,
     "name": "Zombiger",
     "level": 55,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12492
   },
   {
     "id": 5289,
     "name": "Captain Steel Knight",
     "level": 56,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10463
   },
   {
     "id": 5825,
     "name": "Captain Zombiger",
     "level": 56,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 12697
   },
   {
     "id": 7233,
     "name": "Criminal Steel Knight",
     "level": 57,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11500
   },
   {
     "id": 3367,
     "name": "Giant Steamwalker",
     "level": 57,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 190200
   },
   {
     "id": 9504,
     "name": "Nuctuvehicle",
     "level": 57,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12650
   },
   {
     "id": 4954,
     "name": "Nutty Wheel",
     "level": 57,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 10632
   },
   {
     "id": 730,
     "name": "Small Nuctuvehiclel",
     "level": 57,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 12650
   },
   {
     "id": 6726,
     "name": "Small Nutty Wheel",
     "level": 57,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 10632
   },
   {
     "id": 6749,
     "name": "Violet Leyena",
     "level": 57,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 217686
   },
   {
     "id": 570,
     "name": "Violet Trangfoma",
     "level": 57,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 261223
   },
   {
     "id": 9837,
     "name": "Captain Nuctuvehicle",
     "level": 58,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 12851
   },
   {
     "id": 6471,
     "name": "Captain Nutty Wheel",
     "level": 58,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10801
   },
   {
     "id": 12277,
     "name": "[Event] Driller",
     "level": 59,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 14171
   },
   {
     "id": 9320,
     "name": "Driller",
     "level": 59,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 14171
   },
   {
     "id": 333,
     "name": "Giant Steel Knight",
     "level": 59,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 195518
   },
   {
     "id": 781,
     "name": "Giant Zombiger",
     "level": 59,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 234622
   },
   {
     "id": 8098,
     "name": "Risem",
     "level": 59,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 13314
   },
   {
     "id": 5014,
     "name": "Small Driller",
     "level": 59,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 14171
   },
   {
     "id": 4676,
     "name": "Small Risem",
     "level": 59,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 13314
   },
   {
     "id": 3205,
     "name": "Violet Steam Walker",
     "level": 59,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 228240
   },
   {
     "id": 4480,
     "name": "Captain Driller",
     "level": 60,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 14820
   },
   {
     "id": 166,
     "name": "Captain Risem",
     "level": 60,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 13521
   },
   {
     "id": 8306,
     "name": "Cardinal Guardian",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 50000
   },
   {
     "id": 465,
     "name": "Hoiren",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12255
   },
   {
     "id": 377,
     "name": "Hunter X",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 11255
   },
   {
     "id": 4455,
     "name": "Ivillis Dozer",
     "level": 60,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 26858
   },
   {
     "id": 1358,
     "name": "Kidster",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 13255
   },
   {
     "id": 9663,
     "name": "Kynsy",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 11255
   },
   {
     "id": 551,
     "name": "Lightberry Carrier",
     "level": 60,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 14820
   },
   {
     "id": 4107,
     "name": "Ren",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12255
   },
   {
     "id": 1178,
     "name": "Roy",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 10255
   },
   {
     "id": 1716,
     "name": "Rubo",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12255
   },
   {
     "id": 5469,
     "name": "Shacalpion",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 11255
   },
   {
     "id": 159,
     "name": "Sisif",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 12255
   },
   {
     "id": 3662,
     "name": "Small Grrr",
     "level": 60,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 16006
   },
   {
     "id": 2776,
     "name": "Venel Guardian",
     "level": 60,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 100000
   },
   {
     "id": 22737,
     "name": "[Event] Giant Mr. Pumpkin",
     "level": 61,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 16820
   },
   {
     "id": 17990,
     "name": "[Event] Giggle Box",
     "level": 61,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 13456
   },
   {
     "id": 24838,
     "name": "[Event] Mr. Pumpkin",
     "level": 61,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 13456
   },
   {
     "id": 11714,
     "name": "[Event] Violet Giggle Box",
     "level": 61,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 16820
   },
   {
     "id": 471,
     "name": "Giant Nuctuvehicle",
     "level": 61,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 241004
   },
   {
     "id": 7205,
     "name": "Giant Nutty Wheel",
     "level": 61,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 200836
   },
   {
     "id": 2626,
     "name": "Grrr",
     "level": 61,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 16006
   },
   {
     "id": 7844,
     "name": "Small Volt",
     "level": 61,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 16820
   },
   {
     "id": 2078,
     "name": "Violet Steel Knight",
     "level": 61,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 234621
   },
   {
     "id": 4392,
     "name": "Violet Zombiger",
     "level": 61,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 281546
   },
   {
     "id": 6342,
     "name": "Volt",
     "level": 61,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 16820
   },
   {
     "id": 14821,
     "name": "[Event] Captian Volt",
     "level": 62,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 17205
   },
   {
     "id": 2095,
     "name": "Captain Grrr",
     "level": 62,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 16624
   },
   {
     "id": 3729,
     "name": "Captain Volt",
     "level": 62,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 17205
   },
   {
     "id": 580,
     "name": "Criminal Volt",
     "level": 62,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 12405
   },
   {
     "id": 8407,
     "name": "Elderguard",
     "level": 63,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 18589
   },
   {
     "id": 4690,
     "name": "Giant Driller",
     "level": 63,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 230053
   },
   {
     "id": 6931,
     "name": "Giant Risem",
     "level": 63,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 247384
   },
   {
     "id": 938,
     "name": "Ivillis Black Totem",
     "level": 63,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 25106
   },
   {
     "id": 8554,
     "name": "Small Elderguard",
     "level": 63,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 18589
   },
   {
     "id": 3900,
     "name": "Violet Nuctuvehicle",
     "level": 63,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 289204
   },
   {
     "id": 6996,
     "name": "Violet Nutty Wheel",
     "level": 63,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 241003
   },
   {
     "id": 9256,
     "name": "Captain Elderguard",
     "level": 64,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 19173
   },
   {
     "id": 9912,
     "name": "Small Dump",
     "level": 64,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 21756
   },
   {
     "id": 6367,
     "name": "Dump",
     "level": 65,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 21756
   },
   {
     "id": 3386,
     "name": "Emerald Mantis",
     "level": 65,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 14228
   },
   {
     "id": 626,
     "name": "Garbagespider",
     "level": 65,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 22240
   },
   {
     "id": 8414,
     "name": "Giant Grrr",
     "level": 65,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 243386
   },
   {
     "id": 3498,
     "name": "Giant Volt",
     "level": 65,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 290196
   },
   {
     "id": 3359,
     "name": "Ivillis Boxter",
     "level": 65,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 25428
   },
   {
     "id": 4770,
     "name": "Ivillis Mushellizer",
     "level": 65,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 499684
   },
   {
     "id": 8502,
     "name": "Ivillis Puppet",
     "level": 65,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 28858
   },
   {
     "id": 8422,
     "name": "Lord Bang Hanoyan",
     "level": 65,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 270230
   },
   {
     "id": 9553,
     "name": "Small Garbagespider",
     "level": 65,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 22240
   },
   {
     "id": 7209,
     "name": "Small Zenma",
     "level": 65,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 13429
   },
   {
     "id": 6771,
     "name": "Violet Driller",
     "level": 65,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 276063
   },
   {
     "id": 135,
     "name": "Violet Risem",
     "level": 65,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 296860
   },
   {
     "id": 5773,
     "name": "Zenma",
     "level": 65,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 13429
   },
   {
     "id": 5844,
     "name": "Captain Dump",
     "level": 66,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 22081
   },
   {
     "id": 6856,
     "name": "Captain Garbagespider",
     "level": 66,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 22825
   },
   {
     "id": 797,
     "name": "Captain Zenma",
     "level": 66,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 13621
   },
   {
     "id": 9695,
     "name": "Crane Machinery",
     "level": 67,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 24920
   },
   {
     "id": 2726,
     "name": "Criminal Garbagespider",
     "level": 67,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 14620
   },
   {
     "id": 9464,
     "name": "Giant Elderguard",
     "level": 67,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 335022
   },
   {
     "id": 275,
     "name": "Small Crane Machinery",
     "level": 67,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 24920
   },
   {
     "id": 4845,
     "name": "Violet Grrr",
     "level": 67,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 292063
   },
   {
     "id": 816,
     "name": "Violet Volt",
     "level": 67,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 348235
   },
   {
     "id": 6694,
     "name": "Captain Crane Machinery",
     "level": 68,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 25804
   },
   {
     "id": 4883,
     "name": "Clocks",
     "level": 68,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 320230
   },
   {
     "id": 3650,
     "name": "Ivillis Dandysher",
     "level": 68,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 14004
   },
   {
     "id": 2303,
     "name": "Small Nautrepy",
     "level": 68,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 25804
   },
   {
     "id": 2769,
     "name": "Giant Dump",
     "level": 69,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 254295
   },
   {
     "id": 6305,
     "name": "Giant Garbagespider",
     "level": 69,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 397570
   },
   {
     "id": 8571,
     "name": "Nautrepy",
     "level": 69,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 25804
   },
   {
     "id": 1496,
     "name": "Syliaca",
     "level": 69,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 25804
   },
   {
     "id": 6391,
     "name": "Violet Elderguard",
     "level": 69,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 402026
   },
   {
     "id": 2798,
     "name": "Young Syliaca",
     "level": 69,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 25804
   },
   {
     "id": 8786,
     "name": "Captain Nautrepy",
     "level": 70,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 26154
   },
   {
     "id": 1126,
     "name": "Giant Zenma",
     "level": 70,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 254295
   },
   {
     "id": 5336,
     "name": "Grownup Syliaca",
     "level": 70,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 26154
   },
   {
     "id": 7249,
     "name": "Ivillis Leanes",
     "level": 70,
     "element": "wind",
-    "rank": "super"
+    "rank": "super",
+    "hp": 1144080
   },
   {
     "id": 6141,
     "name": "Ivillis Taker",
     "level": 70,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 37204
   },
   {
     "id": 14195,
     "name": "Lord Zenma",
     "level": 70,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 254295
   },
   {
     "id": 14666,
     "name": "[Event] Greemong",
     "level": 71,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 28602
   },
   {
     "id": 2385,
     "name": "Giant Crane Machinery",
     "level": 71,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 436453
   },
   {
     "id": 3555,
     "name": "Greemong",
     "level": 71,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 28602
   },
   {
     "id": 6276,
     "name": "Small Greemong",
     "level": 71,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 28602
   },
   {
     "id": 9903,
     "name": "Violet Dump",
     "level": 71,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 305154
   },
   {
     "id": 9422,
     "name": "Violet Garbagespider",
     "level": 71,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 477084
   },
   {
     "id": 9975,
     "name": "Captain Greemong",
     "level": 72,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 28981
   },
   {
     "id": 8933,
     "name": "Criminal Greemong",
     "level": 72,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 28981
   },
   {
     "id": 6260,
     "name": "Small Boo",
     "level": 72,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 28981
   },
   {
     "id": 1934,
     "name": "Violet Zenma",
     "level": 72,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 305154
   },
   {
     "id": 502,
     "name": "Boo",
     "level": 73,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 31285
   },
   {
     "id": 3617,
     "name": "Carrierbomb",
     "level": 73,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 31285
   },
   {
     "id": 2598,
     "name": "Giant Nautrepy",
     "level": 73,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 390112
   },
   {
     "id": 4813,
     "name": "Giant Syliaca",
     "level": 73,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 493414
   },
   {
     "id": 5052,
     "name": "Longwing",
     "level": 73,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 31285
   },
   {
     "id": 6866,
     "name": "Small Carrierbomb",
     "level": 73,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 31285
   },
   {
     "id": 7511,
     "name": "Small Longwing",
     "level": 73,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 31285
   },
   {
     "id": 6861,
     "name": "Violet Crane Machinery",
     "level": 73,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 523743
   },
   {
     "id": 9734,
     "name": "Captain Boo",
     "level": 74,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 31690
   },
   {
     "id": 125,
     "name": "Captain Carrierbomb",
     "level": 74,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 31690
   },
   {
     "id": 45,
     "name": "Captain Longwing",
     "level": 74,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 31690
   },
   {
     "id": 9460,
     "name": "Alte Spur",
     "level": 75,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 130659
   },
   {
     "id": 6838,
     "name": "Bolt Otem",
     "level": 75,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 140974
   },
   {
     "id": 1584,
     "name": "Craken",
     "level": 75,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 140974
   },
   {
     "id": 5784,
     "name": "Empfindsamer Baumkrieger",
     "level": 75,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 120344
   },
   {
     "id": 2675,
     "name": "Enraged Gorilla",
     "level": 75,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2063037
   },
   {
     "id": 14104,
     "name": "Gerissener Wassermann",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 12034
   },
   {
     "id": 5419,
     "name": "Gerissener Wassermann",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 120344
   },
   {
     "id": 7885,
     "name": "Giant Greemong",
     "level": 75,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 552915
   },
   {
     "id": 13969,
     "name": "Great Kraken",
     "level": 75,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 600000
   },
   {
     "id": 4664,
     "name": "Great Kraken",
     "level": 75,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 6000000
   },
   {
     "id": 8143,
     "name": "Grunt-Gorilla",
     "level": 75,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 112917
   },
   {
     "id": 7452,
     "name": "Höhlen-Larve",
     "level": 75,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 112917
   },
   {
     "id": 4443,
     "name": "Höhlen-Nightmist",
     "level": 75,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 130659
   },
   {
     "id": 4308,
     "name": "Höhlenmensch-Häuptling",
     "level": 75,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 6000000
   },
   {
     "id": 5333,
     "name": "Königin der Langbeine",
     "level": 75,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2063037
   },
   {
     "id": 12319,
     "name": "Kraken-Laich",
     "level": 75,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 4699
   },
   {
     "id": 5729,
     "name": "Kraken-Laich",
     "level": 75,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 46991
   },
   {
     "id": 17062,
     "name": "Lauernder Wassermann",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 13065
   },
   {
     "id": 7478,
     "name": "Lauernder Wassermann",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 130659
   },
   {
     "id": 14360,
     "name": "Meerjungfrau-Schönheit",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11291
   },
   {
     "id": 8737,
     "name": "Meerjungfrau-Schönheit",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 112917
   },
   {
     "id": 7783,
     "name": "Nightmist Empress",
     "level": 75,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2406877
   },
   {
     "id": 1322,
     "name": "Overgrown Broodmother",
     "level": 75,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 1719198
   },
   {
     "id": 2539,
     "name": "Radioaktive Langbeine",
     "level": 75,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 120344
   },
   {
     "id": 19865,
     "name": "Riesenschildkröte",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 14097
   },
   {
     "id": 2519,
     "name": "Riesenschildkröte",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 140974
   },
   {
     "id": 9157,
     "name": "Sentient Tree Guardian",
     "level": 75,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2406877
   },
   {
     "id": 10120,
     "name": "Siren",
     "level": 75,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 240687
   },
   {
     "id": 1344,
     "name": "Siren",
     "level": 75,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2406877
   },
   {
     "id": 8911,
     "name": "Small Hopper",
     "level": 75,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 31736
   },
   {
     "id": 1390,
     "name": "Spiderling",
     "level": 75,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 37593
   },
   {
     "id": 4282,
     "name": "Tempelwächter",
     "level": 75,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 6000000
   },
   {
     "id": 6719,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 75,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 108653
   },
   {
     "id": 6384,
     "name": "Übergroße Spinne",
     "level": 75,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 108653
   },
   {
     "id": 12958,
     "name": "Übergroßer Hai",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10865
   },
   {
     "id": 7607,
     "name": "Übergroßer Hai",
     "level": 75,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 108653
   },
   {
     "id": 7865,
     "name": "Violet Nautrepy",
     "level": 75,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 468134
   },
   {
     "id": 8141,
     "name": "Violet Syliaca",
     "level": 75,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 592096
   },
   {
     "id": 7123,
     "name": "Giant Carrierbomb",
     "level": 76,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 564573
   },
   {
     "id": 4359,
     "name": "Hopper",
     "level": 76,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 32138
   },
   {
     "id": 1882,
     "name": "Captain Hopper",
     "level": 77,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 34242
   },
   {
     "id": 8708,
     "name": "Criminal Hopper",
     "level": 77,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 34242
   },
   {
     "id": 3507,
     "name": "Giant Boo",
     "level": 77,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 564573
   },
   {
     "id": 4262,
     "name": "Violet Greemong",
     "level": 77,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 663498
   },
   {
     "id": 4220,
     "name": "Giant Longwing",
     "level": 78,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 564573
   },
   {
     "id": 29658,
     "name": "Lord Longwing",
     "level": 78,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 564573
   },
   {
     "id": 8283,
     "name": "Small Mushpoie",
     "level": 78,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 35224
   },
   {
     "id": 3428,
     "name": "Violet Carrierbomb",
     "level": 78,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 677487
   },
   {
     "id": 7731,
     "name": "Mushpoie",
     "level": 79,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 36220
   },
   {
     "id": 5847,
     "name": "Violet Boo",
     "level": 79,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 677487
   },
   {
     "id": 13984,
     "name": "[Event] Creper",
     "level": 80,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 36220
   },
   {
     "id": 19798,
     "name": "[Event] Giant Hoppre",
     "level": 80,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 684834
   },
   {
     "id": 12172,
     "name": "[Event] Violet Creper",
     "level": 80,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 54330
   },
   {
     "id": 9194,
     "name": "Captain Mushpoie",
     "level": 80,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 37231
   },
   {
     "id": 4611,
     "name": "Clockworks",
     "level": 80,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 62582890
   },
   {
     "id": 3978,
     "name": "Giant Hopper",
     "level": 80,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 684834
   },
   {
     "id": 1618,
     "name": "Violet Longwing",
     "level": 80,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 677487
   },
   {
     "id": 3755,
     "name": "Small Iren",
     "level": 81,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 38256
   },
   {
     "id": 11647,
     "name": "[Event] Iren",
     "level": 82,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 39295
   },
   {
     "id": 9338,
     "name": "Iren",
     "level": 82,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 39295
   },
   {
     "id": 1722,
     "name": "Violet Hoppre",
     "level": 82,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 821800
   },
   {
     "id": 16380,
     "name": "[Event] Giant Mushpoie",
     "level": 83,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 744618
   },
   {
     "id": 2906,
     "name": "Captain Iren",
     "level": 83,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 40348
   },
   {
     "id": 1545,
     "name": "Criminal Iren",
     "level": 83,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 40348
   },
   {
     "id": 3210,
     "name": "Giant Mushpoie",
     "level": 83,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 744618
   },
   {
     "id": 5131,
     "name": "Small Watangka",
     "level": 84,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 41415
   },
   {
     "id": 10326,
     "name": "[Event] Watangka",
     "level": 85,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 42497
   },
   {
     "id": 1247,
     "name": "Blue Roach Larva",
     "level": 85,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 35415
   },
   {
     "id": 6438,
     "name": "Fafnir",
     "level": 85,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 42497
   },
   {
     "id": 7824,
     "name": "Keakoon Guard",
     "level": 85,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 42497
   },
   {
     "id": 9812,
     "name": "Keakoon Worker",
     "level": 85,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 41415
   },
   {
     "id": 1374,
     "name": "Pinky Roach Larva",
     "level": 85,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 35415
   },
   {
     "id": 9488,
     "name": "Violet Mushpoie",
     "level": 85,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 893541
   },
   {
     "id": 1523,
     "name": "Watangka",
     "level": 85,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 42497
   },
   {
     "id": 9945,
     "name": "Young Fafnir",
     "level": 85,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 41415
   },
   {
     "id": 7212,
     "name": "Captain Watangka",
     "level": 86,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 43593
   },
   {
     "id": 3759,
     "name": "Elite Keakoon Guard",
     "level": 86,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 45827
   },
   {
     "id": 5143,
     "name": "Elite Keakoon Worker",
     "level": 86,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 44703
   },
   {
     "id": 6809,
     "name": "Giant Iren",
     "level": 86,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 806953
   },
   {
     "id": 4916,
     "name": "Grownup Fafnir",
     "level": 86,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 43593
   },
   {
     "id": 17248,
     "name": "[Event] Small Antiquery",
     "level": 87,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 44703
   },
   {
     "id": 4106,
     "name": "Blue Roach",
     "level": 87,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 48119
   },
   {
     "id": 7260,
     "name": "Criminal Watangka",
     "level": 87,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 43593
   },
   {
     "id": 8363,
     "name": "Keakoon Guard Leader",
     "level": 87,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 871850
   },
   {
     "id": 3017,
     "name": "Keakoon Worker Leader",
     "level": 87,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 471850
   },
   {
     "id": 593,
     "name": "Pinky Roach",
     "level": 87,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 49286
   },
   {
     "id": 4997,
     "name": "Small Antiquery",
     "level": 87,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 44703
   },
   {
     "id": 13131,
     "name": "[Event] Antiquery",
     "level": 88,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 45827
   },
   {
     "id": 2568,
     "name": "Antiquery",
     "level": 88,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 45827
   },
   {
     "id": 9000,
     "name": "Elite Keakoon Worker Leader",
     "level": 88,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 531850
   },
   {
     "id": 1273,
     "name": "Green Trillipy",
     "level": 88,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 51339
   },
   {
     "id": 175,
     "name": "Violet Iren",
     "level": 88,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 968343
   },
   {
     "id": 18539,
     "name": "[Event] Giant Watangka",
     "level": 89,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 5586,
     "name": "Blue Roach Queen",
     "level": 89,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1081995
   },
   {
     "id": 2511,
     "name": "Captain Antiquery",
     "level": 89,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 46966
   },
   {
     "id": 5760,
     "name": "Elite Keakoon Guard Leader",
     "level": 89,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 939316
   },
   {
     "id": 7440,
     "name": "Giant Watangka",
     "level": 89,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 27066,
     "name": "Lord Watangka",
     "level": 89,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 1336,
     "name": "Mutant Catsy",
     "level": 89,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 5530490
   },
   {
     "id": 9601,
     "name": "Pinky Roach Queen",
     "level": 89,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1081995
   },
   {
     "id": 360,
     "name": "Small Catsy",
     "level": 89,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 49286
   },
   {
     "id": 3125,
     "name": "Violet Trillipy",
     "level": 89,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 52339
   },
   {
     "id": 10789,
     "name": "[Event] Giant Fafnir",
     "level": 90,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 5669,
     "name": "Blood Trillipy",
     "level": 90,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 53339
   },
   {
     "id": 4464,
     "name": "Giant Fafnir",
     "level": 90,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 4545,
     "name": "Hazard Green Trillipy",
     "level": 90,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1157225
   },
   {
     "id": 23573,
     "name": "Lord Fafnir",
     "level": 90,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 871850
   },
   {
     "id": 9424,
     "name": "Small Luia",
     "level": 90,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 48119
   },
   {
     "id": 13057,
     "name": "[Event] Luia",
     "level": 91,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 49286
   },
   {
     "id": 7128,
     "name": "Catsy",
     "level": 91,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 50468
   },
   {
     "id": 2500,
     "name": "Hazard Violet Trillipy",
     "level": 91,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1257225
   },
   {
     "id": 3227,
     "name": "Luia",
     "level": 91,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 49286
   },
   {
     "id": 9333,
     "name": "Mutant Keakoon Guard",
     "level": 91,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 55339
   },
   {
     "id": 8929,
     "name": "Mutant Keakoon Worker",
     "level": 91,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 54339
   },
   {
     "id": 6779,
     "name": "Violet Watangka",
     "level": 91,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1046220
   },
   {
     "id": 4521,
     "name": "Captain Luia",
     "level": 92,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 50468
   },
   {
     "id": 9286,
     "name": "Chimeradon",
     "level": 92,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 60339
   },
   {
     "id": 2198,
     "name": "Criminal Luia",
     "level": 92,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 50468
   },
   {
     "id": 7107,
     "name": "Giant Antiquery",
     "level": 92,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 939316
   },
   {
     "id": 1731,
     "name": "Hazard Blood Trillipy",
     "level": 92,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1357225
   },
   {
     "id": 4232,
     "name": "Violet Fafnir",
     "level": 92,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1046220
   },
   {
     "id": 17436,
     "name": "[Event] Small Gongury",
     "level": 93,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 51664
   },
   {
     "id": 3631,
     "name": "Captain Catsy",
     "level": 93,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 60339
   },
   {
     "id": 1146,
     "name": "Mutant Devia",
     "level": 93,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 5991490
   },
   {
     "id": 7682,
     "name": "Mutant Keakoon Worker Leader",
     "level": 93,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1009362
   },
   {
     "id": 7728,
     "name": "Small Devia",
     "level": 93,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 53286
   },
   {
     "id": 6473,
     "name": "Small Gongury",
     "level": 93,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 51664
   },
   {
     "id": 779,
     "name": "Giant Chimeradon",
     "level": 94,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1557225
   },
   {
     "id": 6660,
     "name": "Gongury",
     "level": 94,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 52875
   },
   {
     "id": 3200,
     "name": "Violet Antiquery",
     "level": 94,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1127179
   },
   {
     "id": 14391,
     "name": "[Event] Harpy",
     "level": 95,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 54468
   },
   {
     "id": 9714,
     "name": "Brigadier General Crumple",
     "level": 95,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 20000000
   },
   {
     "id": 8020,
     "name": "Captain Gongury",
     "level": 95,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 54100
   },
   {
     "id": 8870,
     "name": "Devia",
     "level": 95,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 54468
   },
   {
     "id": 3621,
     "name": "Giant Catsy",
     "level": 95,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1009362
   },
   {
     "id": 6243,
     "name": "Giant Luia",
     "level": 95,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1009362
   },
   {
     "id": 5843,
     "name": "Mutant Keakoon Guard Leader",
     "level": 95,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3557225
   },
   {
     "id": 7377,
     "name": "Small Shuhamma",
     "level": 96,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 55339
   },
   {
     "id": 5916,
     "name": "Captain Devia",
     "level": 97,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 64339
   },
   {
     "id": 4527,
     "name": "Criminal Shuhamma",
     "level": 97,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 55339
   },
   {
     "id": 8118,
     "name": "Shuhamma",
     "level": 97,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 56593
   },
   {
     "id": 5635,
     "name": "Small Gullah",
     "level": 97,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 57286
   },
   {
     "id": 887,
     "name": "Violet Luia",
     "level": 97,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1211234
   },
   {
     "id": 132,
     "name": "Captain Shuhamma",
     "level": 98,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 57861
   },
   {
     "id": 3806,
     "name": "Giant Gongury",
     "level": 98,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1081995
   },
   {
     "id": 1137,
     "name": "Gullah",
     "level": 99,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 60468
   },
   {
     "id": 2728,
     "name": "Mutant Gullah",
     "level": 99,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 6156490
   },
   {
     "id": 1561,
     "name": "Small Abraxas",
     "level": 99,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 61286
   },
   {
     "id": 7628,
     "name": "Small Kern",
     "level": 99,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 59144
   },
   {
     "id": 13144,
     "name": "[Event] Kern",
     "level": 100,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 60441
   },
   {
     "id": 4136,
     "name": "Air Marshal Spiketail",
     "level": 100,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 15000000
   },
   {
     "id": 7663,
     "name": "Giant Devia",
     "level": 100,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1089362
   },
   {
     "id": 7925,
     "name": "Gorruda",
     "level": 100,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 60441
   },
   {
     "id": 2635,
     "name": "Kern",
     "level": 100,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 60441
   },
   {
     "id": 9840,
     "name": "Lieutenant General Scythoid",
     "level": 100,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 30000000
   },
   {
     "id": 8745,
     "name": "Meteonyker",
     "level": 100,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 81291445
   },
   {
     "id": 1610,
     "name": "Rookie Exoberry Carrier",
     "level": 100,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 61753
   },
   {
     "id": 7485,
     "name": "Small Gorruda",
     "level": 100,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 59144
   },
   {
     "id": 5518,
     "name": "Violet Gongury",
     "level": 100,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1298394
   },
   {
     "id": 29733,
     "name": "[Event] Giant Mr. Pumpkin",
     "level": 101,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 61753
   },
   {
     "id": 17778,
     "name": "[Event] Giggle Box",
     "level": 101,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 49402
   },
   {
     "id": 24970,
     "name": "[Event] Mr. Pumpkin",
     "level": 101,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 49402
   },
   {
     "id": 10887,
     "name": "[Event] Violet Giggle Box",
     "level": 101,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 61753
   },
   {
     "id": 8899,
     "name": "Captain Gorruda",
     "level": 101,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 61753
   },
   {
     "id": 2186,
     "name": "Captain Gullah",
     "level": 101,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 67339
   },
   {
     "id": 9014,
     "name": "Captain Kern",
     "level": 101,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 61753
   },
   {
     "id": 1740,
     "name": "Giant Shuhamma",
     "level": 101,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1157225
   },
   {
     "id": 23603,
     "name": "Lord Shuhamma",
     "level": 101,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1157225
   },
   {
     "id": 2777,
     "name": "Abraxas",
     "level": 102,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 65468
   },
   {
     "id": 1964,
     "name": "Small Glaphan",
     "level": 102,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 63079
   },
   {
     "id": 1977,
     "name": "Glaphan",
     "level": 103,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 64420
   },
   {
     "id": 9472,
     "name": "Small Hague",
     "level": 103,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 66286
   },
   {
     "id": 2427,
     "name": "Violet Shuhamma",
     "level": 103,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1388670
   },
   {
     "id": 7468,
     "name": "Captain Glaphan",
     "level": 104,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 65775
   },
   {
     "id": 6718,
     "name": "Criminal Glaphan",
     "level": 104,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 65775
   },
   {
     "id": 4149,
     "name": "Giant Kern",
     "level": 104,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1235058
   },
   {
     "id": 19301,
     "name": "[Event] Giant Gorruda",
     "level": 105,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1235058
   },
   {
     "id": 7094,
     "name": "Alte Spur",
     "level": 105,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1524355
   },
   {
     "id": 1652,
     "name": "Bolt Otem",
     "level": 105,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1644699
   },
   {
     "id": 2522,
     "name": "Brigadier Chimeradon",
     "level": 105,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 80417
   },
   {
     "id": 3348,
     "name": "Captain Abraxas",
     "level": 105,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 80339
   },
   {
     "id": 1780,
     "name": "Craken",
     "level": 105,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1644699
   },
   {
     "id": 7792,
     "name": "Empfindsamer Baumkrieger",
     "level": 105,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1404011
   },
   {
     "id": 19027,
     "name": "Enchanted AI",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 140401
   },
   {
     "id": 7117,
     "name": "Enchanted AI",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1404011
   },
   {
     "id": 18876,
     "name": "Enchanted Rider",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 131736
   },
   {
     "id": 8452,
     "name": "Enchanted Rider",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1317364
   },
   {
     "id": 13966,
     "name": "Enchanted Shaman",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 152435
   },
   {
     "id": 9083,
     "name": "Enchanted Shaman",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1524355
   },
   {
     "id": 5493,
     "name": "Enraged Gorilla",
     "level": 105,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 24068768
   },
   {
     "id": 7051,
     "name": "General Glyphaxz",
     "level": 105,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 40000000
   },
   {
     "id": 3948,
     "name": "Gerissener Wassermann",
     "level": 105,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1404011
   },
   {
     "id": 7434,
     "name": "Giant Gorruda",
     "level": 105,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1235058
   },
   {
     "id": 2330,
     "name": "Giant Gullah",
     "level": 105,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1119362
   },
   {
     "id": 6362,
     "name": "Great Kraken",
     "level": 105,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 70000000
   },
   {
     "id": 712,
     "name": "Grunt-Gorilla",
     "level": 105,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1317364
   },
   {
     "id": 6212,
     "name": "Höhlen-Larve",
     "level": 105,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1317364
   },
   {
     "id": 3267,
     "name": "Höhlen-Nightmist",
     "level": 105,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1524355
   },
   {
     "id": 5673,
     "name": "Höhlenmensch-Häuptling",
     "level": 105,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 70000000
   },
   {
     "id": 9899,
     "name": "Königin der Langbeine",
     "level": 105,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 24068768
   },
   {
     "id": 5679,
     "name": "Kraken-Laich",
     "level": 105,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 548232
   },
   {
     "id": 7466,
     "name": "Lauernder Wassermann",
     "level": 105,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1524355
   },
   {
     "id": 27159,
     "name": "Lord Gorruda",
     "level": 105,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1235058
   },
   {
     "id": 5921,
     "name": "Meerjungfrau-Schönheit",
     "level": 105,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1317364
   },
   {
     "id": 5318,
     "name": "Mutant Abraxas",
     "level": 105,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 7256490
   },
   {
     "id": 8827,
     "name": "Nightmist Empress",
     "level": 105,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 28080229
   },
   {
     "id": 2140,
     "name": "Overgrown Broodmother",
     "level": 105,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 20045654
   },
   {
     "id": 19078,
     "name": "Pyramid Keeper",
     "level": 105,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 2808022
   },
   {
     "id": 4033,
     "name": "Pyramid Keeper",
     "level": 105,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 28080229
   },
   {
     "id": 3066,
     "name": "Pyramidenwächter",
     "level": 105,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 70000000
   },
   {
     "id": 392,
     "name": "Pyramidenwächter",
     "level": 105,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 7000000
   },
   {
     "id": 3695,
     "name": "Radioaktive Langbeine",
     "level": 105,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1404011
   },
   {
     "id": 18836,
     "name": "Regal Kumai",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 126762
   },
   {
     "id": 3218,
     "name": "Regal Kumai",
     "level": 105,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1267622
   },
   {
     "id": 8504,
     "name": "Riesenschildkröte",
     "level": 105,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1644697
   },
   {
     "id": 4012,
     "name": "Sentient Tree Guardian",
     "level": 105,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 28080229
   },
   {
     "id": 3846,
     "name": "Siren",
     "level": 105,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 28080229
   },
   {
     "id": 6911,
     "name": "Soldier Chimeradon",
     "level": 105,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 80417
   },
   {
     "id": 7823,
     "name": "Spiderling",
     "level": 105,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 422541
   },
   {
     "id": 2363,
     "name": "Tempelwächter",
     "level": 105,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 70000000
   },
   {
     "id": 9615,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 105,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1267622
   },
   {
     "id": 4931,
     "name": "Übergroße Spinne",
     "level": 105,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1267622
   },
   {
     "id": 6981,
     "name": "Übergroßer Hai",
     "level": 105,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1267622
   },
   {
     "id": 2339,
     "name": "Hague",
     "level": 106,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 81468
   },
   {
     "id": 6067,
     "name": "Major Chimeradon",
     "level": 106,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 82007
   },
   {
     "id": 4273,
     "name": "Violet Kern",
     "level": 106,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1482069
   },
   {
     "id": 5593,
     "name": "Giant Glaphan",
     "level": 107,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1315502
   },
   {
     "id": 3914,
     "name": "Lieutenant Chimeradon",
     "level": 107,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 83756
   },
   {
     "id": 2729,
     "name": "Violet Gorruda",
     "level": 107,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1482069
   },
   {
     "id": 1791,
     "name": "Private Bearnerky",
     "level": 108,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 85139
   },
   {
     "id": 8662,
     "name": "Small Tote",
     "level": 108,
     "element": "none",
-    "rank": "small"
+    "rank": "small",
+    "hp": 85286
   },
   {
     "id": 6871,
     "name": "Specialist Bearnerky",
     "level": 108,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 85139
   },
   {
     "id": 5842,
     "name": "Captain Hague",
     "level": 109,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 87339
   },
   {
     "id": 8860,
     "name": "Sergeant Bearnerky",
     "level": 109,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 86854
   },
   {
     "id": 2277,
     "name": "Violet Glaphan",
     "level": 109,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 1578602
   },
   {
     "id": 7196,
     "name": "Captain Bearnerky",
     "level": 110,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 88583
   },
   {
     "id": 4206,
     "name": "General Chimeradon",
     "level": 110,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1675135
   },
   {
     "id": 5218,
     "name": "Giant Abraxas",
     "level": 110,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1319362
   },
   {
     "id": 7283,
     "name": "Apprentice Chef Muffrin",
     "level": 111,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 89861
   },
   {
     "id": 3785,
     "name": "Mutant Hague",
     "level": 111,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 8356490
   },
   {
     "id": 4674,
     "name": "Trainee Chef Muffrin",
     "level": 111,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 89861
   },
   {
     "id": 9790,
     "name": "Assistant Chef Muffrin",
     "level": 112,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 91628
   },
   {
     "id": 9994,
     "name": "Tote",
     "level": 112,
     "element": "none",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 91468
   },
   {
     "id": 3473,
     "name": "Violet Chimeradon",
     "level": 112,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 2010162
   },
   {
     "id": 2679,
     "name": "Expert Chef Muffrin",
     "level": 113,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 93409
   },
   {
     "id": 4504,
     "name": "General Bearnerky",
     "level": 113,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1771668
   },
   {
     "id": 9924,
     "name": "Knight Popcrank",
     "level": 114,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 94583
   },
   {
     "id": 3004,
     "name": "Pawn Popcrank",
     "level": 114,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 94583
   },
   {
     "id": 9546,
     "name": "Captain Tote",
     "level": 115,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 97339
   },
   {
     "id": 830,
     "name": "Giant Hague",
     "level": 115,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1519362
   },
   {
     "id": 3406,
     "name": "Rook Popcrank",
     "level": 115,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 96403
   },
   {
     "id": 900,
     "name": "Violet Bearnerky",
     "level": 115,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 2126001
   },
   {
     "id": 1580,
     "name": "Bishop Popcrank",
     "level": 116,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 98236
   },
   {
     "id": 4887,
     "name": "Great Chef Muffrin",
     "level": 116,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1868201
   },
   {
     "id": 5435,
     "name": "Small Asterius",
     "level": 116,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 98286
   },
   {
     "id": 15577,
     "name": "[Event] Small Medumet",
     "level": 117,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 108000
   },
   {
     "id": 9170,
     "name": "Small Medumet",
     "level": 117,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 108000
   },
   {
     "id": 4903,
     "name": "Small Meteonyker",
     "level": 117,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 120000
   },
   {
     "id": 8543,
     "name": "Asterius",
     "level": 118,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 110468
   },
   {
     "id": 6923,
     "name": "Berserk Meteonyker",
     "level": 118,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3500000
   },
   {
     "id": 8959,
     "name": "Katamaw",
     "level": 118,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 140000
   },
   {
     "id": 4203,
     "name": "Medumet",
     "level": 118,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 110000
   },
   {
     "id": 4449,
     "name": "Mutant Tote",
     "level": 118,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 9456490
   },
   {
     "id": 9689,
     "name": "Violet Chef Muffrin",
     "level": 118,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 2241841
   },
   {
     "id": 7580,
     "name": "Captain Medumet",
     "level": 119,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 113000
   },
   {
     "id": 9369,
     "name": "Criminal Medumet",
     "level": 119,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 113000
   },
   {
     "id": 6800,
     "name": "Cyclops X",
     "level": 119,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 165000
   },
   {
     "id": 2287,
     "name": "Giant Cyclops X",
     "level": 119,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 4400000
   },
   {
     "id": 5472,
     "name": "Queen Popcrank",
     "level": 119,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1964734
   },
   {
     "id": 12869,
     "name": "[Event] Creper",
     "level": 120,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 130000
   },
   {
     "id": 14111,
     "name": "[Event] Violet Creper",
     "level": 120,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 195000
   },
   {
     "id": 13954,
     "name": "[Event] Yetti",
     "level": 120,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 130000
   },
   {
     "id": 3756,
     "name": "Captain Asterius",
     "level": 120,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 130339
   },
   {
     "id": 2786,
     "name": "Exoberry Carrier",
     "level": 120,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 250000
   },
   {
     "id": 4249,
     "name": "Giante Tote",
     "level": 120,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1719362
   },
   {
     "id": 9704,
     "name": "Gruntizer",
     "level": 120,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 5500000
   },
   {
     "id": 8013,
     "name": "Scorched Meteonyker",
     "level": 120,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 180000
   },
   {
     "id": 528,
     "name": "Yeti",
     "level": 120,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 130000
   },
   {
     "id": 214,
     "name": "Zefus",
     "level": 120,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 195000
   },
   {
     "id": 5845,
     "name": "Mutant Yeti",
     "level": 121,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 134000
   },
   {
     "id": 8302,
     "name": "Red Meteonyker",
     "level": 121,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 7488,
     "name": "Violet Popcrank",
     "level": 121,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 2357680
   },
   {
     "id": 14539,
     "name": "[Event] Giant Medumet",
     "level": 122,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2825000
   },
   {
     "id": 13822,
     "name": "[Event] Small Dantalian",
     "level": 122,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 136286
   },
   {
     "id": 4486,
     "name": "Dark Yeti",
     "level": 122,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 138000
   },
   {
     "id": 1125,
     "name": "Giant Medumet",
     "level": 122,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2825000
   },
   {
     "id": 170,
     "name": "Small Dantalian",
     "level": 122,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 136286
   },
   {
     "id": 948,
     "name": "Dantalian",
     "level": 124,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 150468
   },
   {
     "id": 66,
     "name": "Giant Asterius",
     "level": 124,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1815662
   },
   {
     "id": 8932,
     "name": "Mutant Asterius",
     "level": 124,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 9986140
   },
   {
     "id": 440,
     "name": "Violet Medumet",
     "level": 124,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 3390000
   },
   {
     "id": 1161,
     "name": "Augu",
     "level": 125,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 160000
   },
   {
     "id": 29913,
     "name": "Lord Yetti",
     "level": 125,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3450000
   },
   {
     "id": 4524,
     "name": "Mad Yeti",
     "level": 125,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3450000
   },
   {
     "id": 18591,
     "name": "[Event] Mutant Augu",
     "level": 126,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 166000
   },
   {
     "id": 5103,
     "name": "Captain Dantalian",
     "level": 126,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 170339
   },
   {
     "id": 1975,
     "name": "Mutant Augu",
     "level": 126,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 166000
   },
   {
     "id": 832,
     "name": "Ardent Augu",
     "level": 127,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 172000
   },
   {
     "id": 4137,
     "name": "Small Gannessa",
     "level": 127,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 175286
   },
   {
     "id": 7456,
     "name": "Violet Yeti",
     "level": 127,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 4140000
   },
   {
     "id": 658,
     "name": "Gannessa",
     "level": 129,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 185468
   },
   {
     "id": 1507,
     "name": "Ghost of the Forgotten Prince",
     "level": 129,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 192000
   },
   {
     "id": 15139,
     "name": "[Event] Ghost of the forgotten king",
     "level": 130,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 200000
   },
   {
     "id": 15545,
     "name": "[Event] Glacial Augu",
     "level": 130,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 4350000
   },
   {
     "id": 10000,
     "name": "Alte Spur",
     "level": 130,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3048711
   },
   {
     "id": 1471,
     "name": "Bolt Otem",
     "level": 130,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4699140
   },
   {
     "id": 3389,
     "name": "Craken",
     "level": 130,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4699140
   },
   {
     "id": 4161,
     "name": "Empfindsamer Baumkrieger",
     "level": 130,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2808023
   },
   {
     "id": 2847,
     "name": "Enchanted AI",
     "level": 130,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2808023
   },
   {
     "id": 7213,
     "name": "Enchanted Rider",
     "level": 130,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2634728
   },
   {
     "id": 4309,
     "name": "Enchanted Shaman",
     "level": 130,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3048711
   },
   {
     "id": 3058,
     "name": "Enraged Gorilla",
     "level": 130,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 68767908
   },
   {
     "id": 18530,
     "name": "Gefrorener Hasen-Assassine",
     "level": 130,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 6876790
   },
   {
     "id": 2987,
     "name": "Gefrorener Hasen-Assassine",
     "level": 130,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 68767908
   },
   {
     "id": 17534,
     "name": "Gefrorener Hasen-Wächter",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 202819
   },
   {
     "id": 6793,
     "name": "Gefrorener Hasen-Wächter",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2028195
   },
   {
     "id": 7420,
     "name": "Gerissener Wassermann",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2808023
   },
   {
     "id": 8914,
     "name": "Ghost of the Forgotten King",
     "level": 130,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 200000
   },
   {
     "id": 4800,
     "name": "Giant Dantalian",
     "level": 130,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 1915670
   },
   {
     "id": 7995,
     "name": "Glacial Augu",
     "level": 130,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 4350000
   },
   {
     "id": 11004,
     "name": "Great Kraken",
     "level": 130,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 1179,
     "name": "Great Kraken",
     "level": 130,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 200000000
   },
   {
     "id": 7077,
     "name": "Grunt-Gorilla",
     "level": 130,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2634728
   },
   {
     "id": 2,
     "name": "Höhlen-Larve",
     "level": 130,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2634728
   },
   {
     "id": 9159,
     "name": "Höhlen-Nightmist",
     "level": 130,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3048711
   },
   {
     "id": 140,
     "name": "Höhlenmensch-Häuptling",
     "level": 130,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 200000000
   },
   {
     "id": 3535,
     "name": "Königin der Langbeine",
     "level": 130,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 68767908
   },
   {
     "id": 1257,
     "name": "Kraken-Laich",
     "level": 130,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1566378
   },
   {
     "id": 17287,
     "name": "Kristalldämonenfürst",
     "level": 130,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 20000000
   },
   {
     "id": 7093,
     "name": "Kristalldämonenfürst",
     "level": 130,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 200000000
   },
   {
     "id": 2793,
     "name": "Lauernder Wassermann",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3048711
   },
   {
     "id": 20084,
     "name": "Lord Augu",
     "level": 130,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 4350000
   },
   {
     "id": 9658,
     "name": "Meerjungfrau-Schönheit",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2634728
   },
   {
     "id": 3261,
     "name": "Mutant Dantalian",
     "level": 130,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 10536185
   },
   {
     "id": 2663,
     "name": "Nightmist Empress",
     "level": 130,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 80229226
   },
   {
     "id": 9574,
     "name": "Overgrown Broodmother",
     "level": 130,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 57306590
   },
   {
     "id": 18174,
     "name": "Phantom-General",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1500000
   },
   {
     "id": 4701,
     "name": "Phantom-General",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 15000000
   },
   {
     "id": 8056,
     "name": "Pyramid Keeper",
     "level": 130,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 80229226
   },
   {
     "id": 6501,
     "name": "Pyramidenwächter",
     "level": 130,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 200000000
   },
   {
     "id": 5574,
     "name": "Radioaktive Langbeine",
     "level": 130,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2808023
   },
   {
     "id": 4867,
     "name": "Regal Kumai",
     "level": 130,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2535244
   },
   {
     "id": 252,
     "name": "Riesenschildkröte",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 3289395
   },
   {
     "id": 12449,
     "name": "Saphyryonischer Hund",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 224641
   },
   {
     "id": 3321,
     "name": "Saphyryonischer Hund",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2246418
   },
   {
     "id": 8438,
     "name": "Sentient Tree Guardian",
     "level": 130,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 80229226
   },
   {
     "id": 2000,
     "name": "Siren",
     "level": 130,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 80229226
   },
   {
     "id": 12183,
     "name": "Skelett-General",
     "level": 130,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 8022922
   },
   {
     "id": 4908,
     "name": "Skelett-General",
     "level": 130,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 80229226
   },
   {
     "id": 17690,
     "name": "Skelettkrieger",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 243896
   },
   {
     "id": 1948,
     "name": "Skelettkrieger",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2438969
   },
   {
     "id": 6336,
     "name": "Spiderling",
     "level": 130,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 845082
   },
   {
     "id": 2567,
     "name": "Tempelwächter",
     "level": 130,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 200000000
   },
   {
     "id": 7397,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 130,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2535244
   },
   {
     "id": 7327,
     "name": "Übergroße Spinne",
     "level": 130,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2535244
   },
   {
     "id": 8229,
     "name": "Übergroßer Hai",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2535244
   },
   {
     "id": 5447,
     "name": "Wütender Yeti",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 210778
   },
   {
     "id": 8242,
     "name": "Wütender Yeti",
     "level": 130,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2107782
   },
   {
     "id": 7836,
     "name": "Ghost of the Forgotten Emperor",
     "level": 131,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 208000
   },
   {
     "id": 9513,
     "name": "Captain Gannessa",
     "level": 132,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 212339
   },
   {
     "id": 5097,
     "name": "Violet Augu",
     "level": 132,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 5220000
   },
   {
     "id": 19954,
     "name": "[Event] Small Asuras",
     "level": 133,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 230286
   },
   {
     "id": 3814,
     "name": "Small Asuras",
     "level": 133,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 230286
   },
   {
     "id": 10914,
     "name": "[Event] Ghost of the forgotten Overlord",
     "level": 134,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 6250000
   },
   {
     "id": 25214,
     "name": "Ghost of the Forgotten Lord",
     "level": 134,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 6250000
   },
   {
     "id": 6189,
     "name": "Ghost of the Forgotten Overlord",
     "level": 134,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 6250000
   },
   {
     "id": 12819,
     "name": "[Event] Asuras",
     "level": 135,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 241468
   },
   {
     "id": 16240,
     "name": "[Event] Mammoth",
     "level": 135,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 240000
   },
   {
     "id": 4071,
     "name": "Asuras",
     "level": 135,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 241468
   },
   {
     "id": 2853,
     "name": "Giant Gannessa",
     "level": 135,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2065871
   },
   {
     "id": 6670,
     "name": "Mammoth",
     "level": 135,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 240000
   },
   {
     "id": 9709,
     "name": "Mutant Gannessa",
     "level": 136,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 11362290
   },
   {
     "id": 9966,
     "name": "Violet Ghost of the Forgotten Monarch",
     "level": 136,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 7500000
   },
   {
     "id": 13106,
     "name": "[Event] Cannibal Mammoth",
     "level": 137,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 250000
   },
   {
     "id": 1765,
     "name": "Cannibal Mammoth",
     "level": 137,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 250000
   },
   {
     "id": 4981,
     "name": "Captain Asuras",
     "level": 137,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 270339
   },
   {
     "id": 15183,
     "name": "Great Shadowirs",
     "level": 138,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 13888115
   },
   {
     "id": 6485,
     "name": "Small Nymph",
     "level": 138,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 240000
   },
   {
     "id": 14297,
     "name": "Small Shadowirs",
     "level": 138,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 284666
   },
   {
     "id": 2272,
     "name": "Ancient Mammoth",
     "level": 139,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 265000
   },
   {
     "id": 595,
     "name": "Great Asuras",
     "level": 139,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 80000000
   },
   {
     "id": 1450,
     "name": "Nymph",
     "level": 139,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 260000
   },
   {
     "id": 19951,
     "name": "[Event] Giant Asuras",
     "level": 140,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2165310
   },
   {
     "id": 1693,
     "name": "Captain Nymph",
     "level": 140,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 280000
   },
   {
     "id": 4947,
     "name": "Giant Asuras",
     "level": 140,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2165310
   },
   {
     "id": 21007,
     "name": "Lord Mammoth",
     "level": 140,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 9125000
   },
   {
     "id": 8677,
     "name": "Predator Mammoth",
     "level": 140,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 9125000
   },
   {
     "id": 19094,
     "name": "Shadowirs",
     "level": 140,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 299753
   },
   {
     "id": 12950,
     "name": "Small Artrox",
     "level": 140,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 291500
   },
   {
     "id": 15552,
     "name": "Artrox",
     "level": 141,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 306500
   },
   {
     "id": 16223,
     "name": "Captain Artrox",
     "level": 142,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 321500
   },
   {
     "id": 12484,
     "name": "Captain Shadowirs",
     "level": 142,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 315639
   },
   {
     "id": 15345,
     "name": "Small Tigar",
     "level": 142,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 321500
   },
   {
     "id": 2550,
     "name": "Violet Mammoth",
     "level": 142,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 10950000
   },
   {
     "id": 15864,
     "name": "Great Skelmaw",
     "level": 143,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 16215408
   },
   {
     "id": 12283,
     "name": "Small Skelmaw",
     "level": 143,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 332368
   },
   {
     "id": 13916,
     "name": "Tigar",
     "level": 143,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 337500
   },
   {
     "id": 15439,
     "name": "Captain Tigar",
     "level": 144,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 353500
   },
   {
     "id": 17296,
     "name": "Giant Artrox",
     "level": 145,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 11070000
   },
   {
     "id": 13430,
     "name": "Giant Shadowirs",
     "level": 145,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2525112
   },
   {
     "id": 17244,
     "name": "Kleiner Merel",
     "level": 145,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 380000
   },
   {
     "id": 14094,
     "name": "Skelmaw",
     "level": 145,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 349983
   },
   {
     "id": 16138,
     "name": "Merel",
     "level": 146,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 397000
   },
   {
     "id": 19330,
     "name": "[Event] Giant Tigar",
     "level": 147,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 14115000
   },
   {
     "id": 18782,
     "name": "Captain Merel",
     "level": 147,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 415000
   },
   {
     "id": 15909,
     "name": "Captain Skelmaw",
     "level": 147,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 368532
   },
   {
     "id": 11556,
     "name": "Giant Tigar",
     "level": 147,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 14115000
   },
   {
     "id": 21588,
     "name": "Lord Tigar",
     "level": 147,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 14115000
   },
   {
     "id": 15441,
     "name": "Violet Artrox",
     "level": 147,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 13284000
   },
   {
     "id": 11069,
     "name": "Great Maleficar",
     "level": 148,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 18932672
   },
   {
     "id": 17467,
     "name": "Kleiner Creper",
     "level": 148,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 434000
   },
   {
     "id": 1703,
     "name": "Kleiner Kingster",
     "level": 148,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 434000
   },
   {
     "id": 16329,
     "name": "Small Maleficar",
     "level": 148,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 388064
   },
   {
     "id": 19016,
     "name": "Creper",
     "level": 149,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 453000
   },
   {
     "id": 19538,
     "name": "Kingster",
     "level": 149,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 453000
   },
   {
     "id": 14207,
     "name": "Violet Tigar",
     "level": 149,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 16940000
   },
   {
     "id": 16541,
     "name": "[Event] Meral",
     "level": 150,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 397000
   },
   {
     "id": 10077,
     "name": "Alte Spur",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 28278,
     "name": "Alte Spur",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 16244,
     "name": "Bestienkönig Khan",
     "level": 150,
     "element": "wind",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 16575,
     "name": "Bestienkönig Khan",
     "level": 150,
     "element": "wind",
-    "rank": "super"
+    "rank": "super",
+    "hp": 50000000
   },
   {
     "id": 23226,
     "name": "Bestienkönig Khan",
     "level": 150,
     "element": "wind",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 11329,
     "name": "Bolt Otem",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11627907
   },
   {
     "id": 22230,
     "name": "Bolt Otem",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 15697674
   },
   {
     "id": 10050,
     "name": "Captain Creper",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 472000
   },
   {
     "id": 15898,
     "name": "Captain Kingster",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 472000
   },
   {
     "id": 16567,
     "name": "Craken",
     "level": 150,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11627907
   },
   {
     "id": 28213,
     "name": "Craken",
     "level": 150,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 15697674
   },
   {
     "id": 16549,
     "name": "Doppelstreifenkobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 17120,
     "name": "Doppelstreifenkobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 552550
   },
   {
     "id": 28879,
     "name": "Doppelstreifenkobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 19961,
     "name": "Empfindsamer Baumkrieger",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5788125
   },
   {
     "id": 24878,
     "name": "Empfindsamer Baumkrieger",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7813968
   },
   {
     "id": 16120,
     "name": "Enchanted AI",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 24198,
     "name": "Enchanted AI",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 14031,
     "name": "Enchanted Rider",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5250000
   },
   {
     "id": 29636,
     "name": "Enchanted Rider",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7087500
   },
   {
     "id": 15415,
     "name": "Enchanted Shaman",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 26421,
     "name": "Enchanted Shaman",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 12117,
     "name": "Enraged Gorilla",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 171417541
   },
   {
     "id": 26093,
     "name": "Enraged Gorilla",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 231413677
   },
   {
     "id": 17196,
     "name": "Gefrorener Hasen-Assassine",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 170000000
   },
   {
     "id": 26205,
     "name": "Gefrorener Hasen-Assassine",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 229500004
   },
   {
     "id": 17214,
     "name": "Gefrorener Hasen-Wächter",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 20899,
     "name": "Gefrorener Hasen-Wächter",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 11970,
     "name": "Gerissener Wassermann",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 29609,
     "name": "Gerissener Wassermann",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 13373,
     "name": "Giant Skelmaw",
     "level": 150,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 2948256
   },
   {
     "id": 18588,
     "name": "Great Kraken",
     "level": 150,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 24170,
     "name": "Great Kraken",
     "level": 150,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 13686,
     "name": "Grunt-Gorilla",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 22736,
     "name": "Grunt-Gorilla",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 17961,
     "name": "Höhlen-Larve",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 29756,
     "name": "Höhlen-Larve",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 16793,
     "name": "Höhlen-Nightmist",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 25263,
     "name": "Höhlen-Nightmist",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 18679,
     "name": "Höhlenmensch-Häuptling",
     "level": 150,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 27246,
     "name": "Höhlenmensch-Häuptling",
     "level": 150,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 10208,
     "name": "Höhlenmutter der Twinstrikes",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 142847951
   },
   {
     "id": 16181,
     "name": "Höhlenmutter der Twinstrikes",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 14284795
   },
   {
     "id": 28813,
     "name": "Höhlenmutter der Twinstrikes",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 192844738
   },
   {
     "id": 12384,
     "name": "Königin der Langbeine",
     "level": 150,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 171417541
   },
   {
     "id": 29831,
     "name": "Königin der Langbeine",
     "level": 150,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 231413677
   },
   {
     "id": 16141,
     "name": "Kraken-Laich",
     "level": 150,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 3906250
   },
   {
     "id": 21408,
     "name": "Kraken-Laich",
     "level": 150,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 5273437
   },
   {
     "id": 15792,
     "name": "Kristalldämonenfürst",
     "level": 150,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 26158,
     "name": "Kristalldämonenfürst",
     "level": 150,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 10954,
     "name": "Lauernder Wassermann",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5788125
   },
   {
     "id": 29568,
     "name": "Lauernder Wassermann",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7813968
   },
   {
     "id": 10611,
     "name": "Maleficar",
     "level": 150,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 408631
   },
   {
     "id": 18628,
     "name": "Meerjungfrau-Schönheit",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5250000
   },
   {
     "id": 26058,
     "name": "Meerjungfrau-Schönheit",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7087500
   },
   {
     "id": 14071,
     "name": "Nightmist Empress",
     "level": 150,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 24181,
     "name": "Nightmist Empress",
     "level": 150,
     "element": "electricity",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 12911,
     "name": "Overgrown Broodmother",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 142847951
   },
   {
     "id": 23902,
     "name": "Overgrown Broodmother",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 192844738
   },
   {
     "id": 19364,
     "name": "Phantom-General",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 37140467
   },
   {
     "id": 24537,
     "name": "Phantom-General",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 50139632
   },
   {
     "id": 17443,
     "name": "Prismakobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 19517,
     "name": "Prismakobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 500000
   },
   {
     "id": 25780,
     "name": "Prismakobra",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 17471,
     "name": "Pyramid Keeper",
     "level": 150,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 23492,
     "name": "Pyramid Keeper",
     "level": 150,
     "element": "fire",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 15268,
     "name": "Pyramidenwächter",
     "level": 150,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 23558,
     "name": "Pyramidenwächter",
     "level": 150,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 18648,
     "name": "Radioaktive Langbeine",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5788125
   },
   {
     "id": 27419,
     "name": "Radioaktive Langbeine",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7813968
   },
   {
     "id": 16714,
     "name": "Regal Kumai",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 28504,
     "name": "Regal Kumai",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 13224,
     "name": "Riesenschildkröte",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 22130,
     "name": "Riesenschildkröte",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 19746,
     "name": "Riesiger Meral",
     "level": 150,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 18024105
   },
   {
     "id": 14234,
     "name": "Saphyryonischer Hund",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5525500
   },
   {
     "id": 22179,
     "name": "Saphyryonischer Hund",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7459425
   },
   {
     "id": 15336,
     "name": "Sentient Tree Guardian",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 25423,
     "name": "Sentient Tree Guardian",
     "level": 150,
     "element": "earth",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 18091,
     "name": "Siren",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 20199,
     "name": "Siren",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 17488,
     "name": "Skelett-General",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 20580,
     "name": "Skelett-General",
     "level": 150,
     "element": "water",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 14516,
     "name": "Skelettkrieger",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 20532,
     "name": "Skelettkrieger",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 13579,
     "name": "Spiderling",
     "level": 150,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 1666667
   },
   {
     "id": 27273,
     "name": "Spiderling",
     "level": 150,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 2250000
   },
   {
     "id": 17309,
     "name": "Tanuki-Beschützer",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 17141754
   },
   {
     "id": 19819,
     "name": "Tanuki-Beschützer",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 171417541
   },
   {
     "id": 27461,
     "name": "Tanuki-Beschützer",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 231413677
   },
   {
     "id": 12246,
     "name": "Tanuki-Praktikant",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 192937
   },
   {
     "id": 18899,
     "name": "Tanuki-Praktikant",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 1929375
   },
   {
     "id": 22823,
     "name": "Tanuki-Praktikant",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2604656
   },
   {
     "id": 12894,
     "name": "Tanuki-Vollstrecker",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5788125
   },
   {
     "id": 17224,
     "name": "Tanuki-Vollstrecker",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 578812
   },
   {
     "id": 24275,
     "name": "Tanuki-Vollstrecker",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7813968
   },
   {
     "id": 19797,
     "name": "Tempelwächter",
     "level": 150,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 500000000
   },
   {
     "id": 23160,
     "name": "Tempelwächter",
     "level": 150,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 675000011
   },
   {
     "id": 17048,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 21920,
     "name": "Tiefenhöhlen-Gorilla",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 12835,
     "name": "Totempfahl der Elektrizität",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 4000000
   },
   {
     "id": 17041,
     "name": "Totempfahl der Elektrizität",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 40000000
   },
   {
     "id": 25891,
     "name": "Totempfahl der Elektrizität",
     "level": 150,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 54000000
   },
   {
     "id": 15755,
     "name": "Totempfahl der Erde",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20000000
   },
   {
     "id": 19338,
     "name": "Totempfahl der Erde",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2000000
   },
   {
     "id": 22495,
     "name": "Totempfahl der Erde",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 27000000
   },
   {
     "id": 13132,
     "name": "Totempfahl des Feuers",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20000000
   },
   {
     "id": 18128,
     "name": "Totempfahl des Feuers",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2000000
   },
   {
     "id": 29378,
     "name": "Totempfahl des Feuers",
     "level": 150,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 27000000
   },
   {
     "id": 10303,
     "name": "Totempfahl des Wassers",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2000000
   },
   {
     "id": 10944,
     "name": "Totempfahl des Wassers",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20000000
   },
   {
     "id": 21921,
     "name": "Totempfahl des Wassers",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 27000000
   },
   {
     "id": 11261,
     "name": "Totempfahl des Windes",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2000000
   },
   {
     "id": 15138,
     "name": "Totempfahl des Windes",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20000000
   },
   {
     "id": 20046,
     "name": "Totempfahl des Windes",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 27000000
   },
   {
     "id": 19254,
     "name": "Übergroße Spinne",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 29807,
     "name": "Übergroße Spinne",
     "level": 150,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 15260,
     "name": "Übergroßer Hai",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5000000
   },
   {
     "id": 25660,
     "name": "Übergroßer Hai",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6750000
   },
   {
     "id": 10160,
     "name": "Wildholz Schamane",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2025844
   },
   {
     "id": 13512,
     "name": "Wildholz Schamane",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 202584
   },
   {
     "id": 21436,
     "name": "Wildholz Schamane",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 2734889
   },
   {
     "id": 16723,
     "name": "Wildholz-Häuptling",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 20055852
   },
   {
     "id": 17187,
     "name": "Wildholz-Häuptling",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 200558523
   },
   {
     "id": 29473,
     "name": "Wildholz-Häuptling",
     "level": 150,
     "element": "wind",
-    "rank": "boss"
+    "rank": "boss",
+    "hp": 270754017
   },
   {
     "id": 11913,
     "name": "Wildholz-Pirscher",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 6077531
   },
   {
     "id": 26376,
     "name": "Wildholz-Pirscher",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 8204666
   },
   {
     "id": 5602,
     "name": "Wildholz-Pirscher",
     "level": 150,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 607753
   },
   {
     "id": 14047,
     "name": "Wütender Yeti",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 5250000
   },
   {
     "id": 20485,
     "name": "Wütender Yeti",
     "level": 150,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 7087500
   },
   {
     "id": 19701,
     "name": "Small Naga",
     "level": 151,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 492000
   },
   {
     "id": 13917,
     "name": "Captain Maleficar",
     "level": 152,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 430288
   },
   {
     "id": 11324,
     "name": "Lila Meral",
     "level": 152,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 21628926
   },
   {
     "id": 11314,
     "name": "Naga",
     "level": 152,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 512000
   },
   {
     "id": 25875,
     "name": "Overlord Meral",
     "level": 152,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 21628926
   },
   {
     "id": 17673,
     "name": "Captain Naga",
     "level": 153,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 532000
   },
   {
     "id": 19214,
     "name": "Great Cursed Warden",
     "level": 153,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 22105248
   },
   {
     "id": 19686,
     "name": "Riesiger Creper",
     "level": 153,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 23068960
   },
   {
     "id": 12691,
     "name": "Riesiger Kingster",
     "level": 153,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 23068960
   },
   {
     "id": 19783,
     "name": "Small Cursed Warden",
     "level": 153,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 453093
   },
   {
     "id": 15807,
     "name": "Kleiner Dorian",
     "level": 154,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 553000
   },
   {
     "id": 13645,
     "name": "Kleiner Okean",
     "level": 154,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 553000
   },
   {
     "id": 13286,
     "name": "Bestienkönig Khan",
     "level": 155,
     "element": "wind",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 17729,
     "name": "Blue Meteonyker",
     "level": 155,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 11448,
     "name": "Cursed Warden",
     "level": 155,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 477106
   },
   {
     "id": 11319,
     "name": "Dorian",
     "level": 155,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 574000
   },
   {
     "id": 17289,
     "name": "Giant Maleficar",
     "level": 155,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 3442304
   },
   {
     "id": 13896,
     "name": "Höhlenmensch-Häuptling",
     "level": 155,
     "element": "electricity",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 14186,
     "name": "Königskartoffel",
     "level": 155,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 10071,
     "name": "Lila Creper",
     "level": 155,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 27682750
   },
   {
     "id": 11954,
     "name": "Lila Kingster",
     "level": 155,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 27682750
   },
   {
     "id": 11638,
     "name": "Okean",
     "level": 155,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 574000
   },
   {
     "id": 10333,
     "name": "Prinzenkartoffel",
     "level": 155,
     "element": "none",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 20000000
   },
   {
     "id": 16309,
     "name": "Pyramidenwächter",
     "level": 155,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 10186,
     "name": "Scorched Meteonyker",
     "level": 155,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 10000000
   },
   {
     "id": 12503,
     "name": "Shadow of Clockworks",
     "level": 155,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 185746530
   },
   {
     "id": 16430,
     "name": "Tempelwächter",
     "level": 155,
     "element": "earth",
-    "rank": "super"
+    "rank": "super",
+    "hp": 180000000
   },
   {
     "id": 10748,
     "name": "Captain Dorian",
     "level": 156,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 595000
   },
   {
     "id": 15246,
     "name": "Captain Okean",
     "level": 156,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 595000
   },
   {
     "id": 15064,
     "name": "Giant Naga",
     "level": 156,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 29628050
   },
   {
     "id": 28765,
     "name": "Lord Naga",
     "level": 156,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 29628050
   },
   {
     "id": 19584,
     "name": "Captain Cursed Warden",
     "level": 157,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 502392
   },
   {
     "id": 10751,
     "name": "Small Kraken",
     "level": 157,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 617000
   },
   {
     "id": 16232,
     "name": "Kraken",
     "level": 158,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 639000
   },
   {
     "id": 23755,
     "name": "Overlord Naga",
     "level": 158,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 35553660
   },
   {
     "id": 13739,
     "name": "Violet Naga",
     "level": 158,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 35553660
   },
   {
     "id": 14281,
     "name": "Captain Kraken",
     "level": 159,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 661000
   },
   {
     "id": 28818,
     "name": "Lord Dorian",
     "level": 159,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 38203872
   },
   {
     "id": 20131,
     "name": "Lord Okean",
     "level": 159,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 38203872
   },
   {
     "id": 13313,
     "name": "Riesiger Dorian",
     "level": 159,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 38203872
   },
   {
     "id": 12881,
     "name": "Riesiger Okean",
     "level": 159,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 38203872
   },
   {
     "id": 29452,
     "name": "Dreadfin",
     "level": 160,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 658606
   },
   {
     "id": 2474,
     "name": "Giant Cursed Warden",
     "level": 160,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 4019136
   },
   {
     "id": 2949,
     "name": "Lucifer",
     "level": 160,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 255000000
   },
   {
     "id": 27538,
     "name": "Captain Dreadfin",
     "level": 161,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 680300
   },
   {
     "id": 18866,
     "name": "Lila Dorian",
     "level": 161,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 45844646
   },
   {
     "id": 17273,
     "name": "Lila Okean",
     "level": 161,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 45844646
   },
   {
     "id": 27224,
     "name": "[Event] Clockworks",
     "level": 162,
     "element": "none",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 10000
   },
   {
     "id": 13491,
     "name": "[Event] Giant Kraken",
     "level": 162,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 10000
   },
   {
     "id": 24551,
     "name": "Dreadscale",
     "level": 162,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 707081
   },
   {
     "id": 14033,
     "name": "Giant Kraken",
     "level": 162,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 49443270
   },
   {
     "id": 23165,
     "name": "Small Hundur Sharpfoot",
     "level": 162,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 784105
   },
   {
     "id": 23283,
     "name": "Captain Dreadscale",
     "level": 163,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 729842
   },
   {
     "id": 26739,
     "name": "Hundur Sharpfoot",
     "level": 163,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 792688
   },
   {
     "id": 20931,
     "name": "Luminfin",
     "level": 164,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 756862
   },
   {
     "id": 28407,
     "name": "Overlord Kraken",
     "level": 164,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 59331924
   },
   {
     "id": 13941,
     "name": "Violet Kraken",
     "level": 164,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 59331924
   },
   {
     "id": 27010,
     "name": "[Depths Guardian] Bunyip",
     "level": 165,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 60731423
   },
   {
     "id": 23382,
     "name": "Captain Hundur Sharpfoot",
     "level": 165,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 802076
   },
   {
     "id": 25381,
     "name": "Captain Luminfin",
     "level": 165,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 777794
   },
   {
     "id": 20307,
     "name": "Small Samoset",
     "level": 166,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 808232
   },
   {
     "id": 21652,
     "name": "[Depths Queen] Nereid",
     "level": 167,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 65109188
   },
   {
     "id": 23162,
     "name": "Samoset",
     "level": 167,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 816746
   },
   {
     "id": 26145,
     "name": "Giant Hundur Sharpfoot",
     "level": 168,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 60628441
   },
   {
     "id": 28482,
     "name": "[Shade Lieutenant] Kriton",
     "level": 169,
     "element": "water",
-    "rank": "super"
+    "rank": "super",
+    "hp": 75597134
   },
   {
     "id": 22300,
     "name": "Captain Samoset",
     "level": 169,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 824737
   },
   {
     "id": 28690,
     "name": "Small Kyouchish",
     "level": 170,
     "element": "earth",
-    "rank": "small"
+    "rank": "small",
+    "hp": 833157
   },
   {
     "id": 25611,
     "name": "Violet Hundur Sharpfoot",
     "level": 170,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 62765507
   },
   {
     "id": 27933,
     "name": "Kyouchish",
     "level": 171,
     "element": "earth",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 840062
   },
   {
     "id": 28087,
     "name": "Giant Samoset",
     "level": 172,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 63981676
   },
   {
     "id": 22099,
     "name": "Captain Kyouchish",
     "level": 173,
     "element": "earth",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 850851
   },
   {
     "id": 23705,
     "name": "Small Kanonicus",
     "level": 174,
     "element": "fire",
-    "rank": "small"
+    "rank": "small",
+    "hp": 857782
   },
   {
     "id": 29955,
     "name": "Violet Samoset",
     "level": 174,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 66017480
   },
   {
     "id": 29150,
     "name": "[Elder] Traitus",
     "level": 175,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 67247725
   },
   {
     "id": 26743,
     "name": "Kanonicus",
     "level": 175,
     "element": "fire",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 868633
   },
   {
     "id": 21371,
     "name": "Giant Kyouchish",
     "level": 176,
     "element": "earth",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 67247725
   },
   {
     "id": 28534,
     "name": "Captain Kanonicus",
     "level": 177,
     "element": "fire",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 876171
   },
   {
     "id": 26531,
     "name": "Small Mage Redcloud",
     "level": 178,
     "element": "water",
-    "rank": "small"
+    "rank": "small",
+    "hp": 885387
   },
   {
     "id": 20354,
     "name": "Violet Kyouchish",
     "level": 178,
     "element": "earth",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 69300561
   },
   {
     "id": 27170,
     "name": "Mage Redcloud",
     "level": 179,
     "element": "water",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 893505
   },
   {
     "id": 22933,
     "name": "[God of Death] Ankou",
     "level": 180,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 750000000
   },
   {
     "id": 24100,
     "name": "[God of Death] Blazing Ankou",
     "level": 180,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 780000000
   },
   {
     "id": 24949,
     "name": "[God of Death] Demonic Ankou",
     "level": 180,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 800000000
   },
   {
     "id": 26385,
     "name": "Giant Kanonicus",
     "level": 180,
     "element": "fire",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 70904413
   },
   {
     "id": 29931,
     "name": "Captain Mage Redcloud",
     "level": 181,
     "element": "water",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 900962
   },
   {
     "id": 22579,
     "name": "Small Taiaha",
     "level": 182,
     "element": "wind",
-    "rank": "small"
+    "rank": "small",
+    "hp": 910888
   },
   {
     "id": 23751,
     "name": "Violet Kanonicus",
     "level": 182,
     "element": "fire",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 73365142
   },
   {
     "id": 23970,
     "name": "Taiaha",
     "level": 183,
     "element": "wind",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 921747
   },
   {
     "id": 17675,
     "name": "Giant Mage Redcloud",
     "level": 184,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 74889132
   },
   {
     "id": 27190,
     "name": "Captain Taiaha",
     "level": 185,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 933683
   },
   {
     "id": 21399,
     "name": "Small Hellhound",
     "level": 186,
     "element": "electricity",
-    "rank": "small"
+    "rank": "small",
+    "hp": 943587
   },
   {
     "id": 27895,
     "name": "Violet Mage Redcloud",
     "level": 186,
     "element": "water",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 76875992
   },
   {
     "id": 27080,
     "name": "Hellhound",
     "level": 187,
     "element": "electricity",
-    "rank": "normal"
+    "rank": "normal",
+    "hp": 950363
   },
   {
     "id": 28603,
     "name": "Giant Taiaha",
     "level": 188,
     "element": "wind",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 78608791
   },
   {
     "id": 22936,
     "name": "[Twisted Soul] Orcus",
     "level": 189,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11329683
   },
   {
     "id": 28220,
     "name": "[Twisted Soul] Orcus",
     "level": 189,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 362548
   },
   {
     "id": 22252,
     "name": "Captain Hellhound",
     "level": 189,
     "element": "electricity",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 961093
   },
   {
     "id": 21846,
     "name": "[Tormented Soul] Nergal",
     "level": 190,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11376106
   },
   {
     "id": 24129,
     "name": "[Tormented Soul] Nergal",
     "level": 190,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 364035
   },
   {
     "id": 23077,
     "name": "Chief Keokuk",
     "level": 190,
     "element": "water",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 117890155
   },
   {
     "id": 26422,
     "name": "Violet Taiaha",
     "level": 190,
     "element": "wind",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 80538633
   },
   {
     "id": 24979,
     "name": "[Demonic Soul] Hel",
     "level": 191,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 365646
   },
   {
     "id": 29019,
     "name": "[Demonic Soul] Hel",
     "level": 191,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11426423
   },
   {
     "id": 29117,
     "name": "[Perverted Soul] Morrigan",
     "level": 192,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 367202
   },
   {
     "id": 29427,
     "name": "[Perverted Soul] Morrigan",
     "level": 192,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11475061
   },
   {
     "id": 23057,
     "name": "Giant Hellhound",
     "level": 192,
     "element": "electricity",
-    "rank": "giant"
+    "rank": "giant",
+    "hp": 81836489
   },
   {
     "id": 25607,
     "name": "[Anguished Soul] Mara",
     "level": 193,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 11515091
   },
   {
     "id": 27093,
     "name": "[Anguished Soul] Mara",
     "level": 193,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 368483
   },
   {
     "id": 21644,
     "name": "[Violent Soul] Ghed ",
     "level": 194,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 370165
   },
   {
     "id": 26924,
     "name": "[Violent Soul] Ghed ",
     "level": 194,
     "element": "wind",
-    "rank": "captain"
+    "rank": "captain",
+    "hp": 12030363
   },
   {
     "id": 21640,
     "name": "Violet Hellhound",
     "level": 194,
     "element": "electricity",
-    "rank": "violet"
+    "rank": "violet",
+    "hp": 83771649
   },
   {
     "id": 24844,
     "name": "[God of Death] Ankou",
     "level": 195,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 37500000
   },
   {
     "id": 23551,
     "name": "Monument of Death",
     "level": 195,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 3750000
   },
   {
     "id": 28302,
     "name": "Monument of Death",
     "level": 195,
     "element": "none",
-    "rank": "super"
+    "rank": "super",
+    "hp": 75000000
   },
   {
     "id": 24385,
     "name": "[God of Death] Blazing Ankou",
     "level": 200,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 38000000
   },
   {
     "id": 11909,
     "name": "[God of Death] Demonic Ankou",
     "level": 200,
     "element": "fire",
-    "rank": "super"
+    "rank": "super",
+    "hp": 38500000
   }
 ]

@@ -9,6 +9,7 @@ import { createProfilesStore } from "./profiles/store";
 import { createLauncherWindow } from "./windows/launcherWindow";
 import { createSessionWindowController, createSessionWindow } from "./windows/sessionWindow";
 import { createInstanceWindow } from "./windows/instanceWindow";
+import { registerUiPositionInjection } from "./sessionTabs/uiPositionInjector";
 import { createInstanceRegistry } from "./windows/instanceRegistry";
 import { createSessionRegistry } from "./windows/sessionRegistry";
 import { createSessionTabsManager } from "./sessionTabs/manager";
@@ -159,6 +160,9 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             windowId,
         });
 
+        // Inherit UI position persistence setting from client settings
+        tabsManager.setUiPositionPersistenceEnabled(settings.persistGameUiPositions ?? false);
+
         // Reset tabs when window is closed
         win.on("closed", () => {
             tabsManager.setVisible(true);
@@ -197,6 +201,11 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
                 logErr(err, "InstancePosition");
             }
         }
+        // Register UI position injection for instance windows
+        registerUiPositionInjection(
+            win.webContents,
+            () => sessionTabs.getUiPositionPersistenceEnabled(),
+        );
         win.on("closed", release);
         instances.register(profileId, win);
 

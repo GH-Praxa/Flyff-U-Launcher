@@ -127,15 +127,31 @@ function createStatsEngine(config, initialState) {
   }
 
   /**
-   * Get monster rank category (placeholder - returns UNKNOWN until rank DB is implemented)
+   * Get monster rank category from monsterMeta.rank.
+   * Maps small/normal/captain/material/super → 'normal', giant/violet/boss/worldboss to their category.
    */
-  function getMonsterRank(monsterName) {
-    // TODO: Implement monster rank lookup from database
-    // For now, return UNKNOWN/NORMAL
-    return schema.MONSTER_RANKS.UNKNOWN;
+  function getMonsterRank(monsterName, monsterMeta) {
+    const raw = monsterMeta && typeof monsterMeta.rank === 'string' ? monsterMeta.rank.toLowerCase() : null;
+    if (!raw) return schema.MONSTER_RANKS.UNKNOWN;
+    switch (raw) {
+      case 'small':
+      case 'normal':
+      case 'captain':
+      case 'material':
+      case 'super':
+        return schema.MONSTER_RANKS.NORMAL;
+      case 'giant':
+        return schema.MONSTER_RANKS.GIANT;
+      case 'violet':
+        return schema.MONSTER_RANKS.VIOLET;
+      case 'boss':
+      case 'worldboss':
+        return schema.MONSTER_RANKS.BOSS;
+      default:
+        return schema.MONSTER_RANKS.UNKNOWN;
+    }
   }
 
-  /**
   /**
    * Process an OCR tick update
    * @param {number} lvl - Current level
@@ -263,7 +279,7 @@ function createStatsEngine(config, initialState) {
    */
   function registerKill(deltaExp, monsterName, timestamp, monsterMeta) {
     const name = monsterName || 'Unknown';
-    const rank = getMonsterRank(name);
+    const rank = getMonsterRank(name, monsterMeta);
 
     if (!state.sessionStartTime) {
       state.sessionStartTime = timestamp;
@@ -304,12 +320,16 @@ function createStatsEngine(config, initialState) {
     if (!state.monsters[name]) {
       state.monsters[name] = {
         count: 0,
-        rank,
+        rank: rank,
         lastKillTime: null
       };
     }
     state.monsters[name].count++;
     state.monsters[name].lastKillTime = timestamp;
+    // Update rank if we now have better info (e.g., was 'unknown', now resolved)
+    if (rank !== schema.MONSTER_RANKS.UNKNOWN) {
+      state.monsters[name].rank = rank;
+    }
 
     return {
       type: 'kill',
@@ -318,6 +338,48 @@ function createStatsEngine(config, initialState) {
       timestamp,
       rank
     };
+  }
+
+  /**
+   * Rollback the most recently registered kill.
+   * Used when post-registration validation (e.g. EXP table check) rejects a kill.
+   * @returns {boolean} true if a kill was rolled back, false if nothing to undo
+   */
+  function rollbackLastKill() {
+    if (state.last3Kills.length === 0) return false;
+
+    const lastKill = state.last3Kills.pop();
+
+    state.killsSession = Math.max(0, state.killsSession - 1);
+    state.killsTotal = Math.max(0, state.killsTotal - 1);
+    state.expSession = Math.max(0, state.expSession - lastKill.deltaExp);
+    state.expTotal = Math.max(0, state.expTotal - lastKill.deltaExp);
+
+    // Remove matching entry from rolling window (last entry with same timestamp)
+    for (let i = state.rollingKills.length - 1; i >= 0; i--) {
+      if (state.rollingKills[i].timestamp === lastKill.timestamp) {
+        state.rollingKills.splice(i, 1);
+        break;
+      }
+    }
+
+    // Update monster tracking
+    const name = lastKill.monsterName;
+    if (state.monsters[name]) {
+      state.monsters[name].count--;
+      if (state.monsters[name].count <= 0) {
+        delete state.monsters[name];
+      }
+    }
+
+    // Restore lastKillTime from remaining kills
+    if (state.last3Kills.length > 0) {
+      state.lastKillTime = state.last3Kills[state.last3Kills.length - 1].timestamp;
+    } else {
+      state.lastKillTime = null;
+    }
+
+    return true;
   }
 
   /**
@@ -467,6 +529,7 @@ function createStatsEngine(config, initialState) {
     startSession,
     applyManualExp,
     update,
+    rollbackLastKill,
     compute
   };
 }

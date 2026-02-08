@@ -614,6 +614,32 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
   }
 
   const pluginFrames = new Map();
+  const pluginBroadcastSubs = new Map(); // "pluginId:channel" -> ipc listener fn
+
+  // Relay plugin broadcasts from main process to plugin iframes via postMessage.
+  window.addEventListener("message", function(e) {
+    if (!e.data || e.data.type !== "plugin:subscribe") return;
+    var pid = e.data.pluginId;
+    var ch = e.data.channel;
+    if (!pid || !ch) return;
+    var prefixed = pid + ":" + ch;
+    if (pluginBroadcastSubs.has(prefixed)) return; // already subscribed
+    var ipc = getIpc();
+    if (!ipc || !ipc.on) return;
+    // window.ipc.on (preload bridge) strips the event arg and passes (payload) directly.
+    // ipcRenderer.on passes (event, payload). Handle both via rest args.
+    var handler = function() {
+      var args = Array.prototype.slice.call(arguments);
+      // Preload bridge: args = [payload]; ipcRenderer: args = [event, payload]
+      var payload = args.length > 1 ? args[1] : args[0];
+      var frame = pluginFrames.get(pid);
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "plugin:broadcast", channel: ch, payload: payload != null ? payload : null }, "*");
+      }
+    };
+    ipc.on(prefixed, handler);
+    pluginBroadcastSubs.set(prefixed, handler);
+  });
   const toggleBtn = document.getElementById("toggle");
   if (toggleBtn) toggleBtn.title = STR.toggleTitle;
   const resizeGripEl = document.getElementById("resizeGrip");
@@ -830,6 +856,20 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
   };
   const tabs = Array.from(document.querySelectorAll(".tab"));
   let currentTab = "ocr";
+
+  // OCR keep-alive: ensure ocr:getLatest is called periodically even when a plugin
+  // tab is active.  Without this, OCR scanning stalls because ocr:getLatest triggers
+  // runImmediateOcr() when data is stale (>1200ms), and no other caller keeps it fresh
+  // while the built-in OCR tab is not visible.
+  setInterval(async () => {
+    if (currentTab === "ocr") return; // OCR tab has its own 250ms refresh
+    try {
+      const pid = await getActiveOverlayProfileId();
+      if (pid) await invokeMain("ocr:getLatest", pid);
+      const spid = await getSupportOverlayProfileId();
+      if (spid && spid !== pid) await invokeMain("ocr:getLatest", spid);
+    } catch (_) { /* non-critical */ }
+  }, 500);
 
   const SUPPORT_COLOR = "rgba(255,170,80,0.95)";
   const ROI_ITEMS = [
@@ -1980,18 +2020,41 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       iframe.sandbox = "allow-scripts allow-same-origin";
       pluginFrames.set(pluginId, iframe);
 
+      // Pre-fetch overlay target ID so it's available when the plugin script runs.
+      // Setting it in the iframe "load" handler is too late because the plugin's
+      // own init() fires on the same "load" event and misses the value.
+      const overlayTargetId = await getActiveOverlayProfileId().catch(() => null);
+
       // Inline the plugin sidepanel HTML so we can inject the IPC bridge BEFORE plugin JS runs.
       const SCRIPT_CLOSE = "</scr" + "ipt>";
       const bridge = [
         "window.__pluginId = " + JSON.stringify(pluginId) + ";",
         "window.__pluginLocale = \\"" + locale + "\\";",
+        "window.__overlayTargetId = " + JSON.stringify(overlayTargetId) + ";",
         "window.plugin = window.plugin || {};",
         "if (!window.plugin.ipc) {",
+        "  var __ipcListeners = {};",
         "  window.plugin.ipc = {",
-        "    invoke: function(channel, ...args) {",
-        "      return parent.invokePluginChannel(" + JSON.stringify(pluginId) + ", channel, ...args);",
+        "    invoke: function(channel) {",
+        "      var a = Array.prototype.slice.call(arguments, 1);",
+        "      return parent.invokePluginChannel(" + JSON.stringify(pluginId) + ", channel, ...a);",
+        "    },",
+        "    on: function(channel, cb) {",
+        "      if (!__ipcListeners[channel]) __ipcListeners[channel] = [];",
+        "      __ipcListeners[channel].push(cb);",
+        "      try { parent.postMessage({ type: 'plugin:subscribe', pluginId: " + JSON.stringify(pluginId) + ", channel: channel }, '*'); } catch(_e){}",
+        "    },",
+        "    off: function(channel, cb) {",
+        "      if (!__ipcListeners[channel]) return;",
+        "      __ipcListeners[channel] = __ipcListeners[channel].filter(function(f){ return f !== cb; });",
         "    }",
         "  };",
+        "  window.addEventListener('message', function(e) {",
+        "    if (e.data && e.data.type === 'plugin:broadcast' && e.data.channel) {",
+        "      var cbs = __ipcListeners[e.data.channel];",
+        "      if (cbs) { for (var i = 0; i < cbs.length; i++) { try { cbs[i](e.data.payload); } catch(err) { console.error('[plugin:bridge]', err); } } }",
+        "    }",
+        "  });",
         "}",
       ].join("\\n"); // use escaped newline so the outer template literal doesn't break the string
 
@@ -2020,16 +2083,12 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
       iframe.srcdoc = html;
 
-      iframe.addEventListener("load", async () => {
+      iframe.addEventListener("load", () => {
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
           if (doc) applyThemeToPluginDocument(doc);
-          const overlayTargetId = await getActiveOverlayProfileId().catch(() => null);
-          const win = iframe.contentWindow;
-          if (win) {
-            win.__overlayTargetId = overlayTargetId;
-            if (doc?.documentElement) doc.documentElement.lang = locale;
-          }
+          // __overlayTargetId is already injected via bridge script above
+          if (doc?.documentElement) doc.documentElement.lang = locale;
         } catch (err) {
           console.error("[HudPanel] Failed to init plugin frame", err);
         }
@@ -2039,6 +2098,15 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
       content._cleanup = () => {
         pluginFrames.delete(pluginId);
+        // Remove broadcast subscriptions for this plugin
+        var ipc = getIpc();
+        var prefix = pluginId + ":";
+        for (var [key, handler] of pluginBroadcastSubs) {
+          if (key.startsWith(prefix)) {
+            if (ipc && ipc.removeListener) ipc.removeListener(key, handler);
+            pluginBroadcastSubs.delete(key);
+          }
+        }
         iframe.srcdoc = "about:blank";
       };
       return;

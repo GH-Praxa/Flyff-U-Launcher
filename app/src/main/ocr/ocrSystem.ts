@@ -25,6 +25,7 @@ import {
     persistManualLevelOverride,
     type ManualLevelOverrideRow,
 } from "./manualLevelStore";
+import { createMonsterLookup } from "./monsterLookup";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type SessionTabsLike = {
@@ -147,24 +148,37 @@ function detectElement(img: NativeImage): string | null {
         if (width <= 0 || height <= 0) return null;
         const buf = img.getBitmap();
         if (!buf || buf.length < 4) return null;
-        let sumR = 0, sumG = 0, sumB = 0, count = 0;
+        let sumR = 0, sumG = 0, sumB = 0, totalWeight = 0, survivedPixels = 0;
         const startX = Math.floor(width * 0.25);
         const endX = Math.ceil(width * 0.75);
         const startY = Math.floor(height * 0.25);
         const endY = Math.ceil(height * 0.75);
+        const totalCenterPixels = (endX - startX) * (endY - startY);
         for (let y = startY; y < endY; y++) {
             for (let x = startX; x < endX; x++) {
                 const idx = (y * width + x) * 4;
                 const b = buf[idx] ?? 0;
                 const g = buf[idx + 1] ?? 0;
                 const r = buf[idx + 2] ?? 0;
-                sumR += r; sumG += g; sumB += b; count++;
+                const { h: pH, s: pS, v: pV } = rgbToHsv(r, g, b);
+                // Skip white text pixels (high brightness, low saturation)
+                if (pV > 0.78 && pS < 0.15) continue;
+                // Skip dark edge/shadow pixels
+                if (pV < 0.10) continue;
+                // Skip golden ring pixels (hue 20-50°, low saturation)
+                if (pH >= 20 && pH <= 50 && pS < 0.3) continue;
+                // Saturation-weighted accumulation: purer element colours count more
+                const w = 0.2 + pS;
+                sumR += r * w; sumG += g * w; sumB += b * w; totalWeight += w;
+                survivedPixels++;
             }
         }
-        if (count === 0) return null;
-        const avgR = sumR / count;
-        const avgG = sumG / count;
-        const avgB = sumB / count;
+        if (totalWeight === 0) return null;
+        // If too few pixels survived filtering, this is likely background, not an element circle
+        if (totalCenterPixels > 0 && survivedPixels / totalCenterPixels < 0.15) return null;
+        const avgR = sumR / totalWeight;
+        const avgG = sumG / totalWeight;
+        const avgB = sumB / totalWeight;
         const { h, s, v } = rgbToHsv(avgR, avgG, avgB);
         if (s > 0.12 && v > 0.25) {
             if ((h >= 0 && h < 30) || h >= 330) return "fire";
@@ -174,14 +188,39 @@ function detectElement(img: NativeImage): string | null {
             if (h >= 250 && h < 330) return "earth";
         }
         let best: { name: string; dist: number } | null = null;
-        for (const [name, [r, g, b]] of Object.entries(ELEMENT_COLORS)) {
-            const dist = Math.sqrt(Math.pow(avgR - r, 2) + Math.pow(avgG - g, 2) + Math.pow(avgB - b, 2));
+        for (const [name, [er, eg, eb]] of Object.entries(ELEMENT_COLORS)) {
+            const dist = Math.sqrt(Math.pow(avgR - er, 2) + Math.pow(avgG - eg, 2) + Math.pow(avgB - eb, 2));
             if (!best || dist < best.dist) best = { name, dist };
         }
         if (best && best.dist <= 90) return best.name;
         return null;
     } catch {
         return null;
+    }
+}
+
+function detectHpBar(img: NativeImage): boolean {
+    try {
+        const { width, height } = img.getSize();
+        if (width <= 0 || height <= 0) return false;
+        const buf = img.getBitmap();
+        if (!buf || buf.length < 4) return false;
+        const totalPixels = width * height;
+        let hpPixels = 0;
+        for (let i = 0; i < totalPixels; i++) {
+            const offset = i * 4;
+            const b = buf[offset] ?? 0;
+            const g = buf[offset + 1] ?? 0;
+            const r = buf[offset + 2] ?? 0;
+            const { h, s, v } = rgbToHsv(r, g, b);
+            if (s < 0.25 || v < 0.20) continue;
+            // Red HP bar: hue 0-20 or 340-360
+            // Green HP bar: hue 80-160
+            if ((h <= 20 || h >= 340) || (h >= 80 && h <= 160)) hpPixels++;
+        }
+        return totalPixels > 0 && hpPixels / totalPixels >= 0.12;
+    } catch {
+        return false;
     }
 }
 
@@ -250,6 +289,9 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         else ocrWorkerPromises.clear();
     };
 
+    // ── Monster lookup ─────────────────────────────────────────
+    const monsterLookup = createMonsterLookup();
+
     // ── OCR cache & manual level overrides ──────────────────────
     const ocrCache = new Map<string, {
         lvl?: string; exp?: string; rmExp?: string; charname?: string;
@@ -315,7 +357,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     // ── EXP level-up detection ──────────────────────────────────
     const lastLevelChangeAt = new Map<string, number>();
     const expLevelUpLocks = new Map<string, number>();
-    const lastEnemyMeta = new Map<string, { level: number | null; element: string | null; updatedAt: number }>();
+    const lastEnemyMeta = new Map<string, { level: number | null; element: string | null; maxHp: number | null; updatedAt: number }>();
 
     const handleExpLevelUp = (profileId: string, prevExp: unknown, nextExp: unknown, now: number) => {
         const lastLockAt = expLevelUpLocks.get(profileId) ?? 0;
@@ -585,6 +627,31 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             }
 
             if (!isExpLike && isImageNearlyUniform(screenshot)) return "";
+            // enemyHp: detect bar presence, then OCR the text for maxHp
+            if (key === "enemyHp") {
+                if (!detectHpBar(screenshot)) return "";
+                // Bar detected – hold previous value if OCR fails
+                const prevHpValue = (ocrCache.get(profileId) as Record<string, unknown> | undefined)?.enemyHp;
+                const holdHp = typeof prevHpValue === "string" && prevHpValue.includes("/") ? prevHpValue : "HP erkannt";
+                const hpPng = screenshot.toPNG();
+                try {
+                    const hpKind = KEY_TO_OCR_KIND[key];
+                    const hpWorker = await ensureOcrWorker(hpKind);
+                    const hpResp = await hpWorker.recognizePng(hpPng, { kind: hpKind });
+                    const hpRaw = typeof hpResp.raw === "string" ? hpResp.raw.trim() : "";
+                    const slashMatch = hpRaw.match(/(\d[\d.,]*)\s*[\/|]\s*(\d[\d.,]*)/);
+                    if (slashMatch) {
+                        const maxHp = Math.round(parseFloat(slashMatch[2]!.replace(/[.,]/g, "")));
+                        if (maxHp > 0) {
+                            const meta = lastEnemyMeta.get(profileId);
+                            if (meta) meta.maxHp = maxHp;
+                            else lastEnemyMeta.set(profileId, { level: null, element: null, maxHp, updatedAt: Date.now() });
+                            return `${slashMatch[1]}/${slashMatch[2]}`;
+                        }
+                    }
+                } catch { /* OCR failed, fall back */ }
+                return holdHp;
+            }
             const tGrab = Date.now();
             const png = screenshot.toPNG();
             const elementHint = key === "enemyName" ? detectElement(screenshot) : null;
@@ -608,11 +675,81 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 logWarn(`OCR slow (${key}) grab=${tGrab - tStart}ms ocr=${tAfterOcr - tBeforeOcr}ms total=${durTotal}ms`, "OCR");
             }
 
+            // ── enemyName: HP-first monster identification ──
+            if (key === "enemyName") {
+                const cached = ocrCache.get(profileId);
+                const prevMeta = lastEnemyMeta.get(profileId);
+                const cachedMaxHp = prevMeta?.maxHp ?? null;
+                const prevElement = prevMeta?.element ?? null;
+
+                // Determine if same monster (element matches or no element detected)
+                const sameMonster = !elementHint || !prevElement || prevElement === elementHint;
+                let holdValue = sameMonster
+                    ? (cached?.monsterName || cached?.enemyName || "")
+                    : ""; // element changed = different monster, don't hold
+                if (!sameMonster && prevMeta) prevMeta.maxHp = null;
+
+                // No element AND no HP = no monster targeted
+                if (!elementHint && !cachedMaxHp) return "";
+
+                // Refine held value when maxHp can narrow it down
+                if (holdValue && holdValue.includes(",") && cachedMaxHp) {
+                    try {
+                        const refined = await monsterLookup.lookupMonster(prevMeta?.level ?? null, elementHint, cachedMaxHp);
+                        if (refined) holdValue = refined;
+                    } catch { /* keep holdValue */ }
+                }
+
+                // Try HP-based lookup when no hold value yet
+                if (!holdValue && cachedMaxHp) {
+                    try {
+                        const hpResult = await monsterLookup.lookupMonster(prevMeta?.level ?? null, elementHint, cachedMaxHp);
+                        if (hpResult) holdValue = hpResult;
+                    } catch { /* no result */ }
+                }
+
+                if (!response.ok) return holdValue;
+
+                // OCR succeeded – try to parse level
+                const raw = typeof response.raw === "string" ? response.raw.trim() : "";
+                const val = typeof response.value === "string" ? response.value.trim() : "";
+                let lvlNum: number | null = null;
+                if (val) {
+                    const parsed = parseFloat(val.replace(/[^0-9.,]/g, "").replace(",", "."));
+                    if (Number.isFinite(parsed)) lvlNum = Math.min(300, Math.max(1, Math.round(parsed)));
+                }
+                if (lvlNum === null && raw) {
+                    const parsed = parseFloat(raw.replace(/[^0-9.,]/g, "").replace(",", "."));
+                    if (Number.isFinite(parsed)) lvlNum = Math.min(300, Math.max(1, Math.round(parsed)));
+                }
+
+                // Store parsed level+element in meta
+                if (lvlNum !== null || elementHint) {
+                    if (prevMeta) {
+                        if (lvlNum !== null) prevMeta.level = lvlNum;
+                        if (elementHint) prevMeta.element = elementHint;
+                    } else {
+                        lastEnemyMeta.set(profileId, { level: lvlNum, element: elementHint, maxHp: cachedMaxHp, updatedAt: Date.now() });
+                    }
+                }
+
+                // Resolve: HP is primary, level+element secondary
+                try {
+                    const name = await monsterLookup.lookupMonster(lvlNum, elementHint, cachedMaxHp);
+                    if (name) return name;
+                } catch { /* fallback */ }
+
+                // No match – return holdValue or level-element fallback
+                if (holdValue) return holdValue;
+                if (lvlNum !== null) return `Lv${lvlNum}-${elementHint || "unknown"}`;
+                return "";
+            }
+
             if (!response.ok) {
                 const rawText = typeof response.raw === "string" ? response.raw.trim() : "";
                 if (!response.error && rawText) return rawText;
-                if (!response.error || response.error === "blank_image") return elementHint ?? "";
-                return elementHint ?? null;
+                if (!response.error || response.error === "blank_image") return "";
+                return null;
             }
 
             const raw = typeof response.raw === "string" ? response.raw.trim() : "";
@@ -626,22 +763,6 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                     if (Number.isFinite(num) && num >= 0 && num <= 100) return `${num.toFixed(4)}%`;
                 }
                 return candidate;
-            }
-
-            if (key === "enemyName") {
-                let lvlNum: number | null = null;
-                if (typeof response.value === "string") {
-                    const parsed = parseFloat(response.value.replace(/[^0-9.,]/g, "").replace(",", "."));
-                    if (Number.isFinite(parsed)) lvlNum = Math.min(300, Math.max(1, Math.round(parsed)));
-                }
-                if (!lvlNum && raw) {
-                    const parsed = parseFloat(raw.replace(/[^0-9.,]/g, "").replace(",", "."));
-                    if (Number.isFinite(parsed)) lvlNum = Math.min(300, Math.max(1, Math.round(parsed)));
-                }
-                const parts = [];
-                if (lvlNum) parts.push(`Lv${lvlNum}`);
-                if (elementHint) parts.push(elementHint);
-                return parts.join("-") || elementHint || "";
             }
 
             return raw || fallback || "";
@@ -688,9 +809,11 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             }
             if (key === "enemyName") {
                 const parsed = typeof result === "string" ? parseLevelElement(result) : { level: null, element: null };
-                const prevMeta = lastEnemyMeta.get(profileId) ?? { level: null, element: null, updatedAt: 0 };
+                const prevMeta = lastEnemyMeta.get(profileId) ?? { level: null, element: null, maxHp: null, updatedAt: 0 };
+                const isResolvedName = !parsed.level && !parsed.element && result && !result.startsWith("Lv");
                 let nextResult = result;
-                if (!parsed.level && prevMeta.level) {
+                // Only apply Lv-format fallback if result is NOT an already-resolved monster name
+                if (!isResolvedName && !parsed.level && prevMeta.level) {
                     const el = parsed.element ?? prevMeta.element;
                     const parts = [`Lv${prevMeta.level}`];
                     if (el) parts.push(el);
@@ -700,11 +823,14 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                     (cached as Record<string, unknown>)[key] = nextResult;
                     result = nextResult;
                 }
-                lastEnemyMeta.set(profileId, {
-                    level: parsed.level ?? prevMeta.level ?? null,
-                    element: parsed.element ?? prevMeta.element ?? null,
-                    updatedAt: now,
-                });
+                if (!isResolvedName) {
+                    lastEnemyMeta.set(profileId, {
+                        level: parsed.level ?? prevMeta.level ?? null,
+                        element: parsed.element ?? prevMeta.element ?? null,
+                        maxHp: prevMeta.maxHp,
+                        updatedAt: now,
+                    });
+                }
                 (cached as Record<string, unknown>).monsterName = result;
                 const token = `${profileId}:${result || ""}`;
                 const last = lastEnemyLog.get(token) ?? 0;
@@ -989,6 +1115,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
     // ── Init (call after creation) ──────────────────────────────
     const init = async () => {
+        await monsterLookup.ensureLoaded();
         await loadManualLevelOverridesIntoMemory();
         const persistedTimers = await loadAllOcrTimers();
         for (const row of persistedTimers) {

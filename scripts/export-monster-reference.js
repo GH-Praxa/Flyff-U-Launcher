@@ -83,8 +83,9 @@ function loadMonsters(dir) {
             const level = typeof data.level === "number" ? data.level : null;
             const element = typeof data.element === "string" ? data.element : null;
             const rank = typeof data.rank === "string" ? data.rank : null;
+            const hp = typeof data.hp === "number" ? data.hp : null;
 
-            records.push({ id, name, level, element, rank });
+            records.push({ id, name, level, element, rank, hp });
         } catch (err) {
             console.error("[export-monster-reference] Fehler bei", file, err.message);
         }

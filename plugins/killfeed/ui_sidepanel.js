@@ -540,6 +540,8 @@
   let currentStats = null;
   let currentLayout = null;
   let charNameDebounce = null;
+  let pollSuppressedUntil = 0;
+  const accordionUserState = new Map(); // rank -> boolean (user-toggled open/closed)
 
   function applyStaticTranslations() {
     document.title = STR.title;
@@ -596,12 +598,13 @@
       case 'expSession':
       case 'expPerHour':
       case 'expPerMin':
-    case 'currentExp':
-      return (stats[key] || 0).toFixed(4) + '%';
-    case 'rmExp':
-      if (stats.rmExp === null || stats.rmExp === undefined || stats.rmExp === '') return '-';
-      if (typeof stats.rmExp === 'number') return stats.rmExp.toFixed(4) + '%';
-      return String(stats.rmExp);
+      case 'currentExp':
+        return (stats[key] || 0).toFixed(4) + '%';
+
+      case 'rmExp':
+        if (stats.rmExp === null || stats.rmExp === undefined || stats.rmExp === '') return '-';
+        if (typeof stats.rmExp === 'number') return stats.rmExp.toFixed(4) + '%';
+        return String(stats.rmExp);
 
       case 'sessionDuration':
         return stats.sessionDurationFormatted || '0:00';
@@ -609,20 +612,20 @@
       case 'avgTimePerKill':
         return stats.avgTimePerKillFormatted || '0:00';
 
-    case 'timeSinceLastKill':
-      return stats.timeSinceLastKillFormatted || '-';
+      case 'timeSinceLastKill':
+        return stats.timeSinceLastKillFormatted || '-';
 
-    case 'last3Kills':
-      if (!stats.last3Kills || stats.last3Kills.length === 0) return '-';
-      return stats.last3Kills.map(k => k.monsterName).join(', ');
+      case 'last3Kills':
+        if (!stats.last3Kills || stats.last3Kills.length === 0) return '-';
+        return stats.last3Kills.map(k => k.monsterName).join(', ');
 
-    case 'resetSession':
-      return STR.badges?.resetSession || translations.en.badges.resetSession || 'Reset';
+      case 'resetSession':
+        return STR.badges?.resetSession || translations.en.badges.resetSession || 'Reset';
 
-    default:
-      return String(stats[key] || '-');
+      default:
+        return String(stats[key] || '-');
+    }
   }
-}
 
   /**
    * Render badge visibility list
@@ -642,7 +645,7 @@
 
     html += BADGE_KEYS.map(key => {
       const isVisible = visibility[key] !== false;
-    const value = formatValue(key, currentStats);
+      const value = formatValue(key, currentStats);
 
       return `
         <div class="badge-item">
@@ -676,17 +679,61 @@
   }
 
   /**
+   * Incrementally update only badge value texts (no DOM rebuild)
+   */
+  function updateBadgeListValues() {
+    const visibility = currentLayout?.visibility || {};
+    BADGE_KEYS.forEach(key => {
+      const cb = document.getElementById(`vis-${key}`);
+      if (cb) {
+        const valueEl = cb.closest('.badge-item')?.querySelector('.badge-value');
+        if (valueEl) valueEl.textContent = formatValue(key, currentStats);
+      }
+    });
+    // Update "All" row status text
+    const allVisible = BADGE_KEYS.every(k => visibility[k] !== false);
+    const anyVisible = BADGE_KEYS.some(k => visibility[k] !== false);
+    const allEl = document.getElementById('vis-all');
+    if (allEl) {
+      const valueEl = allEl.closest('.badge-item')?.querySelector('.badge-value');
+      if (valueEl) valueEl.textContent = allVisible ? STR.badgeOn : anyVisible ? STR.badgeMixed : STR.badgeOff;
+    }
+  }
+
+  /**
+   * Sync checkbox checked states without rebuilding DOM
+   */
+  function syncBadgeCheckboxes() {
+    const visibility = currentLayout?.visibility || {};
+    BADGE_KEYS.forEach(key => {
+      const cb = document.getElementById(`vis-${key}`);
+      if (cb) cb.checked = visibility[key] !== false;
+    });
+    const allVisible = BADGE_KEYS.every(k => visibility[k] !== false);
+    const anyVisible = BADGE_KEYS.some(k => visibility[k] !== false);
+    const allCb = document.getElementById('vis-all');
+    if (allCb) {
+      allCb.checked = allVisible;
+      allCb.indeterminate = !allVisible && anyVisible;
+    }
+  }
+
+  /**
    * Render monster accordions
    */
   function renderMonsters() {
     const monstersByRank = currentStats?.monstersByRank || {};
 
+    // Debug info - shows current profile and data state
+    const totalMonsters = Object.values(monstersByRank).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+    const debugInfo = `<div style="font-size:10px;color:#888;padding:2px 4px;">P: ${currentProfileId || 'none'} | M: ${totalMonsters} | ${_debugLastRaw || 'no-poll'}</div>`;
+
     const ranks = ['normal', 'giant', 'violet', 'boss', 'unknown'];
 
-    monstersContainer.innerHTML = ranks.map(rank => {
+    monstersContainer.innerHTML = debugInfo + ranks.map(rank => {
       const monsters = monstersByRank[rank] || [];
       const count = monsters.length;
-      const isOpen = count > 0;
+      const isOpen = accordionUserState.has(rank) ? accordionUserState.get(rank) : count > 0;
 
       const monsterListHtml = monsters.length > 0
         ? monsters.map(m => `
@@ -728,6 +775,9 @@
 
     header.classList.toggle('open');
     content.classList.toggle('open');
+
+    // Persist user preference so re-renders don't reset accordion state
+    accordionUserState.set(rank, header.classList.contains('open'));
   };
 
   /**
@@ -790,10 +840,21 @@
   async function setVisibility(badgeKey, visible) {
     if (!currentProfileId) return;
 
+    // Suppress poll while IPC is in flight to prevent race condition
+    pollSuppressedUntil = Date.now() + 2000;
+
+    // Optimistic local update
+    if (currentLayout && currentLayout.visibility) {
+      currentLayout.visibility[badgeKey] = visible;
+    }
+
     try {
-      await unwrap(ipcInvoke('vis:set', currentProfileId, badgeKey, visible));
+      unwrap(await ipcInvoke('vis:set', currentProfileId, badgeKey, visible));
+      await requestState();
     } catch (err) {
       console.error('Failed to set visibility:', err);
+    } finally {
+      pollSuppressedUntil = 0;
     }
   }
 
@@ -862,7 +923,7 @@
   async function resetSession() {
     if (!currentProfileId) return;
     try {
-      await unwrap(ipcInvoke('session:reset', currentProfileId));
+      unwrap(await ipcInvoke('session:reset', currentProfileId));
       await requestState();
     } catch (err) {
       console.error('Failed to reset session:', err);
@@ -876,11 +937,22 @@
     if (!currentProfileId) return;
     const visibilityMap = {};
     BADGE_KEYS.forEach(k => { visibilityMap[k] = visible; });
+
+    // Suppress poll while IPC is in flight
+    pollSuppressedUntil = Date.now() + 2000;
+
+    // Optimistic local update
+    if (currentLayout) {
+      currentLayout.visibility = { ...visibilityMap };
+    }
+
     try {
-      await unwrap(ipcInvoke('layout:set', currentProfileId, { visibility: visibilityMap }));
+      unwrap(await ipcInvoke('layout:set', currentProfileId, { visibility: visibilityMap }));
       await requestState();
     } catch (err) {
       console.error('Failed to set all visibility:', err);
+    } finally {
+      pollSuppressedUntil = 0;
     }
   }
 
@@ -893,7 +965,7 @@
     currentProfileId = profileId;
 
     try {
-      await unwrap(ipcInvoke('panel:bind:profile', profileId));
+      unwrap(await ipcInvoke('panel:bind:profile', profileId));
       await requestState();
     } catch (err) {
       console.error('Failed to bind profile:', err);
@@ -903,11 +975,17 @@
   /**
    * Request current state
    */
+  let _debugLastRaw = '';
   async function requestState() {
     if (!currentProfileId) return;
 
     try {
-      const data = unwrap(await ipcInvoke('panel:request:state', currentProfileId));
+      const raw = await ipcInvoke('panel:request:state', currentProfileId);
+      const data = unwrap(raw);
+      // Debug: capture raw IPC response shape
+      const mbr = data?.stats?.monstersByRank;
+      const mc = mbr ? Object.values(mbr).reduce((s, a) => s + (a?.length || 0), 0) : -1;
+      _debugLastRaw = `raw:${typeof raw}|ok:${raw?.ok}|mc:${mc}|kills:${data?.stats?.killsTotal ?? '?'}`;
       currentStats = data?.stats;
       currentLayout = data?.layout;
       if (typeof data?.charName === 'string' && charNameInput) {
@@ -937,34 +1015,48 @@
 
   /**
    * Handle state update broadcast
+   * Uses incremental DOM updates instead of full render() to avoid
+   * destroying checkbox elements mid-click (OCR broadcasts fire ~5x/sec).
    */
-function handleStateUpdate(payload) {
-  if (payload.profileId !== currentProfileId) return;
+  function handleStateUpdate(payload) {
+    if (payload.profileId !== currentProfileId) return;
 
-  currentStats = payload.stats;
-  if (payload.layout) {
-    currentLayout = payload.layout;
+    currentStats = payload.stats;
+    if (payload.layout) {
+      currentLayout = payload.layout;
+    }
+    if (typeof payload.charName === 'string' && charNameInput) {
+      charNameInput.value = payload.charName;
+      const statusText = payload.charName ? STR.charSaved : STR.charNotSaved;
+      setCharStatus(statusText, payload.charName ? 'ok' : 'info');
+    }
+    // Incremental update: only touch badge value texts & checkbox states
+    // instead of rebuilding the entire badge list DOM (which would eat user clicks).
+    if (badgeListEl.children.length) {
+      updateBadgeListValues();
+      if (Date.now() >= pollSuppressedUntil) {
+        syncBadgeCheckboxes();
+      }
+    } else {
+      renderBadgeList();
+    }
+    renderMonsters();
+    updateSessionInfo();
+    updateToggleButton();
   }
-  if (typeof payload.charName === 'string' && charNameInput) {
-    charNameInput.value = payload.charName;
-    const statusText = payload.charName ? STR.charSaved : STR.charNotSaved;
-    setCharStatus(statusText, payload.charName ? 'ok' : 'info');
-  }
-  render();
-}
 
   /**
    * Handle visibility update broadcast
    */
-function handleVisibilityUpdate(payload) {
-  if (payload.profileId !== currentProfileId) return;
+  function handleVisibilityUpdate(payload) {
+    if (payload.profileId !== currentProfileId) return;
 
-  if (currentLayout) {
-    currentLayout.visibility = payload.visibility;
-    currentLayout.overlayVisible = payload.overlayVisible;
+    if (currentLayout) {
+      currentLayout.visibility = payload.visibility;
+      currentLayout.overlayVisible = payload.overlayVisible;
+    }
+    render();
   }
-  render();
-}
 
   /**
    * Handle layout update broadcast
@@ -984,7 +1076,7 @@ function handleVisibilityUpdate(payload) {
     if (!currentProfileId || !rowsInput) return;
     const rows = Math.max(1, Math.floor(Number(rowsInput.value) || 1));
     try {
-      await unwrap(ipcInvoke('layout:set', currentProfileId, { rows }));
+      unwrap(await ipcInvoke('layout:set', currentProfileId, { rows }));
     } catch (err) {
       console.error('Failed to set rows:', err);
     }
@@ -997,7 +1089,7 @@ function handleVisibilityUpdate(payload) {
     if (!currentProfileId || !scaleInput) return;
     const scale = clampScale(scaleInput.value);
     try {
-      await unwrap(ipcInvoke('layout:set', currentProfileId, { scale }));
+      unwrap(await ipcInvoke('layout:set', currentProfileId, { scale }));
       if (currentLayout) {
         currentLayout.scale = scale;
       }
@@ -1041,28 +1133,99 @@ function handleVisibilityUpdate(payload) {
       bindProfile(e.target.value);
     });
 
-    // Determine initial profile (prefer overlay target injected by host)
-    const injectedProfile = typeof window.__overlayTargetId === 'string' && window.__overlayTargetId
+    // Helper: populate profile selector from backend profile list
+    async function syncProfiles() {
+      try {
+        const res = unwrap(await ipcInvoke('panel:get:active-profile'));
+        const best = res?.profileId && typeof res.profileId === 'string' ? res.profileId : null;
+        const profiles = Array.isArray(res?.profiles) ? res.profiles : [];
+        // Rebuild selector options with all known profiles
+        if (profiles.length > 0) {
+          const existing = new Set(Array.from(profileSelector.options).map(o => o.value));
+          for (const pid of profiles) {
+            if (!existing.has(pid)) {
+              const opt = document.createElement('option');
+              opt.value = pid;
+              opt.textContent = pid;
+              profileSelector.appendChild(opt);
+            }
+          }
+        }
+        return best;
+      } catch (_) { return null; }
+    }
+
+    // Determine initial profile: try host injection, then ask backend
+    let initialProfile = typeof window.__overlayTargetId === 'string' && window.__overlayTargetId
       ? window.__overlayTargetId
       : null;
-    const defaultProfileId = injectedProfile || 'default';
-    const defaultLabel = injectedProfile ? injectedProfile : STR.defaultProfile;
+
+    if (!initialProfile) {
+      initialProfile = await syncProfiles();
+    }
+
+    const defaultProfileId = initialProfile || 'default';
+    const defaultLabel = initialProfile ? initialProfile : STR.defaultProfile;
     profileSelector.innerHTML = `<option value="">${STR.selectProfile}</option><option value="${defaultProfileId}">${defaultLabel}</option>`;
     profileSelector.value = defaultProfileId;
+
+    // Re-sync profiles to populate selector with any additional profiles
+    // that were lost during the innerHTML rebuild above
+    await syncProfiles();
 
     await bindProfile(defaultProfileId);
     await loadCharName();
 
-    // Poll for updates since plugin UI can't receive broadcasts
+    // Poll for updates and keep profile in sync with the active OCR source.
+    let profileResolved = !!initialProfile && initialProfile !== 'default';
+    let profileSyncCounter = 0;
+    let pollInFlight = false;
     setInterval(async () => {
-      if (currentProfileId) {
-        await requestState();
-        await loadCharName();
+      // Guard: skip tick if previous poll is still in-flight (prevents stacking)
+      if (pollInFlight) return;
+      pollInFlight = true;
+      try {
+        // Auto-discover on every tick until resolved, then re-check every 5s
+        const shouldSync = !profileResolved || (++profileSyncCounter % 5 === 0);
+        if (shouldSync) {
+          try {
+            const best = await syncProfiles();
+            if (best && best !== 'default') {
+              if (best !== currentProfileId) {
+                profileSelector.value = best;
+                await bindProfile(best);
+                await loadCharName();
+              }
+              profileResolved = true;
+              // Don't return here – always fall through to requestState()
+            }
+          } catch (_) { /* ignore sync errors */ }
+        }
+
+        if (currentProfileId && Date.now() >= pollSuppressedUntil) {
+          await requestState();
+        }
+      } finally {
+        pollInFlight = false;
       }
     }, 1000);
   }
 
+  // Register IPC broadcast listeners (if available) so real-time updates
+  // don't depend solely on polling.
+  function registerBroadcastListeners() {
+    const ipc = window.plugin?.ipc;
+    if (ipc && typeof ipc.on === 'function') {
+      ipc.on('state:update', handleStateUpdate);
+      ipc.on('vis:update', handleVisibilityUpdate);
+      ipc.on('layout:update', handleLayoutUpdate);
+    }
+  }
+
   // Initialize on load
-  window.addEventListener('load', init);
+  window.addEventListener('load', () => {
+    registerBroadcastListeners();
+    init();
+  });
 })();
 

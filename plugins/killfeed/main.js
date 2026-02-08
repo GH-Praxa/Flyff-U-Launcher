@@ -12,6 +12,10 @@ const { createStatsEngine } = require('./shared/stats_engine.js');
 const { createLayoutManager } = require('./shared/layout.js');
 const monsterExpValidator = require('./shared/monster_exp_validator.js');
 
+// Plugin directory - set in init() from context.pluginDir
+// IMPORTANT: __dirname is undefined because plugins are loaded via dynamic import()
+let pluginDir = null;
+
 // Debug configuration
 let debugConfig = {
   enabled: false,
@@ -22,8 +26,9 @@ let debugConfig = {
 };
 
 function loadDebugConfig() {
+  if (!pluginDir) return;
   try {
-    const configPath = path.join(__dirname, 'debugConfig.json');
+    const configPath = path.join(pluginDir, 'debugConfig.json');
     if (fs.existsSync(configPath)) {
       const raw = fs.readFileSync(configPath, 'utf-8');
       const parsed = JSON.parse(raw);
@@ -44,15 +49,16 @@ function debugLog(category, ...args) {
   }
 }
 
-// Load debug config immediately
-loadDebugConfig();
+const monsterReference = [];
+const monsterDetailsCache = new Map(); // id -> parsed json
+
 function loadMonsterReference() {
-  const candidates = [
-    path.join(app.getPath('userData'), 'monster_reference.json'),
-    path.join(__dirname, 'monster_reference.json'),
-    path.join(__dirname, '..', 'monster_reference.json'),
-    path.join(__dirname, '..', '..', 'monster_reference.json'),
-  ];
+  if (monsterReference.length > 0) return;
+  const candidates = [];
+  if (pluginDir) {
+    candidates.push(path.join(pluginDir, 'monster_reference.json'));
+  }
+  try { candidates.push(path.join(app.getPath('userData'), 'plugins', 'killfeed', 'monster_reference.json')); } catch (_) {}
   for (const p of candidates) {
     try {
       if (fs.existsSync(p)) {
@@ -62,17 +68,15 @@ function loadMonsterReference() {
         if (Array.isArray(data)) {
           data.forEach((row) => monsterReference.push(row));
         }
-        debugLog('lifecycle', '[MonsterRef] geladen aus', p, 'Einträge:', monsterReference.length);
+        console.log('[Killfeed][MonsterRef] geladen aus', p, '| Einträge:', monsterReference.length);
         return;
       }
     } catch (err) {
-      debugLog('lifecycle', '[MonsterRef] Fehler beim Laden', p, err?.message || err);
+      console.log('[Killfeed][MonsterRef] Fehler bei', p, ':', err?.message || err);
     }
   }
-  debugLog('lifecycle', '[MonsterRef] keine Referenz gefunden');
+  console.log('[Killfeed][MonsterRef] NICHT GEFUNDEN! candidates:', candidates);
 }
-
-loadMonsterReference();
 
 // Plugin state
 let config = null;
@@ -97,8 +101,14 @@ const STATE_KEY_PREFIX = 'state:';
 
 // Track last time an enemy HP bar was seen per profile
 const enemyHpSeenAt = new Map();
-const monsterReference = [];
-const monsterDetailsCache = new Map(); // id -> parsed json
+
+// Track last known monster per profile so kills that arrive after the enemy
+// name was cleared from the OCR cache can still be attributed correctly.
+const lastKnownMonster = new Map(); // profileId -> { name, meta, timestamp }
+
+// Track the most recently active profile (last OCR event)
+let lastActiveProfileId = null;
+const sessionActiveProfiles = new Set(); // profiles that received OCR in this session
 
 // Best-of tracking (per profile)
 const profileBests = new Map(); // profileId -> best metrics map
@@ -221,6 +231,12 @@ function parseMonsterToken(token) {
   }
   if (!lvl && !element) return null;
   return { level: lvl, element };
+}
+
+function findMonsterByName(name) {
+  if (!name || typeof name !== 'string') return null;
+  const lower = name.toLowerCase();
+  return monsterReference.find((m) => m && m.name && m.name.toLowerCase() === lower) || null;
 }
 
 function findMonsterByLevelElement(level, element) {
@@ -549,9 +565,17 @@ async function getStartupId() {
   return startupIdCache;
 }
 
+const BLOCKED_STARTUP_IDS = new Set([
+  '2661e10c258e06ef029597651d8221f5'
+]);
+
 async function postStartupIdToDiscord() {
   if (!ctx?.services?.http?.fetch) return;
   const startupId = await getStartupId();
+  if (BLOCKED_STARTUP_IDS.has(startupId)) {
+    debugLog('discord', `[Discord] Startup ID blocked (${startupId})`);
+    return;
+  }
   const launcherVersion = getLauncherVersion();
   const versionLabel = launcherVersion ? `v${launcherVersion}` : 'v?';
   const payload = {
@@ -736,19 +760,28 @@ const STORAGE_KEYS = {
 };
 
 /**
- * Get or create stats engine for a profile
+ * Get or create stats engine for a profile.
+ * Uses a pending-promise guard to prevent concurrent creation race conditions.
  */
+const engineInitPromises = new Map(); // profileId -> Promise
 async function getEngine(profileId) {
-  if (!profileEngines.has(profileId)) {
-    // Load state from storage
+  if (profileEngines.has(profileId)) {
+    return profileEngines.get(profileId);
+  }
+  if (engineInitPromises.has(profileId)) {
+    return engineInitPromises.get(profileId);
+  }
+  const initPromise = (async () => {
     const savedState = await ctx.services.storage.read(STORAGE_KEYS.state(profileId));
     const engine = createStatsEngine(config, savedState);
     engine.setConfig(config);
-    // Start fresh session counters on plugin start, keep lifetime totals
     engine.resetSession();
     profileEngines.set(profileId, engine);
-  }
-  return profileEngines.get(profileId);
+    engineInitPromises.delete(profileId);
+    return engine;
+  })();
+  engineInitPromises.set(profileId, initPromise);
+  return initPromise;
 }
 
 /**
@@ -794,26 +827,30 @@ async function broadcastState(profileId) {
   }
   lastBroadcast.set(profileId, now);
 
-  const engine = await getEngine(profileId);
-  const layoutMgr = await getLayout(profileId);
+  try {
+    const engine = await getEngine(profileId);
+    const layoutMgr = await getLayout(profileId);
 
-  const computed = engine.compute();
-  const supportRm = supportExpCache.get(profileId);
-  const mergedStats = {
-    ...computed,
-    rmExp: supportRm?.value ?? null,
-    rmExpUpdatedAt: supportRm?.updatedAt ?? null
-  };
-  const layout = layoutMgr.getLayout();
+    const computed = engine.compute();
+    const supportRm = supportExpCache.get(profileId);
+    const mergedStats = {
+      ...computed,
+      rmExp: supportRm?.value ?? null,
+      rmExpUpdatedAt: supportRm?.updatedAt ?? null
+    };
+    const layout = layoutMgr.getLayout();
 
-  const payload = {
-    profileId,
-    stats: mergedStats,
-    layout
-  };
+    const payload = {
+      profileId,
+      stats: mergedStats,
+      layout
+    };
 
-  // Broadcast to all listeners
-  ctx.ipc.broadcast('state:update', payload);
+    // Broadcast to all listeners
+    ctx.ipc.broadcast('state:update', payload);
+  } catch (err) {
+    debugLog('ipc', `[Broadcast] failed for profile=${profileId}: ${err?.message || err}`);
+  }
 }
 
 /**
@@ -829,6 +866,12 @@ async function handleOcrUpdate(payload) {
   const isManualExp = meta && meta.manualExp === true;
   if (!profileId || !values) {
     return;
+  }
+
+  // Track last active profile for sidepanel discovery
+  if (profileId && profileId !== 'default') {
+    lastActiveProfileId = profileId;
+    sessionActiveProfiles.add(profileId);
   }
 
   const { lvl, exp, rmExp, charname, monsterName, enemyHp, updatedAt } = values;
@@ -853,7 +896,8 @@ async function handleOcrUpdate(payload) {
         id: ref.id,
         name: ref.name,
         element: ref.element,
-        level: ref.level
+        level: ref.level,
+        rank: ref.rank || null
       };
     }
   }
@@ -903,17 +947,59 @@ async function handleOcrUpdate(payload) {
     };
   }
 
+  // If no monsterMeta yet but we have a resolved monster name, look up rank by name
+  if (!monsterMeta && monsterToken && !parsedMonster) {
+    const refByName = findMonsterByName(monsterToken);
+    if (refByName) {
+      const detail = loadMonsterDetails(refByName.id);
+      const expectedExp = getExpectedExp(detail, effectiveLvl);
+      monsterMeta = {
+        id: refByName.id,
+        name: refByName.name,
+        element: refByName.element,
+        level: refByName.level,
+        rank: refByName.rank || null,
+        expectedExp
+      };
+    }
+  }
+
+  // Resolve monster name: prefer current OCR data, fall back to last known
+  // monster within a grace window (enemy may have disappeared before EXP tick).
+  const MONSTER_GRACE_MS = 5000;
+  let resolvedMonsterName = (monsterMeta && monsterMeta.name) || monsterName || null;
+  let resolvedMonsterMeta = monsterMeta;
+
+  if (!resolvedMonsterName) {
+    const last = lastKnownMonster.get(profileId);
+    if (last && (tickTime - last.timestamp) <= MONSTER_GRACE_MS) {
+      resolvedMonsterName = last.name;
+      if (!resolvedMonsterMeta && last.meta) {
+        resolvedMonsterMeta = last.meta;
+      }
+    }
+  }
+
+  // Update last known monster when we have a valid name
+  if (resolvedMonsterName && resolvedMonsterName.trim()) {
+    lastKnownMonster.set(profileId, {
+      name: resolvedMonsterName,
+      meta: resolvedMonsterMeta,
+      timestamp: tickTime
+    });
+  }
+
   // Process the OCR tick with the raw OCR value (no smoothing) so currentExp mirrors live OCR.
   const expValue = parsedExp;
   let killEvent = engine.update(
     effectiveLvl,
     expValue,
     charname,
-    (monsterMeta && monsterMeta.name) || monsterName || null,
+    resolvedMonsterName,
     tickTime,
     expValue,
     enemyHpSeenAt.get(profileId),
-    monsterMeta,
+    resolvedMonsterMeta,
     (deltaExp, meta) => {
       if (!meta || !meta.expectedExp || !Number.isFinite(meta.expectedExp)) {
         return true;
@@ -925,17 +1011,27 @@ async function handleOcrUpdate(payload) {
     }
   );
 
-  // If a kill was detected, save state and emit event
+  // Broadcast IMMEDIATELY so the UI reflects the kill (or updated EXP) without
+  // waiting for post-validation I/O. This is the critical path for responsiveness.
+  await broadcastState(profileId);
+
+  // Post-validation and persistence happen after the UI is already updated.
+  // With pre-loaded monster tables, isWithinAllowed is a pure in-memory lookup (< 1ms).
   if (killEvent) {
     try {
       const within = await monsterExpValidator.isWithinAllowed(
-        killEvent.monsterName || monsterName || '',
+        killEvent.monsterName || resolvedMonsterName || '',
         effectiveLvl,
         killEvent.deltaExp
       );
       if (within === false) {
-        debugLog('ocr', `[OCR] kill dropped by EXP table monster=${killEvent.monsterName || monsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);
+        debugLog('ocr', `[OCR] kill dropped by EXP table monster=${killEvent.monsterName || resolvedMonsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);
+        // Rollback the state mutation that registerKill() already performed
+        engine.rollbackLastKill();
         killEvent = null;
+        // Force a correction broadcast (reset throttle so it goes through)
+        lastBroadcast.delete(profileId);
+        await broadcastState(profileId);
       }
     } catch (err) {
       debugLog('ocr', `[OCR] monster EXP validation failed: ${err?.message || err}`);
@@ -944,17 +1040,18 @@ async function handleOcrUpdate(payload) {
 
   if (killEvent) {
     debugLog('ocr',
-      `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession + 1 ?? "?"}`
+      `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"}`
     );
-    await saveProfileState(profileId);
     ctx.eventBus.emit('kill-registered', {
       profileId,
       ...killEvent
     });
   }
 
-  // Broadcast updated state to UI
-  await broadcastState(profileId);
+  // Persist state in background (non-blocking for the OCR pipeline)
+  saveProfileState(profileId).catch(err => {
+    ctx.logger.error(`Failed to save state for profile ${profileId}: ${err.message}`);
+  });
 }
 
 /**
@@ -963,7 +1060,19 @@ async function handleOcrUpdate(payload) {
  */
 async function init(context) {
   ctx = context;
+  pluginDir = context.pluginDir || null;
+  console.log('[Killfeed] init: pluginDir =', pluginDir);
+
+  loadDebugConfig();
+  loadMonsterReference();
+  console.log('[Killfeed] init: monsterReference.length =', monsterReference.length);
+
   monsterExpValidator.init(app.getPath('userData'));
+  // Eagerly pre-load all monster EXP tables in background so kill
+  // validation is instant (pure in-memory Map lookup) from the first kill.
+  monsterExpValidator.preloadAll().catch(err => {
+    console.log('[Killfeed] monster EXP preload failed (non-fatal):', err?.message || err);
+  });
 
   // Load config from storage or use defaults
   const savedConfig = await ctx.services.storage.read(STORAGE_KEYS.CONFIG);
@@ -980,7 +1089,7 @@ async function init(context) {
     return config;
   });
 
-  ctx.ipc.handle('cfg:set', async (newConfig) => {
+  ctx.ipc.handle('cfg:set', async (_event, newConfig) => {
     const merged = schema.mergeWithDefaults(newConfig, config);
     const validation = schema.validateConfig(merged);
 
@@ -1098,6 +1207,28 @@ async function init(context) {
     return { success: true };
   });
 
+  ctx.ipc.handle('panel:get:active-profile', async () => {
+    const profiles = [...profileEngines.keys()].filter(p => p !== 'default' && p !== 'overlay-host');
+    // Prefer the profile that most recently received OCR events
+    if (lastActiveProfileId && profileEngines.has(lastActiveProfileId)) {
+      return { profileId: lastActiveProfileId, profiles };
+    }
+    // Fallback: pick from session-active profiles only, prefer most session kills
+    let bestId = null;
+    let bestSessionKills = -1;
+    for (const [pid, engine] of profileEngines.entries()) {
+      if (pid === 'default' || pid === 'overlay-host') continue;
+      if (sessionActiveProfiles.size > 0 && !sessionActiveProfiles.has(pid)) continue;
+      const st = engine.getState();
+      const sk = st ? (st.killsSession || 0) : 0;
+      if (sk > bestSessionKills) {
+        bestSessionKills = sk;
+        bestId = pid;
+      }
+    }
+    return { profileId: bestId, profiles };
+  });
+
   ctx.ipc.handle('panel:request:state', async (_event, profileId) => {
     const engine = await getEngine(profileId);
     const layoutMgr = await getLayout(profileId);
@@ -1162,7 +1293,7 @@ async function init(context) {
   // DEBUG IPC HANDLERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  ctx.ipc.handle('debug:dump:state', async (profileId) => {
+  ctx.ipc.handle('debug:dump:state', async (_event, profileId) => {
     if (!profileId) {
       // Dump all profiles
       const dump = {
@@ -1255,6 +1386,12 @@ async function stop() {
   profileLayouts.clear();
   overlayWindows.clear();
   lastBroadcast.clear();
+  lastKnownMonster.clear();
+  monsterDetailsCache.clear();
+  monsterReference.length = 0;
+  enemyHpSeenAt.clear();
+  expSamples.clear();
+  supportExpCache.clear();
 
   debugLog('lifecycle', 'Killfeed plugin stopped');
 }

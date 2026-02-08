@@ -23,8 +23,9 @@ export function getDataPath(filename: string): string {
         // Production: look in resources folder
         return path.join(process.resourcesPath, "data", filename);
     }
-    // Development: look in src/data
-    return path.join(__dirname, filename);
+    // Development: __dirname points to .vite/build/ after Vite bundling,
+    // so use app.getAppPath() which reliably returns the app root directory.
+    return path.join(app.getAppPath(), "src", "data", filename);
 }
 
 export const DATA_FILES = {

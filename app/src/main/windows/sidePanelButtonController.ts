@@ -33,6 +33,7 @@ export function createSidePanelButtonController(opts: {
     let onParentMove: (() => void) | null = null;
     let onParentResize: (() => void) | null = null;
     let clickThrough = !!opts.clickThrough;
+    let paused = false;
 
     /** Resolve parent window + tabs for a profile. Updates currentParent/currentTabs. */
     function resolveHost(profileId: string): BrowserWindow | null {
@@ -225,6 +226,7 @@ export function createSidePanelButtonController(opts: {
     }
 
     async function tick(): Promise<void> {
+        if (paused) return;
         const overlayTargetId = await opts.profiles.getOverlayTargetId();
         if (!overlayTargetId) {
             activeProfile = null;
@@ -279,12 +281,14 @@ export function createSidePanelButtonController(opts: {
     }
 
     function hide(): void {
+        paused = true;
         if (win && !win.isDestroyed() && win.isVisible()) {
             win.hide();
         }
     }
 
     function show(): void {
+        paused = false;
         if (win && !win.isDestroyed() && activeProfile) {
             win.showInactive();
         }
