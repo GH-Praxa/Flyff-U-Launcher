@@ -542,6 +542,90 @@
   let charNameDebounce = null;
   let pollSuppressedUntil = 0;
   const accordionUserState = new Map(); // rank -> boolean (user-toggled open/closed)
+  let canonicalRefreshInFlight = false;
+  let canonicalRefreshQueued = false;
+  let canonicalRefreshTimer = null;
+
+  function asFiniteNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function getStatsTimestamp(stats) {
+    if (!stats || typeof stats !== 'object') return null;
+    return asFiniteNumber(stats.lastUpdateTime);
+  }
+
+  function getMonsterTypeCount(stats) {
+    const monstersByRank = stats && typeof stats === 'object' ? stats.monstersByRank : null;
+    if (!monstersByRank || typeof monstersByRank !== 'object') return 0;
+    return ['normal', 'giant', 'violet', 'boss', 'unknown']
+      .reduce((sum, rank) => sum + (Array.isArray(monstersByRank[rank]) ? monstersByRank[rank].length : 0), 0);
+  }
+
+  function normalizeIncomingStats(nextStats) {
+    if (!nextStats || typeof nextStats !== 'object') {
+      return currentStats;
+    }
+
+    const prevStats = currentStats;
+    if (prevStats && typeof prevStats === 'object') {
+      const prevTs = getStatsTimestamp(prevStats);
+      const nextTs = getStatsTimestamp(nextStats);
+      if (prevTs !== null && nextTs !== null && nextTs < prevTs) {
+        const prevKillsTotal = asFiniteNumber(prevStats.killsTotal) ?? 0;
+        const nextKillsTotal = asFiniteNumber(nextStats.killsTotal) ?? 0;
+        const prevKillsSession = asFiniteNumber(prevStats.killsSession) ?? 0;
+        const nextKillsSession = asFiniteNumber(nextStats.killsSession) ?? 0;
+        const prevExpTotal = asFiniteNumber(prevStats.expTotal) ?? 0;
+        const nextExpTotal = asFiniteNumber(nextStats.expTotal) ?? 0;
+        const prevMonsterTypes = getMonsterTypeCount(prevStats);
+        const nextMonsterTypes = getMonsterTypeCount(nextStats);
+        const hasForwardProgress = (
+          nextKillsTotal > prevKillsTotal ||
+          nextKillsSession > prevKillsSession ||
+          nextExpTotal > prevExpTotal ||
+          nextMonsterTypes > prevMonsterTypes
+        );
+        if (!hasForwardProgress) {
+          return prevStats;
+        }
+      }
+
+      const prevMonsterTypes = getMonsterTypeCount(prevStats);
+      const nextMonsterTypes = getMonsterTypeCount(nextStats);
+      if (prevMonsterTypes > 0 && nextMonsterTypes === 0) {
+        const prevKillsTotal = asFiniteNumber(prevStats.killsTotal) ?? 0;
+        const nextKillsTotal = asFiniteNumber(nextStats.killsTotal) ?? 0;
+        const prevKillsSession = asFiniteNumber(prevStats.killsSession) ?? 0;
+        const nextKillsSession = asFiniteNumber(nextStats.killsSession) ?? 0;
+        const killsDidNotDrop = nextKillsTotal >= prevKillsTotal && nextKillsSession >= prevKillsSession;
+        if (killsDidNotDrop) {
+          return {
+            ...nextStats,
+            monstersByRank: prevStats.monstersByRank
+          };
+        }
+      }
+    }
+
+    return nextStats;
+  }
+
+  function applyIncomingState(data) {
+    const normalizedStats = normalizeIncomingStats(data?.stats);
+    if (normalizedStats) {
+      currentStats = normalizedStats;
+    }
+    if (data?.layout) {
+      currentLayout = data.layout;
+    }
+    if (typeof data?.charName === 'string' && charNameInput) {
+      charNameInput.value = data.charName;
+      const statusText = data.charName ? STR.charSaved : STR.charNotSaved;
+      setCharStatus(statusText, data.charName ? 'ok' : 'info');
+    }
+  }
 
   function applyStaticTranslations() {
     document.title = STR.title;
@@ -986,19 +1070,40 @@
       const mbr = data?.stats?.monstersByRank;
       const mc = mbr ? Object.values(mbr).reduce((s, a) => s + (a?.length || 0), 0) : -1;
       _debugLastRaw = `raw:${typeof raw}|ok:${raw?.ok}|mc:${mc}|kills:${data?.stats?.killsTotal ?? '?'}`;
-      currentStats = data?.stats;
-      currentLayout = data?.layout;
-      if (typeof data?.charName === 'string' && charNameInput) {
-        charNameInput.value = data.charName;
-        const statusText = data.charName ? STR.charSaved : STR.charNotSaved;
-        setCharStatus(statusText, data.charName ? 'ok' : 'info');
-      }
+      applyIncomingState(data);
       render();
       updateRowsInput();
       updateScaleInput();
     } catch (err) {
       console.error('Failed to request state:', err);
     }
+  }
+
+  async function runCanonicalRefresh() {
+    if (canonicalRefreshInFlight) {
+      canonicalRefreshQueued = true;
+      return;
+    }
+    canonicalRefreshInFlight = true;
+    try {
+      await requestState();
+    } finally {
+      canonicalRefreshInFlight = false;
+      if (canonicalRefreshQueued) {
+        canonicalRefreshQueued = false;
+        setTimeout(() => {
+          void runCanonicalRefresh();
+        }, 0);
+      }
+    }
+  }
+
+  function scheduleCanonicalRefresh(delayMs = 0) {
+    if (canonicalRefreshTimer) return;
+    canonicalRefreshTimer = setTimeout(() => {
+      canonicalRefreshTimer = null;
+      void runCanonicalRefresh();
+    }, Math.max(0, Number(delayMs) || 0));
   }
 
   /**
@@ -1020,29 +1125,8 @@
    */
   function handleStateUpdate(payload) {
     if (payload.profileId !== currentProfileId) return;
-
-    currentStats = payload.stats;
-    if (payload.layout) {
-      currentLayout = payload.layout;
-    }
-    if (typeof payload.charName === 'string' && charNameInput) {
-      charNameInput.value = payload.charName;
-      const statusText = payload.charName ? STR.charSaved : STR.charNotSaved;
-      setCharStatus(statusText, payload.charName ? 'ok' : 'info');
-    }
-    // Incremental update: only touch badge value texts & checkbox states
-    // instead of rebuilding the entire badge list DOM (which would eat user clicks).
-    if (badgeListEl.children.length) {
-      updateBadgeListValues();
-      if (Date.now() >= pollSuppressedUntil) {
-        syncBadgeCheckboxes();
-      }
-    } else {
-      renderBadgeList();
-    }
-    renderMonsters();
-    updateSessionInfo();
-    updateToggleButton();
+    // Always re-sync via canonical request to avoid out-of-order/partial broadcast payloads.
+    scheduleCanonicalRefresh(0);
   }
 
   /**
@@ -1138,18 +1222,29 @@
       try {
         const res = unwrap(await ipcInvoke('panel:get:active-profile'));
         const best = res?.profileId && typeof res.profileId === 'string' ? res.profileId : null;
-        const profiles = Array.isArray(res?.profiles) ? res.profiles : [];
-        // Rebuild selector options with all known profiles
-        if (profiles.length > 0) {
-          const existing = new Set(Array.from(profileSelector.options).map(o => o.value));
-          for (const pid of profiles) {
-            if (!existing.has(pid)) {
-              const opt = document.createElement('option');
-              opt.value = pid;
-              opt.textContent = pid;
-              profileSelector.appendChild(opt);
-            }
-          }
+        const rawProfiles = Array.isArray(res?.profiles) ? res.profiles : [];
+        const profiles = Array.from(new Set(
+          rawProfiles.filter((pid) => typeof pid === 'string' && pid)
+        ));
+        if (best && !profiles.includes(best)) {
+          profiles.unshift(best);
+        }
+        const previous = profileSelector.value || currentProfileId || '';
+        profileSelector.innerHTML = `<option value="">${STR.selectProfile}</option>`;
+        for (const pid of profiles) {
+          const opt = document.createElement('option');
+          opt.value = pid;
+          opt.textContent = pid;
+          profileSelector.appendChild(opt);
+        }
+        if (best && profiles.includes(best)) {
+          profileSelector.value = best;
+        } else if (previous && profiles.includes(previous)) {
+          profileSelector.value = previous;
+        } else if (profiles.length > 0) {
+          profileSelector.value = profiles[0];
+        } else {
+          profileSelector.value = '';
         }
         return best;
       } catch (_) { return null; }
@@ -1160,50 +1255,42 @@
       ? window.__overlayTargetId
       : null;
 
-    if (!initialProfile) {
-      initialProfile = await syncProfiles();
+    const discoveredProfile = await syncProfiles();
+    const defaultProfileId = initialProfile || discoveredProfile || profileSelector.value || 'default';
+    if (defaultProfileId && !Array.from(profileSelector.options).some(o => o.value === defaultProfileId)) {
+      const opt = document.createElement('option');
+      opt.value = defaultProfileId;
+      opt.textContent = defaultProfileId === 'default' ? STR.defaultProfile : defaultProfileId;
+      profileSelector.appendChild(opt);
     }
-
-    const defaultProfileId = initialProfile || 'default';
-    const defaultLabel = initialProfile ? initialProfile : STR.defaultProfile;
-    profileSelector.innerHTML = `<option value="">${STR.selectProfile}</option><option value="${defaultProfileId}">${defaultLabel}</option>`;
     profileSelector.value = defaultProfileId;
-
-    // Re-sync profiles to populate selector with any additional profiles
-    // that were lost during the innerHTML rebuild above
-    await syncProfiles();
 
     await bindProfile(defaultProfileId);
     await loadCharName();
 
-    // Poll for updates and keep profile in sync with the active OCR source.
-    let profileResolved = !!initialProfile && initialProfile !== 'default';
-    let profileSyncCounter = 0;
+    // Poll for updates and keep profile synced to overlay target.
     let pollInFlight = false;
     setInterval(async () => {
       // Guard: skip tick if previous poll is still in-flight (prevents stacking)
       if (pollInFlight) return;
       pollInFlight = true;
       try {
-        // Auto-discover on every tick until resolved, then re-check every 5s
-        const shouldSync = !profileResolved || (++profileSyncCounter % 5 === 0);
-        if (shouldSync) {
-          try {
-            const best = await syncProfiles();
-            if (best && best !== 'default') {
-              if (best !== currentProfileId) {
-                profileSelector.value = best;
-                await bindProfile(best);
-                await loadCharName();
-              }
-              profileResolved = true;
-              // Don't return here – always fall through to requestState()
-            }
-          } catch (_) { /* ignore sync errors */ }
+        let best = null;
+        try {
+          best = await syncProfiles();
+          if (best && best !== currentProfileId) {
+            profileSelector.value = best;
+            await bindProfile(best);
+            await loadCharName();
+          }
+        } catch (_) { /* ignore sync errors */ }
+
+        if (!best && currentProfileId && !Array.from(profileSelector.options).some(o => o.value === currentProfileId)) {
+          currentProfileId = null;
         }
 
         if (currentProfileId && Date.now() >= pollSuppressedUntil) {
-          await requestState();
+          await runCanonicalRefresh();
         }
       } finally {
         pollInFlight = false;
@@ -1228,4 +1315,3 @@
     init();
   });
 })();
-

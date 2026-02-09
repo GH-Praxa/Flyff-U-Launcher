@@ -19,26 +19,21 @@
       // Try window.__pluginLocale (injected by bridge)
       const pluginLoc = window.__pluginLocale;
       if (pluginLoc && typeof pluginLoc === 'string') {
-        console.log('[Killfeed Overlay] using __pluginLocale:', pluginLoc);
         return pluginLoc.slice(0, 2).toLowerCase();
       }
       // Try parent window
       const parentLoc = parent?.__overlayLocale;
       if (parentLoc && typeof parentLoc === 'string') {
-        console.log('[Killfeed Overlay] using parent.__overlayLocale:', parentLoc);
         return parentLoc.slice(0, 2).toLowerCase();
       }
       // Try document lang attribute
       const docLang = document.documentElement?.lang;
       if (docLang && typeof docLang === 'string' && docLang.length >= 2) {
-        console.log('[Killfeed Overlay] using docLang:', docLang);
         return docLang.slice(0, 2).toLowerCase();
       }
       // Fallback to English
-      console.log('[Killfeed Overlay] fallback to en');
       return 'en';
     } catch (e) {
-      console.log('[Killfeed Overlay] detectLocale error:', e);
       return 'en';
     }
   }
@@ -539,7 +534,6 @@
    * Bind overlay to a profile/browserview
    */
   async function bind(browserViewId, profileId) {
-    console.log('[KF Overlay] bind called:', browserViewId, profileId);
     currentBrowserViewId = browserViewId;
     currentProfileId = profileId;
 
@@ -555,13 +549,12 @@
    * Request current state
    */
   async function requestState() {
-    if (!currentProfileId) { console.warn('[KF Overlay] requestState: no profileId'); return; }
+    if (!currentProfileId) { return; }
 
     try {
       const raw = await window.plugin.ipc.invoke('overlay:request:state', currentProfileId);
       const data = unwrap(raw);
-      console.log('[KF Overlay] requestState raw=', JSON.stringify(raw)?.slice(0,200), 'data=', data ? Object.keys(data) : null, 'overlayVisible=', data?.layout?.overlayVisible);
-      if (!data || !data.stats) { console.warn('[KF Overlay] requestState: no data/stats', data); return; }
+      if (!data || !data.stats) { return; }
 
       currentStats = data.stats;
 
@@ -680,8 +673,6 @@
    * Initialize the overlay
    */
   async function init() {
-    console.log('[Killfeed Overlay] init');
-
     // Get binding info from URL params or defaults
     const params = new URLSearchParams(window.location.search);
     const browserViewId = params.get('browserViewId') || 'default';

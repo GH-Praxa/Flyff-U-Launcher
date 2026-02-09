@@ -4,7 +4,6 @@
  */
 
 const fs = require('fs');
-const fsPromises = require('fs/promises');
 const path = require('path');
 const { app } = require('electron');
 const crypto = require('crypto');
@@ -317,6 +316,19 @@ async function setCharacterName(profileId, name) {
   return value;
 }
 
+async function getOverlayTargetProfileId() {
+  if (!ctx?.services?.profiles || typeof ctx.services.profiles.getOverlayTargetId !== 'function') {
+    return null;
+  }
+  try {
+    const pid = await ctx.services.profiles.getOverlayTargetId();
+    return typeof pid === 'string' && pid ? pid : null;
+  } catch (err) {
+    ctx.logger.warn(`Overlay target lookup failed: ${err.message}`);
+    return null;
+  }
+}
+
 function formatMetricValue(metricKey, value, stats) {
   const meta = LEADERBOARD_METRICS[metricKey];
   if (!meta) return String(value);
@@ -601,49 +613,141 @@ async function postStartupIdToDiscord() {
   }
 }
 
-async function appendKillToHistory(profileId, killData) {
-  const historyDir = path.join(ctx.dataDir, 'history', profileId);
+function formatExpValue(v) {
+  if (v == null || v === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return n.toFixed(4);
+}
 
-  const d = new Date(killData.timestamp);
-  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-  const csvPath = path.join(historyDir, `${dateStr}.csv`);
+// UTF-8 BOM for proper Excel encoding detection
+const UTF8_BOM = '\uFEFF';
 
-  await fsPromises.mkdir(historyDir, { recursive: true });
-
-  let needsHeader = false;
+function appendKillToHistory(profileId, killData) {
   try {
-    await fsPromises.access(csvPath);
-  } catch {
-    needsHeader = true;
+    const baseDir = path.join(ctx.dataDir, 'history', profileId);
+    const dailyDir = path.join(baseDir, 'daily');
+
+    const d = new Date(killData.timestamp);
+    const dateStr = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+    const fileDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dailyCsvPath = path.join(dailyDir, `${fileDate}.csv`);
+
+    fs.mkdirSync(dailyDir, { recursive: true });
+
+    const esc = (v) => {
+      if (v == null || v === '') return '';
+      const s = String(v);
+      if (s.includes('\t') || s.includes('"') || s.includes('\n')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
+
+    const DAILY_HEADER = 'Datum\tCharakter\tLevel\tMonster-ID\tRang\tMonster\tElement\tEXP Zuwachs\tErwartete EXP\n';
+
+    const row = [
+      `${dateStr} ${timeStr}`,
+      esc(killData.charName ?? ''),
+      killData.playerLevel ?? '',
+      esc(killData.monsterId ?? ''),
+      esc(killData.monsterRank ?? ''),
+      esc(killData.monsterName ?? ''),
+      esc(killData.monsterElement ?? ''),
+      formatExpValue(killData.deltaExp),
+      formatExpValue(killData.expectedExp)
+    ].join('\t') + '\n';
+
+    // Tages-CSV
+    const needsDailyHeader = !fs.existsSync(dailyCsvPath);
+    fs.appendFileSync(dailyCsvPath, (needsDailyHeader ? UTF8_BOM + DAILY_HEADER : '') + row, 'utf-8');
+
+    // Tageszusammenfassung aktualisieren
+    updateDailySummary(baseDir, fileDate, killData);
+
+    debugLog('ocr', `[History] Kill written to ${dailyCsvPath}`);
+  } catch (err) {
+    console.error(`[Killfeed][History] Failed to write kill history:`, err);
   }
+}
 
-  const header = 'datetime,timestamp,playerLevel,charName,monsterName,monsterId,monsterLevel,monsterElement,monsterRank,deltaExp,expectedExp\n';
+function updateDailySummary(baseDir, fileDate, killData) {
+  try {
+    const summaryCsvPath = path.join(baseDir, 'history.csv');
 
-  const esc = (v) => {
-    if (v == null || v === '') return '';
-    const s = String(v);
-    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-      return '"' + s.replace(/"/g, '""') + '"';
+    // Bestehende Zusammenfassung laden
+    const summaryMap = new Map(); // fileDate -> { kills, exp, monsters, charName, firstKill, lastKill }
+    if (fs.existsSync(summaryCsvPath)) {
+      const content = fs.readFileSync(summaryCsvPath, 'utf-8').replace(/^\uFEFF/, '');
+      const lines = content.split('\n').filter(l => l.trim());
+      // Header überspringen
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split('\t');
+        if (cols.length >= 5) {
+          summaryMap.set(cols[0], {
+            kills: parseInt(cols[2], 10) || 0,
+            exp: parseFloat(cols[3]) || 0,
+            monsters: cols[4] || '',
+            charName: cols[1] || '',
+            firstKill: cols[5] || '',
+            lastKill: cols[6] || ''
+          });
+        }
+      }
     }
-    return s;
-  };
 
-  const row = [
-    esc(`${dateStr} ${timeStr}`),
-    killData.timestamp,
-    killData.playerLevel ?? '',
-    esc(killData.charName ?? ''),
-    esc(killData.monsterName ?? ''),
-    esc(killData.monsterId ?? ''),
-    killData.monsterLevel ?? '',
-    esc(killData.monsterElement ?? ''),
-    esc(killData.monsterRank ?? ''),
-    killData.deltaExp ?? '',
-    killData.expectedExp ?? ''
-  ].join(',') + '\n';
+    // Datum für Zusammenfassung (DD.MM.YYYY)
+    const d = new Date(killData.timestamp);
+    const displayDate = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
-  await fsPromises.appendFile(csvPath, (needsHeader ? header : '') + row, 'utf-8');
+    const existing = summaryMap.get(displayDate) || {
+      kills: 0, exp: 0, monsters: '', charName: killData.charName || '', firstKill: timeStr, lastKill: timeStr
+    };
+
+    existing.kills += 1;
+    existing.exp += Number(killData.deltaExp) || 0;
+    existing.lastKill = timeStr;
+    if (killData.charName) existing.charName = killData.charName;
+
+    // Monster-Liste aktualisieren (Zähler pro Monster)
+    const monsterCounts = new Map();
+    if (existing.monsters) {
+      for (const entry of existing.monsters.split(', ')) {
+        const match = entry.match(/^(.+)\s+x(\d+)$/);
+        if (match) {
+          monsterCounts.set(match[1], parseInt(match[2], 10));
+        }
+      }
+    }
+    const mName = killData.monsterName || 'Unknown';
+    monsterCounts.set(mName, (monsterCounts.get(mName) || 0) + 1);
+    existing.monsters = Array.from(monsterCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => `${name} x${count}`)
+      .join(', ');
+
+    summaryMap.set(displayDate, existing);
+
+    // Zusammenfassung neu schreiben (sortiert nach Datum)
+    const SUMMARY_HEADER = 'Datum\tCharakter\tKills\tEXP Gesamt\tMonster\tErster Kill\tLetzter Kill\n';
+    const sortedDates = Array.from(summaryMap.keys()).sort((a, b) => {
+      const [ad, am, ay] = a.split('.').map(Number);
+      const [bd, bm, by] = b.split('.').map(Number);
+      return (ay - by) || (am - bm) || (ad - bd);
+    });
+
+    let out = UTF8_BOM + SUMMARY_HEADER;
+    for (const date of sortedDates) {
+      const s = summaryMap.get(date);
+      out += [date, s.charName, s.kills, formatExpValue(s.exp), s.monsters, s.firstKill, s.lastKill].join('\t') + '\n';
+    }
+
+    fs.writeFileSync(summaryCsvPath, out, 'utf-8');
+  } catch (err) {
+    console.error(`[Killfeed][History] Failed to update daily summary:`, err);
+  }
 }
 
 async function publishMetric(profileId, metricKey, value, stats, reason) {
@@ -863,6 +967,26 @@ async function saveProfileState(profileId) {
 /**
  * Broadcast computed state to all UI windows
  */
+async function buildStateSnapshot(profileId) {
+  const engine = await getEngine(profileId);
+  const layoutMgr = await getLayout(profileId);
+  const computed = engine.compute();
+  const supportRm = supportExpCache.get(profileId);
+
+  return {
+    profileId,
+    stats: {
+      ...computed,
+      rmExp: supportRm?.value ?? null,
+      rmExpUpdatedAt: supportRm?.updatedAt ?? null
+    },
+    layout: layoutMgr.getLayout()
+  };
+}
+
+/**
+ * Broadcast computed state to all UI windows
+ */
 async function broadcastState(profileId) {
   const now = Date.now();
   const lastTime = lastBroadcast.get(profileId) || 0;
@@ -874,23 +998,7 @@ async function broadcastState(profileId) {
   lastBroadcast.set(profileId, now);
 
   try {
-    const engine = await getEngine(profileId);
-    const layoutMgr = await getLayout(profileId);
-
-    const computed = engine.compute();
-    const supportRm = supportExpCache.get(profileId);
-    const mergedStats = {
-      ...computed,
-      rmExp: supportRm?.value ?? null,
-      rmExpUpdatedAt: supportRm?.updatedAt ?? null
-    };
-    const layout = layoutMgr.getLayout();
-
-    const payload = {
-      profileId,
-      stats: mergedStats,
-      layout
-    };
+    const payload = await buildStateSnapshot(profileId);
 
     // Broadcast to all listeners
     ctx.ipc.broadcast('state:update', payload);
@@ -1037,6 +1145,12 @@ async function handleOcrUpdate(payload) {
 
   // Process the OCR tick with the raw OCR value (no smoothing) so currentExp mirrors live OCR.
   const expValue = parsedExp;
+  const _prevState = engine.getState();
+  const _prevLvl = _prevState.lastLvl;
+  const _prevExp = _prevState.lastExp;
+  const _hpSeen = enemyHpSeenAt.get(profileId);
+  const _hpAge = typeof _hpSeen === 'number' ? (tickTime - _hpSeen) : null;
+  debugLog('ocr', `[OCR] PRE-UPDATE profile=${profileId} lvl=${effectiveLvl} exp=${expValue} prevLvl=${_prevLvl} prevExp=${_prevExp} deltaExp=${_prevExp !== null ? (expValue - _prevExp).toFixed(6) : 'N/A'} hpAge=${_hpAge !== null ? _hpAge + 'ms' : 'none'} hpWindow=${config.killHpWindowMs}ms lastKillTime=${_prevState.lastKillTime}`);
   let killEvent = engine.update(
     effectiveLvl,
     expValue,
@@ -1057,6 +1171,22 @@ async function handleOcrUpdate(payload) {
     }
   );
 
+  if (!killEvent && _prevExp !== null) {
+    const _delta = expValue - _prevExp;
+    const _hpWindowMs = typeof config.killHpWindowMs === 'number' ? config.killHpWindowMs : 1500;
+    const _hasRecentHp = typeof _hpSeen === 'number' && (tickTime - _hpSeen) <= _hpWindowMs;
+    const _timeSinceKill = _prevState.lastKillTime ? tickTime - _prevState.lastKillTime : Infinity;
+    const _fallbackMs = Math.max(2000, _hpWindowMs * 1.5);
+    const _allowNoHp = !_hasRecentHp && _timeSinceKill >= _fallbackMs;
+    let _reason = 'unknown';
+    if (_delta <= 0) _reason = `deltaExp<=0 (${_delta.toFixed(6)})`;
+    else if (_delta <= config.epsilon) _reason = `deltaExp(${_delta.toFixed(6)}) <= epsilon(${config.epsilon})`;
+    else if (!_hasRecentHp && !_allowNoHp) _reason = `no HP bar: hpAge=${_hpAge}ms window=${_hpWindowMs}ms timeSinceKill=${_timeSinceKill}ms fallback=${_fallbackMs}ms`;
+    else if (_delta > config.suspectThreshold) _reason = `suspect: deltaExp(${_delta.toFixed(4)}) > threshold(${config.suspectThreshold})`;
+    else _reason = `killValidator rejected or other`;
+    debugLog('ocr', `[OCR] NO KILL profile=${profileId}: reason=${_reason}`);
+  }
+
   // Broadcast IMMEDIATELY so the UI reflects the kill (or updated EXP) without
   // waiting for post-validation I/O. This is the critical path for responsiveness.
   await broadcastState(profileId);
@@ -1071,7 +1201,7 @@ async function handleOcrUpdate(payload) {
         killEvent.deltaExp
       );
       if (within === false) {
-        debugLog('ocr', `[OCR] kill dropped by EXP table monster=${killEvent.monsterName || resolvedMonsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);
+        console.warn(`[Killfeed] KILL ROLLED BACK: monster=${killEvent.monsterName || resolvedMonsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);
         // Rollback the state mutation that registerKill() already performed
         engine.rollbackLastKill();
         killEvent = null;
@@ -1085,11 +1215,9 @@ async function handleOcrUpdate(payload) {
   }
 
   if (killEvent) {
-    debugLog('ocr',
-      `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"}`
-    );
+    debugLog('ocr', `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"}`);
 
-    // Kill in CSV-History schreiben (fire-and-forget)
+    // Kill in CSV-History schreiben
     appendKillToHistory(profileId, {
       timestamp: killEvent.timestamp,
       playerLevel: effectiveLvl,
@@ -1101,8 +1229,6 @@ async function handleOcrUpdate(payload) {
       monsterRank: killEvent.rank || '',
       deltaExp: killEvent.deltaExp,
       expectedExp: resolvedMonsterMeta?.expectedExp ?? ''
-    }).catch(err => {
-      ctx.logger?.warn?.(`[History] Failed to write kill: ${err.message}`);
     });
 
     ctx.eventBus.emit('kill-registered', {
@@ -1233,13 +1359,12 @@ async function init(context) {
   });
 
   ctx.ipc.handle('overlay:request:state', async (_event, profileId) => {
-    const engine = await getEngine(profileId);
-    const layoutMgr = await getLayout(profileId);
+    const snapshot = await buildStateSnapshot(profileId);
     const charName = await getCharacterName(profileId);
 
     return {
-      stats: engine.compute(),
-      layout: layoutMgr.getLayout(),
+      stats: snapshot.stats,
+      layout: snapshot.layout,
       charName
     };
   });
@@ -1271,11 +1396,21 @@ async function init(context) {
   });
 
   ctx.ipc.handle('panel:get:active-profile', async () => {
+    // Sidepanel should follow the configured overlay target profile.
+    const overlayTargetId = await getOverlayTargetProfileId();
+    if (overlayTargetId) {
+      await getEngine(overlayTargetId);
+      await getLayout(overlayTargetId);
+      return { profileId: overlayTargetId, profiles: [overlayTargetId] };
+    }
+
     const profiles = [...profileEngines.keys()].filter(p => p !== 'default' && p !== 'overlay-host');
-    // Prefer the profile that most recently received OCR events
+
+    // Fallback: prefer the profile that most recently received OCR events
     if (lastActiveProfileId && profileEngines.has(lastActiveProfileId)) {
       return { profileId: lastActiveProfileId, profiles };
     }
+
     // Fallback: pick from session-active profiles only, prefer most session kills
     let bestId = null;
     let bestSessionKills = -1;
@@ -1293,13 +1428,12 @@ async function init(context) {
   });
 
   ctx.ipc.handle('panel:request:state', async (_event, profileId) => {
-    const engine = await getEngine(profileId);
-    const layoutMgr = await getLayout(profileId);
+    const snapshot = await buildStateSnapshot(profileId);
     const charName = await getCharacterName(profileId);
 
     return {
-      stats: engine.compute(),
-      layout: layoutMgr.getLayout(),
+      stats: snapshot.stats,
+      layout: snapshot.layout,
       charName
     };
   });

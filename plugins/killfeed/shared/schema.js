@@ -4,7 +4,7 @@
  */
 
 const SCHEMA_VERSION = 1;
-const PLUGIN_VERSION = '1.1.1';
+const PLUGIN_VERSION = '1.1.7';
 
 // All available badge keys
 const BADGE_KEYS = [
@@ -72,20 +72,20 @@ function getDefaultConfig() {
     enabled: true,
     // Require a recent enemy HP bar around EXP gains to count a kill
     killHpWindowMs: 1500,
-    allowDiscordLeaderboard: true,
+    allowDiscordLeaderboard: false,
     discordWebhookUrl: '',
     discordServerName: '',
     discordPlayerName: '',
     leaderboardWebhooks: {
-      killsTotal: 'https://discord.com/api/webhooks/1459540547151859927/wUPBpA8AB4GyF4e-0ldqE3A3rE5XJpVhTW3wUOqMeaSULqUoBfCPBkBsBc-KGLJp_pEx',
-      killsSession: 'https://discord.com/api/webhooks/1459541131241984105/tSEZwNT2ZXchFCXYw4-KbtENhRjhs0QIFyePVtnsh4LwoxKWmrqo2-J8NUZr-FSFGm9L',
-      killsPerHour: 'https://discord.com/api/webhooks/1459541689390858321/yM2NjpuZa0q28g5Okxl2tcJ9wK8W1eogBuGIK2Qeon6RCvgWu7C7jrhTnpCHYofCJDR5',
-      killsPerMin: 'https://discord.com/api/webhooks/1459541840180285716/ImTVgEn1pryRzlFNFJ2xHYJQrsxdjz3i5uwZJs7SN3m3LtIvfRJRQjYQaTCv3j6PpiI6',
-      expTotal: 'https://discord.com/api/webhooks/1459541980928282796/9Obh8cGR9E7BT9ADNGBeejOnpIdMSH2gdFmHtJCCh52zFQe11VR6yNtHKuqmvb6s27NK',
-      expPerHour: 'https://discord.com/api/webhooks/1459542134779547923/jglJBIEtGTBaF6Jml4iO6HKK8rLOXyH0asRDl7KD7gKJM56fhGyP1YqcpIo3BQSCbU1r',
-      expPerMin: 'https://discord.com/api/webhooks/1459542263410593832/ZjIQNiwl44NfvEOi4bJmHbpkWeoYlf361Tm7cYgD7feOuJ5CiZbBQiY7AFa9WqTyATmY',
-      expSession: 'https://discord.com/api/webhooks/1459542393408848027/QGtAfAy339sipBEee2YmMT55dkX_gSRyJcsmXXbtoaTQuidS_rP85VTE84_UeyNcZ3Cb',
-      avgKillTime: 'https://discord.com/api/webhooks/1459542506760044757/iyfTB83yauhEgHgyHIeIjgV9QgS8jkBKmOJaiT-fXPs3Ceb04NqwbqkGLSyEHXgSxF4x'
+      killsTotal: '',
+      killsSession: '',
+      killsPerHour: '',
+      killsPerMin: '',
+      expTotal: '',
+      expPerHour: '',
+      expPerMin: '',
+      expSession: '',
+      avgKillTime: ''
     },
     persistMode: PERSIST_MODES.NONE,
     epsilon: 0.001,

@@ -1,7 +1,7 @@
 {
   "id": "killfeed",
   "name": "Killfeed",
-  "version": "1.1.5",
+  "version": "1.1.7",
   "minLauncherVersion": "1.2.0",
   "author": "Praxa",
   "description": "Kill-Tracker mit Overlay, benötigt API-Fetch: Monster",

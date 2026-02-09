@@ -6,18 +6,28 @@
 - Killfeed: Verbesserte Monster-Erkennung
   -  Neue Identifizierungsgewichtung: Monster HP > Monster Level > Monster Element
 - Killfeed: Monster-Tracking zählt nun getötete Mobs
+- Killfeed: History eingeführt (pro Profil)
+  - Tagesdatei pro Datum mit einzelnen Kills (`Datum/Uhrzeit`, `Charakter`, `Level`, `Monster-ID`, `Rang`, `Monster`, `Element`, `EXP-Zuwachs`, `erwartete EXP`)
+  - Aggregierte Tagesübersicht mit `Kills`, `EXP gesamt`, `Monster-Verteilung`, `erster/letzter Kill`
+- Killfeed: Monster-Tracking im Sidepanel aktualisiert sich jetzt sofort nach Kills (kein Tab-Wechsel nötig)
+- Killfeed: Sidepanel folgt jetzt stabil dem Overlay-Zielprofil (kein Springen zwischen Profil-IDs)
 - Monster-Referenzdaten aktualisiert
 - "Layout auswählen" Dialog Design optimiert
 - "Profile verwalten (ausloggen)" Dialog Design optimiert
 
 ### 🐛 Fehlerbehebungen
 - Overlays überlagern den Schließen-Dialog nicht mehr
+- Accordions in der Dokumentation werden korrekt dargestellt
+- Migration von Version 2.3.0 auf die neue AppData-Struktur (`user/`) läuft nun zuverlässig
+- Killfeed: Negative OCR-EXP-Sprünge werden als OCR-Rauschen abgefangen und verfälschen die Kill-Erkennung nicht mehr
 
 ### 🧹 Aufräumarbeiten
 - Renderer-Architektur modularisiert (interne Umstrukturierung)
 - Interner Datenordner `api_fetch/` in `cache/` umbenannt
 - AppData-Verzeichnisstruktur reorganisiert: Daten sind nun im Unterordner AppData\Roaming\Flyff-U-Launcher\user sortiert
 - Automatische Migration: Bestehende Daten werden beim ersten Start nahtlos migriert — mit Fortschrittsanzeige
+- Statische Daten (u.a. Referenzdaten) werden im Build gebündelt, damit sie in Release-Builds zuverlässig verfügbar sind
+- Killfeed/Overlay-Debug-Logging reduziert, um die Konsole lesbarer zu halten
 
 :::accordion[Neue Speicherpfade]
 Alle Nutzerdaten liegen nun unter `%APPDATA%\Flyff-U-Launcher\user\`:
@@ -32,6 +42,8 @@ Alle Nutzerdaten liegen nun unter `%APPDATA%\Flyff-U-Launcher\user\`:
 - `user/ui/tab-active-color.json` — Aktive Tabfarbe
 - `user/shopping/item-prices.json` — Premium-Einkaufsliste Preise
 - `user/plugin-data/` — Plugin-Einstellungen
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Killfeed Tagesübersicht pro Profil
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Killfeed Detail-History pro Kill und Tag
 - `user/cache/` — API-Fetch Daten & Icons
 - `user/logs/` — Diagnose-Logs
 :::

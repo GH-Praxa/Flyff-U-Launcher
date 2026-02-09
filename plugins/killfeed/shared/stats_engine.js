@@ -195,14 +195,15 @@ function createStatsEngine(config, initialState) {
     const prevExp = state.lastExp;
     const displayExp = Number.isFinite(rawExp) ? rawExp : exp;
 
-    // Update last values
-    state.lastLvl = lvl;
-    state.lastExp = exp;
+    // Always keep raw display value fresh, but only advance the kill baseline
+    // (lastLvl/lastExp) after sanity checks to avoid OCR down-spikes.
     state.lastExpRaw = displayExp;
     state.lastUpdateTime = now;
 
     // First tick - no comparison possible
     if (prevLvl === null || prevExp === null) {
+      state.lastLvl = lvl;
+      state.lastExp = exp;
       return null;
     }
 
@@ -213,12 +214,15 @@ function createStatsEngine(config, initialState) {
       // Level up occurred - NOT counted as a kill
       // Reset suspect if any
       pendingSuspect = null;
+      state.lastLvl = lvl;
+      state.lastExp = exp;
       return null;
     }
 
     // Level decreased (reroll or OCR error)
     if (lvl < prevLvl) {
       pendingSuspect = null;
+      // Keep previous baseline for robustness against OCR regressions.
       return null;
     }
 
@@ -228,8 +232,13 @@ function createStatsEngine(config, initialState) {
     // EXP decreased on same level - OCR noise, just update state
     if (deltaExp < 0) {
       pendingSuspect = null;
+      // Ignore negative OCR jumps and keep baseline to prevent false spikes/missed kills.
       return null;
     }
+
+    // Non-negative same-level sample is safe: advance baseline.
+    state.lastLvl = lvl;
+    state.lastExp = exp;
 
     // EXP increased - potential kill
     if (deltaExp > cfg.epsilon) {
