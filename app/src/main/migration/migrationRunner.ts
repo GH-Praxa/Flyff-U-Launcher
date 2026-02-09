@@ -20,14 +20,21 @@ interface ProgressFile {
     totalEntries: number;
 }
 
+/** Legacy location used by earlier migration versions (pre-user/ refactor) */
+const LEGACY_VERSION_FILE = "config/.migration-version";
+
 async function readVersionFile(userDataPath: string): Promise<string | null> {
-    const filePath = path.join(userDataPath, VERSION_FILE);
-    try {
-        const content = (await fs.readFile(filePath, "utf-8")).trim();
-        return semver.valid(content) ? content : null;
-    } catch {
-        return null;
+    // Try new location first, fall back to legacy location
+    for (const rel of [VERSION_FILE, LEGACY_VERSION_FILE]) {
+        try {
+            const content = (await fs.readFile(path.join(userDataPath, rel), "utf-8")).trim();
+            const ver = semver.valid(content);
+            if (ver) return ver;
+        } catch {
+            // try next
+        }
     }
+    return null;
 }
 
 async function writeVersionFile(userDataPath: string, version: string): Promise<void> {

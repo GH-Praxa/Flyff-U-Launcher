@@ -24,6 +24,12 @@ export interface MigrationEntry {
 export const LEGACY_CLEANUP = [
     "debug",
     "ocr-debug",
+    // Intermediate directories from v2.3.0 migration
+    "config",
+    "profiles",
+    "ui",
+    "shopping",
+    "logs",
 ];
 
 // ────────────────────────────────────────────────────────────────────────────
