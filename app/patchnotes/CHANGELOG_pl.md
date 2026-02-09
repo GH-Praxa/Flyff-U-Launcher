@@ -1,4 +1,25 @@
-﻿# 📦 Patchnotes
+# 📦 Patchnotes
+
+---
+
+## 🆕 Wersja 2.4.1
+
+### ✨ Ulepszenia
+- Killfeed: ulepszona identyfikacja potworów
+  - Nowe ważenie identyfikacji: HP potwora > Poziom potwora > Żywioł potwora
+- Killfeed: śledzenie potworów zlicza teraz zabite moby
+- Zaktualizowano dane referencyjne potworów
+- Ulepszono wygląd okna dialogowego „Wybierz układ”
+- Ulepszono wygląd okna dialogowego „Zarządzaj profilami (wyloguj)”
+
+### 🐛 Poprawki błędów
+- Nakładki nie zasłaniają już okna dialogowego zamykania
+
+### 🧹 Porządki
+- Zmodularyzowano architekturę renderera (wewnętrzna restrukturyzacja)
+- Wewnętrzny folder danych `api_fetch/` przemianowano na `cache/`
+- Przebudowano strukturę AppData: dane znajdują się teraz w AppData\Roaming\Flyff-U-Launcher\user
+- Automatyczna migracja: istniejące dane są płynnie migrowane przy pierwszym uruchomieniu — z paskiem postępu
 
 ---
 
@@ -89,7 +110,7 @@
 ### 🐛 Znane problemy
 
 - Zdarza się, że wpisy tekstowe w panelu bocznym nie docierają poprawnie
-- Overlaye pojawiają się w oknach dialogowych, np. „Zamknij” i „Wybierz layout”
+- Overlaye pojawiają się w oknach dialogowych, np. „Zamknij” i „Wybierz layout” — naprawione w 2.4.1 ✅
 - Panel boczny nie jest wyświetlany w trybie okienkowym
 
 

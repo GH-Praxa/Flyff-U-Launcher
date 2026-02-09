@@ -13,7 +13,7 @@ const idToTable = new Map();  // id -> numeric array
 const missingNames = new Set();
 
 function init(userDataPath) {
-  baseDir = path.join(userDataPath, 'api_fetch', 'monster', 'monster_parameter');
+  baseDir = path.join(userDataPath, 'user', 'cache', 'monster', 'monster_parameter');
 }
 
 async function getFileList() {

@@ -135,7 +135,7 @@ function normalizeProfile(v: unknown): Profile | null {
 }
 
 const profileStore = createFileStore<Profile>({
-    getPath: () => path.join(app.getPath("userData"), "profiles.json"),
+    getPath: () => path.join(app.getPath("userData"), "user", "profiles", "profiles.json"),
     normalize: normalizeProfile,
 });
 export function createProfilesStore() {

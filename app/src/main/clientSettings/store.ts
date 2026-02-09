@@ -6,7 +6,7 @@ import { DEFAULT_HOTKEYS, mergeHotkeySettings, normalizeHotkeySettings } from ".
 import { LAYOUT } from "../../shared/constants";
 import { clampLauncherHeight, clampLauncherWidth, normalizeLauncherSize } from "../../shared/launcherSize";
 
-const SETTINGS_FILE = "client-settings.json";
+const SETTINGS_FILE = path.join("user", "config", "settings.json");
 
 const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     startFullscreen: false,

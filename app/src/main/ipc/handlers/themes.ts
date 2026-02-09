@@ -39,8 +39,8 @@ export function registerThemeHandlers(
     opts: ThemeHandlerOptions,
     logErr: (msg: unknown) => void
 ): void {
-    const themeSnapshotPath = path.join(app.getPath("userData"), "themeSnapshot.json");
-    const tabActiveColorPath = path.join(app.getPath("userData"), "tabActiveColor.json");
+    const themeSnapshotPath = path.join(app.getPath("userData"), "user", "ui", "theme-snapshot.json");
+    const tabActiveColorPath = path.join(app.getPath("userData"), "user", "ui", "tab-active-color.json");
 
     let themeSnapshot: ThemeSnapshot = null;
 

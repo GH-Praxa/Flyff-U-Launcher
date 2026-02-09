@@ -68,7 +68,7 @@ export interface PluginSettingsOptions {
 export function createPluginSettingsStore(opts: PluginSettingsOptions): PluginSettingsStore {
     const { pluginId, schema, defaults = {} } = opts;
 
-    const dataDir = path.join(app.getPath("userData"), "plugin-data", pluginId);
+    const dataDir = path.join(app.getPath("userData"), "user", "plugin-data", pluginId);
     const settingsPath = path.join(dataDir, "settings.json");
 
     const changeListeners = new Set<(key: string, value: unknown, oldValue: unknown) => void>();

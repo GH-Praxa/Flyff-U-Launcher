@@ -80,7 +80,7 @@ function normalizeTheme(v: unknown): StoredTheme | null {
 }
 
 const themeStore = createFileStore<StoredTheme>({
-  getPath: () => path.join(app.getPath("userData"), "themes.json"),
+  getPath: () => path.join(app.getPath("userData"), "user", "ui", "themes.json"),
   normalize: normalizeTheme,
 });
 

@@ -24,15 +24,15 @@ interface SearchResult extends ItemIndexEntry {
 let itemIndex: ItemIndexEntry[] | null = null;
 
 function getItemParameterPath(): string {
-    return path.join(app.getPath("userData"), "api_fetch", "item", "item_parameter.json");
+    return path.join(app.getPath("userData"), "user", "cache", "item", "item_parameter.json");
 }
 
 function getIconsDir(): string {
-    return path.join(app.getPath("userData"), "api_fetch", "item", "icons");
+    return path.join(app.getPath("userData"), "user", "cache", "item", "icons");
 }
 
 function getPricesPath(): string {
-    return path.join(app.getPath("userData"), "item-prices.json");
+    return path.join(app.getPath("userData"), "user", "shopping", "item-prices.json");
 }
 
 /** Load the item index lazily on first search call. */

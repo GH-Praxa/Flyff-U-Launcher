@@ -35,7 +35,7 @@ function sanitizeTimerValue(value: unknown): number {
 }
 
 const timerStore = createFileStore<OcrTimerRow>({
-    getPath: () => path.join(app.getPath("userData"), "ocr-timers.json"),
+    getPath: () => path.join(app.getPath("userData"), "user", "profiles", "ocr-timers.json"),
     normalize(raw) {
         if (!raw || typeof raw !== "object") {
             return null;

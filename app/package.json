@@ -1,7 +1,7 @@
 {
   "name": "Flyff-U-Launcher",
   "productName": "Flyff-U-Launcher",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "My Electron application description",
   "repository": {
     "type": "git",
@@ -35,6 +35,7 @@
     "@electron-forge/publisher-github": "^7.11.1",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/semver": "^7.7.1",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "@vitest/coverage-v8": "^4.0.16",
@@ -50,6 +51,7 @@
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.7.3",
+    "semver": "^7.6.0",
     "zod": "^4.2.1"
   }
 }

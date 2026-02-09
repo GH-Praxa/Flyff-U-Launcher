@@ -488,7 +488,7 @@ export function createServiceRegistry(opts: ServiceRegistryOptions) {
     }
 
     function createStorageAdapter(pluginId: string): StorageService {
-        const dataDir = path.join(app.getPath("userData"), "plugin-data", pluginId);
+        const dataDir = path.join(app.getPath("userData"), "user", "plugin-data", pluginId);
 
         async function ensureDir(): Promise<void> {
             await fs.mkdir(dataDir, { recursive: true });

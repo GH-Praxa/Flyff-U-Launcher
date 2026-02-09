@@ -1,4 +1,25 @@
-﻿# 📦 Patchnotes
+# 📦 Patchnotes
+
+---
+
+## 🆕 Version 2.4.1
+
+### ✨ Improvements
+- Killfeed: Improved monster detection
+  - New identification weighting: Monster HP > Monster Level > Monster Element
+- Killfeed: Monster tracking now counts killed mobs
+- Monster reference data updated
+- "Select layout" dialog design refined
+- "Manage profiles (log out)" dialog design refined
+
+### 🐛 Bug Fixes
+- Overlays no longer overlap the close dialog
+
+### 🧹 Cleanup
+- Renderer architecture modularized (internal restructuring)
+- Internal data folder `api_fetch/` renamed to `cache/`
+- AppData directory reorganized: data now resides inside AppData\Roaming\Flyff-U-Launcher\user
+- Automatic migration: existing data is seamlessly migrated on first launch — with progress display
 
 ---
 
@@ -87,7 +108,7 @@
 ### 🐛 Known Issues
 
 - Occasionally, text inputs in the side panel are not received correctly
-- Overlays appear in dialog windows, e.g., "Close" and "Select layout"
+- Overlays appear in dialog windows, e.g., "Close" and "Select layout" — fixed in 2.4.1 ✅
 - The side panel is not displayed in windowed mode
 
 

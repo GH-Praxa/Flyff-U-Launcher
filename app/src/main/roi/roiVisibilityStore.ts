@@ -15,7 +15,7 @@ export type RoiVisibility = {
 type RoiVisDb = Record<string, RoiVisibility>;
 
 function visPath() {
-    return path.join(app.getPath("userData"), "roi-visibility.json");
+    return path.join(app.getPath("userData"), "user", "profiles", "roi-visibility.json");
 }
 
 async function readDb(): Promise<RoiVisDb> {

@@ -1,4 +1,25 @@
-﻿# 📦 Yama Notları
+# 📦 Yama Notları
+
+---
+
+## 🆕 Sürüm 2.4.1
+
+### ✨ İyileştirmeler
+- Killfeed: Canavar tespiti iyileştirildi
+  - Yeni kimlik ağırlığı: Canavar HP > Canavar Seviyesi > Canavar Elementi
+- Killfeed: Canavar takibi artık öldürülen mobları sayıyor
+- Canavar referans verileri güncellendi
+- “Yerleşim seç” iletişim kutusunun tasarımı iyileştirildi
+- “Profilleri yönet (çıkış)” iletişim kutusunun tasarımı iyileştirildi
+
+### 🐛 Düzeltmeler
+- Kapama iletişim kutusunun artık üstüne bindirmeler gelmiyor
+
+### 🧹 Temizlik
+- Renderer mimarisi modüler hale getirildi (dahili yeniden yapılandırma)
+- Dahili veri klasörü `api_fetch/`, `cache/` olarak yeniden adlandırıldı
+- AppData dizin yapısı yeniden düzenlendi: veriler artık AppData\Roaming\Flyff-U-Launcher\user içinde
+- Otomatik geçiş: Mevcut veriler ilk açılışta sorunsuzca taşınıyor — ilerleme göstergesiyle birlikte
 
 ---
 
@@ -89,7 +110,7 @@
 ### 🐛 Bilinen Hatalar
 
 - Yan paneldeki metin girişleri bazen doğru iletilmiyor
-- Overlay’ler “Kapat” ve “Yerleşim seç” gibi diyaloglarda görünüyor
+- Overlay’ler “Kapat” ve “Yerleşim seç” gibi diyaloglarda görünüyor — 2.4.1’de düzeltildi ✅
 - Yan panel pencere modunda gösterilmiyor
 
 

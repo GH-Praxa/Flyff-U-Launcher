@@ -1,22 +1,23 @@
 # 📦 Patchnotes
 
-## 🆕 Version 2.3.0
-
-### ➕ Neue Funktionen
+## 🆕 Version 2.4.1
 
 ### ✨ Verbesserungen
+- Killfeed: Verbesserte Monster-Erkennung
+  -  Neue Identifizierungsgewichtung: Monster HP > Monster Level > Monster Element
+- Killfeed: Monster-Tracking zählt nun getötete Mobs
+- Monster-Referenzdaten aktualisiert
 - "Layout auswählen" Dialog Design optimiert
 - "Profile verwalten (ausloggen)" Dialog Design optimiert
-
-### 🧹 Aufräumarbeiten
 
 ### 🐛 Fehlerbehebungen
 - Overlays überlagern den Schließen-Dialog nicht mehr
 
-### 🐛 Bekannte Fehler
-
-
-
+### 🧹 Aufräumarbeiten
+- Renderer-Architektur modularisiert (interne Umstrukturierung)
+- Interner Datenordner `api_fetch/` in `cache/` umbenannt
+- AppData-Verzeichnisstruktur reorganisiert: Daten sind nun im Unterordner AppData\Roaming\Flyff-U-Launcher\user sortiert
+- Automatische Migration: Bestehende Daten werden beim ersten Start nahtlos migriert — mit Fortschrittsanzeige
 
 ---
 
@@ -107,7 +108,7 @@
 ### 🐛 Bekannte Fehler
 
 - Es kommt vor, dass Texteingabem im Sidepanel nicht korrekt ankommen
-- Overlays werden in Dialogfenstern z.b. "Schließen" und "Layout auswählen" angezeigt
+- Overlays werden in Dialogfenstern z.b. "Schließen" und "Layout auswählen" angezeigt     ✅ behoben in 2.4.1 
 - Das Sidepanel wird im Fenstermodus nicht angezeigt
 
 

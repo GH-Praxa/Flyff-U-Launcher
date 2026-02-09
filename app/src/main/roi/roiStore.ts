@@ -32,7 +32,7 @@ function normalizeRoi(r: RoiRatio): RoiRatio {
     return { x, y, w: Math.max(0.001, w), h: Math.max(0.001, h) };
 }
 function roisPath() {
-    return path.join(app.getPath("userData"), "rois.json");
+    return path.join(app.getPath("userData"), "user", "profiles", "rois.json");
 }
 function migrateRois(rois: HudRois): HudRois {
     if (rois.lvl || rois.charname || rois.exp || rois.lauftext || rois.rmExp || rois.enemyName || rois.enemyHp) {

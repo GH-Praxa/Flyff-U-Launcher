@@ -136,7 +136,7 @@ export class PythonOcrWorker {
             debugLog("ocr", `[OCR Worker] Python process EXITED code=${code}`);
             // Write stderr to diagnostic file for debugging
             try {
-                const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+                const diagDir = path.join(app.getPath("userData"), "user", "logs", "ocr");
                 fs.mkdirSync(diagDir, { recursive: true });
                 fs.writeFileSync(
                     path.join(diagDir, "python_stderr.txt"),
@@ -155,7 +155,7 @@ export class PythonOcrWorker {
             debugLog("ocr", `[OCR Worker] Python process ERROR: ${err.message}`);
             // Write spawn error to diagnostic file
             try {
-                const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+                const diagDir = path.join(app.getPath("userData"), "user", "logs", "ocr");
                 fs.mkdirSync(diagDir, { recursive: true });
                 fs.writeFileSync(
                     path.join(diagDir, "python_spawn_error.txt"),

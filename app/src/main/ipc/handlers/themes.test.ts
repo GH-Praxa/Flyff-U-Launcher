@@ -105,7 +105,7 @@ describe("Theme IPC handlers", () => {
 
     it("persistiert Snapshot bei theme:push und informiert Windows", async () => {
         const push = handler("theme:push");
-        const themeSnapshotPath = path.join(userDataPath, "themeSnapshot.json");
+        const themeSnapshotPath = path.join(userDataPath, "user", "ui", "theme-snapshot.json");
         mockWindows.push({ isDestroyed: () => false, webContents: { send: vi.fn() } } as never);
 
         await expect(push({} as IpcEvent, { colors: { bg: "#111111" } })).resolves.toBe(true);

@@ -41,7 +41,7 @@ let cachedConfig: DebugConfig | null = null;
 function getConfigDir(): string {
     // Write to the user's data directory so packaged apps aren't trying to write inside the asar.
     try {
-        return path.join(app.getPath("userData"), "debug");
+        return path.join(app.getPath("userData"), "user", "config");
     } catch (_err) {
         // Fallback for tests or non-Electron environments
         return path.join(process.cwd(), "debug");
@@ -49,7 +49,7 @@ function getConfigDir(): string {
 }
 
 function getConfigPath(): string {
-    return path.join(getConfigDir(), "debugConfig.json");
+    return path.join(getConfigDir(), "debug.json");
 }
 
 export async function loadDebugConfig(): Promise<DebugConfig> {

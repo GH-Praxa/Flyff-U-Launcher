@@ -17,7 +17,7 @@ function normalizeFlags(raw: unknown): FeatureFlags {
 }
 
 function flagsPath() {
-    return path.join(app.getPath("userData"), "features.json");
+    return path.join(app.getPath("userData"), "user", "config", "features.json");
 }
 
 async function readFlags(): Promise<FeatureFlags> {

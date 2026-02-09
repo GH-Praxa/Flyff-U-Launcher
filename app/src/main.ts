@@ -50,6 +50,8 @@ import { createRoiVisibilityStore } from "./main/roi/roiVisibilityStore";
 import { DEFAULT_LOCALE, type ClientSettings, type Locale } from "./shared/schemas";
 import { DEFAULT_HOTKEYS, normalizeHotkeySettings } from "./shared/hotkeys";
 import { loadDebugConfig, debugLog } from "./main/debugConfig";
+import { hasPendingMigrations, runMigrations } from "./main/migration/migrationRunner";
+import { createMigrationWindow, updateMigrationProgress, closeMigrationWindow } from "./main/migration/migrationWindow";
 import { fitLauncherSizeToWorkArea, normalizeLauncherSize } from "./shared/launcherSize";
 
 // Extracted modules
@@ -174,7 +176,7 @@ function configureBundledTesseract(): void {
 
 function writeTesseractDiagnostic(): void {
     try {
-        const diagDir = path.join(app.getPath("userData"), "ocr-debug");
+        const diagDir = path.join(app.getPath("userData"), "user", "logs", "ocr");
         fs.mkdirSync(diagDir, { recursive: true });
         const lines: string[] = [
             `timestamp=${new Date().toISOString()}`,
@@ -208,6 +210,16 @@ app.whenReady().then(async () => {
 
     // Apply Content Security Policy
     applyCSP(session.defaultSession);
+
+    // Run version-gated data migrations (with UI if needed)
+    const userData = app.getPath("userData");
+    if (await hasPendingMigrations(userData)) {
+        const migWin = createMigrationWindow();
+        await runMigrations(userData, (progress) => {
+            updateMigrationProgress(migWin, progress);
+        });
+        closeMigrationWindow(migWin);
+    }
 
     const preloadPath = path.join(__dirname, "preload.js");
     const pluginsDir = path.join(app.getPath("userData"), "plugins");

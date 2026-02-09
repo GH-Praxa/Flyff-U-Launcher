@@ -678,7 +678,8 @@ function resolveIconPath(iconPath) {
   const candidates = path.isAbsolute(raw)
     ? [raw]
     : [
-        path.join(userData, normalized), // api_fetch or other data relative to userData
+        path.join(userData, "user", normalized), // user data relative to userData/user/
+        path.join(userData, normalized), // backwards compat (legacy paths)
         path.join(userData, "icons", normalized), // legacy icons folder
       ];
 
@@ -848,7 +849,7 @@ async function setAllEnabled(enabled) {
 }
 
 async function loadBuffIconListFromApiFetch() {
-  const baseDir = path.join(app.getPath("userData"), "api_fetch", "item");
+  const baseDir = path.join(app.getPath("userData"), "user", "cache", "item");
   const mappedPath = path.join(baseDir, "buff_icon_buffname.json");
   const sourcePath = path.join(baseDir, "item_parameter.json");
 
@@ -895,7 +896,7 @@ async function loadBuffIconListFromApiFetch() {
     }
     return buffs;
   } catch (err) {
-    warn("Failed to build buff icon list from api_fetch", err?.message || err);
+    warn("Failed to build buff icon list from cache", err?.message || err);
     return [];
   }
 }
@@ -910,7 +911,7 @@ async function listApiFetchIcons() {
     const iconFile = item.iconname;
     const name = item.buffname || "";
     if (!iconFile || !name) continue;
-    const relPath = path.join("api_fetch", "item", "icons", iconFile).replace(/\\/g, "/");
+    const relPath = path.join("user", "cache", "item", "icons", iconFile).replace(/\\/g, "/");
     const absPath = path.join(userData, relPath);
     if (!fsSync.existsSync(absPath)) continue;
     if (seen.has(relPath)) continue;
@@ -927,7 +928,7 @@ async function listApiFetchIcons() {
 
 async function listSkillIcons() {
   const userData = app.getPath("userData");
-  const root = path.join(userData, "api_fetch", "skill");
+  const root = path.join(userData, "user", "cache", "skill");
   const mappingPath = path.join(root, "skill_icon_skillname.json");
 
   let entries = [];
@@ -948,8 +949,8 @@ async function listSkillIcons() {
     if (!iconFile || !name) continue;
 
     const relCandidates = [
-      path.join("api_fetch", "skill", "icons", "colored", iconFile).replace(/\\/g, "/"),
-      path.join("api_fetch", "skill", "icons", "old", iconFile).replace(/\\/g, "/"),
+      path.join("user", "cache", "skill", "icons", "colored", iconFile).replace(/\\/g, "/"),
+      path.join("user", "cache", "skill", "icons", "old", iconFile).replace(/\\/g, "/"),
     ];
 
     let relPath = relCandidates[0];

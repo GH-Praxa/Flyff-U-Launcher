@@ -1,4 +1,25 @@
-﻿# 📦 Notes de patch
+# 📦 Notes de patch
+
+---
+
+## 🆕 Version 2.4.1
+
+### ✨ Améliorations
+- Killfeed : détection des monstres améliorée
+  - Nouvelle pondération d’identification : PV du monstre > Niveau du monstre > Élément du monstre
+- Killfeed : le suivi des monstres compte désormais les mobs tués
+- Données de référence des monstres mises à jour
+- Design du dialogue « Choisir une mise en page » optimisé
+- Design du dialogue « Gérer les profils (déconnexion) » optimisé
+
+### 🐛 Corrections
+- Les overlays ne recouvrent plus la boîte de dialogue de fermeture
+
+### 🧹 Nettoyage
+- Architecture du renderer modularisée (restructuration interne)
+- Dossier de données interne `api_fetch/` renommé en `cache/`
+- Réorganisation d’AppData : les données sont désormais rangées dans AppData\Roaming\Flyff-U-Launcher\user
+- Migration automatique : les données existantes sont migrées en douceur au premier lancement — avec indicateur de progression
 
 ---
 
@@ -89,7 +110,7 @@
 ### 🐛 Problèmes connus
 
 - Il arrive que les saisies de texte du panneau latéral n’arrivent pas correctement
-- Les overlays s’affichent dans des fenêtres de dialogue, par ex. « Fermer » et « Choisir une mise en page »
+- Les overlays s’affichent dans des fenêtres de dialogue, par ex. « Fermer » et « Choisir une mise en page » — corrigé en 2.4.1 ✅
 - Le panneau latéral n’est pas affiché en mode fenêtré
 
 

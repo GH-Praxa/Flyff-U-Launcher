@@ -19,7 +19,7 @@ function clampLevel(value: unknown): number {
 }
 
 const store = createFileStore<ManualLevelOverrideRow>({
-    getPath: () => path.join(app.getPath("userData"), "manual-levels.json"),
+    getPath: () => path.join(app.getPath("userData"), "user", "profiles", "manual-levels.json"),
     normalize(raw) {
         if (!raw || typeof raw !== "object") return null;
         const obj = raw as Record<string, unknown>;

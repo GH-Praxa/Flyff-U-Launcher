@@ -4,7 +4,7 @@
  * Monster-Parameter-Dateien und schreibt eine kompakte Referenzdatei.
  *
  * Standardquelle:
- *   %AppData%/Flyff-U-Launcher/api_fetch/monster/monster_parameter
+ *   %AppData%/Flyff-U-Launcher/cache/monster/monster_parameter
  *
  * Umgebungsschalter:
  *   MONSTER_PARAM_DIR  - alternative Quelle
@@ -22,7 +22,8 @@ const paramDir =
         "AppData",
         "Roaming",
         "Flyff-U-Launcher",
-        "api_fetch",
+        "user",
+        "cache",
         "monster",
         "monster_parameter"
     );

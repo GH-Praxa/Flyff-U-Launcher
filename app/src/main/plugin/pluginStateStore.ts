@@ -56,7 +56,7 @@ function normalizePluginState(raw: unknown): PluginStateData | null {
  */
 export function createPluginStateStore() {
     const store = createFileStore<PluginStateData>({
-        getPath: () => path.join(app.getPath("userData"), "plugin-states.json"),
+        getPath: () => path.join(app.getPath("userData"), "user", "plugin-data", "_states.json"),
         normalize: normalizePluginState,
     });
 

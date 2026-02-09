@@ -207,7 +207,7 @@ export function createPluginHost(opts: PluginHostOptions) {
         }
 
         // Create plugin data directory
-        const dataDir = path.join(app.getPath("userData"), "plugin-data", pluginId);
+        const dataDir = path.join(app.getPath("userData"), "user", "plugin-data", pluginId);
         await fs.mkdir(dataDir, { recursive: true });
 
         // Create IPC bridge

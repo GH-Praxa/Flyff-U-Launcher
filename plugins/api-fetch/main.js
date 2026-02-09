@@ -28,7 +28,8 @@ const outputDir = path.join(
   process.env.APPDATA ||
     path.join(process.env.HOME || process.cwd(), "AppData", "Roaming"),
   "Flyff-U-Launcher",
-  "api_fetch",
+  "user",
+  "cache",
 );
 
 function ensureDir(dirPath) {

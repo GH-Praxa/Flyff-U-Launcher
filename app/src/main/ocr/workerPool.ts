@@ -38,7 +38,7 @@ export function defaultOcrScriptPath(): string {
 }
 
 export function defaultOcrDebugPath(): string {
-    return path.join(app.getPath("userData"), "ocr-debug");
+    return path.join(app.getPath("userData"), "user", "logs", "ocr");
 }
 
 function getPool(key: string): PoolEntry {

@@ -19,7 +19,7 @@ export function createSidePanelButtonController(opts: {
     pollMs?: number;
     clickThrough?: boolean;
 }) {
-    const filePath = path.join(app.getPath("userData"), "sidepanel-button.json");
+    const filePath = path.join(app.getPath("userData"), "user", "profiles", "ui-positions.json");
     const pollMs = opts.pollMs ?? 500;
     const size = { width: 36, height: 36 };
     let win: BrowserWindow | null = null;

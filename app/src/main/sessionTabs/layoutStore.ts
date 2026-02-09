@@ -107,7 +107,7 @@ function normalizeLayout(v: unknown): TabLayout | null {
 }
 
 const layoutStore = createFileStore<TabLayout>({
-    getPath: () => path.join(app.getPath("userData"), "tabLayouts.json"),
+    getPath: () => path.join(app.getPath("userData"), "user", "ui", "tab-layouts.json"),
     normalize: normalizeLayout,
 });
 export function createTabLayoutsStore() {

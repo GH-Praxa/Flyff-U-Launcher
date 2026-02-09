@@ -257,7 +257,7 @@ function findMonsterByLevelElement(level, element) {
 function loadMonsterDetails(monsterId) {
   if (!monsterId) return null;
   if (monsterDetailsCache.has(monsterId)) return monsterDetailsCache.get(monsterId);
-  const filePath = path.join(app.getPath('userData'), 'api_fetch', 'monster', 'monster_parameter', `${monsterId}.json`);
+  const filePath = path.join(app.getPath('userData'), 'user', 'cache', 'monster', 'monster_parameter', `${monsterId}.json`);
   if (!fs.existsSync(filePath)) {
     debugLog('ocr', '[MonsterDetail] nicht gefunden', filePath);
     monsterDetailsCache.set(monsterId, null);
