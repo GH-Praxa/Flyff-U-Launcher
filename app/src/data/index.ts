@@ -11,6 +11,7 @@
  */
 
 import path from "path";
+import fs from "fs";
 import { app } from "electron";
 
 /**
@@ -19,11 +20,16 @@ import { app } from "electron";
  * In production, returns the path in resources/data (if packaged).
  */
 export function getDataPath(filename: string): string {
-    if (app.isPackaged) {
-        // Production: look in resources folder
-        return path.join(process.resourcesPath, "data", filename);
-    }
-    // Development: __dirname points to .vite/build/ after Vite bundling,
+    // 1) Prefer freshest runtime data written by plugins (api-fetch)
+    const userCachePath = path.join(app.getPath("userData"), "user", "cache", filename);
+    if (fs.existsSync(userCachePath)) return userCachePath;
+
+    // 2) Packaged fallback shipped with the app (added via extraResources)
+    const packagedPath = path.join(process.resourcesPath, "data", filename);
+    if (app.isPackaged && fs.existsSync(packagedPath)) return packagedPath;
+
+    // 3) Development fallback (source tree)
+    // __dirname points to .vite/build/ after Vite bundling,
     // so use app.getAppPath() which reliably returns the app root directory.
     return path.join(app.getAppPath(), "src", "data", filename);
 }

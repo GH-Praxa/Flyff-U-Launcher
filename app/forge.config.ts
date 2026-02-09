@@ -49,6 +49,15 @@ if (fs.existsSync(docsDir)) {
     console.warn("Docs directory not found at", docsDir, "- bundle will skip it.");
 }
 
+// Ensure static data (monster/buff/skill references) are available in packaged builds
+const dataDir = path.resolve(__dirname, "src", "data");
+if (fs.existsSync(dataDir)) {
+    extraResource.push(dataDir);
+} else {
+    // eslint-disable-next-line no-console
+    console.warn("Data directory not found at", dataDir, "- bundle will skip it.");
+}
+
 const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
 if (fs.existsSync(tesseractDir)) {
     extraResource.push(tesseractDir);
