@@ -21,6 +21,23 @@
 - AppData 目录结构重新整理：数据现在位于 AppData\Roaming\Flyff-U-Launcher\user
 - 自动迁移：首次启动时会无缝迁移现有数据，并显示进度
 
+:::accordion[新存储路径]
+所有用户数据现位于 `%APPDATA%\Flyff-U-Launcher\user\`：
+
+- `user/config/settings.json` — 客户端设置
+- `user/config/features.json` — 功能开关
+- `user/profiles/profiles.json` — 启动器配置文件
+- `user/profiles/rois.json` — ROI 校准
+- `user/profiles/ocr-timers.json` — OCR 计时器
+- `user/ui/themes.json` — 主题
+- `user/ui/tab-layouts.json` — 标签页布局
+- `user/ui/tab-active-color.json` — 活动标签页颜色
+- `user/shopping/item-prices.json` — 高级购物清单价格
+- `user/plugin-data/` — 插件设置
+- `user/cache/` — API 抓取数据和图标
+- `user/logs/` — 诊断日志
+:::
+
 ---
 
 ## 🆕 版本 2.3.0

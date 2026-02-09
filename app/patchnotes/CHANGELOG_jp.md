@@ -21,6 +21,23 @@
 - AppData ディレクトリ構成を再編：データは AppData\Roaming\Flyff-U-Launcher\user に配置
 - 自動移行：初回起動時に既存データをシームレスに移行し、進捗を表示
 
+:::accordion[新しい保存パス]
+すべてのユーザーデータは `%APPDATA%\Flyff-U-Launcher\user\` に移動しました：
+
+- `user/config/settings.json` — クライアント設定
+- `user/config/features.json` — 機能フラグ
+- `user/profiles/profiles.json` — ランチャープロファイル
+- `user/profiles/rois.json` — ROI キャリブレーション
+- `user/profiles/ocr-timers.json` — OCR タイマー
+- `user/ui/themes.json` — テーマ
+- `user/ui/tab-layouts.json` — タブレイアウト
+- `user/ui/tab-active-color.json` — アクティブタブの色
+- `user/shopping/item-prices.json` — プレミアムショッピングリスト価格
+- `user/plugin-data/` — プラグイン設定
+- `user/cache/` — API フェッチデータとアイコン
+- `user/logs/` — 診断ログ
+:::
+
 ---
 
 ## 🆕 バージョン 2.3.0

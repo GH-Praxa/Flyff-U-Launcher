@@ -21,6 +21,23 @@
 - Réorganisation d’AppData : les données sont désormais rangées dans AppData\Roaming\Flyff-U-Launcher\user
 - Migration automatique : les données existantes sont migrées en douceur au premier lancement — avec indicateur de progression
 
+:::accordion[Nouveaux chemins de stockage]
+Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-Launcher\user\` :
+
+- `user/config/settings.json` — Paramètres client
+- `user/config/features.json` — Feature flags
+- `user/profiles/profiles.json` — Profils du launcher
+- `user/profiles/rois.json` — Calibrations ROI
+- `user/profiles/ocr-timers.json` — Timers OCR
+- `user/ui/themes.json` — Thèmes
+- `user/ui/tab-layouts.json` — Dispositions des onglets
+- `user/ui/tab-active-color.json` — Couleur de l'onglet actif
+- `user/shopping/item-prices.json` — Prix de la liste d'achats premium
+- `user/plugin-data/` — Paramètres des plugins
+- `user/cache/` — Données et icônes API-Fetch
+- `user/logs/` — Logs de diagnostic
+:::
+
 ---
 
 ## 🆕 Version 2.3.0

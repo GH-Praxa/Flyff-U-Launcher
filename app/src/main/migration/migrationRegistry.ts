@@ -35,7 +35,7 @@ export const LEGACY_SENTINEL_FILES = [
 
 export const MIGRATION_SETS: MigrationSet[] = [
     {
-        version: "2.4.2",
+        version: "2.4.3",
         label: "Reorganizing app data...",
         entries: [
             // ── From original legacy flat layout (pre-2.3.0) ──────────

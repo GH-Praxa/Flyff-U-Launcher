@@ -806,9 +806,9 @@ export function openConfigModal(
         }
     });
     body.append(tabs, content);
-    // Simple markdown to HTML converter for patchnotes
+    // Simple markdown to HTML converter (no images/videos) used by patchnotes
 
-    function markdownToHtml(md: string): string {
+    function markdownToHtmlBasic(md: string): string {
 
         return md
             // Escape HTML first
@@ -838,9 +838,41 @@ export function openConfigModal(
             // Clean up newlines
             .replace(/\n/g, "");
     }
+
+    function markdownToHtml(md: string): string {
+
+        // Normalize CRLF to LF so accordion close markers match on Windows
+        md = md.replace(/\r\n/g, "\n");
+
+        // Parse accordions (supports nesting via recursive call)
+        const accordionRegex = /(^|\n)(:{3,})accordion\[([^\]]+)\]/g;
+        let processed = "";
+        let lastPos = 0;
+        let match: RegExpExecArray | null;
+        while ((match = accordionRegex.exec(md))) {
+            const start = match.index + match[1].length;
+            const colons = match[2];
+            const title = match[3];
+            const headerEnd = accordionRegex.lastIndex;
+            const closeMarker = `\n${colons}\n`;
+            const closeIdx = md.indexOf(closeMarker, headerEnd);
+            if (closeIdx === -1) continue;
+            const content = md.slice(headerEnd, closeIdx);
+            processed += markdownToHtmlBasic(md.slice(lastPos, start));
+            const body = markdownToHtml(content.trim());
+            processed += `<details class="docAccordion"><summary class="docAccordionHeader"><span class="docAccordionTitle">${escapeHtml(title)}</span><span class="docAccordionIcon">&#9654;</span></summary><div class="docAccordionContent">${body}</div></details>`;
+            lastPos = closeIdx + closeMarker.length;
+            accordionRegex.lastIndex = lastPos;
+        }
+        processed += markdownToHtmlBasic(md.slice(lastPos));
+        return processed;
+    }
     // Extended markdown to HTML converter for documentation with accordions, images, videos
 
     function markdownToHtmlExtended(md: string, assetsPath: string): string {
+
+        // Normalize CRLF to LF so accordion close markers and other patterns match on Windows
+        md = md.replace(/\r\n/g, "\n");
 
         // Parse accordions (supports nesting via recursive call)
         const accordionRegex = /(^|\n)(:{3,})accordion\[([^\]]+)\]/g;

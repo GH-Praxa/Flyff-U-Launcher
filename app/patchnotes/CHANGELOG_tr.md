@@ -21,6 +21,23 @@
 - AppData dizin yapısı yeniden düzenlendi: veriler artık AppData\Roaming\Flyff-U-Launcher\user içinde
 - Otomatik geçiş: Mevcut veriler ilk açılışta sorunsuzca taşınıyor — ilerleme göstergesiyle birlikte
 
+:::accordion[Yeni Depolama Yolları]
+Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bulunmaktadır:
+
+- `user/config/settings.json` — İstemci ayarları
+- `user/config/features.json` — Özellik bayrakları
+- `user/profiles/profiles.json` — Başlatıcı profilleri
+- `user/profiles/rois.json` — ROI kalibrasyonları
+- `user/profiles/ocr-timers.json` — OCR zamanlayıcıları
+- `user/ui/themes.json` — Temalar
+- `user/ui/tab-layouts.json` — Sekme düzenleri
+- `user/ui/tab-active-color.json` — Aktif sekme rengi
+- `user/shopping/item-prices.json` — Premium alışveriş listesi fiyatları
+- `user/plugin-data/` — Eklenti ayarları
+- `user/cache/` — API-Fetch verileri ve simgeleri
+- `user/logs/` — Tanılama günlükleri
+:::
+
 ---
 
 ## 🆕 Sürüm 2.3.0

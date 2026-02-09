@@ -256,6 +256,7 @@ app.whenReady().then(async () => {
     const roiVisibilityStore = createRoiVisibilityStore();
 
     sessionWindowController = services.sessionWindow;
+    startupComplete = true;
     let overlayClickThrough = false;
     let clientLocale: Locale = DEFAULT_LOCALE;
     let overlayHotkeys = normalizeHotkeySettings(DEFAULT_HOTKEYS, DEFAULT_HOTKEYS);
@@ -698,8 +699,9 @@ app.on("before-quit", async () => {
     }
 });
 
+let startupComplete = false;
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
+    if (process.platform !== "darwin" && startupComplete) {
         app.quit();
     }
 });

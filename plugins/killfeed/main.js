@@ -4,6 +4,7 @@
  */
 
 const fs = require('fs');
+const fsPromises = require('fs/promises');
 const path = require('path');
 const { app } = require('electron');
 const crypto = require('crypto');
@@ -600,6 +601,51 @@ async function postStartupIdToDiscord() {
   }
 }
 
+async function appendKillToHistory(profileId, killData) {
+  const historyDir = path.join(ctx.dataDir, 'history', profileId);
+
+  const d = new Date(killData.timestamp);
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+  const csvPath = path.join(historyDir, `${dateStr}.csv`);
+
+  await fsPromises.mkdir(historyDir, { recursive: true });
+
+  let needsHeader = false;
+  try {
+    await fsPromises.access(csvPath);
+  } catch {
+    needsHeader = true;
+  }
+
+  const header = 'datetime,timestamp,playerLevel,charName,monsterName,monsterId,monsterLevel,monsterElement,monsterRank,deltaExp,expectedExp\n';
+
+  const esc = (v) => {
+    if (v == null || v === '') return '';
+    const s = String(v);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  };
+
+  const row = [
+    esc(`${dateStr} ${timeStr}`),
+    killData.timestamp,
+    killData.playerLevel ?? '',
+    esc(killData.charName ?? ''),
+    esc(killData.monsterName ?? ''),
+    esc(killData.monsterId ?? ''),
+    killData.monsterLevel ?? '',
+    esc(killData.monsterElement ?? ''),
+    esc(killData.monsterRank ?? ''),
+    killData.deltaExp ?? '',
+    killData.expectedExp ?? ''
+  ].join(',') + '\n';
+
+  await fsPromises.appendFile(csvPath, (needsHeader ? header : '') + row, 'utf-8');
+}
+
 async function publishMetric(profileId, metricKey, value, stats, reason) {
   if (!config.allowDiscordLeaderboard) return;
 
@@ -1042,6 +1088,23 @@ async function handleOcrUpdate(payload) {
     debugLog('ocr',
       `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"}`
     );
+
+    // Kill in CSV-History schreiben (fire-and-forget)
+    appendKillToHistory(profileId, {
+      timestamp: killEvent.timestamp,
+      playerLevel: effectiveLvl,
+      charName: charname || '',
+      monsterName: killEvent.monsterName || '',
+      monsterId: resolvedMonsterMeta?.id || '',
+      monsterLevel: resolvedMonsterMeta?.level ?? '',
+      monsterElement: resolvedMonsterMeta?.element || '',
+      monsterRank: killEvent.rank || '',
+      deltaExp: killEvent.deltaExp,
+      expectedExp: resolvedMonsterMeta?.expectedExp ?? ''
+    }).catch(err => {
+      ctx.logger?.warn?.(`[History] Failed to write kill: ${err.message}`);
+    });
+
     ctx.eventBus.emit('kill-registered', {
       profileId,
       ...killEvent
@@ -1335,8 +1398,8 @@ async function start(context) {
 
   debugLog('lifecycle', 'Killfeed plugin starting...');
 
-  // Generate or load persistent startup id and post it to Discord
-  await postStartupIdToDiscord();
+  // Startup ID posting disabled
+  // await postStartupIdToDiscord();
 
   // Subscribe to OCR updates from the core
   unsubscribeOcr = ctx.eventBus.on('core:ocr:update', handleOcrUpdate);
