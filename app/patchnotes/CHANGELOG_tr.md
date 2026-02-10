@@ -1,41 +1,70 @@
-# 📦 Yama Notları
+﻿# 📦 Yama Notları
 
 ---
 
-## 🆕 Sürüm 2.5.0
+## 🆕 Sürüm 2.5.1
 
 ### 🆕 Yeni Özellik: Giant Tracker
-- Killfeed eklentisi içinde, Giants, Violets ve Bosses öldürme istatistiklerini takip edip görselleştiren bağımsız pencere.
+Killfeed eklentisindeki bağımsız pencere — **Giants**, **Violets** ve **Bosses** için kill istatistiklerini toplar ve görselleştirir.
 
-### ✨ İyileştirmeler
-- Killfeed: canavar takibi akordeonlarında artık her rütbe için tekil kill listesini açan bir "Kills" düğmesi var.
-- Killfeed: tekil kill kayıtları artık bu listeden doğrudan silinebiliyor.
+**Filtre Sekmeleri**
+- 5 sekme: **Tümü** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** — `boss` rütbesine göre filtreler (kırmızı kart kenarlığı, özel ikon stili)
+- **Drops** — yalnızca drop kaydı olan canavarları gösterir; kart içinde loot havuzu önizlemesini (nadirliğe göre ilk 5 eşya) içerir
 
-### 🐛 Düzeltmeler
-- Killfeed: tekil kill silme işlemi artık AppData geçmiş dosyalarını (daily/YYYY-MM-DD.csv, history.csv) ve yan panel durumunu tutarlı şekilde güncelliyor.
+**Kill İstatistikleri**
+- Compact ve Expanded modlu kart görünümü
+- Zaman aralıkları: Bugün, Hafta, Ay, Yıl, Toplam
+- Canavar bilgisi: İkon, Ad, Seviye, Element, Rütbe, HP, ATK
 
----
-## 🆕 Sürüm 2.4.1
+**Drop Takibi**
+- Canavarın loot havuzundan drop kaydı (nadirlik filtresiyle)
+- Canavar başına drop geçmişi: eşya adı, kill sayacı değeri, zaman damgası
+- İstatistikler: Ø kill/drop, son droptan beri kill
 
-### ✨ İyileştirmeler
-- Killfeed: Canavar tespiti iyileştirildi
-  - Yeni kimlik ağırlığı: Canavar HP > Canavar Seviyesi > Canavar Elementi
-- Killfeed: Canavar takibi artık öldürülen mobları sayıyor
+**Time to Kill (TTK)**
+- Giants, Violets ve Bosses için savaş süresini otomatik ölçer
+- Hedef seçimi kaldırıldığında 10 sn tolerans (buff, heal vb.) — duraklama süresi TTK'ye dahil edilmez
+- Canavar adı + maksimum HP parmak izi: hedef güvenilir şekilde yeniden tanınır
+- Gösterim: Son TTK, Ø TTK, En Hızlı
+- Kill geçmişine kalıcı kaydedilir (CSV sütunu `TTK_ms`)
+
+**Diğer**
+- Kill sayısına, ada veya seviyeye göre sıralama
+- Canavar adına göre filtreleme için arama alanı
+
+### ✨ Ek İyileştirmeler
+- Killfeed: canavar algılama iyileştirildi
+- Yeni kimliklendirme ağırlığı: Canavar HP > Canavar Seviyesi > Canavar Elementi
+- Killfeed: canavar takibi artık öldürülen mobları sayıyor
+- Killfeed: geçmiş eklendi (profil bazında)
+  - Tarih başına tekil kill kayıtlarını içeren günlük dosya (`Tarih/Saat`, `Karakter`, `Seviye`, `Monster-ID`, `Rütbe`, `Canavar`, `Element`, `EXP Artışı`, `Beklenen EXP`, `TTK_ms`)
+  - `Kills`, `Toplam EXP`, `Canavar Dağılımı`, `İlk/Son Kill` içeren günlük toplu özet
+- Killfeed: yan paneldeki canavar takibi artık kill sonrası hemen güncelleniyor (sekme değiştirmek gerekmiyor)
+- Killfeed: canavar takip akordeonlarında artık her rütbe için tekil kill ListView'ını açan bir Kills düğmesi var.
+  Tekil kill kayıtları doğrudan ListView içinden silinebilir.
+  Tekil kill silindiğinde AppData geçmiş dosyaları (daily/YYYY-MM-DD.csv, history.csv) ve yan panel durumu güncellenir.
+- Killfeed: yan panel artık overlay hedef profilini stabil şekilde takip ediyor (profil ID'leri arasında atlama yok)
 - Canavar referans verileri güncellendi
-- “Yerleşim seç” iletişim kutusunun tasarımı iyileştirildi
-- “Profilleri yönet (çıkış)” iletişim kutusunun tasarımı iyileştirildi
+- "Yerleşim seç" iletişim penceresi tasarımı iyileştirildi
+- "Profilleri yönet (çıkış yap)" iletişim penceresi tasarımı iyileştirildi
 
-### 🐛 Düzeltmeler
-- Kapama iletişim kutusunun artık üstüne bindirmeler gelmiyor
+### 🐛 Hata Düzeltmeleri
+- Overlay'ler artık kapatma iletişim penceresinin üstüne binmiyor
+- Dokümantasyondaki akordeonlar artık doğru şekilde görüntüleniyor
+- Sürüm 2.3.0'dan yeni AppData yapısına (`user/`) geçiş artık güvenilir şekilde çalışıyor
+- Killfeed: negatif OCR EXP sıçramaları artık OCR gürültüsü olarak filtreleniyor ve kill algılamasını bozmuyor
 
 ### 🧹 Temizlik
-- Renderer mimarisi modüler hale getirildi (dahili yeniden yapılandırma)
+- Renderer mimarisi modülerleştirildi (dahili yeniden yapılandırma)
 - Dahili veri klasörü `api_fetch/`, `cache/` olarak yeniden adlandırıldı
-- AppData dizin yapısı yeniden düzenlendi: veriler artık AppData\Roaming\Flyff-U-Launcher\user içinde
-- Otomatik geçiş: Mevcut veriler ilk açılışta sorunsuzca taşınıyor — ilerleme göstergesiyle birlikte
+- AppData dizin yapısı yeniden düzenlendi: veriler artık AppData\Roaming\Flyff-U-Launcher\user alt klasöründe tutuluyor
+- Otomatik geçiş: mevcut veriler ilk açılışta kesintisiz şekilde taşınıyor — ilerleme göstergesiyle birlikte
+- Statik veriler (referans verileri dahil) build içine gömülüyor, böylece release build'lerinde güvenilir şekilde kullanılabiliyor
+- Konsolun daha okunabilir olması için Killfeed/overlay debug logları azaltıldı
 
 :::accordion[Yeni Depolama Yolları]
-Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bulunmaktadır:
+Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bulunur:
 
 - `user/config/settings.json` — İstemci ayarları
 - `user/config/features.json` — Özellik bayrakları
@@ -47,7 +76,9 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 - `user/ui/tab-active-color.json` — Aktif sekme rengi
 - `user/shopping/item-prices.json` — Premium alışveriş listesi fiyatları
 - `user/plugin-data/` — Eklenti ayarları
-- `user/cache/` — API-Fetch verileri ve simgeleri
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Profil başına Killfeed günlük özeti
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Kill ve gün bazında Killfeed ayrıntılı geçmişi
+- `user/cache/` — API fetch verileri ve ikonlar
 - `user/logs/` — Tanılama günlükleri
 :::
 

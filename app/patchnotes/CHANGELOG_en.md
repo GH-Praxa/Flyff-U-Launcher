@@ -1,38 +1,67 @@
-# 📦 Patchnotes
+﻿# 📦 Patchnotes
 
 ---
 
-## Version 2.5.0
+## 🆕 Version 2.5.1
 
-### New Feature: Giant Tracker
-- Standalone window in the Killfeed plugin to track and visualize kill statistics for Giants, Violets, and Bosses.
+### 🆕 New Feature: Giant Tracker
+Standalone window in the Killfeed plugin — captures and visualizes kill statistics for **Giants**, **Violets**, and **Bosses**.
 
-### Improvements
-- Killfeed: Monster tracking accordions now include a Kills button per rank with a list view of individual kills.
-- Killfeed: Individual kills can now be deleted directly from that list view.
+**Filter Tabs**
+- 5 tabs: **All** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** — filters by rank `boss` (red card border, dedicated icon styling)
+- **Drops** — shows only monsters with logged drops, including loot pool preview (top 5 items by rarity) directly on the card
 
-### Bug Fixes
-- Killfeed: Deleting individual kills now consistently updates AppData history files (daily/YYYY-MM-DD.csv, history.csv) and the sidepanel state.
+**Kill Statistics**
+- Card view with Compact and Expanded mode
+- Time ranges: Today, Week, Month, Year, Total
+- Monster info: Icon, Name, Level, Element, Rank, HP, ATK
 
----
-## 🆕 Version 2.4.1
+**Drop Tracking**
+- Log drops from the monster's loot pool (with rarity filter)
+- Drop history per monster: Item name, kill counter state, timestamp
+- Statistics: Avg. kills/drop, kills since last drop
 
-### ✨ Improvements
+**Time to Kill (TTK)**
+- Automatically measures combat duration against Giants, Violets, and Bosses
+- 10s grace period when deselecting the target (buffing, healing, etc.) — pause time is not counted toward TTK
+- Monster name + max HP fingerprint: target is reliably recognized again
+- Display: Last TTK, Avg. TTK, Fastest
+- Persisted in kill history (CSV column `TTK_ms`)
+
+**Other**
+- Sorting by kills, name, or level
+- Search field to filter by monster name
+
+### ✨ Additional Improvements
 - Killfeed: Improved monster detection
-  - New identification weighting: Monster HP > Monster Level > Monster Element
+- New identification weighting: Monster HP > Monster Level > Monster Element
 - Killfeed: Monster tracking now counts killed mobs
+- Killfeed: History introduced (per profile)
+  - Daily file per date with individual kills (`Date/Time`, `Character`, `Level`, `Monster-ID`, `Rank`, `Monster`, `Element`, `EXP Gain`, `Expected EXP`, `TTK_ms`)
+  - Aggregated daily summary with `Kills`, `Total EXP`, `Monster Distribution`, `First/Last Kill`
+- Killfeed: Monster tracking in the sidepanel now updates immediately after kills (no tab switch required)
+- Killfeed: In the monster-tracking accordions, each rank now has a Kills button with a ListView of individual kills.
+  Individual kills can be deleted directly in the ListView.
+  When deleting individual kills, AppData history files (daily/YYYY-MM-DD.csv, history.csv) and sidepanel state are updated.
+- Killfeed: Sidepanel now follows the overlay target profile reliably (no jumping between profile IDs)
 - Monster reference data updated
-- "Select layout" dialog design refined
-- "Manage profiles (log out)" dialog design refined
+- "Select layout" dialog design optimized
+- "Manage profiles (log out)" dialog design optimized
 
 ### 🐛 Bug Fixes
 - Overlays no longer overlap the close dialog
+- Accordions in the documentation are displayed correctly
+- Migration from version 2.3.0 to the new AppData structure (`user/`) now runs reliably
+- Killfeed: Negative OCR EXP jumps are now filtered as OCR noise and no longer distort kill detection
 
 ### 🧹 Cleanup
 - Renderer architecture modularized (internal restructuring)
 - Internal data folder `api_fetch/` renamed to `cache/`
-- AppData directory reorganized: data now resides inside AppData\Roaming\Flyff-U-Launcher\user
-- Automatic migration: existing data is seamlessly migrated on first launch — with progress display
+- AppData directory structure reorganized: data is now sorted in the AppData\Roaming\Flyff-U-Launcher\user subfolder
+- Automatic migration: existing data is migrated seamlessly on first launch — with progress indicator
+- Static data (including reference data) is bundled in the build so it is reliably available in release builds
+- Killfeed/overlay debug logging reduced to keep the console easier to read
 
 :::accordion[New Storage Paths]
 All user data now resides under `%APPDATA%\Flyff-U-Launcher\user\`:
@@ -47,6 +76,8 @@ All user data now resides under `%APPDATA%\Flyff-U-Launcher\user\`:
 - `user/ui/tab-active-color.json` — Active tab color
 - `user/shopping/item-prices.json` — Premium shopping list prices
 - `user/plugin-data/` — Plugin settings
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Killfeed daily summary per profile
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Killfeed detailed history per kill and day
 - `user/cache/` — API fetch data & icons
 - `user/logs/` — Diagnostic logs
 :::

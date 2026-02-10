@@ -1,38 +1,67 @@
-# 📦 Notes de patch
+﻿# 📦 Notes de patch
 
 ---
 
-## 🆕 Version 2.5.0
+## 🆕 Version 2.5.1
 
 ### 🆕 Nouvelle fonctionnalité : Giant Tracker
-- Fenêtre dédiée dans le plugin Killfeed pour suivre et visualiser les statistiques de kill des Giants, Violets et Bosses.
+Fenêtre autonome dans le plugin Killfeed — capture et visualise les statistiques de kills pour les **Giants**, **Violets** et **Bosses**.
 
-### ✨ Améliorations
-- Killfeed : les accordéons de suivi des monstres incluent maintenant un bouton « Kills » par rang avec une vue liste des kills individuels.
-- Killfeed : les kills individuels peuvent maintenant être supprimés directement depuis cette vue.
+**Onglets de filtre**
+- 5 onglets : **Tous** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** — filtre sur le rang `boss` (bordure de carte rouge, style d'icône dédié)
+- **Drops** — affiche uniquement les monstres avec des drops enregistrés, y compris un aperçu du loot pool (top 5 des objets par rareté) directement dans la carte
 
-### 🐛 Corrections
-- Killfeed : la suppression d’un kill individuel met maintenant à jour de façon fiable les fichiers d’historique AppData (daily/YYYY-MM-DD.csv, history.csv) et l’état du panneau latéral.
+**Statistiques de kills**
+- Vue en cartes avec modes Compact et Étendu
+- Périodes : Aujourd'hui, Semaine, Mois, Année, Total
+- Infos monstre : Icône, Nom, Niveau, Élément, Rang, HP, ATK
 
----
-## 🆕 Version 2.4.1
+**Suivi des drops**
+- Enregistrement des drops via le loot pool du monstre (avec filtre de rareté)
+- Historique des drops par monstre : nom de l'objet, compteur de kills, horodatage
+- Statistiques : Ø kills/drop, kills depuis le dernier drop
 
-### ✨ Améliorations
+**Time to Kill (TTK)**
+- Mesure automatiquement la durée du combat contre les Giants, Violets et Bosses
+- Délai de grâce de 10 s lors de la désélection de la cible (buff, soin, etc.) — le temps de pause n'est pas compté dans le TTK
+- Empreinte nom du monstre + HP max : la cible est reconnue de façon fiable
+- Affichage : Dernier TTK, Ø TTK, Plus rapide
+- Persisté dans l'historique des kills (colonne CSV `TTK_ms`)
+
+**Autres**
+- Tri par kills, nom ou niveau
+- Champ de recherche pour filtrer par nom de monstre
+
+### ✨ Améliorations supplémentaires
 - Killfeed : détection des monstres améliorée
-  - Nouvelle pondération d’identification : PV du monstre > Niveau du monstre > Élément du monstre
+- Nouvelle pondération d'identification : HP du monstre > Niveau du monstre > Élément du monstre
 - Killfeed : le suivi des monstres compte désormais les mobs tués
+- Killfeed : historique introduit (par profil)
+  - Fichier quotidien par date avec kills individuels (`Date/Heure`, `Personnage`, `Niveau`, `Monster-ID`, `Rang`, `Monstre`, `Élément`, `Gain EXP`, `EXP attendue`, `TTK_ms`)
+  - Vue quotidienne agrégée avec `Kills`, `EXP totale`, `Répartition des monstres`, `Premier/Dernier kill`
+- Killfeed : le suivi des monstres dans le panneau latéral se met maintenant à jour immédiatement après les kills (sans changement d'onglet)
+- Killfeed : dans les accordéons de suivi des monstres, chaque rang dispose maintenant d'un bouton Kills avec une ListView des kills individuels.
+  Les kills individuels peuvent être supprimés directement dans la ListView.
+  Lors de la suppression de kills individuels, les fichiers d'historique AppData (daily/YYYY-MM-DD.csv, history.csv) et l'état du panneau latéral sont mis à jour.
+- Killfeed : le panneau latéral suit maintenant de façon stable le profil cible de l'overlay (plus de saut entre les IDs de profil)
 - Données de référence des monstres mises à jour
-- Design du dialogue « Choisir une mise en page » optimisé
-- Design du dialogue « Gérer les profils (déconnexion) » optimisé
+- Design de la boîte de dialogue "Choisir une mise en page" optimisé
+- Design de la boîte de dialogue "Gérer les profils (déconnexion)" optimisé
 
 ### 🐛 Corrections
 - Les overlays ne recouvrent plus la boîte de dialogue de fermeture
+- Les accordéons de la documentation s'affichent correctement
+- La migration de la version 2.3.0 vers la nouvelle structure AppData (`user/`) fonctionne désormais de manière fiable
+- Killfeed : les sauts négatifs d'EXP OCR sont désormais filtrés comme bruit OCR et ne faussent plus la détection des kills
 
 ### 🧹 Nettoyage
 - Architecture du renderer modularisée (restructuration interne)
 - Dossier de données interne `api_fetch/` renommé en `cache/`
-- Réorganisation d’AppData : les données sont désormais rangées dans AppData\Roaming\Flyff-U-Launcher\user
-- Migration automatique : les données existantes sont migrées en douceur au premier lancement — avec indicateur de progression
+- Structure du répertoire AppData réorganisée : les données sont désormais triées dans le sous-dossier AppData\Roaming\Flyff-U-Launcher\user
+- Migration automatique : les données existantes sont migrées de façon transparente au premier lancement — avec indicateur de progression
+- Les données statiques (dont les données de référence) sont intégrées au build afin d'être disponibles de façon fiable dans les builds de release
+- Réduction des logs de debug Killfeed/overlay pour rendre la console plus lisible
 
 :::accordion[Nouveaux chemins de stockage]
 Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-Launcher\user\` :
@@ -47,7 +76,9 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 - `user/ui/tab-active-color.json` — Couleur de l'onglet actif
 - `user/shopping/item-prices.json` — Prix de la liste d'achats premium
 - `user/plugin-data/` — Paramètres des plugins
-- `user/cache/` — Données et icônes API-Fetch
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Vue quotidienne Killfeed par profil
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Historique détaillé Killfeed par kill et par jour
+- `user/cache/` — Données API fetch & icônes
 - `user/logs/` — Logs de diagnostic
 :::
 

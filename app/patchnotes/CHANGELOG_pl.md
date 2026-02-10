@@ -1,41 +1,70 @@
-# 📦 Patchnotes
+﻿# 📦 Patchnotes
 
 ---
 
-## 🆕 Wersja 2.5.0
+## 🆕 Wersja 2.5.1
 
 ### 🆕 Nowa funkcja: Giant Tracker
-- Osobne okno w pluginie Killfeed do śledzenia i wizualizacji statystyk zabójstw Giants, Violets i Bossów.
+Niezależne okno w pluginie Killfeed — zbiera i wizualizuje statystyki zabójstw **Giants**, **Violets** i **Bosses**.
 
-### ✨ Ulepszenia
-- Killfeed: akordeony śledzenia potworów zawierają teraz przycisk „Kills” dla każdego rangu z listą pojedynczych zabójstw.
-- Killfeed: pojedyncze zabójstwa można teraz usuwać bezpośrednio z tej listy.
+**Zakładki filtrów**
+- 5 zakładek: **Wszystkie** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** — filtruje po randze `boss` (czerwona ramka karty, osobny styl ikon)
+- **Drops** — pokazuje tylko potwory z zarejestrowanymi dropami, w tym podgląd puli łupu (top 5 przedmiotów według rzadkości) bezpośrednio na karcie
 
-### 🐛 Poprawki błędów
-- Killfeed: usuwanie pojedynczych zabójstw teraz niezawodnie aktualizuje pliki historii AppData (daily/YYYY-MM-DD.csv, history.csv) oraz stan panelu bocznego.
+**Statystyki zabójstw**
+- Widok kart w trybie Compact i Expanded
+- Zakresy czasu: Dzisiaj, Tydzień, Miesiąc, Rok, Całość
+- Informacje o potworze: Ikona, Nazwa, Poziom, Żywioł, Ranga, HP, ATK
 
----
-## 🆕 Wersja 2.4.1
+**Śledzenie dropów**
+- Logowanie dropów z puli łupu potwora (z filtrem rzadkości)
+- Historia dropów dla każdego potwora: nazwa przedmiotu, stan licznika zabójstw, znacznik czasu
+- Statystyki: Ø zabójstw/drop, zabójstwa od ostatniego dropu
 
-### ✨ Ulepszenia
-- Killfeed: ulepszona identyfikacja potworów
-  - Nowe ważenie identyfikacji: HP potwora > Poziom potwora > Żywioł potwora
-- Killfeed: śledzenie potworów zlicza teraz zabite moby
+**Time to Kill (TTK)**
+- Automatycznie mierzy czas walki z Giants, Violets i Bosses
+- 10 s czasu karencji po odznaczeniu celu (buffowanie, leczenie itd.) — czas przerwy nie jest liczony do TTK
+- Odcisk nazwy potwora + maks. HP: cel jest niezawodnie rozpoznawany ponownie
+- Wyświetlanie: Ostatni TTK, Ø TTK, Najszybszy
+- Zapisywane w historii zabójstw (kolumna CSV `TTK_ms`)
+
+**Pozostałe**
+- Sortowanie po liczbie zabójstw, nazwie lub poziomie
+- Pole wyszukiwania do filtrowania po nazwie potwora
+
+### ✨ Dalsze ulepszenia
+- Killfeed: ulepszone rozpoznawanie potworów
+- Nowe ważenie identyfikacji: HP potwora > Poziom potwora > Żywioł potwora
+- Killfeed: śledzenie potworów liczy teraz zabite moby
+- Killfeed: wprowadzono historię (na profil)
+  - Dzienny plik dla każdej daty z pojedynczymi zabójstwami (`Data/Godzina`, `Postać`, `Poziom`, `Monster-ID`, `Ranga`, `Potwór`, `Żywioł`, `Przyrost EXP`, `Oczekiwane EXP`, `TTK_ms`)
+  - Zagregowane dzienne podsumowanie z `Kills`, `EXP łącznie`, `Rozkład potworów`, `Pierwsze/Ostatnie zabójstwo`
+- Killfeed: śledzenie potworów w panelu bocznym aktualizuje się teraz natychmiast po zabójstwach (bez przełączania zakładki)
+- Killfeed: w akordeonach śledzenia potworów każda ranga ma teraz przycisk Kills z ListView pojedynczych zabójstw.
+  Pojedyncze zabójstwa można usuwać bezpośrednio w ListView.
+  Przy usuwaniu pojedynczych zabójstw aktualizowane są pliki historii AppData (daily/YYYY-MM-DD.csv, history.csv) oraz stan panelu bocznego.
+- Killfeed: panel boczny stabilnie podąża teraz za profilem docelowym overlayu (bez przeskakiwania między ID profili)
 - Zaktualizowano dane referencyjne potworów
-- Ulepszono wygląd okna dialogowego „Wybierz układ”
-- Ulepszono wygląd okna dialogowego „Zarządzaj profilami (wyloguj)”
+- Zoptymalizowano wygląd okna dialogowego "Wybierz układ"
+- Zoptymalizowano wygląd okna dialogowego "Zarządzaj profilami (wyloguj)"
 
 ### 🐛 Poprawki błędów
 - Nakładki nie zasłaniają już okna dialogowego zamykania
+- Akordeony w dokumentacji są teraz wyświetlane poprawnie
+- Migracja z wersji 2.3.0 do nowej struktury AppData (`user/`) działa teraz niezawodnie
+- Killfeed: ujemne skoki OCR EXP są teraz filtrowane jako szum OCR i nie zniekształcają już wykrywania zabójstw
 
 ### 🧹 Porządki
 - Zmodularyzowano architekturę renderera (wewnętrzna restrukturyzacja)
 - Wewnętrzny folder danych `api_fetch/` przemianowano na `cache/`
-- Przebudowano strukturę AppData: dane znajdują się teraz w AppData\Roaming\Flyff-U-Launcher\user
+- Zreorganizowano strukturę katalogu AppData: dane są teraz uporządkowane w podfolderze AppData\Roaming\Flyff-U-Launcher\user
 - Automatyczna migracja: istniejące dane są płynnie migrowane przy pierwszym uruchomieniu — z paskiem postępu
+- Dane statyczne (m.in. dane referencyjne) są bundlowane w buildzie, aby były niezawodnie dostępne w buildach release
+- Ograniczono logowanie debugowe Killfeed/overlay, aby konsola była bardziej czytelna
 
 :::accordion[Nowe ścieżki przechowywania]
-Wszystkie dane użytkownika znajdują się teraz w `%APPDATA%\Flyff-U-Launcher\user\`:
+Wszystkie dane użytkownika znajdują się teraz pod `%APPDATA%\Flyff-U-Launcher\user\`:
 
 - `user/config/settings.json` — Ustawienia klienta
 - `user/config/features.json` — Flagi funkcji
@@ -45,9 +74,11 @@ Wszystkie dane użytkownika znajdują się teraz w `%APPDATA%\Flyff-U-Launcher\u
 - `user/ui/themes.json` — Motywy
 - `user/ui/tab-layouts.json` — Układy kart
 - `user/ui/tab-active-color.json` — Kolor aktywnej karty
-- `user/shopping/item-prices.json` — Ceny z listy zakupów premium
+- `user/shopping/item-prices.json` — Ceny listy zakupów premium
 - `user/plugin-data/` — Ustawienia wtyczek
-- `user/cache/` — Dane i ikony API-Fetch
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Dzienne podsumowanie Killfeed na profil
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Szczegółowa historia Killfeed dla każdego zabójstwa i dnia
+- `user/cache/` — Dane API fetch i ikony
 - `user/logs/` — Logi diagnostyczne
 :::
 

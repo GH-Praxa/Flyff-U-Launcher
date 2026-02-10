@@ -1,53 +1,84 @@
-# 📦 パッチノート
+﻿# 📦 パッチノート
 
 ---
 
-## 🆕 バージョン 2.5.0
+## 🆕 バージョン 2.5.1
 
 ### 🆕 新機能: Giant Tracker
-- Killfeed プラグイン内の独立ウィンドウで、Giants・Violets・Bosses のキル統計を追跡・可視化できます。
+Killfeed プラグイン内の独立ウィンドウで、**Giants**、**Violets**、**Bosses** のキル統計を収集・可視化します。
 
-### ✨ 改善
-- Killfeed: モンスター追跡アコーディオンに、ランクごとの単体キル一覧を開く「Kills」ボタンを追加。
-- Killfeed: 単体キルをその一覧から直接削除できるようになりました。
+**フィルタータブ**
+- 5タブ: **すべて** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** — ランク `boss` でフィルター（赤いカード枠、専用アイコンスタイル）
+- **Drops** — ドロップ記録のあるモンスターのみ表示。カード内にルートプールのプレビュー（レア度順トップ5アイテム）を表示
 
-### 🐛 修正
-- Killfeed: 単体キル削除時に、AppData 履歴ファイル（daily/YYYY-MM-DD.csv、history.csv）とサイドパネル状態が安定して更新されるようになりました。
+**キル統計**
+- Compact / Expanded モードのカード表示
+- 期間: 今日、週、月、年、合計
+- モンスター情報: アイコン、名前、レベル、属性、ランク、HP、ATK
 
----
-## 🆕 バージョン 2.4.1
+**ドロップ追跡**
+- モンスターのルートプールからドロップを記録（レア度フィルター対応）
+- モンスターごとのドロップ履歴: アイテム名、キルカウンター値、タイムスタンプ
+- 統計: Ø キル/ドロップ、最後のドロップ以降のキル数
 
-### ✨ 改善
-- キルフィード: モンスター識別を改善
-  - 新しい識別優先度: モンスターHP > モンスターLv > モンスター属性
-- キルフィード: モンスター追跡で撃破数をカウントするように変更
+**Time to Kill (TTK)**
+- Giants、Violets、Bosses との戦闘時間を自動計測
+- ターゲット解除時に10秒の猶予時間（バフ、回復など）— 一時停止時間は TTK に含まれません
+- モンスター名 + 最大HPフィンガープリントでターゲットを高精度に再認識
+- 表示: 最新 TTK、Ø TTK、最速
+- キル履歴に永続保存（CSV列 `TTK_ms`）
+
+**その他**
+- キル数、名前、レベルでソート
+- モンスター名で絞り込む検索フィールド
+
+### ✨ 追加改善
+- Killfeed: モンスター認識を改善
+- 新しい識別重み付け: モンスターHP > モンスターレベル > モンスター属性
+- Killfeed: モンスター追跡が倒したモブ数をカウントするように変更
+- Killfeed: 履歴機能を導入（プロフィールごと）
+  - 日付ごとの日次ファイルに個別キルを記録（`日付/時刻`、`キャラクター`、`レベル`、`Monster-ID`、`ランク`、`モンスター`、`属性`、`EXP増加`、`期待EXP`、`TTK_ms`）
+  - `Kills`、`合計EXP`、`モンスター分布`、`最初/最後のキル` を含む日次集計サマリー
+- Killfeed: サイドパネルのモンスター追跡がキル直後に即時更新（タブ切り替え不要）
+- Killfeed: モンスター追跡アコーディオンで、各ランクに個別キルの ListView を開く Kills ボタンを追加。
+  個別キルは ListView から直接削除できます。
+  個別キル削除時、AppData 履歴ファイル（daily/YYYY-MM-DD.csv、history.csv）とサイドパネル状態が更新されます。
+- Killfeed: サイドパネルがオーバーレイの対象プロフィールを安定して追従（プロフィールID間のジャンプなし）
 - モンスター参照データを更新
-- 「レイアウト選択」ダイアログのデザインを改善
-- 「プロファイル管理（ログアウト）」ダイアログのデザインを改善
+- 「レイアウトを選択」ダイアログのデザインを最適化
+- 「プロフィール管理（ログアウト）」ダイアログのデザインを最適化
 
-### 🐛 不具合修正
-- オーバーレイが「終了」ダイアログに重ならなくなりました
+### 🐛 バグ修正
+- オーバーレイが閉じるダイアログに重ならなくなりました
+- ドキュメント内のアコーディオンが正しく表示されるようになりました
+- バージョン 2.3.0 から新しい AppData 構造（`user/`）への移行が安定動作するようになりました
+- Killfeed: OCR EXP の負のジャンプは OCR ノイズとして扱われ、キル検出を歪めなくなりました
 
 ### 🧹 クリーンアップ
-- レンダラーのアーキテクチャをモジュール化（内部リファクタリング）
+- レンダラーアーキテクチャをモジュール化（内部再構成）
 - 内部データフォルダー `api_fetch/` を `cache/` にリネーム
-- AppData ディレクトリ構成を再編：データは AppData\Roaming\Flyff-U-Launcher\user に配置
-- 自動移行：初回起動時に既存データをシームレスに移行し、進捗を表示
+- AppData ディレクトリ構造を再編成: データは AppData\Roaming\Flyff-U-Launcher\user サブフォルダーに整理
+- 自動移行: 既存データは初回起動時にシームレスに移行（進捗表示付き）
+- 静的データ（参照データなど）をビルドに同梱し、リリースビルドでも確実に利用可能に
+- コンソールを見やすくするため Killfeed/overlay のデバッグログを削減
 
 :::accordion[新しい保存パス]
-すべてのユーザーデータは `%APPDATA%\Flyff-U-Launcher\user\` に移動しました：
+すべてのユーザーデータは `%APPDATA%\Flyff-U-Launcher\user\` 配下に保存されます:
 
 - `user/config/settings.json` — クライアント設定
 - `user/config/features.json` — 機能フラグ
-- `user/profiles/profiles.json` — ランチャープロファイル
+- `user/profiles/profiles.json` — ランチャープロフィール
 - `user/profiles/rois.json` — ROI キャリブレーション
 - `user/profiles/ocr-timers.json` — OCR タイマー
 - `user/ui/themes.json` — テーマ
 - `user/ui/tab-layouts.json` — タブレイアウト
-- `user/ui/tab-active-color.json` — アクティブタブの色
-- `user/shopping/item-prices.json` — プレミアムショッピングリスト価格
+- `user/ui/tab-active-color.json` — アクティブタブ色
+- `user/shopping/item-prices.json` — プレミアム買い物リスト価格
 - `user/plugin-data/` — プラグイン設定
-- `user/cache/` — API フェッチデータとアイコン
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — プロフィールごとの Killfeed 日次サマリー
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — キル単位・日付単位の Killfeed 詳細履歴
+- `user/cache/` — API fetch データとアイコン
 - `user/logs/` — 診断ログ
 :::
 

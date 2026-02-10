@@ -1,53 +1,84 @@
-# 📦 更新日志
+﻿# 📦 更新日志
 
 ---
 
-## 🆕 版本 2.5.0
+## 🆕 版本 2.5.1
 
 ### 🆕 新功能：Giant Tracker
-- Killfeed 插件中的独立窗口，用于追踪并可视化 Giants、Violets 和 Bosses 的击杀统计。
+Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、**Violets** 与 **Bosses** 的击杀统计。
 
-### ✨ 改进
-- Killfeed：怪物追踪手风琴现在为每个等级提供“Kills”按钮，可查看单次击杀列表。
-- Killfeed：现在可以直接在该列表中删除单次击杀记录。
+**筛选标签**
+- 5 个标签：**全部** · **Giants** · **Violets** · **Bosses** · **Drops**
+- **Bosses** —— 按 `boss` 等级筛选（红色卡片边框、专用图标样式）
+- **Drops** —— 仅显示有掉落记录的怪物，并在卡片中直接显示掉落池预览（按稀有度排序前 5 个物品）
 
-### 🐛 修复
-- Killfeed：删除单次击杀时，现在会稳定更新 AppData 历史文件（daily/YYYY-MM-DD.csv、history.csv）以及侧边栏状态。
+**击杀统计**
+- 卡片视图，支持 Compact 与 Expanded 模式
+- 时间范围：今天、本周、本月、本年、总计
+- 怪物信息：图标、名称、等级、属性、等级阶级、HP、ATK
 
----
-## 🆕 版本 2.4.1
+**掉落追踪**
+- 从怪物掉落池记录掉落（支持稀有度筛选）
+- 按怪物记录掉落历史：物品名称、击杀计数值、时间戳
+- 统计：Ø 击杀/掉落、距上次掉落后的击杀数
 
-### ✨ 改进
-- 击杀提示：改进怪物识别
-  - 新的识别权重：怪物 HP > 怪物等级 > 怪物元素
-- 击杀提示：怪物追踪现在会统计已击杀的怪物
-- 更新怪物参考数据
-- 优化“选择布局”对话框设计
-- 优化“管理档案（登出）”对话框设计
+**Time to Kill (TTK)**
+- 自动测量与 Giants、Violets、Bosses 的战斗时长
+- 取消目标后有 10 秒宽限时间（上 Buff、治疗等）—— 暂停时间不计入 TTK
+- 怪物名称 + 最大 HP 指纹：可可靠地重新识别目标
+- 显示：最近 TTK、Ø TTK、最快
+- 持久化写入击杀历史（CSV 列 `TTK_ms`）
 
-### 🐛 修复
-- 覆盖层不再遮挡关闭对话框
+**其他**
+- 支持按击杀数、名称或等级排序
+- 提供按怪物名称筛选的搜索框
 
-### 🧹 清理
-- 渲染器架构模块化（内部重构）
-- 内部数据文件夹 `api_fetch/` 重命名为 `cache/`
-- AppData 目录结构重新整理：数据现在位于 AppData\Roaming\Flyff-U-Launcher\user
-- 自动迁移：首次启动时会无缝迁移现有数据，并显示进度
+### ✨ 其他改进
+- Killfeed：改进怪物识别
+- 新的识别权重：怪物 HP > 怪物等级 > 怪物属性
+- Killfeed：怪物追踪现在会统计已击杀 mobs
+- Killfeed：新增历史记录（按配置档）
+  - 按日期生成每日文件，记录每次击杀（`日期/时间`、`角色`、`等级`、`Monster-ID`、`阶级`、`怪物`、`属性`、`EXP 增长`、`预期 EXP`、`TTK_ms`）
+  - 聚合的每日概览，包含 `Kills`、`EXP 总计`、`怪物分布`、`首个/最后击杀`
+- Killfeed：侧边栏中的怪物追踪现在会在击杀后立即更新（无需切换标签）
+- Killfeed：在怪物追踪手风琴中，现在每个阶级都有一个 Kills 按钮，可打开单次击杀的 ListView。
+  单次击杀可直接在 ListView 中删除。
+  删除单次击杀时，会同步更新 AppData 历史文件（daily/YYYY-MM-DD.csv、history.csv）以及侧边栏状态。
+- Killfeed：侧边栏现在会稳定跟随 overlay 目标配置档（不会在配置档 ID 之间跳转）
+- 已更新怪物参考数据
+- 已优化“选择布局”对话框设计
+- 已优化“管理配置档（登出）”对话框设计
 
-:::accordion[新存储路径]
-所有用户数据现位于 `%APPDATA%\Flyff-U-Launcher\user\`：
+### 🐛 错误修复
+- Overlay 不再遮挡关闭对话框
+- 文档中的手风琴组件现在可正确显示
+- 从版本 2.3.0 迁移到新的 AppData 结构（`user/`）现在可稳定运行
+- Killfeed：负向 OCR EXP 跳变现在会被识别为 OCR 噪声，不再干扰击杀识别
+
+### 🧹 清理与重构
+- 模块化重构 Renderer 架构（内部重构）
+- 内部数据目录 `api_fetch/` 重命名为 `cache/`
+- AppData 目录结构重组：数据现在统一整理到 AppData\Roaming\Flyff-U-Launcher\user 子目录
+- 自动迁移：首次启动时会无缝迁移现有数据 —— 并显示进度
+- 静态数据（包括参考数据）会打包进构建产物，确保在发布构建中稳定可用
+- 减少 Killfeed/overlay 调试日志，让控制台更易读
+
+:::accordion[新的存储路径]
+所有用户数据现在位于 `%APPDATA%\Flyff-U-Launcher\user\`：
 
 - `user/config/settings.json` — 客户端设置
 - `user/config/features.json` — 功能开关
-- `user/profiles/profiles.json` — 启动器配置文件
+- `user/profiles/profiles.json` — 启动器配置档
 - `user/profiles/rois.json` — ROI 校准
 - `user/profiles/ocr-timers.json` — OCR 计时器
 - `user/ui/themes.json` — 主题
-- `user/ui/tab-layouts.json` — 标签页布局
-- `user/ui/tab-active-color.json` — 活动标签页颜色
+- `user/ui/tab-layouts.json` — 标签布局
+- `user/ui/tab-active-color.json` — 活动标签颜色
 - `user/shopping/item-prices.json` — 高级购物清单价格
 - `user/plugin-data/` — 插件设置
-- `user/cache/` — API 抓取数据和图标
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — 每个配置档的 Killfeed 每日概览
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — 按击杀与日期记录的 Killfeed 详细历史
+- `user/cache/` — API fetch 数据与图标
 - `user/logs/` — 诊断日志
 :::
 

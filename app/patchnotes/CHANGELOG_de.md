@@ -1,7 +1,7 @@
 # 📦 Patchnotes
 
 ---
-## 🆕 Version 2.5.0
+## 🆕 Version 2.5.1
 
 ### 🆕 Neues Feature: Giant Tracker
 Eigenständiges Fenster im Killfeed-Plugin — erfasst und visualisiert Kill-Statistiken für **Giants**, **Violets** und **Bosse**.

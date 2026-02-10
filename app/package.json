@@ -1,7 +1,7 @@
 {
   "name": "Flyff-U-Launcher",
   "productName": "Flyff-U-Launcher",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "My Electron application description",
   "repository": {
     "type": "git",
