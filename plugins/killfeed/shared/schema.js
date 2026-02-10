@@ -4,7 +4,7 @@
  */
 
 const SCHEMA_VERSION = 1;
-const PLUGIN_VERSION = '1.1.7';
+const PLUGIN_VERSION = '2.0.0';
 
 // All available badge keys
 const BADGE_KEYS = [

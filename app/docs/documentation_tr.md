@@ -194,6 +194,20 @@ Pluginlerin çoğu API verisi ve ikonlarına ihtiyaç duyar. Bunları API-Fetch 
 
 ![Açıklama](killfeed/killfeed_11_de.png)
 
+- Tespit edilen her kill sidepanel’de gösterilir ve kalıcı olarak kaydedilir.
+- Kayıtlar profil bazında AppData altındaki CSV dosyalarına yazılır:
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` (tekil kill kayıtları)
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv` (günlük özet)
+- Monster Tracking accordions içinde her rank için bir `Kills` butonu bulunur.
+- `Kills`, seçili rank için tekil kill kayıtlarını liste görünümünde açar.
+
+![Açıklama](killfeed/killfeed_12_de.png)
+
+- Liste görünümünde tekil kill kayıtları silinebilir (`Delete` -> `Confirm`).
+- Silme işlemi sidepanel görünümünü ve Killfeed geçmiş dosyalarını (`daily/YYYY-MM-DD.csv` ve `history.csv`) doğrudan günceller.
+
+![Açıklama](killfeed/killfeed_13_de.png)
+
 
 **Kill sayma kuralları:**
 Kill, tüm şu koşullar sağlanınca sayılır:
@@ -212,6 +226,108 @@ Kill, tüm şu koşullar sağlanınca sayılır:
 **Notlar:**
 - Kill tespiti için OCR aktif olmalıdır.
 - Kill/saat gibi istatistikler 5 dakikalık kayan pencereyle hesaplanır.
+:::
+
+:::accordion[Killfeed: Giant Tracker]
+# DİKKAT:
+## İlk Giant, Violet veya Boss kill kaydı oluşana kadar özelliği göstermek için örnek veriler gösterilir.
+---
+Giant Tracker, Killfeed eklentisi içinde bağımsız bir penceredir. **Giants**, **Violets** ve **Bosses** için kill istatistiklerini takip eder ve görselleştirir — zaman aralıkları, droplar ve Time to Kill (TTK) dahil. Beş filtre sekmesi (Tümü, Giants, Violets, Bosses, Drops) rütbeye veya kaydedilen droplara göre hedefli filtreleme sağlar.
+
+**Açma:**
+- **"Giant Tracker"** düğmesi Killfeed yan panelinde bulunur.
+- Tıklandığında takip edilen tüm boss canavarların genel görünümüyle ayrı bir pencere açılır.
+- Henüz gerçek kill verisi yoksa örnek veriler gösterilir.
+
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+
+---
+
+**Filtreleme ve sıralama:**
+- Filtre çubuğu görünümü daraltmaya olanak tanır:
+  - **Tümü** / **Giants** / **Violets** / **Bosses** / **Drops** — canavar rütbesine veya droplara göre filtreler.
+  - **Bosses** — yalnızca `boss` rütbesindeki canavarları gösterir (ör. Clockworks, Meteonyker). Boss kartlarının kırmızı kenarlığı vardır.
+  - **Drops** — yalnızca en az bir kaydedilmiş dropu olan canavarları gösterir. Ek olarak, kartta doğrudan bir loot pool önizlemesi (nadirliğe göre ilk 5 eşya) gösterilir.
+  - **Sıralama** — killere (artan/azalan), ada (A–Z / Z–A) veya seviyeye (artan/azalan) göre.
+  - **Arama alanı** — kartları canavar adına göre filtreler.
+
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+
+---
+
+**Kart görünümleri:**
+
+Takip edilen her canavar bir kart olarak gösterilir. İki görünüm vardır:
+
+*Kompakt kart (varsayılan görünüm):*
+- Canavar ikonu, ad, seviye, element, rütbe
+- Savaş istatistikleri (HP, ATK)
+- Kill özeti: Bugün / Toplam
+- TTK gösterimi (ölçüm verisi varsa): `TTK: 45.2s (Ort 52.3s)`
+- Son kill (zaman), drop sayısı
+- Genişletmek için **"Detaylar"** düğmesi
+
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+
+*Genişletilmiş kart (detay görünümü):*
+- Kompakt karttaki tüm alanlar
+- Zaman aralığına göre kill istatistikleri: Bugün, Hafta, Ay, Yıl, Toplam
+- TTK istatistikleri: Ort. TTK, Son TTK, En hızlı
+- Drop bölümü: Drop sayısı, ort. kill/drop, son droptan bu yana killer
+- Drop geçmişi (katlanabilir): Eşya adı, kill sayacı ve zaman damgasıyla bireysel droplar
+- Drop kaydetmek için **"Drop kaydet"** düğmesi
+- Detay görünümünü kapatmak için **"Daralt"** düğmesi
+
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+
+---
+
+**Drop takibi:**
+
+Genişletilmiş karttaki **"Drop kaydet"** düğmesi bir diyalog açar:
+- Canavarın loot poolunu gösterir (canavar verileri API-Fetch ile indirildiyse).
+- Eşyalar ada göre aranabilir ve nadirliğe göre filtrelenebilir (Sıradan, Sıra dışı, Nadir, Çok nadir, Eşsiz, Nihai).
+- Bir eşyaya tıklamak, geçerli zaman damgası ve kill sayacı ile dropu kaydeder.
+- Daha önce kaydedilmiş droplar geçmişten tek tek silinebilir.
+
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![Açıklama](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
+
+---
+
+**Time to Kill (TTK):**
+
+TTK, bir boss canavara karşı savaş süresini otomatik olarak ölçer — ilk vuruştan kill'e kadar.
+
+*İşleyiş:*
+- **Başlangıç:** Düşman HP çubuğu `mevcut < maks` ile algılanır (savaş başladı).
+- **Bitiş:** Kill, EXP algılaması ile doğrulanır. Biriken savaş süresi kaydedilir.
+- **Duraklatma:** HP çubuğu kaybolur (ör. buff veya iyileştirme için hedef değiştirme). 10 saniyelik bir tolerans süresi başlar.
+- **Devam:** Aynı boss canavar 10 saniye içinde yeniden hedeflenirse, zamanlayıcı devam eder. Duraklama süresi TTK'ya sayılmaz.
+- **İptal:** Tolerans süresi boss yeniden hedeflenmeden sona ererse, TTK ölçümü iptal edilir.
+
+*Hedef tanımlama:*
+- Savaş başlangıcında canavar adı ve maks HP kaydedilir.
+- Yeniden hedeflemede ad ve maks HP karşılaştırılır — yalnızca eşleşirse zamanlayıcı devam eder.
+- Farklı bir boss canavar hedeflenirse, mevcut ölçüm iptal edilir ve yeni bir ölçüm başlar.
+- Normal bir canavar hedeflenirse, boss zamanlayıcısı duraklar; normal killer sayılmaya devam eder.
+
+*Gösterim ve istatistikler:*
+- Kompakt kart: `TTK: [son kill] (Ort [ortalama])`
+- Genişletilmiş kart: Ort. TTK, Son TTK, En hızlı
+- TTK değerleri CSV geçmişinde kill başına kaydedilir (`TTK_ms` sütunu) ve canavar başına toplanır.
+
+*Sınırlama:*
+- TTK ölçümü yalnızca Giants, Violets ve Bosses için aktiftir. Normal canavarlar ölçülmez.
+- Doğruluk OCR örnekleme hızına bağlıdır (tipik: her 500–1000 ms).
+
+---
+
+**Veri kaynakları:**
+- Kill verileri Killfeed CSV geçmişinden gelir (`daily/YYYY-MM-DD.csv`).
+- Drop kayıtları profil başına ayrı saklanır.
+- Canavar detayları (ikon, HP, ATK, loot pool) API-Fetch ile indirilen canavar verilerinden gelir.
+
 :::
 
 ## Araçlar

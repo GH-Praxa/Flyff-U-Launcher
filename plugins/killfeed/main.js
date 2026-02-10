@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { app } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const crypto = require('crypto');
 const schema = require('./shared/schema.js');
 const { createStatsEngine } = require('./shared/stats_engine.js');
@@ -89,6 +89,7 @@ const profileLayouts = new Map(); // profileId -> layoutManager
 // Window references
 const overlayWindows = new Map(); // browserViewId -> windowHandle
 const sidepanelWindow = null;
+let giantTrackerWindow = null; // BrowserWindow | null
 
 // Event unsubscribe functions
 let unsubscribeOcr = null;
@@ -101,6 +102,10 @@ const STATE_KEY_PREFIX = 'state:';
 
 // Track last time an enemy HP bar was seen per profile
 const enemyHpSeenAt = new Map();
+
+// TTK (Time to Kill) tracking per profile
+const ttkTrackers = new Map(); // profileId -> TTK state object
+const TTK_GRACE_MS = 10000;    // 10s grace period (pause tolerance)
 
 // Track last known monster per profile so kills that arrive after the enemy
 // name was cleared from the OCR cache can still be attributed correctly.
@@ -622,6 +627,22 @@ function formatExpValue(v) {
 
 // UTF-8 BOM for proper Excel encoding detection
 const UTF8_BOM = '\uFEFF';
+const DAILY_HISTORY_HEADER = 'Datum\tCharakter\tLevel\tMonster-ID\tRang\tMonster\tElement\tEXP Zuwachs\tErwartete EXP\n';
+const SUMMARY_HISTORY_HEADER = 'Datum\tCharakter\tKills\tEXP Gesamt\tMonster\tErster Kill\tLetzter Kill\n';
+const DAILY_HISTORY_FILE_RE = /^\d{4}-\d{2}-\d{2}\.csv$/;
+
+const DAILY_COL_INDEX = Object.freeze({
+  dateTime: 0,
+  charName: 1,
+  level: 2,
+  monsterId: 3,
+  rank: 4,
+  monsterName: 5,
+  monsterElement: 6,
+  deltaExp: 7,
+  expectedExp: 8,
+  ttkMs: 9
+});
 
 function appendKillToHistory(profileId, killData) {
   try {
@@ -645,7 +666,7 @@ function appendKillToHistory(profileId, killData) {
       return s;
     };
 
-    const DAILY_HEADER = 'Datum\tCharakter\tLevel\tMonster-ID\tRang\tMonster\tElement\tEXP Zuwachs\tErwartete EXP\n';
+    const DAILY_HEADER = 'Datum\tCharakter\tLevel\tMonster-ID\tRang\tMonster\tElement\tEXP Zuwachs\tErwartete EXP\tTTK_ms\n';
 
     const row = [
       `${dateStr} ${timeStr}`,
@@ -656,7 +677,8 @@ function appendKillToHistory(profileId, killData) {
       esc(killData.monsterName ?? ''),
       esc(killData.monsterElement ?? ''),
       formatExpValue(killData.deltaExp),
-      formatExpValue(killData.expectedExp)
+      formatExpValue(killData.expectedExp),
+      killData.ttkMs != null && Number.isFinite(killData.ttkMs) ? Math.round(killData.ttkMs) : ''
     ].join('\t') + '\n';
 
     // Tages-CSV
@@ -748,6 +770,486 @@ function updateDailySummary(baseDir, fileDate, killData) {
   } catch (err) {
     console.error(`[Killfeed][History] Failed to update daily summary:`, err);
   }
+}
+
+function escapeTsvCell(value) {
+  if (value == null || value === '') return '';
+  const s = String(value);
+  if (s.includes('\t') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function parseTsvLine(line) {
+  const cols = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === '\t' && !inQuotes) {
+      cols.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cols.push(current);
+
+  while (cols.length < 9) cols.push('');
+  return cols.slice(0, 9);
+}
+
+function getHistoryPaths(profileId) {
+  const baseDir = path.join(ctx.dataDir, 'history', profileId);
+  return {
+    baseDir,
+    dailyDir: path.join(baseDir, 'daily'),
+    summaryCsvPath: path.join(baseDir, 'history.csv')
+  };
+}
+
+function getDayKey(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toDisplayDateFromDayKey(dayKey) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dayKey || '').trim());
+  if (!m) return '';
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+function toDisplayTime(timestamp) {
+  if (!Number.isFinite(timestamp)) return '';
+  const d = new Date(timestamp);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function parseDisplayDateTime(value, fallbackDayKey, rowIndex = 0) {
+  const raw = String(value || '').trim();
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(raw);
+  if (m) {
+    return new Date(
+      Number(m[3]),
+      Number(m[2]) - 1,
+      Number(m[1]),
+      Number(m[4]),
+      Number(m[5]),
+      Number(m[6] || 0)
+    ).getTime();
+  }
+
+  const fallbackMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fallbackDayKey || '').trim());
+  if (fallbackMatch) {
+    return new Date(
+      Number(fallbackMatch[1]),
+      Number(fallbackMatch[2]) - 1,
+      Number(fallbackMatch[3]),
+      0,
+      0,
+      Math.max(0, Number(rowIndex) || 0)
+    ).getTime();
+  }
+
+  return null;
+}
+
+function normalizeMonsterRankValue(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  switch (raw) {
+    case 'small':
+    case 'normal':
+    case 'captain':
+    case 'material':
+    case 'super':
+      return schema.MONSTER_RANKS.NORMAL;
+    case 'giant':
+      return schema.MONSTER_RANKS.GIANT;
+    case 'violet':
+      return schema.MONSTER_RANKS.VIOLET;
+    case 'boss':
+    case 'worldboss':
+      return schema.MONSTER_RANKS.BOSS;
+    case 'unknown':
+      return schema.MONSTER_RANKS.UNKNOWN;
+    default:
+      return schema.MONSTER_RANKS.UNKNOWN;
+  }
+}
+
+function readDailyCsvRows(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return { rows: [] };
+  }
+  const raw = fs.readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '');
+  const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length <= 1) {
+    return { rows: [] };
+  }
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    rows.push(parseTsvLine(lines[i]));
+  }
+  return { rows };
+}
+
+function writeDailyCsvRows(filePath, rows) {
+  const normalizedRows = (Array.isArray(rows) ? rows : []).map((cols) => {
+    const out = [];
+    for (let i = 0; i < 9; i++) {
+      out.push(cols && cols[i] != null ? String(cols[i]) : '');
+    }
+    return out;
+  });
+
+  const body = normalizedRows
+    .map((cols) => cols.map(escapeTsvCell).join('\t'))
+    .join('\n');
+
+  const content = UTF8_BOM + DAILY_HISTORY_HEADER + (body ? `${body}\n` : '');
+  fs.writeFileSync(filePath, content, 'utf-8');
+}
+
+function createRowSignature(cols) {
+  const safeCols = Array.isArray(cols) ? cols : [];
+  return crypto.createHash('sha1').update(safeCols.join('\t')).digest('hex');
+}
+
+function parseHistoryRow(cols, fileDate, rowIndex) {
+  if (!Array.isArray(cols)) return null;
+  const row = [];
+  for (let i = 0; i < 9; i++) row.push(cols[i] != null ? String(cols[i]) : '');
+
+  const dateTime = row[DAILY_COL_INDEX.dateTime];
+  const timestamp = parseDisplayDateTime(dateTime, fileDate, rowIndex);
+  const level = Number.parseInt(row[DAILY_COL_INDEX.level], 10);
+  const deltaExp = parseNumber(row[DAILY_COL_INDEX.deltaExp]);
+  const expectedExp = parseNumber(row[DAILY_COL_INDEX.expectedExp]);
+  const rank = normalizeMonsterRankValue(row[DAILY_COL_INDEX.rank]);
+
+  return {
+    fileDate,
+    rowIndex,
+    signature: createRowSignature(row),
+    dateTime,
+    timestamp,
+    dayKey: /^(\d{4})-(\d{2})-(\d{2})$/.test(fileDate) ? fileDate : (Number.isFinite(timestamp) ? getDayKey(timestamp) : null),
+    displayDate: /^(\d{4})-(\d{2})-(\d{2})$/.test(fileDate) ? toDisplayDateFromDayKey(fileDate) : '',
+    charName: row[DAILY_COL_INDEX.charName] || '',
+    playerLevel: Number.isFinite(level) ? level : null,
+    monsterId: row[DAILY_COL_INDEX.monsterId] || '',
+    monsterRank: rank,
+    monsterName: row[DAILY_COL_INDEX.monsterName] || 'Unknown',
+    monsterElement: row[DAILY_COL_INDEX.monsterElement] || '',
+    deltaExp: Number.isFinite(deltaExp) ? deltaExp : null,
+    expectedExp: Number.isFinite(expectedExp) ? expectedExp : null,
+    rawCols: row
+  };
+}
+
+function readHistoryEntries(profileId, rankFilter = null) {
+  const { dailyDir } = getHistoryPaths(profileId);
+  if (!fs.existsSync(dailyDir)) {
+    return [];
+  }
+
+  const entries = [];
+  const files = fs.readdirSync(dailyDir)
+    .filter((name) => DAILY_HISTORY_FILE_RE.test(name))
+    .sort((a, b) => b.localeCompare(a));
+
+  for (const fileName of files) {
+    const fileDate = fileName.slice(0, 10);
+    const filePath = path.join(dailyDir, fileName);
+    const { rows } = readDailyCsvRows(filePath);
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+      const entry = parseHistoryRow(rows[rowIndex], fileDate, rowIndex);
+      if (!entry) continue;
+      if (rankFilter && entry.monsterRank !== rankFilter) continue;
+      entries.push(entry);
+    }
+  }
+
+  entries.sort((a, b) => {
+    const ta = Number.isFinite(a.timestamp) ? a.timestamp : 0;
+    const tb = Number.isFinite(b.timestamp) ? b.timestamp : 0;
+    if (tb !== ta) return tb - ta;
+    if (b.fileDate !== a.fileDate) return b.fileDate.localeCompare(a.fileDate);
+    return b.rowIndex - a.rowIndex;
+  });
+
+  return entries;
+}
+
+function findRowIndexForDeletion(rows, requestedIndex, signature) {
+  if (!Array.isArray(rows) || rows.length === 0) return -1;
+  const hasSignature = typeof signature === 'string' && signature.length > 0;
+  if (Number.isInteger(requestedIndex) && requestedIndex >= 0 && requestedIndex < rows.length) {
+    if (!hasSignature) return requestedIndex;
+    const rowSig = createRowSignature(rows[requestedIndex]);
+    if (rowSig === signature) return requestedIndex;
+  }
+  if (!hasSignature) return -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (createRowSignature(rows[i]) === signature) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function rebuildDailySummary(profileId) {
+  try {
+    const { baseDir, summaryCsvPath } = getHistoryPaths(profileId);
+    const entries = readHistoryEntries(profileId);
+    if (!entries.length) {
+      if (fs.existsSync(summaryCsvPath)) {
+        fs.unlinkSync(summaryCsvPath);
+      }
+      return;
+    }
+
+    const summaryMap = new Map();
+    for (const entry of entries) {
+      const displayDate = entry.displayDate || toDisplayDateFromDayKey(entry.dayKey || '') || '';
+      if (!displayDate) continue;
+
+      if (!summaryMap.has(displayDate)) {
+        summaryMap.set(displayDate, {
+          charName: entry.charName || '',
+          kills: 0,
+          exp: 0,
+          monsterCounts: new Map(),
+          firstKillTs: null,
+          lastKillTs: null
+        });
+      }
+
+      const row = summaryMap.get(displayDate);
+      row.kills += 1;
+      row.exp += Number.isFinite(entry.deltaExp) ? entry.deltaExp : 0;
+      if (entry.charName) row.charName = entry.charName;
+
+      const name = entry.monsterName || 'Unknown';
+      row.monsterCounts.set(name, (row.monsterCounts.get(name) || 0) + 1);
+
+      if (Number.isFinite(entry.timestamp)) {
+        if (row.firstKillTs === null || entry.timestamp < row.firstKillTs) row.firstKillTs = entry.timestamp;
+        if (row.lastKillTs === null || entry.timestamp > row.lastKillTs) row.lastKillTs = entry.timestamp;
+      }
+    }
+
+    const sortedDates = Array.from(summaryMap.keys()).sort((a, b) => {
+      const [ad, am, ay] = a.split('.').map(Number);
+      const [bd, bm, by] = b.split('.').map(Number);
+      return (ay - by) || (am - bm) || (ad - bd);
+    });
+
+    let out = UTF8_BOM + SUMMARY_HISTORY_HEADER;
+    for (const date of sortedDates) {
+      const row = summaryMap.get(date);
+      const monsters = Array.from(row.monsterCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => `${name} x${count}`)
+        .join(', ');
+
+      out += [
+        date,
+        row.charName || '',
+        row.kills,
+        formatExpValue(row.exp),
+        monsters,
+        toDisplayTime(row.firstKillTs),
+        toDisplayTime(row.lastKillTs)
+      ].join('\t') + '\n';
+    }
+
+    fs.mkdirSync(baseDir, { recursive: true });
+    fs.writeFileSync(summaryCsvPath, out, 'utf-8');
+  } catch (err) {
+    console.error('[Killfeed][History] Failed to rebuild daily summary:', err);
+  }
+}
+
+function buildHistoryAggregate(profileId) {
+  const entries = readHistoryEntries(profileId);
+  const todayKey = getDayKey(Date.now());
+  const monsters = {};
+  let expToday = 0;
+
+  for (const entry of entries) {
+    if (entry.dayKey === todayKey) {
+      expToday += Number.isFinite(entry.deltaExp) ? entry.deltaExp : 0;
+    }
+
+    const name = entry.monsterName || 'Unknown';
+    const rank = normalizeMonsterRankValue(entry.monsterRank);
+    if (!monsters[name]) {
+      monsters[name] = {
+        count: 0,
+        rank,
+        lastKillTime: Number.isFinite(entry.timestamp) ? entry.timestamp : null
+      };
+    }
+    monsters[name].count += 1;
+    if (rank !== schema.MONSTER_RANKS.UNKNOWN) {
+      monsters[name].rank = rank;
+    }
+    if (Number.isFinite(entry.timestamp) && (!Number.isFinite(monsters[name].lastKillTime) || entry.timestamp > monsters[name].lastKillTime)) {
+      monsters[name].lastKillTime = entry.timestamp;
+    }
+  }
+
+  return {
+    killsTotal: entries.length,
+    expTotal: expToday,
+    expTotalDay: todayKey,
+    monsters
+  };
+}
+
+function findMatchingKillIndex(kills, removedEntry) {
+  if (!Array.isArray(kills) || kills.length === 0 || !removedEntry) return -1;
+  for (let i = kills.length - 1; i >= 0; i--) {
+    const kill = kills[i];
+    if (!kill || typeof kill !== 'object') continue;
+    const sameName = String(kill.monsterName || '') === String(removedEntry.monsterName || '');
+    const sameTimestamp = Number(kill.timestamp) === Number(removedEntry.timestamp);
+    const sameDelta = Math.abs((Number(kill.deltaExp) || 0) - (Number(removedEntry.deltaExp) || 0)) < 0.0001;
+    if (sameName && sameTimestamp && sameDelta) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+async function syncStateAfterHistoryDeletion(profileId, removedEntry) {
+  const engine = await getEngine(profileId);
+  const state = engine?.getState?.();
+  if (!state || typeof state !== 'object') return;
+
+  const aggregate = buildHistoryAggregate(profileId);
+  state.killsTotal = aggregate.killsTotal;
+  state.expTotal = aggregate.expTotal;
+  state.expTotalDay = aggregate.expTotalDay;
+  state.monsters = aggregate.monsters;
+
+  if (!Array.isArray(state.rollingKills)) state.rollingKills = [];
+  if (!Array.isArray(state.last3Kills)) state.last3Kills = [];
+
+  const hasSessionStart = Number.isFinite(Number(state.sessionStartTime));
+  const removedTs = removedEntry && Number.isFinite(Number(removedEntry.timestamp)) ? Number(removedEntry.timestamp) : null;
+  const removedDelta = removedEntry && Number.isFinite(Number(removedEntry.deltaExp)) ? Number(removedEntry.deltaExp) : 0;
+  const isSessionKill = hasSessionStart && removedTs !== null && removedTs >= Number(state.sessionStartTime);
+
+  if (isSessionKill) {
+    state.killsSession = Math.max(0, (Number(state.killsSession) || 0) - 1);
+    state.expSession = Math.max(0, (Number(state.expSession) || 0) - removedDelta);
+  } else {
+    state.killsSession = Math.max(0, Number(state.killsSession) || 0);
+    state.expSession = Math.max(0, Number(state.expSession) || 0);
+  }
+
+  if (removedEntry) {
+    const rollingIdx = findMatchingKillIndex(state.rollingKills, removedEntry);
+    if (rollingIdx >= 0) {
+      state.rollingKills.splice(rollingIdx, 1);
+    }
+    const last3Idx = findMatchingKillIndex(state.last3Kills, removedEntry);
+    if (last3Idx >= 0) {
+      state.last3Kills.splice(last3Idx, 1);
+    }
+  }
+
+  state.killsSession = Math.min(state.killsSession, state.killsTotal);
+  if (state.last3Kills.length > 0) {
+    state.lastKillTime = Number(state.last3Kills[state.last3Kills.length - 1].timestamp) || null;
+  } else if (state.rollingKills.length > 0) {
+    const latestRollingTs = state.rollingKills.reduce((max, row) => {
+      const ts = Number(row?.timestamp);
+      return Number.isFinite(ts) ? Math.max(max, ts) : max;
+    }, 0);
+    state.lastKillTime = latestRollingTs > 0 ? latestRollingTs : null;
+  } else {
+    state.lastKillTime = null;
+  }
+}
+
+async function listHistoryKills(profileId, rank) {
+  const rankFilter = normalizeMonsterRankValue(rank);
+  const entries = readHistoryEntries(profileId, rankFilter);
+  return entries.map((entry) => ({
+    fileDate: entry.fileDate,
+    rowIndex: entry.rowIndex,
+    signature: entry.signature,
+    timestamp: entry.timestamp,
+    dateTime: entry.dateTime,
+    charName: entry.charName,
+    playerLevel: entry.playerLevel,
+    monsterName: entry.monsterName,
+    monsterRank: entry.monsterRank,
+    monsterElement: entry.monsterElement,
+    deltaExp: entry.deltaExp,
+    expectedExp: entry.expectedExp
+  }));
+}
+
+async function deleteHistoryKill(profileId, payload) {
+  const req = payload && typeof payload === 'object' ? payload : {};
+  const fileDate = typeof req.fileDate === 'string' ? req.fileDate.trim() : '';
+  const rowIndex = Number(req.rowIndex);
+  const signature = typeof req.signature === 'string' ? req.signature.trim() : '';
+
+  if (!DAILY_HISTORY_FILE_RE.test(`${fileDate}.csv`)) {
+    return { success: false, error: 'invalid-file-date' };
+  }
+  if (!Number.isInteger(rowIndex) || rowIndex < 0) {
+    return { success: false, error: 'invalid-row-index' };
+  }
+
+  const { dailyDir } = getHistoryPaths(profileId);
+  const csvPath = path.join(dailyDir, `${fileDate}.csv`);
+  if (!fs.existsSync(csvPath)) {
+    return { success: false, error: 'file-not-found' };
+  }
+
+  const parsed = readDailyCsvRows(csvPath);
+  const targetIndex = findRowIndexForDeletion(parsed.rows, rowIndex, signature);
+  if (targetIndex < 0 || targetIndex >= parsed.rows.length) {
+    return { success: false, error: 'entry-not-found' };
+  }
+
+  const removedEntry = parseHistoryRow(parsed.rows[targetIndex], fileDate, targetIndex);
+  parsed.rows.splice(targetIndex, 1);
+
+  if (parsed.rows.length === 0) {
+    fs.unlinkSync(csvPath);
+  } else {
+    writeDailyCsvRows(csvPath, parsed.rows);
+  }
+
+  rebuildDailySummary(profileId);
+  await syncStateAfterHistoryDeletion(profileId, removedEntry);
+  await saveProfileState(profileId);
+  lastBroadcast.delete(profileId);
+  await broadcastState(profileId);
+
+  return { success: true };
 }
 
 async function publishMetric(profileId, metricKey, value, stats, reason) {
@@ -895,6 +1397,583 @@ function parseNumber(value) {
   return null;
 }
 
+function parseEnemyHp(enemyHpStr) {
+  if (!enemyHpStr || typeof enemyHpStr !== 'string') return null;
+  const m = enemyHpStr.match(/(\d[\d.,]*)\s*[\/|]\s*(\d[\d.,]*)/);
+  if (!m) return null;
+  const current = Math.round(parseFloat(m[1].replace(/[.,]/g, '')));
+  const max = Math.round(parseFloat(m[2].replace(/[.,]/g, '')));
+  if (!Number.isFinite(current) || !Number.isFinite(max) || max <= 0) return null;
+  return { current, max };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// TTK (Time to Kill) STATE MACHINE
+// ─────────────────────────────────────────────────────────────────────────
+
+function getTtkTracker(profileId) {
+  if (!ttkTrackers.has(profileId)) {
+    ttkTrackers.set(profileId, {
+      state: 'idle',         // 'idle' | 'combat' | 'paused'
+      monsterName: null,     // Pinned boss name
+      monsterMaxHp: null,    // Max-HP fingerprint for identity check
+      combatStartTime: null,
+      accumulatedMs: 0,
+      lastActiveTime: null,
+      pauseStartTime: null,
+    });
+  }
+  return ttkTrackers.get(profileId);
+}
+
+function resetTtkTracker(tracker) {
+  tracker.state = 'idle';
+  tracker.monsterName = null;
+  tracker.monsterMaxHp = null;
+  tracker.combatStartTime = null;
+  tracker.accumulatedMs = 0;
+  tracker.lastActiveTime = null;
+  tracker.pauseStartTime = null;
+}
+
+function startTtkCombat(tracker, monsterName, maxHp, tickTime) {
+  tracker.state = 'combat';
+  tracker.monsterName = monsterName || null;
+  tracker.monsterMaxHp = maxHp;
+  tracker.combatStartTime = tickTime;
+  tracker.accumulatedMs = 0;
+  tracker.lastActiveTime = tickTime;
+  tracker.pauseStartTime = null;
+}
+
+function isSameBossTarget(tracker, monsterName, parsedHp) {
+  // Primary check: name match
+  if (monsterName && tracker.monsterName) {
+    if (monsterName !== tracker.monsterName) return false;
+    // Name matches — verify maxHp if both available
+    if (parsedHp && tracker.monsterMaxHp && parsedHp.max !== tracker.monsterMaxHp) return false;
+    return true;
+  }
+  // No name available — fall back to maxHp fingerprint
+  if (parsedHp && tracker.monsterMaxHp) {
+    return parsedHp.max === tracker.monsterMaxHp;
+  }
+  // Insufficient data — assume same to avoid false pauses
+  return true;
+}
+
+function updateTtkTracker(profileId, parsedHp, monsterName, monsterRank, tickTime) {
+  const tracker = getTtkTracker(profileId);
+  const hpVisible = parsedHp !== null && parsedHp.current < parsedHp.max;
+  const isBoss = monsterRank === 'giant' || monsterRank === 'violet' || monsterRank === 'boss';
+
+  switch (tracker.state) {
+    case 'idle':
+      if (hpVisible && isBoss) {
+        startTtkCombat(tracker, monsterName, parsedHp.max, tickTime);
+      }
+      break;
+
+    case 'combat':
+      if (hpVisible && isSameBossTarget(tracker, monsterName, parsedHp)) {
+        // Same boss — accumulate combat time
+        tracker.accumulatedMs += (tickTime - tracker.lastActiveTime);
+        tracker.lastActiveTime = tickTime;
+      } else if (hpVisible && isBoss) {
+        // Different boss targeted — abort old, start new
+        startTtkCombat(tracker, monsterName, parsedHp.max, tickTime);
+      } else {
+        // HP gone OR normal monster targeted → pause boss timer
+        tracker.accumulatedMs += (tickTime - tracker.lastActiveTime);
+        tracker.state = 'paused';
+        tracker.pauseStartTime = tickTime;
+      }
+      break;
+
+    case 'paused':
+      if (hpVisible && isBoss && isSameBossTarget(tracker, monsterName, parsedHp)) {
+        // Same boss re-targeted within grace — resume
+        tracker.state = 'combat';
+        tracker.lastActiveTime = tickTime;
+        tracker.pauseStartTime = null;
+      } else if (hpVisible && isBoss) {
+        // Different boss within grace — abort old, start new
+        startTtkCombat(tracker, monsterName, parsedHp.max, tickTime);
+      } else if ((tickTime - tracker.pauseStartTime) >= TTK_GRACE_MS) {
+        // Grace expired — abort
+        resetTtkTracker(tracker);
+      }
+      // else: still paused (no HP or normal monster), grace continues
+      break;
+  }
+}
+
+function completeTtk(profileId) {
+  const tracker = getTtkTracker(profileId);
+  if (tracker.state === 'idle') return null;
+  const result = tracker.accumulatedMs;
+  resetTtkTracker(tracker);
+  return result > 0 ? result : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// GIANT TRACKER
+// ─────────────────────────────────────────────────────────────────────────
+const giantKillsCache = new Map(); // profileId -> { data, timestamp }
+const itemDetailsCache = new Map(); // itemId -> parsed json | null
+
+function openGiantTrackerWindow() {
+  if (giantTrackerWindow && !giantTrackerWindow.isDestroyed()) {
+    giantTrackerWindow.focus();
+    return;
+  }
+  giantTrackerWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    minWidth: 600,
+    minHeight: 400,
+    frame: true,
+    resizable: true,
+    title: 'Giant Tracker',
+    webPreferences: {
+      preload: path.join(pluginDir, 'gt_preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  giantTrackerWindow.loadFile(path.join(pluginDir, 'ui_giant_tracker.html'));
+  giantTrackerWindow.on('closed', () => {
+    giantTrackerWindow = null;
+  });
+}
+
+function resolveLocalizedName(nameField, fallback) {
+  if (!nameField) return fallback || '';
+  if (typeof nameField === 'string') return nameField;
+  if (typeof nameField === 'object') return nameField.en || nameField.de || Object.values(nameField)[0] || fallback || '';
+  return fallback || '';
+}
+
+function loadItemDetails(itemId) {
+  if (!itemId) return null;
+  if (itemDetailsCache.has(itemId)) return itemDetailsCache.get(itemId);
+  const filePath = path.join(app.getPath('userData'), 'user', 'cache', 'item', 'item_parameter', `${itemId}.json`);
+  if (!fs.existsSync(filePath)) {
+    itemDetailsCache.set(itemId, null);
+    return null;
+  }
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(raw);
+    itemDetailsCache.set(itemId, data);
+    return data;
+  } catch (err) {
+    itemDetailsCache.set(itemId, null);
+    return null;
+  }
+}
+
+function loadGiantLootPool(monsterId) {
+  const detail = loadMonsterDetails(monsterId);
+  if (!detail || !Array.isArray(detail.drops)) return [];
+  const pool = [];
+  for (const drop of detail.drops) {
+    if (!drop || !drop.item) continue;
+    const itemData = loadItemDetails(drop.item);
+    pool.push({
+      itemId: drop.item,
+      name: resolveLocalizedName(itemData?.name, `Item #${drop.item}`),
+      icon: itemData?.icon || null,
+      prob: drop.prob || '',
+      rarity: itemData?.rarity || (drop.common ? 'common' : 'uncommon'),
+      category: itemData?.category || ''
+    });
+  }
+  // Sort by rarity: rarest first (lower prob string → rarer)
+  pool.sort((a, b) => {
+    const pa = parseProbString(a.prob);
+    const pb = parseProbString(b.prob);
+    return pa - pb; // lower prob = rarer = first
+  });
+  return pool;
+}
+
+function parseProbString(prob) {
+  if (!prob || typeof prob !== 'string') return 100;
+  // Format like "[0.01%;0.1%[" — extract first number
+  const m = prob.match(/([\d.]+)%/);
+  return m ? parseFloat(m[1]) : 100;
+}
+
+function computeDropStats(totalKills, drops) {
+  const killTotal = Number.isFinite(totalKills) ? totalKills : 0;
+  const monsterDrops = Array.isArray(drops) ? drops : [];
+
+  const killsSinceLastDrop = monsterDrops.length > 0
+    ? killTotal - (monsterDrops[monsterDrops.length - 1].killCountAtDrop || 0)
+    : killTotal;
+
+  let avgKillsPerDrop = null;
+  if (monsterDrops.length >= 2) {
+    const intervals = [];
+    for (let i = 1; i < monsterDrops.length; i++) {
+      const diff = (monsterDrops[i].killCountAtDrop || 0) - (monsterDrops[i - 1].killCountAtDrop || 0);
+      if (diff > 0) intervals.push(diff);
+    }
+    if (intervals.length > 0) {
+      avgKillsPerDrop = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+    }
+  } else if (monsterDrops.length === 1 && monsterDrops[0].killCountAtDrop > 0) {
+    avgKillsPerDrop = monsterDrops[0].killCountAtDrop;
+  }
+
+  return {
+    killsSinceLastDrop: Math.max(0, killsSinceLastDrop),
+    avgKillsPerDrop
+  };
+}
+
+const GIANT_TRACKER_SAMPLE_ROWS = [
+  {
+    name: 'Giant Hellhound',
+    rank: 'giant',
+    level: 192,
+    element: 'electricity',
+    kills: { total: 487, today: 18, week: 73, month: 214, year: 487 },
+    lastKillOffsetMs: 3 * 60 * 1000,
+    sampleTtk: { lastMs: 42500, avgMs: 48200, count: 18, minMs: 35000, maxMs: 67000 },
+    sampleDrops: [
+      { itemName: 'Scroll of SProtect', killCountAtDrop: 120, offsetMs: 5 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Angel Blessing', killCountAtDrop: 305, offsetMs: 2 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Scroll of SProtect', killCountAtDrop: 462, offsetMs: 4 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Violet Hellhound',
+    rank: 'violet',
+    level: 194,
+    element: 'electricity',
+    kills: { total: 213, today: 7, week: 34, month: 98, year: 213 },
+    lastKillOffsetMs: 18 * 60 * 1000,
+    sampleTtk: { lastMs: 55300, avgMs: 61400, count: 7, minMs: 45000, maxMs: 82000 },
+    sampleDrops: [
+      { itemName: 'Blessing of the Goddess', killCountAtDrop: 89, offsetMs: 3 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Scroll of XProtect', killCountAtDrop: 198, offsetMs: 8 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Chief Keokuk',
+    rank: 'giant',
+    level: 190,
+    element: 'water',
+    kills: { total: 341, today: 11, week: 52, month: 156, year: 341 },
+    lastKillOffsetMs: 8 * 60 * 1000,
+    sampleTtk: { lastMs: 38700, avgMs: 43100, count: 11, minMs: 31000, maxMs: 58000 },
+    sampleDrops: [
+      { itemName: 'Moonstone', killCountAtDrop: 167, offsetMs: 4 * 24 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Giant Taiaha',
+    rank: 'giant',
+    level: 188,
+    element: 'wind',
+    kills: { total: 156, today: 4, week: 22, month: 68, year: 156 },
+    lastKillOffsetMs: 42 * 60 * 1000,
+    sampleTtk: { lastMs: 52100, avgMs: 56800, count: 4, minMs: 44000, maxMs: 72000 },
+    sampleDrops: []
+  },
+  {
+    name: 'Violet Kanonicus',
+    rank: 'violet',
+    level: 182,
+    element: 'fire',
+    kills: { total: 278, today: 9, week: 41, month: 132, year: 278 },
+    lastKillOffsetMs: 12 * 60 * 1000,
+    sampleTtk: { lastMs: 33200, avgMs: 37500, count: 9, minMs: 27000, maxMs: 49000 },
+    sampleDrops: [
+      { itemName: 'Sunstone', killCountAtDrop: 64, offsetMs: 6 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Angel Blessing', killCountAtDrop: 145, offsetMs: 3 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Sunstone', killCountAtDrop: 241, offsetMs: 1 * 24 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Giant Kyouchish',
+    rank: 'giant',
+    level: 176,
+    element: 'earth',
+    kills: { total: 89, today: 2, week: 11, month: 37, year: 89 },
+    lastKillOffsetMs: 2.5 * 60 * 60 * 1000,
+    sampleTtk: { lastMs: 28900, avgMs: 31200, count: 2, minMs: 25000, maxMs: 38000 },
+    sampleDrops: [
+      { itemName: 'Twinkle Stone', killCountAtDrop: 53, offsetMs: 5 * 24 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Violet Samoset',
+    rank: 'violet',
+    level: 174,
+    element: 'wind',
+    kills: { total: 64, today: 0, week: 8, month: 27, year: 64 },
+    lastKillOffsetMs: 1.5 * 24 * 60 * 60 * 1000,
+    sampleTtk: null,
+    sampleDrops: []
+  },
+  {
+    name: 'Giant Hundur Sharpfoot',
+    rank: 'giant',
+    level: 168,
+    element: 'electricity',
+    kills: { total: 192, today: 6, week: 29, month: 85, year: 192 },
+    lastKillOffsetMs: 22 * 60 * 1000,
+    sampleTtk: { lastMs: 24800, avgMs: 27600, count: 6, minMs: 19000, maxMs: 35000 },
+    sampleDrops: [
+      { itemName: 'Moonstone', killCountAtDrop: 78, offsetMs: 7 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Vigor Ring', killCountAtDrop: 163, offsetMs: 2 * 24 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Clockworks',
+    rank: 'boss',
+    level: 120,
+    element: 'fire',
+    kills: { total: 28, today: 0, week: 2, month: 6, year: 28 },
+    lastKillOffsetMs: 1 * 24 * 60 * 60 * 1000,
+    sampleTtk: { lastMs: 295000, avgMs: 320000, count: 2, minMs: 270000, maxMs: 385000 },
+    sampleDrops: [
+      { itemName: 'Demol Earring', killCountAtDrop: 12, offsetMs: 14 * 24 * 60 * 60 * 1000 },
+      { itemName: 'Crystal Sword', killCountAtDrop: 25, offsetMs: 2 * 24 * 60 * 60 * 1000 }
+    ]
+  },
+  {
+    name: 'Meteonyker',
+    rank: 'boss',
+    level: 140,
+    element: 'electricity',
+    kills: { total: 15, today: 0, week: 1, month: 3, year: 15 },
+    lastKillOffsetMs: 2 * 24 * 60 * 60 * 1000,
+    sampleTtk: { lastMs: 510000, avgMs: 480000, count: 1, minMs: 420000, maxMs: 540000 },
+    sampleDrops: [
+      { itemName: 'Ancient Emerald', killCountAtDrop: 8, offsetMs: 20 * 24 * 60 * 60 * 1000 }
+    ]
+  }
+];
+
+function buildGiantTrackerSamples(dropLogs, iconsBasePath) {
+  const now = Date.now();
+  return GIANT_TRACKER_SAMPLE_ROWS.map((sample) => {
+    const ref = findMonsterByName(sample.name);
+    const monsterId = ref?.id || null;
+    const detail = monsterId ? loadMonsterDetails(monsterId) : null;
+    const icon = detail?.icon || null;
+    const iconUrl = icon ? `file:///${iconsBasePath}/${icon}` : null;
+
+    // Use persisted drops if available, otherwise generate from sample data
+    let drops = Array.isArray(dropLogs?.[sample.name]) ? dropLogs[sample.name] : [];
+    if (drops.length === 0 && Array.isArray(sample.sampleDrops) && sample.sampleDrops.length > 0) {
+      drops = sample.sampleDrops.map(sd => ({
+        timestamp: now - sd.offsetMs,
+        itemId: null,
+        itemName: sd.itemName,
+        killCountAtDrop: sd.killCountAtDrop
+      }));
+    }
+
+    const dropStats = computeDropStats(sample.kills.total, drops);
+    const lootPool = monsterId ? loadGiantLootPool(monsterId) : [];
+
+    return {
+      name: sample.name,
+      rank: sample.rank,
+      monsterId,
+      level: ref?.level || sample.level || null,
+      element: ref?.element || sample.element || null,
+      iconUrl,
+      hp: detail?.hp || null,
+      minAttack: detail?.minAttack || null,
+      maxAttack: detail?.maxAttack || null,
+      kills: { ...sample.kills },
+      lastKillTime: now - sample.lastKillOffsetMs,
+      drops,
+      killsSinceLastDrop: dropStats.killsSinceLastDrop,
+      avgKillsPerDrop: dropStats.avgKillsPerDrop,
+      lootPool,
+      ttk: sample.sampleTtk || null
+    };
+  });
+}
+
+function aggregateGiantKills(profileId) {
+  const now = Date.now();
+  const cached = giantKillsCache.get(profileId);
+  if (cached && (now - cached.timestamp) < 5000) return cached.data;
+
+  const { dailyDir } = getHistoryPaths(profileId);
+  const today = new Date();
+  const todayKey = getDayKey(now);
+
+  // Calculate date ranges
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // Monday
+  weekStart.setHours(0, 0, 0, 0);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const yearStart = new Date(today.getFullYear(), 0, 1);
+
+  const weekStartKey = getDayKey(weekStart.getTime());
+  const monthStartKey = getDayKey(monthStart.getTime());
+  const yearStartKey = getDayKey(yearStart.getTime());
+
+  // Aggregate kills per monster per time range
+  const monsterKills = {}; // monsterName -> { today, week, month, year, total, lastKillTime, ttk }
+
+  if (!fs.existsSync(dailyDir)) {
+    const result = { monsterKills };
+    giantKillsCache.set(profileId, { data: result, timestamp: now });
+    return result;
+  }
+
+  const files = fs.readdirSync(dailyDir)
+    .filter((name) => DAILY_HISTORY_FILE_RE.test(name))
+    .sort();
+
+  for (const fileName of files) {
+    const fileDate = fileName.slice(0, 10);
+    // Skip files before year start for performance
+    if (fileDate < yearStartKey) continue;
+
+    const filePath = path.join(dailyDir, fileName);
+    const { rows } = readDailyCsvRows(filePath);
+    for (let i = 0; i < rows.length; i++) {
+      const cols = rows[i];
+      const rank = normalizeMonsterRankValue(cols[DAILY_COL_INDEX.rank]);
+      if (rank !== 'giant' && rank !== 'violet' && rank !== 'boss') continue;
+
+      const name = cols[DAILY_COL_INDEX.monsterName] || 'Unknown';
+      if (!monsterKills[name]) {
+        monsterKills[name] = { today: 0, week: 0, month: 0, year: 0, total: 0, lastKillTime: null, ttk: { sum: 0, count: 0, min: Infinity, max: 0, lastMs: null } };
+      }
+      const mk = monsterKills[name];
+      mk.year++;
+      if (fileDate >= monthStartKey) mk.month++;
+      if (fileDate >= weekStartKey) mk.week++;
+      if (fileDate === todayKey) mk.today++;
+
+      const ts = parseDisplayDateTime(cols[DAILY_COL_INDEX.dateTime], fileDate, i);
+      if (ts && (!mk.lastKillTime || ts > mk.lastKillTime)) mk.lastKillTime = ts;
+
+      // TTK aggregation
+      const ttkRaw = cols[DAILY_COL_INDEX.ttkMs];
+      if (ttkRaw != null && ttkRaw !== '') {
+        const ttkVal = parseInt(ttkRaw, 10);
+        if (Number.isFinite(ttkVal) && ttkVal > 0) {
+          mk.ttk.sum += ttkVal;
+          mk.ttk.count++;
+          if (ttkVal < mk.ttk.min) mk.ttk.min = ttkVal;
+          if (ttkVal > mk.ttk.max) mk.ttk.max = ttkVal;
+          mk.ttk.lastMs = ttkVal;
+        }
+      }
+    }
+  }
+
+  // Add total from state.monsters (includes older data)
+  const result = { monsterKills };
+  giantKillsCache.set(profileId, { data: result, timestamp: now });
+  return result;
+}
+
+async function buildGiantTrackerState(profileId) {
+  const engine = await getEngine(profileId);
+  const state = engine.getState();
+  const monsters = state?.monsters || {};
+  const userData = app.getPath('userData');
+  const iconsBasePath = path.join(userData, 'user', 'cache', 'monster', 'icons').replace(/\\/g, '/');
+  const itemIconsBasePath = path.join(userData, 'user', 'cache', 'item', 'icons').replace(/\\/g, '/');
+
+  // Get time-based kill data
+  const agg = aggregateGiantKills(profileId);
+
+  // Load drop logs
+  let dropLogs = {};
+  try {
+    dropLogs = await ctx.services.storage.read(`gt-drops:${profileId}`) || {};
+  } catch (_) {}
+
+  const giants = [];
+  for (const [name, info] of Object.entries(monsters)) {
+    const rank = info.rank || 'unknown';
+    if (rank !== 'giant' && rank !== 'violet' && rank !== 'boss') continue;
+
+    // Look up monster reference
+    const ref = findMonsterByName(name);
+    const monsterId = ref?.id || null;
+    const detail = monsterId ? loadMonsterDetails(monsterId) : null;
+    const icon = detail?.icon || null;
+    const iconUrl = icon ? `file:///${iconsBasePath}/${icon}` : null;
+
+    // Time-based kills from aggregation
+    const timeKills = agg.monsterKills[name] || { today: 0, week: 0, month: 0, year: 0 };
+
+    // Drop data
+    const monsterDrops = Array.isArray(dropLogs[name]) ? dropLogs[name] : [];
+    const dropStats = computeDropStats(info.count || 0, monsterDrops);
+
+    // Loot pool
+    const lootPool = monsterId ? loadGiantLootPool(monsterId) : [];
+
+    // TTK data from aggregation
+    const rawTtk = timeKills.ttk;
+    let ttk = null;
+    if (rawTtk && rawTtk.count > 0) {
+      ttk = {
+        lastMs: rawTtk.lastMs,
+        avgMs: Math.round(rawTtk.sum / rawTtk.count),
+        count: rawTtk.count,
+        minMs: rawTtk.min !== Infinity ? rawTtk.min : null,
+        maxMs: rawTtk.max > 0 ? rawTtk.max : null
+      };
+    }
+
+    giants.push({
+      name,
+      rank,
+      monsterId,
+      level: ref?.level || null,
+      element: ref?.element || null,
+      iconUrl,
+      hp: detail?.hp || null,
+      minAttack: detail?.minAttack || null,
+      maxAttack: detail?.maxAttack || null,
+      kills: {
+        total: info.count || 0,
+        today: timeKills.today,
+        week: timeKills.week,
+        month: timeKills.month,
+        year: timeKills.year
+      },
+      lastKillTime: info.lastKillTime || timeKills.lastKillTime || null,
+      drops: monsterDrops,
+      killsSinceLastDrop: dropStats.killsSinceLastDrop,
+      avgKillsPerDrop: dropStats.avgKillsPerDrop,
+      lootPool,
+      ttk
+    });
+  }
+
+  if (giants.length === 0) {
+    giants.push(...buildGiantTrackerSamples(dropLogs, iconsBasePath));
+  }
+
+  // Sort: most kills first
+  giants.sort((a, b) => b.kills.total - a.kills.total);
+
+  return {
+    giants,
+    iconsBasePath: `file:///${iconsBasePath}/`,
+    itemIconsBasePath: `file:///${itemIconsBasePath}/`
+  };
+}
+
 /**
  * Storage key helpers
  */
@@ -1014,7 +2093,14 @@ async function handleOcrUpdate(payload) {
   if (!config.enabled) {
     return;
   }
+  try {
+  return await _handleOcrUpdateInner(payload);
+  } catch (err) {
+    console.error('[Killfeed] handleOcrUpdate crashed (OCR pipeline preserved):', err);
+  }
+}
 
+async function _handleOcrUpdateInner(payload) {
   const { profileId, values } = payload;
   const meta = payload && typeof payload === 'object' && payload.meta && typeof payload.meta === 'object' ? payload.meta : null;
   const isManualExp = meta && meta.manualExp === true;
@@ -1035,6 +2121,9 @@ async function handleOcrUpdate(payload) {
   if (typeof enemyHp === 'string' && enemyHp.trim()) {
     enemyHpSeenAt.set(profileId, tickTime);
   }
+
+  // Parse enemy HP for TTK tracking
+  const parsedHp = parseEnemyHp(enemyHp);
 
   // Convert OCR strings (e.g., "12.34%") into numeric values
   const parsedLvl = parseNumber(lvl);
@@ -1143,6 +2232,9 @@ async function handleOcrUpdate(payload) {
     });
   }
 
+  // Update TTK tracker with parsed HP data (giants/violets only)
+  updateTtkTracker(profileId, parsedHp, resolvedMonsterName, resolvedMonsterMeta?.rank, tickTime);
+
   // Process the OCR tick with the raw OCR value (no smoothing) so currentExp mirrors live OCR.
   const expValue = parsedExp;
   const _prevState = engine.getState();
@@ -1215,7 +2307,9 @@ async function handleOcrUpdate(payload) {
   }
 
   if (killEvent) {
-    debugLog('ocr', `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"}`);
+    // Complete TTK measurement for this kill
+    const ttkMs = completeTtk(profileId);
+    debugLog('ocr', `[OCR] kill detected profile=${profileId} deltaExp=${killEvent.deltaExp} killsSession=${engine.getState().killsSession ?? "?"} ttkMs=${ttkMs ?? 'none'}`);
 
     // Kill in CSV-History schreiben
     appendKillToHistory(profileId, {
@@ -1228,8 +2322,12 @@ async function handleOcrUpdate(payload) {
       monsterElement: resolvedMonsterMeta?.element || '',
       monsterRank: killEvent.rank || '',
       deltaExp: killEvent.deltaExp,
-      expectedExp: resolvedMonsterMeta?.expectedExp ?? ''
+      expectedExp: resolvedMonsterMeta?.expectedExp ?? '',
+      ttkMs: ttkMs
     });
+
+    // Invalidate giant tracker cache on kill
+    giantKillsCache.delete(profileId);
 
     ctx.eventBus.emit('kill-registered', {
       profileId,
@@ -1437,6 +2535,67 @@ async function init(context) {
       charName
     };
   });
+  ctx.ipc.handle('history:list:kills', async (_event, profileId, rank) => {
+    const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
+    const kills = await listHistoryKills(pid, rank);
+    return { success: true, kills };
+  });
+
+  ctx.ipc.handle('history:delete:kill', async (_event, profileId, payload) => {
+    const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
+    return deleteHistoryKill(pid, payload);
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GIANT TRACKER IPC HANDLERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  ctx.ipc.handle('gt:open', async () => {
+    openGiantTrackerWindow();
+    return { success: true };
+  });
+
+  ctx.ipc.handle('gt:request:state', async (_event, profileId) => {
+    const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
+    await getEngine(pid);
+    return buildGiantTrackerState(pid);
+  });
+
+  ctx.ipc.handle('gt:log:drop', async (_event, profileId, monsterName, itemId, itemName) => {
+    const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
+    const key = `gt-drops:${pid}`;
+    const drops = await ctx.services.storage.read(key) || {};
+    if (!drops[monsterName]) drops[monsterName] = [];
+    const engine = profileEngines.get(pid);
+    const state = engine?.getState?.();
+    const sample = GIANT_TRACKER_SAMPLE_ROWS.find((row) => row.name === monsterName);
+    const killCount = state?.monsters?.[monsterName]?.count || sample?.kills?.total || 0;
+    drops[monsterName].push({
+      timestamp: Date.now(),
+      itemId,
+      itemName,
+      killCountAtDrop: killCount
+    });
+    await ctx.services.storage.write(key, drops);
+    return { success: true };
+  });
+
+  ctx.ipc.handle('gt:delete:drop', async (_event, profileId, monsterName, dropIndex) => {
+    const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
+    const key = `gt-drops:${pid}`;
+    const drops = await ctx.services.storage.read(key) || {};
+    if (!drops[monsterName] || !Array.isArray(drops[monsterName])) {
+      return { success: false, error: 'no-drops' };
+    }
+    const idx = Number(dropIndex);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= drops[monsterName].length) {
+      return { success: false, error: 'invalid-index' };
+    }
+    drops[monsterName].splice(idx, 1);
+    if (drops[monsterName].length === 0) delete drops[monsterName];
+    await ctx.services.storage.write(key, drops);
+    return { success: true };
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
   // VISIBILITY IPC HANDLERS
@@ -1562,6 +2721,12 @@ async function stop() {
     ctx.logger.warn(`Shutdown leaderboard publish failed: ${err.message}`);
   }
 
+  // Close Giant Tracker window
+  if (giantTrackerWindow && !giantTrackerWindow.isDestroyed()) {
+    giantTrackerWindow.close();
+    giantTrackerWindow = null;
+  }
+
   // Unsubscribe from events
   if (unsubscribeOcr) {
     unsubscribeOcr();
@@ -1589,6 +2754,8 @@ async function stop() {
   enemyHpSeenAt.clear();
   expSamples.clear();
   supportExpCache.clear();
+  giantKillsCache.clear();
+  itemDetailsCache.clear();
 
   debugLog('lifecycle', 'Killfeed plugin stopped');
 }

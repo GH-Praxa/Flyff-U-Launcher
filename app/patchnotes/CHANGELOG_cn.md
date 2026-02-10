@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 版本 2.5.0
+
+### 🆕 新功能：Giant Tracker
+- Killfeed 插件中的独立窗口，用于追踪并可视化 Giants、Violets 和 Bosses 的击杀统计。
+
+### ✨ 改进
+- Killfeed：怪物追踪手风琴现在为每个等级提供“Kills”按钮，可查看单次击杀列表。
+- Killfeed：现在可以直接在该列表中删除单次击杀记录。
+
+### 🐛 修复
+- Killfeed：删除单次击杀时，现在会稳定更新 AppData 历史文件（daily/YYYY-MM-DD.csv、history.csv）以及侧边栏状态。
+
+---
 ## 🆕 版本 2.4.1
 
 ### ✨ 改进

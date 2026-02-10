@@ -1,15 +1,48 @@
 # 📦 Patchnotes
 
-## 🆕 Version 2.4.1
+---
+## 🆕 Version 2.5.0
 
-### ✨ Verbesserungen
+### 🆕 Neues Feature: Giant Tracker
+Eigenständiges Fenster im Killfeed-Plugin — erfasst und visualisiert Kill-Statistiken für **Giants**, **Violets** und **Bosse**.
+
+**Filter-Tabs**
+- 5 Tabs: **Alle** · **Giants** · **Violets** · **Bosse** · **Drops**
+- **Bosse** — filtert nach Rang `boss` (rote Karten-Border, eigenes Icon-Styling)
+- **Drops** — zeigt nur Monster mit geloggten Drops, inklusive Loot-Pool-Vorschau (Top 5 Items nach Seltenheit) direkt in der Karte
+
+**Kill-Statistiken**
+- Kartenansicht mit Compact- und Expanded-Modus
+- Zeiträume: Heute, Woche, Monat, Jahr, Gesamt
+- Monster-Info: Icon, Name, Level, Element, Rang, HP, ATK
+
+**Drop-Tracking**
+- Drops über den Loot-Pool des Monsters loggen (mit Seltenheitsfilter)
+- Drop-History pro Monster: Item-Name, Kill-Zählerstand, Zeitstempel
+- Statistiken: Ø Kills/Drop, Kills seit letztem Drop
+
+**Time to Kill (TTK)**
+- Misst automatisch die Kampfdauer gegen Giants, Violets und Bosse
+- 10s Karenzzeit beim Abwählen des Ziels (Buffen, Heilen etc.) — Pausenzeit zählt nicht zur TTK
+- Monster-Name + Max-HP-Fingerprint: Ziel wird zuverlässig wiedererkannt
+- Anzeige: Letzter TTK, Ø TTK, Schnellster
+- Persistierung in der Kill-History (CSV-Spalte `TTK_ms`)
+
+**Sonstiges**
+- Sortierung nach Kills, Name oder Level
+- Suchfeld zum Filtern nach Monster-Namen
+
+### ✨ Weitere Verbesserungen
 - Killfeed: Verbesserte Monster-Erkennung
-  -  Neue Identifizierungsgewichtung: Monster HP > Monster Level > Monster Element
+- Neue Identifizierungsgewichtung: Monster HP > Monster Level > Monster Element
 - Killfeed: Monster-Tracking zählt nun getötete Mobs
 - Killfeed: History eingeführt (pro Profil)
-  - Tagesdatei pro Datum mit einzelnen Kills (`Datum/Uhrzeit`, `Charakter`, `Level`, `Monster-ID`, `Rang`, `Monster`, `Element`, `EXP-Zuwachs`, `erwartete EXP`)
+  - Tagesdatei pro Datum mit einzelnen Kills (`Datum/Uhrzeit`, `Charakter`, `Level`, `Monster-ID`, `Rang`, `Monster`, `Element`, `EXP-Zuwachs`, `erwartete EXP`, `TTK_ms`)
   - Aggregierte Tagesübersicht mit `Kills`, `EXP gesamt`, `Monster-Verteilung`, `erster/letzter Kill`
 - Killfeed: Monster-Tracking im Sidepanel aktualisiert sich jetzt sofort nach Kills (kein Tab-Wechsel nötig)
+- Killfeed: In den Monster-Tracking-Accordions gibt es jetzt pro Rang einen Kills-Button mit ListView der Einzelkills.
+  Einzelne Kills können direkt in der ListView gelöscht werden.
+  Beim Löschen einzelner Kills werden AppData-History-Dateien (daily/YYYY-MM-DD.csv, history.csv) und Sidepanel-Status aktualisiert.
 - Killfeed: Sidepanel folgt jetzt stabil dem Overlay-Zielprofil (kein Springen zwischen Profil-IDs)
 - Monster-Referenzdaten aktualisiert
 - "Layout auswählen" Dialog Design optimiert

@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Sürüm 2.5.0
+
+### 🆕 Yeni Özellik: Giant Tracker
+- Killfeed eklentisi içinde, Giants, Violets ve Bosses öldürme istatistiklerini takip edip görselleştiren bağımsız pencere.
+
+### ✨ İyileştirmeler
+- Killfeed: canavar takibi akordeonlarında artık her rütbe için tekil kill listesini açan bir "Kills" düğmesi var.
+- Killfeed: tekil kill kayıtları artık bu listeden doğrudan silinebiliyor.
+
+### 🐛 Düzeltmeler
+- Killfeed: tekil kill silme işlemi artık AppData geçmiş dosyalarını (daily/YYYY-MM-DD.csv, history.csv) ve yan panel durumunu tutarlı şekilde güncelliyor.
+
+---
 ## 🆕 Sürüm 2.4.1
 
 ### ✨ İyileştirmeler

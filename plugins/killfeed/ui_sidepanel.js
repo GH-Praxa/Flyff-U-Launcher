@@ -76,6 +76,20 @@
         boss: "Bosses",
         unknown: "Unknown",
       },
+      killHistory: {
+        open: "Kills",
+        title: "{rank} Kills",
+        loading: "Loading...",
+        empty: "No kills for this rank",
+        close: "Close",
+        colTime: "Time",
+        colMonster: "Monster",
+        colExp: "EXP",
+        colAction: "Action",
+        delete: "Delete",
+        confirmAction: "Confirm",
+        deleteFailed: "Kill could not be deleted",
+      },
     },
     de: {
       title: "Killfeed",
@@ -130,6 +144,20 @@
         violet: "Violette",
         boss: "Bosse",
         unknown: "Unbekannt",
+      },
+      killHistory: {
+        open: "Kills",
+        title: "{rank} Kills",
+        loading: "Lade...",
+        empty: "Keine Kills fuer diesen Rang",
+        close: "Schliessen",
+        colTime: "Zeit",
+        colMonster: "Monster",
+        colExp: "EXP",
+        colAction: "Aktion",
+        delete: "Loeschen",
+        confirmAction: "Sicher",
+        deleteFailed: "Kill konnte nicht geloescht werden",
       },
     },
     pl: {
@@ -467,6 +495,7 @@
   const STR = translations[locale] || translations.en;
   const tBadge = (key) => STR.badges?.[key] || translations.en.badges[key] || key;
   const tRank = (key) => STR.ranks?.[key] || translations.en.ranks[key] || key;
+  const tHistory = (key) => STR.killHistory?.[key] || translations.en.killHistory?.[key] || key;
   const fmt = (s, params) => (s || "").replace(/\{(\w+)\}/g, (_m, k) => (params && k in params ? String(params[k]) : ""));
 
   function unwrap(result) {
@@ -534,6 +563,12 @@
   const scaleValue = document.getElementById('scaleValue');
   const charNameInput = document.getElementById('charNameInput');
   const charNameStatus = document.getElementById('charNameStatus');
+  const killHistoryModal = document.getElementById('killHistoryModal');
+  const killHistoryTitle = document.getElementById('killHistoryTitle');
+  const killHistoryCloseBtn = document.getElementById('killHistoryCloseBtn');
+  const killHistoryColumns = document.getElementById('killHistoryColumns');
+  const killHistoryStatus = document.getElementById('killHistoryStatus');
+  const killHistoryList = document.getElementById('killHistoryList');
 
   // State
   let currentProfileId = null;
@@ -545,6 +580,10 @@
   let canonicalRefreshInFlight = false;
   let canonicalRefreshQueued = false;
   let canonicalRefreshTimer = null;
+  let killHistoryRank = null;
+  let killHistoryLoading = false;
+  let armedDeleteButton = null;
+  let armedDeleteTimer = null;
 
   function asFiniteNumber(value) {
     const n = Number(value);
@@ -655,6 +694,15 @@
     const sections = document.querySelectorAll(".scroll-section .section-title");
     if (sections[1]) sections[1].textContent = STR.badgeVisibility;
     if (sections[2]) sections[2].textContent = STR.monsters;
+
+    if (killHistoryCloseBtn) {
+      killHistoryCloseBtn.setAttribute('aria-label', tHistory('close'));
+      killHistoryCloseBtn.title = tHistory('close');
+    }
+    renderKillHistoryColumns();
+    if (killHistoryRank && killHistoryTitle) {
+      killHistoryTitle.textContent = fmt(tHistory('title'), { rank: MONSTER_RANKS[killHistoryRank] || killHistoryRank });
+    }
   }
 
   /**
@@ -814,7 +862,9 @@
 
     const ranks = ['normal', 'giant', 'violet', 'boss', 'unknown'];
 
-    monstersContainer.innerHTML = debugInfo + ranks.map(rank => {
+    const trackerBtnHtml = `<button class="giant-tracker-btn" onclick="openGiantTracker()">Giant Tracker</button>`;
+
+    monstersContainer.innerHTML = debugInfo + trackerBtnHtml + ranks.map(rank => {
       const monsters = monstersByRank[rank] || [];
       const count = monsters.length;
       const isOpen = accordionUserState.has(rank) ? accordionUserState.get(rank) : count > 0;
@@ -835,7 +885,10 @@
               <span class="rank-${rank}">${MONSTER_RANKS[rank]}</span>
               <span class="count">${count}</span>
             </span>
-            <span class="chevron">&#9660;</span>
+            <span class="accordion-tools">
+              <button type="button" class="accordion-history-btn" onclick="openKillHistory('${rank}', event)">${tHistory('open')}</button>
+              <span class="chevron">&#9660;</span>
+            </span>
           </div>
           <div class="accordion-content ${isOpen ? 'open' : ''}">
             <div class="monster-list">
@@ -846,6 +899,214 @@
       `;
     }).join('');
   }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatKillHistoryDateTime(entry) {
+    if (entry && typeof entry.dateTime === 'string' && entry.dateTime.trim()) {
+      return entry.dateTime.trim();
+    }
+    const ts = Number(entry?.timestamp);
+    if (!Number.isFinite(ts)) return '-';
+    const d = new Date(ts);
+    const datePart = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+    const timePart = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+    return `${datePart} ${timePart}`;
+  }
+
+  function formatKillHistoryExp(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '-';
+    return `${num.toFixed(4)}%`;
+  }
+
+  function renderKillHistoryColumns() {
+    if (!killHistoryColumns) return;
+    killHistoryColumns.innerHTML = `
+      <span>${escapeHtml(tHistory('colTime'))}</span>
+      <span>${escapeHtml(tHistory('colMonster'))}</span>
+      <span style="text-align:right;">${escapeHtml(tHistory('colExp'))}</span>
+      <span style="text-align:right;">${escapeHtml(tHistory('colAction'))}</span>
+    `;
+  }
+
+  function setKillHistoryStatus(text = '', type = '') {
+    if (!killHistoryStatus) return;
+    killHistoryStatus.textContent = text;
+    killHistoryStatus.className = 'kill-history-status';
+    if (text && type) {
+      killHistoryStatus.classList.add(type);
+    }
+  }
+
+  function disarmDeleteButton(button) {
+    if (!button) return;
+    button.dataset.armed = '0';
+    button.classList.remove('armed');
+    button.textContent = tHistory('delete');
+    if (armedDeleteButton === button) {
+      armedDeleteButton = null;
+    }
+    if (armedDeleteTimer) {
+      clearTimeout(armedDeleteTimer);
+      armedDeleteTimer = null;
+    }
+  }
+
+  function armDeleteButton(button) {
+    if (!button) return;
+    if (armedDeleteButton && armedDeleteButton !== button) {
+      disarmDeleteButton(armedDeleteButton);
+    }
+    button.dataset.armed = '1';
+    button.classList.add('armed');
+    button.textContent = tHistory('confirmAction');
+    armedDeleteButton = button;
+    if (armedDeleteTimer) {
+      clearTimeout(armedDeleteTimer);
+    }
+    armedDeleteTimer = setTimeout(() => {
+      if (armedDeleteButton === button) {
+        disarmDeleteButton(button);
+      }
+    }, 1800);
+  }
+
+  function renderKillHistoryRows(rows) {
+    if (!killHistoryList) return;
+    if (armedDeleteButton) {
+      disarmDeleteButton(armedDeleteButton);
+    }
+    if (!Array.isArray(rows) || rows.length === 0) {
+      killHistoryList.innerHTML = `<div class="kill-history-empty">${escapeHtml(tHistory('empty'))}</div>`;
+      return;
+    }
+
+    killHistoryList.innerHTML = rows.map((row) => `
+      <div class="kill-history-row">
+        <span class="time">${escapeHtml(formatKillHistoryDateTime(row))}</span>
+        <span class="monster" title="${escapeHtml(row.monsterName || '-')}">${escapeHtml(row.monsterName || '-')}</span>
+        <span class="exp">${escapeHtml(formatKillHistoryExp(row.deltaExp))}</span>
+        <span style="text-align:right;">
+          <button
+            type="button"
+            class="kill-history-delete-btn"
+            data-file-date="${escapeHtml(row.fileDate || '')}"
+            data-row-index="${Number.isFinite(Number(row.rowIndex)) ? Number(row.rowIndex) : -1}"
+            data-signature="${escapeHtml(row.signature || '')}"
+          >${escapeHtml(tHistory('delete'))}</button>
+        </span>
+      </div>
+    `).join('');
+
+    killHistoryList.querySelectorAll('.kill-history-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (killHistoryLoading) return;
+        if (btn.dataset.armed !== '1') {
+          armDeleteButton(btn);
+          return;
+        }
+        disarmDeleteButton(btn);
+        const fileDate = btn.getAttribute('data-file-date') || '';
+        const rowIndex = Number(btn.getAttribute('data-row-index'));
+        const signature = btn.getAttribute('data-signature') || '';
+        void deleteHistoryKill({ fileDate, rowIndex, signature });
+      });
+    });
+  }
+
+  function closeKillHistoryModal() {
+    killHistoryRank = null;
+    if (armedDeleteButton) {
+      disarmDeleteButton(armedDeleteButton);
+    }
+    setKillHistoryStatus('');
+    if (killHistoryModal) {
+      killHistoryModal.classList.remove('open');
+      killHistoryModal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  async function loadKillHistory(rank) {
+    if (!killHistoryList) return;
+    setKillHistoryStatus('');
+    if (!currentProfileId || !rank) {
+      killHistoryList.innerHTML = `<div class="kill-history-empty">${escapeHtml(tHistory('empty'))}</div>`;
+      return;
+    }
+
+    killHistoryLoading = true;
+    killHistoryList.innerHTML = `<div class="kill-history-loading">${escapeHtml(tHistory('loading'))}</div>`;
+    try {
+      const result = unwrap(await ipcInvoke('history:list:kills', currentProfileId, rank));
+      const rows = Array.isArray(result?.kills) ? result.kills : [];
+      renderKillHistoryRows(rows);
+    } catch (err) {
+      console.error('Failed to load kill history:', err);
+      killHistoryList.innerHTML = `<div class="kill-history-empty">${escapeHtml(tHistory('empty'))}</div>`;
+      setKillHistoryStatus(tHistory('deleteFailed'), 'error');
+    } finally {
+      killHistoryLoading = false;
+    }
+  }
+
+  async function deleteHistoryKill(payload) {
+    if (!currentProfileId) return;
+    setKillHistoryStatus('');
+
+    killHistoryLoading = true;
+    try {
+      const result = unwrap(await ipcInvoke('history:delete:kill', currentProfileId, payload));
+      if (!result?.success) {
+        throw new Error(result?.error || 'delete-failed');
+      }
+      await loadKillHistory(killHistoryRank);
+      await requestState();
+    } catch (err) {
+      console.error('Failed to delete history kill:', err);
+      setKillHistoryStatus(tHistory('deleteFailed'), 'error');
+    } finally {
+      killHistoryLoading = false;
+    }
+  }
+
+  async function openKillHistoryForRank(rank) {
+    killHistoryRank = rank;
+    if (killHistoryTitle) {
+      killHistoryTitle.textContent = fmt(tHistory('title'), { rank: MONSTER_RANKS[rank] || rank });
+    }
+    renderKillHistoryColumns();
+    if (killHistoryModal) {
+      killHistoryModal.classList.add('open');
+      killHistoryModal.setAttribute('aria-hidden', 'false');
+    }
+    await loadKillHistory(rank);
+  }
+
+  window.openGiantTracker = function() {
+    ipcInvoke('gt:open').catch(err => {
+      console.error('Failed to open Giant Tracker:', err);
+    });
+  };
+
+  window.openKillHistory = function(rank, event) {
+    if (event && typeof event.stopPropagation === 'function') {
+      event.stopPropagation();
+    }
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+    void openKillHistoryForRank(rank);
+  };
 
   /**
    * Toggle accordion open/closed
@@ -1046,6 +1307,7 @@
   async function bindProfile(profileId) {
     if (!profileId) return;
 
+    closeKillHistoryModal();
     currentProfileId = profileId;
 
     try {
@@ -1212,6 +1474,24 @@
       charNameInput.addEventListener('input', scheduleSave);
       charNameInput.addEventListener('change', scheduleSave);
     }
+
+    if (killHistoryCloseBtn) {
+      killHistoryCloseBtn.addEventListener('click', () => {
+        closeKillHistoryModal();
+      });
+    }
+    if (killHistoryModal) {
+      killHistoryModal.addEventListener('click', (event) => {
+        if (event.target === killHistoryModal) {
+          closeKillHistoryModal();
+        }
+      });
+    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && killHistoryModal?.classList.contains('open')) {
+        closeKillHistoryModal();
+      }
+    });
 
     profileSelector.addEventListener('change', (e) => {
       bindProfile(e.target.value);

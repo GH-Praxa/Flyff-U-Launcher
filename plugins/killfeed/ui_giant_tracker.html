@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giant Tracker</title>
+  <link rel="stylesheet" href="ui_giant_tracker.css">
+</head>
+<body>
+  <div class="gt-container">
+    <div class="gt-header">
+      <h1>Giant Tracker</h1>
+      <span id="gtProfile" class="gt-profile"></span>
+    </div>
+
+    <div class="gt-filters">
+      <div class="gt-filter-group" id="gtRankFilter">
+        <button class="gt-filter-btn active" data-rank="all">All</button>
+        <button class="gt-filter-btn" data-rank="giant">Giants</button>
+        <button class="gt-filter-btn" data-rank="violet">Violets</button>
+        <button class="gt-filter-btn" data-rank="boss">Bosses</button>
+        <button class="gt-filter-btn" data-rank="drops">Drops</button>
+      </div>
+      <select id="gtSort" class="gt-sort-select">
+        <option value="kills-desc">Kills &#8595;</option>
+        <option value="kills-asc">Kills &#8593;</option>
+        <option value="name-asc">Name A-Z</option>
+        <option value="name-desc">Name Z-A</option>
+        <option value="level-asc">Level &#8593;</option>
+        <option value="level-desc">Level &#8595;</option>
+      </select>
+      <input type="text" id="gtSearch" class="gt-search" placeholder="Search...">
+    </div>
+
+    <div id="gtCards" class="gt-cards">
+      <div class="gt-loading">Loading...</div>
+    </div>
+  </div>
+
+  <div id="gtDropModal" class="gt-drop-modal">
+    <div class="gt-drop-dialog">
+      <div class="gt-drop-dialog-header">
+        <h3 id="gtDropTitle">Log Drop</h3>
+        <button id="gtDropClose" type="button" class="gt-drop-dialog-close">x</button>
+      </div>
+      <input type="text" id="gtDropSearch" class="gt-drop-search" placeholder="Search items...">
+      <div id="gtRarityFilter" class="gt-rarity-filter">
+        <button class="gt-rarity-btn active" data-rarity="all">All</button>
+        <button class="gt-rarity-btn rarity-common" data-rarity="common">Common</button>
+        <button class="gt-rarity-btn rarity-uncommon" data-rarity="uncommon">Uncommon</button>
+        <button class="gt-rarity-btn rarity-rare" data-rarity="rare">Rare</button>
+        <button class="gt-rarity-btn rarity-veryrare" data-rarity="veryrare">Very Rare</button>
+        <button class="gt-rarity-btn rarity-unique" data-rarity="unique">Unique</button>
+        <button class="gt-rarity-btn rarity-ultimate" data-rarity="ultimate">Ultimate</button>
+      </div>
+      <div id="gtLootGrid" class="gt-loot-grid"></div>
+    </div>
+  </div>
+
+  <script src="ui_giant_tracker.js"></script>
+</body>
+</html>

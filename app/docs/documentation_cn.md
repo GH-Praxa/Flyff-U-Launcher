@@ -194,6 +194,20 @@
 
 ![说明](killfeed/killfeed_11_de.png)
 
+- 每次识别到的击杀都会显示在侧边面板中，并持久保存。
+- 数据按配置档分别写入 AppData 下的 CSV 文件：
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv`（单次击杀明细）
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv`（每日汇总）
+- 在怪物追踪折叠面板中，每个品级都有一个 `Kills` 按钮。
+- 点击 `Kills` 会打开所选品级的单次击杀列表视图。
+
+![说明](killfeed/killfeed_12_de.png)
+
+- 在列表视图中可以删除单次击杀记录（`Delete` -> `Confirm`）。
+- 删除后会直接更新侧边面板显示，以及 Killfeed 历史文件（`daily/YYYY-MM-DD.csv` 和 `history.csv`）。
+
+![说明](killfeed/killfeed_13_de.png)
+
 
 **击杀判定规则：**
 满足以下全部条件才计为一次击杀：
@@ -212,6 +226,108 @@
 **提示：**
 - 必须启用 OCR 系统才能识别击杀。
 - 击杀/小时等统计按滚动的 5 分钟窗口计算。
+:::
+
+:::accordion[Killfeed：Giant Tracker]
+# 注意：
+## 在首次记录到 Giant、Violet 或 Boss 击杀之前，会显示示例数据来演示该功能。
+---
+Giant Tracker 是 Killfeed 插件中的独立窗口，用于追踪并可视化 **Giants**、**Violets** 和 **Bosses** 的击杀统计——包括时间范围、掉落物和击杀时间（TTK）。五个筛选标签（全部、Giants、Violets、Bosses、Drops）支持按等级或已记录的掉落进行针对性筛选。
+
+**打开方式：**
+- 在 Killfeed 侧边栏中有 **"Giant Tracker"** 按钮。
+- 点击后会打开一个独立窗口，显示所有追踪的 Boss 怪物概览。
+- 如果还没有真实击杀数据，将显示示例数据。
+
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+
+---
+
+**筛选和排序：**
+- 筛选栏可以限制显示范围：
+  - **全部** / **Giants** / **Violets** / **Bosses** / **Drops** ——按怪物等级或掉落物筛选。
+  - **Bosses** ——仅显示等级为 `boss` 的怪物（如 Clockworks、Meteonyker）。Boss 卡片有红色边框。
+  - **Drops** ——仅显示至少有一条掉落记录的怪物。此外，卡片中直接显示掉落池预览（按稀有度排列的前5个物品）。
+  - **排序** ——按击杀数（升序/降序）、名称（A–Z / Z–A）或等级（升序/降序）。
+  - **搜索框** ——按怪物名称筛选卡片。
+
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+
+---
+
+**卡片视图：**
+
+每个追踪的怪物显示为一张卡片。有两种视图：
+
+*紧凑卡片（默认视图）：*
+- 怪物图标、名称、等级、属性、等级
+- 战斗数值（HP、ATK）
+- 击杀概览：今天 / 总计
+- TTK 显示（如有测量数据）：`TTK: 45.2s (平均 52.3s)`
+- 最后击杀（时间）、掉落数量
+- **"详情"** 按钮展开
+
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+
+*展开卡片（详细视图）：*
+- 紧凑卡片的所有字段
+- 按时间段的击杀统计：今天、本周、本月、今年、总计
+- TTK 统计：平均 TTK、最后 TTK、最快
+- 掉落区域：掉落数量、平均击杀/掉落、自上次掉落以来的击杀数
+- 掉落历史（可折叠）：包含物品名称、击杀计数器和时间戳的单个掉落记录
+- **"记录掉落"** 按钮记录掉落
+- **"收起"** 按钮关闭详细视图
+
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+
+---
+
+**掉落追踪：**
+
+展开卡片中的 **"记录掉落"** 按钮会打开一个对话框：
+- 显示怪物的掉落池（如果已通过 API-Fetch 下载怪物数据）。
+- 物品可以按名称搜索并按稀有度筛选（普通、稀有、稀少、非常稀少、唯一、究极）。
+- 点击物品会记录掉落，附带当前时间戳和击杀计数。
+- 之前记录的掉落可以从历史中逐个删除。
+
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![说明](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
+
+---
+
+**击杀时间（TTK）：**
+
+TTK 自动测量与 Boss 怪物的战斗时间——从第一次打击到击杀。
+
+*工作原理：*
+- **开始：** 检测到敌方 HP 条 `当前 < 最大`（战斗开始）。
+- **停止：** 通过 EXP 检测确认击杀。累积的战斗时间被保存。
+- **暂停：** HP 条消失（如取消选择目标进行增益或治疗）。开始 10 秒的宽限期。
+- **继续：** 如果在 10 秒宽限期内重新选择同一 Boss 怪物，计时器继续。暂停时间不计入 TTK。
+- **中止：** 如果宽限期结束仍未重新选择 Boss，TTK 测量被丢弃。
+
+*目标识别：*
+- 战斗开始时保存怪物名称和最大 HP。
+- 重新选择时比较名称和最大 HP——只有匹配时计时器才会继续。
+- 如果选择了不同的 Boss 怪物，当前测量被中止并开始新的测量。
+- 如果选择了普通怪物，Boss 计时器暂停；普通击杀继续计数。
+
+*显示和统计：*
+- 紧凑卡片：`TTK: [最后击杀] (平均 [平均值])`
+- 展开卡片：平均 TTK、最后 TTK、最快
+- TTK 值按击杀保存在 CSV 历史中（`TTK_ms` 列），并按怪物汇总。
+
+*限制：*
+- TTK 测量仅对 Giants、Violets 和 Bosses 有效。普通怪物不被测量。
+- 精度取决于 OCR 采样率（通常：每 500-1000 毫秒）。
+
+---
+
+**数据来源：**
+- 击杀数据来自 Killfeed CSV 历史（`daily/YYYY-MM-DD.csv`）。
+- 掉落日志按配置文件分别存储。
+- 怪物详情（图标、HP、ATK、掉落池）来自通过 API-Fetch 下载的怪物数据。
+
 :::
 
 ## 工具

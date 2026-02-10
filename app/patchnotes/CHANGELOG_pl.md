@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Wersja 2.5.0
+
+### 🆕 Nowa funkcja: Giant Tracker
+- Osobne okno w pluginie Killfeed do śledzenia i wizualizacji statystyk zabójstw Giants, Violets i Bossów.
+
+### ✨ Ulepszenia
+- Killfeed: akordeony śledzenia potworów zawierają teraz przycisk „Kills” dla każdego rangu z listą pojedynczych zabójstw.
+- Killfeed: pojedyncze zabójstwa można teraz usuwać bezpośrednio z tej listy.
+
+### 🐛 Poprawki błędów
+- Killfeed: usuwanie pojedynczych zabójstw teraz niezawodnie aktualizuje pliki historii AppData (daily/YYYY-MM-DD.csv, history.csv) oraz stan panelu bocznego.
+
+---
 ## 🆕 Wersja 2.4.1
 
 ### ✨ Ulepszenia

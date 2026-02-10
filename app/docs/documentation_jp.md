@@ -194,6 +194,20 @@
 
 ![説明](killfeed/killfeed_11_de.png)
 
+- 検出されたキルはサイドパネルに表示され、永続保存されます。
+- 保存先はプロファイルごとの AppData 配下 CSV ファイルです：
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv`（単発キルの明細）
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv`（日次サマリー）
+- モンスター追跡アコーディオンには、各ランクごとに `Kills` ボタンがあります。
+- `Kills` を押すと、選択したランクの単発キルを一覧表示します。
+
+![説明](killfeed/killfeed_12_de.png)
+
+- 一覧表示では単発キルを削除できます（`Delete` -> `Confirm`）。
+- 削除すると、サイドパネル表示と Killfeed 履歴ファイル（`daily/YYYY-MM-DD.csv` と `history.csv`）が即時更新されます。
+
+![説明](killfeed/killfeed_13_de.png)
+
 
 **キル判定ルール:**
 以下すべて満たすとキルとしてカウント：
@@ -212,6 +226,33 @@
 **備考:**
 - キル検知には OCR が有効である必要があります。
 - キル/時などの統計は 5 分のローリングウィンドウで算出。
+:::
+
+:::accordion[Killfeed: Giant Tracker]
+# 注意:
+## Giant / Violet / Boss の初回キルが記録されるまでは、機能説明のためサンプルデータが表示されます。
+---
+Giant Tracker は Killfeed プラグイン内の独立ウィンドウです。**Giants**、**Violets**、**Bosses** のキル統計を追跡・可視化します。
+
+- Killfeed サイドパネルの **"Giant Tracker"** ボタンから開きます。
+- フィルタータブ: **All**、**Giants**、**Violets**、**Bosses**、**Drops**。
+- カード表示: コンパクト表示 / 展開表示。
+- 期間: 今日、週、月、年、合計。
+- レアリティフィルター付きドロップ追跡と、モンスターごとのドロップ履歴。
+- TTK (Time to Kill): 最新、平均、最速。
+- 個別のドロップ/キル記録は直接削除できます。
+
+データソース:
+- キル履歴: `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv`
+- 日次サマリー: `user/plugin-data/killfeed/history/<profile-id>/history.csv`
+- モンスター詳細（アイコン、HP、ATK、loot pool）: API-Fetch のモンスターデータ。
+
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![説明](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
 :::
 
 ## ツール

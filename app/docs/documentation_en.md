@@ -195,6 +195,20 @@ Plugins usually need data and icons from the API. You can download them with API
 
 ![Description](killfeed/killfeed_11_de.png)
 
+- Each detected kill is shown in the side panel and stored persistently.
+- Storage is written per profile to CSV files under AppData:
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` (individual kills)
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv` (daily summary)
+- Monster tracking accordions provide a `Kills` button per rank.
+- `Kills` opens a list view with individual kills for the selected rank.
+
+![Description](killfeed/killfeed_12_de.png)
+
+- Individual kills can be deleted in the list view (`Delete` -> `Confirm`).
+- Deleting a kill directly updates the side panel view and Killfeed history files (`daily/YYYY-MM-DD.csv` and `history.csv`).
+
+![Description](killfeed/killfeed_13_de.png)
+
 
 **Kill detection – rules:**
 A kill is counted when all conditions are met:
@@ -213,6 +227,108 @@ A kill is counted when all conditions are met:
 **Notes:**
 - The OCR system must be active for kills to be detected.
 - Stats like kills/hour are calculated over a rolling 5-minute window.
+:::
+
+:::accordion[Killfeed: Giant Tracker]
+# ATTENTION:
+## Until the first recorded kill of a Giant, Violet, or Boss, example data is shown to demonstrate the feature.
+---
+The Giant Tracker is a standalone window inside the Killfeed plugin. It tracks and visualizes kill statistics for **Giants**, **Violets**, and **Bosses** — including time ranges, drops, and Time to Kill (TTK). The five filter tabs (All, Giants, Violets, Bosses, Drops) allow targeted filtering by rank or by logged drops.
+
+**Opening:**
+- The **"Giant Tracker"** button is located in the Killfeed side panel.
+- A click opens a separate window with an overview of all tracked boss monsters.
+- If no real kill data is available, example data is shown.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+
+---
+
+**Filtering and Sorting:**
+- The filter bar allows narrowing the display:
+  - **All** / **Giants** / **Violets** / **Bosses** / **Drops** — filters by monster rank or drops.
+  - **Bosses** — shows only monsters with rank `boss` (e.g. Clockworks, Meteonyker). Boss cards have a red border.
+  - **Drops** — shows only monsters with at least one logged drop. Additionally, a loot pool preview (top 5 items by rarity) is shown directly in the card.
+  - **Sorting** — by kills (asc/desc), name (A–Z / Z–A) or level (asc/desc).
+  - **Search field** — filters cards by monster name.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+
+---
+
+**Card Views:**
+
+Each tracked monster is displayed as a card. There are two views:
+
+*Compact Card (Default view):*
+- Monster icon, name, level, element, rank
+- Combat stats (HP, ATK)
+- Kill overview: Today / Total
+- TTK display (if measurement data available): `TTK: 45.2s (Avg 52.3s)`
+- Last kill (time), drop count
+- **"Details"** button to expand
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+
+*Expanded Card (Detail view):*
+- All fields from the compact card
+- Kill statistics by time range: Today, Week, Month, Year, Total
+- TTK statistics: Avg TTK, Last TTK, Fastest
+- Drop section: Drop count, avg kills per drop, kills since last drop
+- Drop history (collapsible): Individual drops with item name, kill counter, and timestamp
+- **"Log Drop"** button to record a drop
+- **"Collapse"** button to close the detail view
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+
+---
+
+**Drop Tracking:**
+
+The **"Log Drop"** button in the expanded card opens a dialog:
+- Shows the loot pool of the monster (if monster data was downloaded via API-Fetch).
+- Items can be searched by name and filtered by rarity (Common, Uncommon, Rare, Very Rare, Unique, Ultimate).
+- A click on an item records the drop with the current timestamp and kill counter.
+- Previously logged drops can be individually deleted from the drop history.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
+
+---
+
+**Time to Kill (TTK):**
+
+TTK automatically measures the combat duration against a boss monster — from the first hit to the kill.
+
+*How it works:*
+- **Start:** The enemy HP bar is detected with `current < max` (combat started).
+- **Stop:** The kill is confirmed via EXP detection. The accumulated combat time is saved.
+- **Pause:** The HP bar disappears (e.g. by deselecting the target to buff or heal). A grace period of 10 seconds begins.
+- **Resume:** If the same boss monster is re-targeted within the 10-second grace period, the timer continues. Pause time is not counted toward TTK.
+- **Abort:** If the grace period expires without re-targeting the boss, the TTK measurement is discarded.
+
+*Target identification:*
+- At combat start, the monster name and max HP are saved.
+- When re-targeting, name and max HP are compared — only then is the timer resumed.
+- If a different boss monster is targeted, the current measurement is aborted and a new one starts.
+- If a normal monster is targeted, the boss timer pauses; normal kills continue to be counted.
+
+*Display and statistics:*
+- Compact Card: `TTK: [last kill] (Avg [average])`
+- Expanded Card: Avg TTK, Last TTK, Fastest
+- TTK values are saved per kill in the CSV history (column `TTK_ms`) and aggregated per monster.
+
+*Limitation:*
+- TTK measurement is only active for Giants, Violets, and Bosses. Normal monsters are not measured.
+- Accuracy depends on the OCR sampling rate (typical: every 500–1000 ms).
+
+---
+
+**Data sources:**
+- Kill data comes from the Killfeed CSV history (`daily/YYYY-MM-DD.csv`).
+- Drop logs are stored separately per profile.
+- Monster details (icon, HP, ATK, loot pool) come from the monster data downloaded via API-Fetch.
+
 :::
 
 ## Tools

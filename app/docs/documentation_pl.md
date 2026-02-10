@@ -194,6 +194,20 @@ Pluginy zwykle potrzebują danych i ikon z API. Pobierz je poprzez API-Fetch.
 
 ![Opis](killfeed/killfeed_11_de.png)
 
+- Każde wykryte zabicie jest wyświetlane w panelu bocznym i zapisywane trwale.
+- Zapis odbywa się per profil do plików CSV w AppData:
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` (pojedyncze zabicia)
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv` (podsumowanie dzienne)
+- W akordeonach śledzenia potworów dostępny jest przycisk `Kills` dla każdego rangu.
+- `Kills` otwiera widok listy z pojedynczymi zabiciami wybranego rangu.
+
+![Opis](killfeed/killfeed_12_de.png)
+
+- W widoku listy można usuwać pojedyncze zabicia (`Delete` -> `Confirm`).
+- Usunięcie od razu aktualizuje widok panelu bocznego oraz pliki historii Killfeed (`daily/YYYY-MM-DD.csv` i `history.csv`).
+
+![Opis](killfeed/killfeed_13_de.png)
+
 
 **Reguły zaliczenia zabicia:**
 Zabicie jest liczone, gdy spełnione są wszystkie warunki:
@@ -212,6 +226,108 @@ Zabicie jest liczone, gdy spełnione są wszystkie warunki:
 **Uwagi:**
 - OCR musi być aktywny, by wykrywać zabicia.
 - Statystyki typu zabicia/h liczone są na ruchomym 5‑minutowym oknie.
+:::
+
+:::accordion[Killfeed: Giant Tracker]
+# UWAGA:
+## Do czasu pierwszego zarejestrowanego zabicia Gianta, Violeta lub Bossa wyświetlane są dane przykładowe, aby pokazać działanie funkcji.
+---
+Giant Tracker to osobne okno w pluginie Killfeed. Śledzi i wizualizuje statystyki zabójstw **Giants**, **Violets** i **Bossów** — w tym zakresy czasu, dropy i Time to Kill (TTK). Pięć zakładek filtrów (Wszystkie, Giants, Violets, Bosses, Drops) umożliwia ukierunkowane filtrowanie według rangi lub zarejestrowanych dropów.
+
+**Otwieranie:**
+- Przycisk **„Giant Tracker"** znajduje się w panelu bocznym Killfeed.
+- Kliknięcie otwiera osobne okno z przeglądem wszystkich śledzonych bossów.
+- Jeśli nie ma jeszcze rzeczywistych danych o killach, wyświetlane są dane przykładowe.
+
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+
+---
+
+**Filtrowanie i sortowanie:**
+- Pasek filtrów pozwala zawęzić wyświetlanie:
+  - **Wszystkie** / **Giants** / **Violets** / **Bosses** / **Drops** — filtruje według rangi potwora lub dropów.
+  - **Bosses** — pokazuje tylko potwory z rangą `boss` (np. Clockworks, Meteonyker). Karty bossów mają czerwoną ramkę.
+  - **Drops** — pokazuje tylko potwory z co najmniej jednym zarejestrowanym dropem. Dodatkowo w karcie wyświetlany jest podgląd loot poola (top 5 itemów według rzadkości).
+  - **Sortowanie** — według zabójstw (rosnąco/malejąco), nazwy (A–Z / Z–A) lub poziomu (rosnąco/malejąco).
+  - **Pole wyszukiwania** — filtruje karty według nazwy potwora.
+
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+
+---
+
+**Widoki kart:**
+
+Każdy śledzony potwór jest wyświetlany jako karta. Dostępne są dwa widoki:
+
+*Karta kompaktowa (widok domyślny):*
+- Ikona potwora, nazwa, poziom, żywioł, ranga
+- Statystyki walki (HP, ATK)
+- Przegląd zabójstw: Dziś / Łącznie
+- Wyświetlanie TTK (jeśli dostępne dane pomiarowe): `TTK: 45.2s (Śr 52.3s)`
+- Ostatni kill (czas), liczba dropów
+- Przycisk **„Szczegóły"** do rozwinięcia
+
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+
+*Karta rozszerzona (widok szczegółowy):*
+- Wszystkie pola z karty kompaktowej
+- Statystyki zabójstw według okresu: Dziś, Tydzień, Miesiąc, Rok, Łącznie
+- Statystyki TTK: Śr. TTK, Ostatni TTK, Najszybszy
+- Sekcja dropów: Liczba dropów, śr. zabójstw na drop, zabójstwa od ostatniego dropu
+- Historia dropów (zwijana): Pojedyncze dropy z nazwą itemu, licznikiem zabójstw i znacznikiem czasu
+- Przycisk **„Zapisz drop"** do rejestrowania dropu
+- Przycisk **„Zwiń"** do zamknięcia widoku szczegółowego
+
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+
+---
+
+**Śledzenie dropów:**
+
+Przycisk **„Zapisz drop"** w karcie rozszerzonej otwiera dialog:
+- Wyświetla loot pool potwora (jeśli dane pobrano przez API-Fetch).
+- Itemy można wyszukiwać po nazwie i filtrować według rzadkości (Pospolity, Niepospolity, Rzadki, Bardzo rzadki, Unikalny, Ostateczny).
+- Kliknięcie na item rejestruje drop z aktualnym znacznikiem czasu i licznikiem zabójstw.
+- Wcześniej zarejestrowane dropy można indywidualnie usuwać z historii.
+
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![Opis](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
+
+---
+
+**Time to Kill (TTK):**
+
+TTK automatycznie mierzy czas walki z bossem — od pierwszego uderzenia do zabicia.
+
+*Działanie:*
+- **Start:** Pasek HP wroga wykryty z `aktualne < max` (walka rozpoczęta).
+- **Stop:** Zabicie potwierdzone przez wykrycie EXP. Skumulowany czas walki zostaje zapisany.
+- **Pauza:** Pasek HP znika (np. przez odznaczenie celu do buffowania lub leczenia). Rozpoczyna się 10-sekundowy okres karencji.
+- **Wznowienie:** Jeśli ten sam boss zostanie ponownie wybrany w ciągu 10 sekund, timer kontynuuje. Czas pauzy nie jest wliczany do TTK.
+- **Przerwanie:** Jeśli okres karencji minie bez ponownego wybrania bossa, pomiar TTK zostaje odrzucony.
+
+*Identyfikacja celu:*
+- Na początku walki zapisywana jest nazwa potwora i maksymalne HP.
+- Przy ponownym wybraniu porównywane są nazwa i maks. HP — timer wznawia się tylko wtedy, gdy się zgadzają.
+- Jeśli wybrany zostanie inny boss, bieżący pomiar jest przerywany i rozpoczyna się nowy.
+- Jeśli wybrany zostanie normalny potwór, timer bossa pauzuje; normalne zabójstwa są nadal liczone.
+
+*Wyświetlanie i statystyki:*
+- Karta kompaktowa: `TTK: [ostatni kill] (Śr [średnia])`
+- Karta rozszerzona: Śr. TTK, Ostatni TTK, Najszybszy
+- Wartości TTK są zapisywane per kill w historii CSV (kolumna `TTK_ms`) i agregowane per potwór.
+
+*Ograniczenie:*
+- Pomiar TTK jest aktywny tylko dla Giants, Violets i Bossów. Normalne potwory nie są mierzone.
+- Dokładność zależy od częstotliwości próbkowania OCR (typowo: co 500–1000 ms).
+
+---
+
+**Źródła danych:**
+- Dane o killach pochodzą z historii CSV Killfeed (`daily/YYYY-MM-DD.csv`).
+- Logi dropów są przechowywane osobno dla każdego profilu.
+- Szczegóły potworów (ikona, HP, ATK, loot pool) pochodzą z danych pobranych przez API-Fetch.
+
 :::
 
 ## Narzędzia

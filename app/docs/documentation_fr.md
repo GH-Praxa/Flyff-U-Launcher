@@ -195,6 +195,20 @@ Les plugins ont en général besoin de données et d’icônes API. Télécharge
 
 ![Description](killfeed/killfeed_11_de.png)
 
+- Chaque kill détecté est affiché dans le panneau latéral et enregistré de façon persistante.
+- L’enregistrement se fait par profil dans des fichiers CSV sous AppData :
+  - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` (kills individuels)
+  - `user/plugin-data/killfeed/history/<profile-id>/history.csv` (résumé journalier)
+- Les accordéons de suivi des monstres proposent un bouton `Kills` pour chaque rang.
+- `Kills` ouvre une vue liste des kills individuels du rang sélectionné.
+
+![Description](killfeed/killfeed_12_de.png)
+
+- Dans la vue liste, les kills individuels peuvent être supprimés (`Delete` -> `Confirm`).
+- La suppression met à jour directement l’affichage du panneau latéral et les fichiers d’historique Killfeed (`daily/YYYY-MM-DD.csv` et `history.csv`).
+
+![Description](killfeed/killfeed_13_de.png)
+
 
 **Détection d’un kill – règles :**
 Un kill est compté si toutes les conditions suivantes sont vraies :
@@ -213,6 +227,108 @@ Un kill est compté si toutes les conditions suivantes sont vraies :
 **Notes :**
 - L’OCR doit être actif pour détecter les kills.
 - Les stats type kills/h sont calculées sur une fenêtre roulante de 5 minutes.
+:::
+
+:::accordion[Killfeed : Giant Tracker]
+# ATTENTION :
+## Jusqu'au premier kill enregistré d'un Giant, Violet ou Boss, des données d'exemple sont affichées pour présenter la fonction.
+---
+Le Giant Tracker est une fenêtre autonome dans le plugin Killfeed. Il suit et visualise les statistiques de kill pour les **Giants**, **Violets** et **Bosses** — y compris les périodes, les drops et le Time to Kill (TTK). Les cinq onglets de filtre (Tous, Giants, Violets, Bosses, Drops) permettent un filtrage ciblé par rang ou par drops enregistrés.
+
+**Ouverture :**
+- Le bouton **« Giant Tracker »** se trouve dans le panneau latéral Killfeed.
+- Un clic ouvre une fenêtre séparée avec l'aperçu de tous les monstres boss suivis.
+- S'il n'y a pas encore de données de kill réelles, des données d'exemple sont affichées.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_1_de.png)
+
+---
+
+**Filtrage et tri :**
+- La barre de filtres permet de restreindre l'affichage :
+  - **Tous** / **Giants** / **Violets** / **Bosses** / **Drops** — filtre par rang de monstre ou par drops.
+  - **Bosses** — affiche uniquement les monstres de rang `boss` (ex. Clockworks, Meteonyker). Les cartes boss ont une bordure rouge.
+  - **Drops** — affiche uniquement les monstres ayant au moins un drop enregistré. De plus, un aperçu du loot pool (top 5 items par rareté) est affiché directement dans la carte.
+  - **Tri** — par kills (croissant/décroissant), nom (A–Z / Z–A) ou niveau (croissant/décroissant).
+  - **Champ de recherche** — filtre les cartes par nom de monstre.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_2_de.png)
+
+---
+
+**Vues des cartes :**
+
+Chaque monstre suivi est affiché sous forme de carte. Il existe deux vues :
+
+*Carte compacte (vue par défaut) :*
+- Icône du monstre, nom, niveau, élément, rang
+- Statistiques de combat (PV, ATQ)
+- Aperçu des kills : Aujourd'hui / Total
+- Affichage TTK (si des mesures sont disponibles) : `TTK: 45.2s (Moy 52.3s)`
+- Dernier kill (heure), nombre de drops
+- Bouton **« Détails »** pour développer
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_3_de.png)
+
+*Carte étendue (vue détaillée) :*
+- Tous les champs de la carte compacte
+- Statistiques de kills par période : Aujourd'hui, Semaine, Mois, Année, Total
+- Statistiques TTK : Moy. TTK, Dernier TTK, Plus rapide
+- Section drops : Nombre de drops, moy. kills par drop, kills depuis le dernier drop
+- Historique des drops (repliable) : Drops individuels avec nom d'item, compteur de kills et horodatage
+- Bouton **« Enregistrer drop »** pour enregistrer un drop
+- Bouton **« Réduire »** pour fermer la vue détaillée
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_4_de.png)
+
+---
+
+**Suivi des drops :**
+
+Le bouton **« Enregistrer drop »** dans la carte étendue ouvre un dialogue :
+- Affiche le loot pool du monstre (si les données ont été téléchargées via API-Fetch).
+- Les items peuvent être recherchés par nom et filtrés par rareté (Commun, Peu commun, Rare, Très rare, Unique, Ultime).
+- Un clic sur un item enregistre le drop avec l'horodatage actuel et le compteur de kills.
+- Les drops déjà enregistrés peuvent être supprimés individuellement depuis l'historique.
+
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_5_de.png)
+![Description](killfeed_giant_tracker/killfeed_giant_tracker_6_de.png)
+
+---
+
+**Time to Kill (TTK) :**
+
+Le TTK mesure automatiquement la durée de combat contre un monstre boss — du premier coup au kill.
+
+*Fonctionnement :*
+- **Début :** La barre de PV ennemie est détectée avec `actuel < max` (combat commencé).
+- **Fin :** Le kill est confirmé via la détection d'EXP. Le temps de combat accumulé est sauvegardé.
+- **Pause :** La barre de PV disparaît (ex. en désélectionnant la cible pour buff ou soin). Un délai de grâce de 10 secondes commence.
+- **Reprise :** Si le même monstre boss est re-ciblé dans le délai de 10 secondes, le timer continue. Le temps de pause n'est pas compté dans le TTK.
+- **Abandon :** Si le délai de grâce expire sans re-cibler le boss, la mesure TTK est annulée.
+
+*Identification de la cible :*
+- Au début du combat, le nom du monstre et les PV max sont sauvegardés.
+- Lors d'un re-ciblage, le nom et les PV max sont comparés — le timer ne reprend que si ils correspondent.
+- Si un autre monstre boss est ciblé, la mesure en cours est annulée et une nouvelle commence.
+- Si un monstre normal est ciblé, le timer boss se met en pause ; les kills normaux continuent d'être comptés.
+
+*Affichage et statistiques :*
+- Carte compacte : `TTK: [dernier kill] (Moy [moyenne])`
+- Carte étendue : Moy. TTK, Dernier TTK, Plus rapide
+- Les valeurs TTK sont sauvegardées par kill dans l'historique CSV (colonne `TTK_ms`) et agrégées par monstre.
+
+*Limitation :*
+- La mesure TTK n'est active que pour les Giants, Violets et Bosses. Les monstres normaux ne sont pas mesurés.
+- La précision dépend du taux d'échantillonnage OCR (typique : toutes les 500–1000 ms).
+
+---
+
+**Sources de données :**
+- Les données de kills proviennent de l'historique CSV Killfeed (`daily/YYYY-MM-DD.csv`).
+- Les logs de drops sont stockés séparément par profil.
+- Les détails des monstres (icône, PV, ATQ, loot pool) proviennent des données téléchargées via API-Fetch.
+
 :::
 
 ## Outils
