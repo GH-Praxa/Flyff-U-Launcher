@@ -25,12 +25,34 @@ const KILL_APP_SEQUENCE = `
 `;
 
 const extraResource: string[] = [];
+const bundledNodeModulesDir = path.resolve(__dirname, "resources", "node_modules");
+const appNodeModulesDir = path.resolve(__dirname, "node_modules");
+
+function ensureBundledNodeModules(): void {
+    const depsToBundle = ["sharp", "detect-libc", "semver", "@img"];
+
+    fs.rmSync(bundledNodeModulesDir, { recursive: true, force: true });
+    fs.mkdirSync(bundledNodeModulesDir, { recursive: true });
+
+    for (const dep of depsToBundle) {
+        const src = path.join(appNodeModulesDir, dep);
+        const dst = path.join(bundledNodeModulesDir, dep);
+        if (!fs.existsSync(src)) {
+            // eslint-disable-next-line no-console
+            console.warn(`[sharp-runtime] Missing dependency at ${src}`);
+            continue;
+        }
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        fs.cpSync(src, dst, { recursive: true, force: true });
+    }
+}
 
 // app-update.yml is required by electron-updater
 const appUpdateYml = path.resolve(__dirname, "resources", "app-update.yml");
 if (fs.existsSync(appUpdateYml)) {
     extraResource.push(appUpdateYml);
 }
+extraResource.push(bundledNodeModulesDir);
 
 // Ensure patchnotes are available in packaged builds (outside asar)
 const patchnotesDir = path.resolve(__dirname, "patchnotes");
@@ -114,6 +136,9 @@ const config: ForgeConfig = {
     },
     rebuildConfig: {},
     hooks: {
+        prePackage: async () => {
+            ensureBundledNodeModules();
+        },
         // Electron-Updater erwartet eine latest.yml pro Release.
         // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make für Squirrel.Windows.
         postMake: async (_forgeConfig, makeResults) => {
