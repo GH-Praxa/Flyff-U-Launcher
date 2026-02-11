@@ -1,7 +1,7 @@
 {
   "id": "api-fetch",
   "name": "API Fetch",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minLauncherVersion": "1.2.0",
   "author": "Praxa",
   "description": "Lädt API-Endpunkte herunter und speichert die Ergebnisse auf dem Rechner.",

@@ -187,12 +187,13 @@ function writeTesseractDiagnostic(): void {
             `TESSDATA_PREFIX=${process.env.TESSDATA_PREFIX ?? "<not set>"}`,
             `TESSDATA_PREFIX_exists=${process.env.TESSDATA_PREFIX ? fs.existsSync(path.join(process.env.TESSDATA_PREFIX, "tessdata")) : "N/A"}`,
         ];
-        // Check if Python is available
+        // Check Tesseract version
         try {
-            const pyResult = require("child_process").execFileSync("python", ["--version"], { timeout: 5000, encoding: "utf-8" });
-            lines.push(`python_version=${pyResult.trim()}`);
+            const tessExe = process.env.TESSERACT_EXE ?? "tesseract";
+            const tessResult = require("child_process").execFileSync(tessExe, ["--version"], { timeout: 5000, encoding: "utf-8" });
+            lines.push(`tesseract_version=${tessResult.trim().split("\n")[0]}`);
         } catch (e: unknown) {
-            lines.push(`python_version=FAILED: ${e instanceof Error ? e.message : String(e)}`);
+            lines.push(`tesseract_version=FAILED: ${e instanceof Error ? e.message : String(e)}`);
         }
         fs.writeFileSync(path.join(diagDir, "electron_diagnostic.txt"), lines.join("\n"), "utf-8");
     } catch {
@@ -367,7 +368,6 @@ app.whenReady().then(async () => {
     // =========================================================================
     // OCR System
     // =========================================================================
-    const pythonExe = process.env.FLYFF_OCR_PYTHON ?? "python";
     const ipcLogErr = (msg: unknown) => logErr(msg, "IPC");
     const safeHandle = createSafeHandler(ipcLogErr);
 
@@ -388,7 +388,6 @@ app.whenReady().then(async () => {
         hasPluginHandler,
         invokePluginHandler,
         safeHandle,
-        pythonExe,
     });
 
     // =========================================================================
@@ -457,7 +456,6 @@ app.whenReady().then(async () => {
     // =========================================================================
     const serviceRegistry = createServiceRegistry({
         core: services,
-        pythonExe,
     });
 
     const pluginStateStore = createPluginStateStore();

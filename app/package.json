@@ -1,7 +1,7 @@
 {
   "name": "Flyff-U-Launcher",
   "productName": "Flyff-U-Launcher",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "My Electron application description",
   "repository": {
     "type": "git",
@@ -52,6 +52,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.7.3",
     "semver": "^7.6.0",
+    "sharp": "^0.34.5",
     "zod": "^4.2.1"
   }
 }

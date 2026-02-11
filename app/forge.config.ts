@@ -6,6 +6,7 @@ import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerWix } from "@electron-forge/maker-wix";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { VitePlugin } from "@electron-forge/plugin-vite";
+import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import { PublisherGithub } from "@electron-forge/publisher-github";
@@ -64,13 +65,6 @@ if (fs.existsSync(tesseractDir)) {
 } else {
     // eslint-disable-next-line no-console
     console.warn("Tesseract payload not found at", tesseractDir, "- bundle will skip it.");
-}
-const ocrDir = path.resolve(__dirname, "ocr");
-if (fs.existsSync(ocrDir)) {
-    extraResource.push(ocrDir);
-} else {
-    // eslint-disable-next-line no-console
-    console.warn("OCR worker directory not found at", ocrDir, "- bundle will skip it.");
 }
 const defaultPluginsDir = path.resolve(__dirname, "..", "plugins");
 const pluginIdsToBundle = ["api-fetch", "cd-timer", "killfeed"];
@@ -185,6 +179,7 @@ const config: ForgeConfig = {
         new MakerDeb({}),
     ],
     plugins: [
+        new AutoUnpackNativesPlugin({}),
         new VitePlugin({
             build: [
                 {

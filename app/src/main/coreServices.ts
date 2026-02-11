@@ -247,7 +247,6 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
  */
 export function createPluginServiceAdapters(
     core: CoreServices,
-    pythonExe: string = "python"
 ): import("../shared/pluginApi").PluginServices {
     return {
         profiles: {
@@ -430,7 +429,7 @@ export function createPluginServiceAdapters(
             acquireWorker: async () => {
                 // Dynamic import to avoid loading OCR if not needed
                 const { acquireSharedOcrWorker } = await import("./ocr/workerPool");
-                return acquireSharedOcrWorker(pythonExe);
+                return acquireSharedOcrWorker();
             },
             releaseWorker: async () => {
                 const { releaseSharedOcrWorker } = await import("./ocr/workerPool");

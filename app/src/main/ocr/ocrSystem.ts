@@ -10,7 +10,8 @@ import fsp from "fs/promises";
 import { logWarn, logErr } from "../../shared/logger";
 import { acquireSharedOcrWorker, releaseAllOcrWorkers } from "./workerPool";
 import { OcrTimerScheduler } from "./timerScheduler";
-import type { OcrKind, PythonOcrWorker } from "./pythonWorker";
+import type { OcrKind } from "./ocrTypes";
+import type { NativeOcrWorker } from "./nativeWorker";
 import {
     getDefaultOcrTimers,
     loadAllOcrTimers,
@@ -67,7 +68,6 @@ export interface OcrSystemDeps {
     hasPluginHandler: (channel: string) => boolean;
     invokePluginHandler: (channel: string, ...args: unknown[]) => Promise<unknown>;
     safeHandle: (channel: string, handler: (...args: unknown[]) => Promise<unknown>) => void;
-    pythonExe: string;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -256,23 +256,23 @@ function clampExpPercent(val: unknown): number | null {
 
 // ─── Main factory ───────────────────────────────────────────────────
 export function createOcrSystem(deps: OcrSystemDeps) {
-    const { services, getPluginEventBus, pythonExe } = deps;
+    const { services, getPluginEventBus } = deps;
     const OCR_KEYS = OCR_TIMER_KEYS;
 
     // ── Worker pool ─────────────────────────────────────────────
-    const ocrWorkerPromises = new Map<OcrKind, Promise<PythonOcrWorker>>();
+    const ocrWorkerPromises = new Map<OcrKind, Promise<NativeOcrWorker>>();
     const ocrWorkerBackoff = new Map<OcrKind, number>();
 
-    async function ensureOcrWorker(kind: OcrKind): Promise<PythonOcrWorker> {
+    async function ensureOcrWorker(kind: OcrKind): Promise<NativeOcrWorker> {
         const until = ocrWorkerBackoff.get(kind) ?? 0;
         if (Date.now() < until) throw new Error("ocr_worker_backoff");
         if (!ocrWorkerPromises.has(kind)) {
-            ocrWorkerPromises.set(kind, acquireSharedOcrWorker(pythonExe, undefined, kind));
+            ocrWorkerPromises.set(kind, acquireSharedOcrWorker(undefined, undefined, kind));
         }
         try {
             const worker = await ocrWorkerPromises.get(kind)!;
             if (!worker.isRunning()) {
-                ocrWorkerPromises.set(kind, acquireSharedOcrWorker(pythonExe, undefined, kind));
+                ocrWorkerPromises.set(kind, acquireSharedOcrWorker(undefined, undefined, kind));
                 return await ocrWorkerPromises.get(kind)!;
             }
             ocrWorkerBackoff.delete(kind);
@@ -873,7 +873,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 result = await scanRoiKey(profileId, key);
             } catch (err) {
                 const isTimeout = err instanceof Error && err.message.toLowerCase().includes("timeout");
-                const isNotStarted = err instanceof Error && err.message.includes("Python OCR worker not started");
+                const isNotStarted = err instanceof Error && err.message.includes("OCR worker not started");
                 const isBackoff = err instanceof Error && err.message.includes("ocr_worker_backoff");
                 if (isTimeout || isNotStarted) {
                     resetOcrWorker(KEY_TO_OCR_KIND[key]);
@@ -917,7 +917,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             const now = Date.now();
-            const token = msg.includes("Python OCR worker not started") ? "worker:not_started"
+            const token = msg.includes("OCR worker not started") ? "worker:not_started"
                 : msg.includes("ocr_worker_backoff") ? "worker:backoff" : `other:${key}`;
             const lastLog = ocrErrorThrottle.get(token) ?? 0;
             if (now - lastLog > 3000) {

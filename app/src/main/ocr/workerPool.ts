@@ -1,41 +1,17 @@
 import { app } from "electron";
-import fs from "fs";
 import path from "path";
-import { PythonOcrWorker } from "./pythonWorker";
+import { NativeOcrWorker } from "./nativeWorker";
 import { logErr } from "../../shared/logger";
 
-let sharedWorker: PythonOcrWorker | null = null;
-let sharedRefs = 0;
-let acquirePromise: Promise<PythonOcrWorker> | null = null;
-let releasePromise: Promise<void> | null = null;
-
 type PoolEntry = {
-    worker: PythonOcrWorker | null;
+    worker: NativeOcrWorker | null;
     refs: number;
-    acquirePromise: Promise<PythonOcrWorker> | null;
+    acquirePromise: Promise<NativeOcrWorker> | null;
     releasePromise: Promise<void> | null;
-    pythonExe?: string;
-    scriptPath?: string;
     debugDir?: string;
 };
 
 const pools = new Map<string, PoolEntry>();
-
-export function defaultOcrScriptPath(): string {
-    const candidates = [
-        path.join(process.resourcesPath, "ocr", "ocr_worker.py"),
-        path.join(process.resourcesPath, "app.asar.unpacked", "ocr", "ocr_worker.py"),
-        path.join(app.getAppPath(), "ocr", "ocr_worker.py"),
-    ];
-
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return candidate;
-        }
-    }
-
-    return candidates[candidates.length - 1];
-}
 
 export function defaultOcrDebugPath(): string {
     return path.join(app.getPath("userData"), "user", "logs", "ocr");
@@ -56,11 +32,11 @@ function getPool(key: string): PoolEntry {
 }
 
 export async function acquireSharedOcrWorker(
-    pythonExe?: string,
-    scriptPath?: string,
+    _pythonExe?: string,
+    _scriptPath?: string,
     poolKey = "default",
     debugDir?: string
-): Promise<PythonOcrWorker> {
+): Promise<NativeOcrWorker> {
     const pool = getPool(poolKey);
 
     // Wait for any pending release to complete first
@@ -78,15 +54,11 @@ export async function acquireSharedOcrWorker(
     if (!pool.worker) {
         const resolvedDebugDir = debugDir ?? pool.debugDir ?? defaultOcrDebugPath();
         pool.acquirePromise = (async () => {
-            const worker = new PythonOcrWorker({
-                pythonExe: pythonExe ?? pool.pythonExe ?? "python",
-                scriptPath: scriptPath ?? pool.scriptPath ?? defaultOcrScriptPath(),
+            const worker = new NativeOcrWorker({
                 debugDir: resolvedDebugDir,
             });
             await worker.start();
             pool.worker = worker;
-            pool.pythonExe = pythonExe ?? pool.pythonExe;
-            pool.scriptPath = scriptPath ?? pool.scriptPath;
             pool.debugDir = resolvedDebugDir;
             return worker;
         })();

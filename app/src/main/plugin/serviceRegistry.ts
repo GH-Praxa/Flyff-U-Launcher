@@ -140,11 +140,10 @@ function createEventRegistry(): EventRegistry {
 
 export interface ServiceRegistryOptions {
     core: CoreServices;
-    pythonExe?: string;
 }
 
 export function createServiceRegistry(opts: ServiceRegistryOptions) {
-    const { core, pythonExe = "python" } = opts;
+    const { core } = opts;
     const events = createEventRegistry();
 
     // Track open tabs (sessionTabs doesn't expose this)
@@ -478,7 +477,7 @@ export function createServiceRegistry(opts: ServiceRegistryOptions) {
         return {
             acquireWorker: async () => {
                 const { acquireSharedOcrWorker } = await import("../ocr/workerPool");
-                return acquireSharedOcrWorker(pythonExe);
+                return acquireSharedOcrWorker();
             },
             releaseWorker: async () => {
                 const { releaseSharedOcrWorker } = await import("../ocr/workerPool");
