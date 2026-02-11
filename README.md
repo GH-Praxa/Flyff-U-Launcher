@@ -1,132 +1,275 @@
+<div align="center">
+
 # Flyff-U-Launcher
-Inoffizieller Desktop-Launcher für Flyff Universe mit Multi-Profilen, Overlays, Plugins und Live-News.
-Wichtig: Der Launcher hält sich an die Spielregeln. Keine Automationen oder Eingriffe in das Spielgeschehen.
 
-## Schnellstart
-- (Optional für OCR/Overlays) Python 3 + Tesseract installieren und `python -m pip install -r app/ocr/requirements.txt` ausführen. Bei Bedarf `FLYFF_OCR_PYTHON` auf den Python-Pfad setzen.
-- Launcher starten und neues Profil anlegen (Name + Job/Badge vergeben).
-- (Aibatt-Icon) für das Overlay-Ziel-Profil wählen.
-- "Play" klicken (Tab oder eigenes Fenster), im Session-Fenster ggf. Split-Screen aktivieren und Layout speichern.
-- Im Spiel auf das schwebende Zahnrad klicken -> ROI/OCR/Plugin-Panel öffnen, OCR-Regionen kalibrieren und Overlays aktivieren.
+**Inoffizieller Desktop-Launcher für Flyff Universe**
+Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in einer App.
 
-## Funktionen im Überblick
+[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-### Profile & Start
-- Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren.
-- Job/Badge auswählen (Vagrant -> Crackshooter), Suchfeld + Job-Filter für lange Listen.
-- Startmodus pro Profil: **Tabs** (im Session-Fenster) oder **Fenster** (eigene Instanz).
-- Overlay-Zielschalter (Aibatt-Icon) für OCR/Sidepanel/Plugin-Overlays.
-- Schnellzugriffe im Header: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord, GitHub, Update-Hinweis, Versionslabel.
-- Newsfeed aus `universe.flyff.com` (Updates/Events/Shop) und rotierender Tipps-Banner.
+> Der Launcher hält sich an die Spielregeln. Keine Automationen oder Eingriffe in das Spielgeschehen.
 
-### Session-Fenster & Layouts
-- Tabbar mit Plus-Button zum Öffnen weiterer Profile und Login-Overlay für geschlossene BrowserViews.
-- Split-Screen mit einstellbarem Seitenverhältnis und Links/Rechts-Markierung pro Tab.
-- Tabhöhe stufenweise anpassbar; Edit-Mode zum schnellen Ausloggen/Schließen einzelner Tabs.
-- Layouts speichern/laden (Tabs, aktiver Tab, Split, ausgeloggte Chars) - Chips im Startbildschirm anwenden, im Session-Fenster speichern/auto-speichern.
-- Optionaler Layout-Delay (Client-Settings) verzögert das nacheinander Öffnen beim Anwenden eines Layouts.
+<img src="app/docs/assets/screenshots/1.png" width="700" alt="Flyff-U-Launcher Startbildschirm" />
 
-### Overlays, OCR & Sidepanel
-- Schwebendes Zahnrad folgt dem Overlay-Profil; klickt man es, öffnet sich das Sidepanel.
-- **ROI**: Level, Charname, EXP % und Lauftext per Screenshot markieren, Sichtbarkeit pro Feld toggeln oder alle auf einmal ein/aus.
-- **OCR**: Live-Werte für Level/EXP/Name/Lauftext, eigene Scan-Intervalle (ms) pro Feld.
-- ROI/OCR gelten pro Profil; der Overlay ist klick-durchlässig und bindet Plugin-Overlays (z. B. Killfeed) automatisch an das Overlay-Ziel.
-- ROI-Kalibrator: transparenter Vollbildmodus mit TAB/1-4 zum Feldwechsel, ESC für Abbruch, speichert direkt nach dem Loslassen der Box.
+</div>
 
-### Erscheinungsbild
-- Fertige Themes (Toffee, Zimt, Flyff Gold, Synthwave, Holz, u. v. m.) über das Einstellungen-Modal aktivieren.
-- Aktive Tabfarbe per Palette/Gradient oder Farbeingabe setzen; Änderungen werden sofort auf Sidepanel/Plugins gespiegelt.
-- Animierte Akzente für Tabs/Panels (deaktivieren über Themewechsel) und Language Switcher (EN/DE/PL/FR/RU/TR/CN/JP).
+---
 
-### Plugins
-- Plugin-Manager im Einstellungen-Modal: Status (Running/Stopped/Error/Disabled), Enable/Disable, optionales UI starten (z. B. Killfeed).
-- Plugins einfach in `%APPDATA%\\Flyff-U-Launcher\\plugins` ablegen (Ordnername = Plugin-ID, z. B. `killfeed`), Launcher neu starten.
-- Plugin-Tabs erscheinen automatisch im Sidepanel, Overlays werden im Spiel eingeblendet; Plugin-UI läuft im Sandbox-Iframe mit Themeübergabe.
+## Funktionen
 
-Verfügbar:
-API-Fetch - Läd Endpunkte aus der Flyff-U-API herunter und speichert sie lokal auf dem Rechner.
-Killfeed - Ein Tracker welche durch ausgelesene EXP berechnungen anstellt.
-CD-Timer - Lässt Timer für Buffs/Power Ups einstellen, laufen diese ab werden Icons als hinweis angezeigt.
+### Multi-Profil-System
+- Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren
+- Job/Badge pro Profil (Vagrant bis Crackshooter) mit Suchfeld und Job-Filter
+- Startmodus pro Profil: **Tabs** (im Session-Fenster) oder **Fenster** (eigene Instanz)
+- Overlay-Ziel bestimmen, welches Profil die OCR-Overlays und das Sidepanel erhält
 
+### Layouts & Splitscreen
+- **Grid-Layouts**: 1x1, 1x2, 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4
+- Layouts speichern/laden — per Klick mehrere Charaktere gleichzeitig starten
+- Auto-Save und optionaler Layout-Delay für sequentielles Laden
+- Multi-Window: Mehrere unabhängige Session-Fenster parallel nutzen
+- Fortschrittsanzeige beim Laden der Spielinstanzen
 
-### News & Ressourcen
-- Newsfeed rechts im Startbildschirm mit Bildern, Datum und Kategorie (Updates/Events/ItemShop).
-- Direktlinks zu Tools & Community (Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord, GitHub) im Topbar.
+<div align="center">
+<img src="app/docs/assets/screenshots/3.png" width="700" alt="2x3 Grid-Layout mit 6 Spielinstanzen" />
+<br/><sub>2x3 Grid-Layout — 6 Spielinstanzen gleichzeitig</sub>
+</div>
 
-### Sprache & Lokalisierung
-- Sofort umschaltbar über die Flagge im Header; Auswahl wird lokal gespeichert.
+<br/>
 
-### Speicherorte
-- Profil-, Layout-, Theme- und Client-Settings werden unter `%APPDATA%\\Flyff-U-Launcher` abgelegt.
-- Plugins: `%APPDATA%\\Flyff-U-Launcher\\plugins`
+<div align="center">
+<img src="screen.png" width="700" alt="Session mit Splitscreen und Overlays" />
+<br/><sub>Splitscreen mit Sidepanel und Overlays</sub>
+</div>
 
-### Voraussetzungen für OCR/Plugins
-- **Python 3** auf dem PATH oder per FLYFF_OCR_PYTHON definiert.
-- `pip install -r app/ocr/requirements.txt` (opencv-python, numpy, pytesseract) + lokales Tesseract-Binary.
+### OCR & Overlays
+- **ROI-Kalibrator**: Regionen für Level, Charname, EXP % und Lauftext per Screenshot markieren
+- **Live-OCR**: Werte werden in Echtzeit ausgelesen, eigene Scan-Intervalle pro Feld
+- Schwebendes Zahnrad-Overlay folgt dem aktiven Profil — Klick öffnet das Sidepanel
+- Overlays sind klick-durchlässig und werden bei Inaktivität automatisch ausgeblendet
+- OCR nutzt das mitgelieferte Tesseract — keine separate Installation nötig
 
+### Hotkeys
+Frei belegbare Tastenkombinationen (2–3 Tasten) für:
+- Overlays/Sidepanel/Tab-Leiste ein/aus
+- Tab-Navigation (Vorheriger/Nächster Tab, Nächstes Fenster)
+- Screenshot speichern
+- CD-Timer zurücksetzen
+- FCoins-Rechner und Premium-Einkaufsliste öffnen
 
+### Themes & Sprachen
+- Fertige Themes: Toffee, Zimt, Flyff Gold, Synthwave, Steel Ruby, Holz u.v.m.
+- Aktive Tabfarbe per Palette, Gradient oder Farbcode anpassen
+- Animierte Akzente für Tabs und Panels
+- **8 Sprachen**: Deutsch, English, Polski, Francais, Русский, Türkce, 中文, 日本語
 
-## English Version
-Unofficial desktop launcher for Flyff Universe with multi-profiles, overlays, plugins, and live news.
-Important: The launcher follows the game rules. No automation or interference with gameplay.
+### Integrierte Tools
 
-### Quick Start
-- (Optional for OCR/overlays) Install Python 3 + Tesseract and run `python -m pip install -r app/ocr/requirements.txt`. Set `FLYFF_OCR_PYTHON` to the Python path if needed.
-- Start the launcher and create a new profile (assign name + job/badge).
-- Choose the Aibatt icon for the overlay target profile.
-- Click "Play" (Tab or separate window); in the session window enable split-screen if desired and save the layout.
-- In-game click the floating gear -> open ROI/OCR/Plugin panel, calibrate OCR regions, and enable overlays.
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="app/docs/assets/screenshots/tools/fcoin_zu_penya/fcoin_zu_penya_2.png" width="300" alt="FCoins zu Penya Rechner" /><br/><sub>FCoins-Rechner</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/premium_shopping_list/premium_shopping_list_2.png" width="300" alt="Premium Shopping List" /><br/><sub>Premium-Einkaufsliste</sub></td>
+</tr>
+</table>
+</div>
 
-### Features at a Glance
+- **FCoins-Rechner**: FCoins zu Penya umrechnen mit einstellbarem Wechselkurs
+- **Premium-Einkaufsliste**: Items und Preise verwalten, Gesamtkosten in FCoins berechnen
+- **Newsfeed**: Updates, Events und Item-Shop-News direkt von universe.flyff.com
+- **Schnellzugriffe**: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord
 
-#### Profiles & Launch
-- Create, rename, clone, delete, and drag & drop sort profiles.
-- Pick job/badge (Vagrant -> Crackshooter), search field + job filter for long lists.
-- Start mode per profile: **Tabs** (inside session window) or **Window** (separate instance).
-- Overlay target toggle (Aibatt icon) for OCR/sidepanel/plugin overlays.
-- Quick links in the header: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord, GitHub, update notice, version label.
-- News feed from `universe.flyff.com` (updates/events/shop) and rotating tips banner.
+---
 
-#### Session Window & Layouts
-- Tab bar with plus button to open more profiles and login overlay for closed BrowserViews.
-- Split-screen with adjustable ratio and left/right markers per tab.
-- Adjustable tab height; edit mode for quick logout/close of individual tabs.
-- Save/load layouts (tabs, active tab, split, logged-out chars) - apply via chips on the start screen; save/auto-save in the session window.
-- Optional layout delay (client settings) to stagger opening when applying a layout.
+## Plugins
 
-#### Overlays, OCR & Sidepanel
-- Floating gear follows the overlay profile; clicking it opens the side panel.
-- **ROI**: Mark level, character name, EXP %, and ticker text via screenshot; toggle visibility per field or all at once.
-- **OCR**: Live values for level/EXP/name/ticker text with custom scan intervals (ms) per field.
-- ROI/OCR are per profile; the overlay is click-through and automatically attaches plugin overlays (e.g., Killfeed) to the overlay target.
-- ROI calibrator: transparent full-screen with TAB/1-4 to switch fields, ESC to abort, saves right after releasing the box.
+Plugins werden in `%APPDATA%\Flyff-U-Launcher\plugins` abgelegt und erscheinen automatisch im Sidepanel.
 
-#### Appearance
-- Ready-made themes (Toffee, Cinnamon, Flyff Gold, Synthwave, Wood, many more) via the settings modal.
-- Set active tab color via palette/gradient or manual entry; updates mirror instantly to sidepanel/plugins.
-- Animated accents for tabs/panels (can be disabled by switching themes) and language switcher (EN/DE/PL/FR/RU/TR/CN/JP).
+| Plugin | Beschreibung |
+|--------|-------------|
+| **Killfeed** | EXP-Tracker mit Kill-Erkennung, Monster-Statistiken und detaillierter History (CSV) pro Profil |
+| **Giant Tracker** | Kill-Statistiken für Giants, Violets und Bosse — mit Drop-Tracking, Loot-Pool-Vorschau und Time-to-Kill (TTK) |
+| **CD-Timer** | Timer für Buffs und Power-Ups — Icons warnen bei Ablauf |
+| **API-Fetch** | Lädt Flyff-Universe-API-Daten herunter und speichert sie lokal |
 
-#### Plugins
-- Plugin manager in the settings modal: status (Running/Stopped/Error/Disabled), enable/disable, optionally start UI (e.g., Killfeed).
-- Drop plugins into `%APPDATA%\\Flyff-U-Launcher\\plugins` (folder name = plugin ID, e.g., `killfeed`), then restart the launcher.
-- Plugin tabs show up in the sidepanel; overlays appear in-game; plugin UI runs in a sandboxed iframe with theme handoff.
+### Giant Tracker
 
-Available:
-API-Fetch - Loads endpoints from the Flyff-U API and stores them locally on the machine.
-Killfeed - A tracker that calculates based on read EXP values.
-CD-Timer - Lets you set timers for buffs/power-ups; when they expire, icons appear as a hint.
+<div align="center">
+<img src="app/docs/assets/screenshots/killfeed_giant_tracker/killfeed_giant_tracker_5_de.png" width="700" alt="Giant Tracker — Kill-Statistiken mit TTK und Drop-Tracking" />
+<br/><sub>Kill-Statistiken mit Time-to-Kill, Drop-Tracking und Zeitraum-Filter</sub>
+</div>
 
-#### News & Resources
-- News feed on the right of the start screen with images, date, and category (Updates/Events/ItemShop).
-- Direct links to tools & community (Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord, GitHub) in the top bar.
+<br/>
 
-#### Language & Localization
-- Switch instantly via the flag in the header; selection is stored locally.
+<div align="center">
+<img src="app/docs/assets/screenshots/killfeed_giant_tracker/killfeed_giant_tracker_6_de.png" width="700" alt="Giant Tracker — Loot-Pool mit Seltenheitsfilter" />
+<br/><sub>Drop loggen mit Loot-Pool-Vorschau und Seltenheitsfilter</sub>
+</div>
 
-#### Storage Locations
-- Profile, layout, theme, and client settings are stored in `%APPDATA%\\Flyff-U-Launcher`.
-- Plugins: `%APPDATA%\\Flyff-U-Launcher\\plugins`
+### CD-Timer
 
-#### Requirements for OCR/Plugins
-- **Python 3** on PATH or defined via FLYFF_OCR_PYTHON.
-- `pip install -r app/ocr/requirements.txt` (opencv-python, numpy, pytesseract) + local Tesseract binary.
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="app/docs/assets/screenshots/cd_timer/cd_timer_3_de.png" width="300" alt="CD-Timer Konfiguration" /><br/><sub>Timer konfigurieren</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/cd_timer/cd_timer_5_de.png" width="300" alt="CD-Timer Overlay" /><br/><sub>Einzeln anwählbar</sub></td>
+</tr>
+</table>
+</div>
+
+---
+
+## Installation
+
+1. [Neueste Version herunterladen](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) und entpacken
+2. `Flyff-U-Launcher.exe` starten
+3. Profil anlegen, Job wählen und auf **Spielen** klicken
+
+**OCR/Overlays** erfordern Python 3 (`pip install -r app/ocr/requirements.txt`). Tesseract ist im Launcher enthalten.
+
+---
+
+## Speicherort
+
+Alle Nutzerdaten liegen unter `%APPDATA%\Flyff-U-Launcher\user\` — Profile, Layouts, Themes, Plugin-Daten und OCR-Kalibrierungen.
+
+---
+
+<div align="center">
+
+# English
+
+</div>
+
+---
+
+<div align="center">
+
+**Unofficial desktop launcher for Flyff Universe**
+Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one app.
+
+[![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
+
+> The launcher follows the game rules. No automation or interference with gameplay.
+
+</div>
+
+---
+
+## Features
+
+### Multi-Profile System
+- Create, rename, clone, delete, and drag & drop sort profiles
+- Job/badge per profile (Vagrant to Crackshooter) with search and job filter
+- Launch mode per profile: **Tabs** (inside session window) or **Window** (separate instance)
+- Overlay target determines which profile receives OCR overlays and the side panel
+
+### Layouts & Splitscreen
+- **Grid layouts**: 1x1, 1x2, 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4
+- Save/load layouts — launch multiple characters at once with a single click
+- Auto-save and optional layout delay for sequential loading
+- Multi-window: Use multiple independent session windows in parallel
+- Progress bar shows loading status for game instances
+
+<div align="center">
+<img src="app/docs/assets/screenshots/3.png" width="700" alt="2x3 grid layout with 6 game instances" />
+<br/><sub>2x3 grid layout — 6 game instances simultaneously</sub>
+</div>
+
+<br/>
+
+<div align="center">
+<img src="screen.png" width="700" alt="Session with splitscreen and overlays" />
+<br/><sub>Splitscreen with side panel and overlays</sub>
+</div>
+
+### OCR & Overlays
+- **ROI calibrator**: Mark regions for level, character name, EXP %, and ticker text via screenshot
+- **Live OCR**: Values are read in real time with custom scan intervals per field
+- Floating gear overlay follows the active profile — click to open the side panel
+- Overlays are click-through and auto-hide when the window is inactive
+- OCR uses the bundled Tesseract — no separate installation required
+
+### Hotkeys
+Freely assignable key combinations (2–3 keys) for:
+- Toggle overlays/side panel/tab bar
+- Tab navigation (previous/next tab, next window)
+- Save screenshot
+- Reset CD timer
+- Open FCoins calculator and premium shopping list
+
+### Themes & Languages
+- Built-in themes: Toffee, Cinnamon, Flyff Gold, Synthwave, Steel Ruby, Wood, and more
+- Customize active tab color via palette, gradient, or color code
+- Animated accents for tabs and panels
+- **8 languages**: Deutsch, English, Polski, Francais, Русский, Türkce, 中文, 日本語
+
+### Built-in Tools
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="app/docs/assets/screenshots/tools/fcoin_zu_penya/fcoin_zu_penya_2.png" width="300" alt="FCoins to Penya Calculator" /><br/><sub>FCoins Calculator</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/premium_shopping_list/premium_shopping_list_2.png" width="300" alt="Premium Shopping List" /><br/><sub>Premium Shopping List</sub></td>
+</tr>
+</table>
+</div>
+
+- **FCoins Calculator**: Convert FCoins to Penya with adjustable exchange rate
+- **Premium Shopping List**: Manage items and prices, calculate total cost in FCoins
+- **Newsfeed**: Updates, events, and item shop news directly from universe.flyff.com
+- **Quick Links**: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord
+
+---
+
+## Plugins
+
+Drop plugins into `%APPDATA%\Flyff-U-Launcher\plugins` — they appear automatically in the side panel.
+
+| Plugin | Description |
+|--------|------------|
+| **Killfeed** | EXP tracker with kill detection, monster statistics, and detailed per-profile history (CSV) |
+| **Giant Tracker** | Kill statistics for Giants, Violets, and Bosses — with drop tracking, loot pool preview, and time-to-kill (TTK) |
+| **CD-Timer** | Timers for buffs and power-ups — icons warn on expiry |
+| **API-Fetch** | Downloads Flyff Universe API data and stores it locally |
+
+### Giant Tracker
+
+<div align="center">
+<img src="app/docs/assets/screenshots/killfeed_giant_tracker/killfeed_giant_tracker_5_de.png" width="700" alt="Giant Tracker — Kill statistics with TTK and drop tracking" />
+<br/><sub>Kill statistics with time-to-kill, drop tracking, and time range filter</sub>
+</div>
+
+<br/>
+
+<div align="center">
+<img src="app/docs/assets/screenshots/killfeed_giant_tracker/killfeed_giant_tracker_6_de.png" width="700" alt="Giant Tracker — Loot pool with rarity filter" />
+<br/><sub>Log drops with loot pool preview and rarity filter</sub>
+</div>
+
+### CD-Timer
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="app/docs/assets/screenshots/cd_timer/cd_timer_3_de.png" width="300" alt="CD-Timer Configuration" /><br/><sub>Configure timers</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/cd_timer/cd_timer_5_de.png" width="300" alt="CD-Timer Overlay" /><br/><sub>In-game overlay</sub></td>
+</tr>
+</table>
+</div>
+
+---
+
+## Installation
+
+1. [Download the latest release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) and extract
+2. Run `Flyff-U-Launcher.exe`
+3. Create a profile, pick a job, and click **Play**
+
+**OCR/Overlays** require Python 3 (`pip install -r app/ocr/requirements.txt`). Tesseract is bundled with the launcher.
+
+---
+
+## Storage
+
+All user data is stored under `%APPDATA%\Flyff-U-Launcher\user\` — profiles, layouts, themes, plugin data, and OCR calibrations.
