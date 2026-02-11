@@ -217,9 +217,9 @@ const config: ForgeConfig = {
                 name: "Flyff-U-Launcher",
             },
             // Wenn der Workflow mit input `prerelease=true` läuft, veröffentlichen wir als Pre-Release
-            // und heben den Draft-Status auf, damit electron-updater die Version zum Testen ziehen kann.
+            // Stable-Releases müssen ebenfalls veröffentlicht sein (kein Draft), damit electron-updater sie sieht.
             prerelease: isPrerelease,
-            draft: !isPrerelease,
+            draft: false,
         }),
     ],
 };

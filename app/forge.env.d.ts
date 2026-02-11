@@ -169,6 +169,7 @@ declare global {
             overlaysHideForDialog: () => Promise<void>;
             overlaysShowAfterDialog: () => Promise<void>;
             appQuit: () => Promise<boolean>;
+            appGetVersion: () => Promise<string>;
             // Plugin management
             pluginsList: () => Promise<PluginStateInfo[]>;
             pluginsListAll: () => Promise<PluginStateInfo[]>;

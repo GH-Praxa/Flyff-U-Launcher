@@ -254,7 +254,11 @@ export async function renderLauncher(root: HTMLElement) {
     btnConfig.append(configIcon);
     btnConfig.addEventListener("click", () => openConfigModal());
     header.append(btnGithub, btnConfig, updateNotice);
-    const versionLabel = el("div", "versionLabel", `v${pkg.version}`);
+    const runtimeVersion = await window.api.appGetVersion().catch(() => null);
+    const launcherVersion = (typeof runtimeVersion === "string" && runtimeVersion.trim())
+        ? runtimeVersion.trim()
+        : pkg.version;
+    const versionLabel = el("div", "versionLabel", `v${launcherVersion}`);
 
     const applyUpdateState = (available: boolean) => {
 

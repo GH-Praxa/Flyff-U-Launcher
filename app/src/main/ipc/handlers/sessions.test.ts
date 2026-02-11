@@ -3,7 +3,11 @@ import { registerSessionHandlers } from "./sessions";
 import { ValidationError, type SafeHandle, type IpcEvent } from "../common";
 
 vi.mock("electron", () => {
-    const app = { quit: vi.fn(), commandLine: { appendSwitch: vi.fn() } };
+    const app = {
+        quit: vi.fn(),
+        getVersion: vi.fn().mockReturnValue("9.9.9"),
+        commandLine: { appendSwitch: vi.fn() },
+    };
     return {
         app,
         BrowserWindow: vi.fn(),
@@ -206,5 +210,12 @@ describe("Session IPC handlers", () => {
         expect(sessionWindow.allowCloseWithoutPrompt).toHaveBeenCalled();
         expect(secondaryWin.__allowCloseWithoutPrompt).toHaveBeenCalled();
         expect(electronApp.quit).toHaveBeenCalled();
+    });
+
+    it("liefert die aktuelle App-Version ueber IPC", async () => {
+        const getVersion = handler("app:getVersion");
+
+        await expect(getVersion({} as IpcEvent)).resolves.toBe("9.9.9");
+        expect(electronApp.getVersion).toHaveBeenCalled();
     });
 });

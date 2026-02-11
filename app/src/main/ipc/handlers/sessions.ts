@@ -623,6 +623,10 @@ export function registerSessionHandlers(
         return true;
     });
 
+    safeHandle("app:getVersion", async () => {
+        return app.getVersion();
+    });
+
     // ========================================================================
     // Multi-Window Handlers
     // ========================================================================
