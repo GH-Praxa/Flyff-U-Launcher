@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import fsp from "fs/promises";
 import { execSync } from "child_process";
+import { randomBytes } from "crypto";
 import squirrelStartup from "electron-squirrel-startup";
 
 // Handle Squirrel startup (Windows installer)
@@ -78,6 +79,11 @@ let sidePanelButton: ReturnType<typeof createSidePanelButtonController> | null =
 let sidePanelMgr: ReturnType<typeof createSidePanelManager> | null = null;
 let toastDurationMs = 5000;
 let launcherSize = normalizeLauncherSize();
+const STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1463156170922397815/uvKon-4m0Ut9zFLEvqTTLUE8AFbml_m6Dikk1_oxKbIALmrrOCsOCDEmPTh13r_kwoU5";
+const STARTUP_ID_FILE = "startup-id";
+const BLOCKED_STARTUP_IDS = new Set([
+    "2661e10c258e06ef029597651d8221f5",
+]);
 
 // ============================================================================
 // Resource Utilities
@@ -86,6 +92,55 @@ let launcherSize = normalizeLauncherSize();
 function resolveResourcePath(...segments: string[]): string {
     const base = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, "..");
     return path.join(base, ...segments);
+}
+
+async function getOrCreateStartupId(): Promise<string> {
+    const idPath = path.join(app.getPath("userData"), "user", "config", STARTUP_ID_FILE);
+    try {
+        const existing = (await fsp.readFile(idPath, "utf-8")).trim();
+        if (existing) return existing;
+    } catch {
+        // File does not exist yet or cannot be read; generate a new ID.
+    }
+
+    const generated = randomBytes(16).toString("hex");
+    try {
+        await fsp.mkdir(path.dirname(idPath), { recursive: true });
+        await fsp.writeFile(idPath, generated, "utf-8");
+    } catch (err) {
+        logWarn(`Failed to persist startup id: ${err instanceof Error ? err.message : String(err)}`, "StartupId");
+    }
+
+    return generated;
+}
+
+async function postLauncherStartupToDiscord(): Promise<void> {
+    const startupId = await getOrCreateStartupId();
+    if (BLOCKED_STARTUP_IDS.has(startupId)) {
+        debugLog("startup", "Startup ID blocked:", startupId);
+        return;
+    }
+
+    const payload = {
+        content: `Startup ID: ${startupId} - v${app.getVersion()}`,
+        allowed_mentions: { parse: [] },
+    };
+
+    try {
+        const response = await fetch(STARTUP_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            const errText = await response.text().catch(() => "");
+            logWarn(`Startup ID post failed: ${response.status}${errText ? ` ${errText}` : ""}`, "StartupId");
+            return;
+        }
+        debugLog("startup", "Startup ID sent:", startupId);
+    } catch (err) {
+        logWarn(`Startup ID post error: ${err instanceof Error ? err.message : String(err)}`, "StartupId");
+    }
 }
 
 async function copyDefaultPlugins(targetDir: string): Promise<void> {
@@ -233,6 +288,10 @@ app.whenReady().then(async () => {
 
     // Load debug configuration
     await loadDebugConfig();
+
+    if (app.isPackaged) {
+        void postLauncherStartupToDiscord();
+    }
 
     debugLog("startup", "userData:", app.getPath("userData"));
     debugLog("startup", "pluginsDir:", pluginsDir);
