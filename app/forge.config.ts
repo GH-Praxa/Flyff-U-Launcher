@@ -141,6 +141,7 @@ const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
         icon: iconPath,
+        executableName: "Flyff-U-Launcher",
         extraResource,
     },
     rebuildConfig: {},
@@ -254,7 +255,7 @@ const config: ForgeConfig = {
             options: {
                 categories: ["Game"],
                 icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
-                bin: "Flyff-U-Launcher",
+                // bin wird automatisch vom Maker bestimmt
             },
         }),
     ],
