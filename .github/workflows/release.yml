@@ -6,24 +6,41 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
+      tag_name:
+        description: "Release tag (e.g. v2.9.1-beta.1)"
+        required: true
+        type: string
+      create_release:
+        description: "Create/update GitHub Release"
+        required: false
+        default: true
+        type: boolean
+      release_draft:
+        description: "Mark release as draft"
+        required: false
+        default: true
+        type: boolean
+      prerelease:
+        description: "Mark release as prerelease"
+        required: false
+        default: true
+        type: boolean
+      run_tests:
+        description: "Run Vitest before packaging"
+        required: false
+        default: false
+        type: boolean
       use_self_hosted:
         description: "Auf self-hosted Windows Runner ausführen (Standard: nein)"
         required: false
         default: false
         type: boolean
-      prerelease:
-        description: "Mark GitHub release as pre-release (for testing update channel)"
-        required: false
-        default: false
-        type: boolean
-      release_draft:
-        description: "Mark GitHub release as draft"
-        required: false
-        default: true
-        type: boolean
 
 permissions:
   contents: write
+
+env:
+  NODE_VERSION: "20"
 
 jobs:
   build-windows:
@@ -37,21 +54,35 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
         working-directory: app
         run: npm ci
 
-      - name: Build and Publish
+      - name: Run tests
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests }}
         working-directory: app
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
-          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
-        run: npm run publish
+        run: npm run test -- --run
+
+      - name: Build Windows packages
+        working-directory: app
+        run: npm run make -- --platform=win32
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            app/out/make/**/*.exe
+            app/out/make/**/*.msi
+            app/out/make/**/*.nupkg
+            app/out/make/**/latest.yml
+            app/out/make/**/RELEASES
+          if-no-files-found: error
+          retention-days: 14
 
   build-macos:
     runs-on: macos-latest
@@ -64,24 +95,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
           cache-dependency-path: app/package-lock.json
+
+      - name: Install macOS build dependencies
+        run: brew install tesseract
 
       - name: Prepare Tesseract binaries
         run: |
-          brew install tesseract
           TESS_DIR=app/resources/tesseract/darwin
           mkdir -p "$TESS_DIR/tessdata"
           cp "$(which tesseract)" "$TESS_DIR/"
-          # Copy tessdata language files
           TESSDATA_SRC="$(brew --prefix)/share/tessdata"
           if [ -d "$TESSDATA_SRC" ]; then
             cp "$TESSDATA_SRC"/eng.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
             cp "$TESSDATA_SRC"/deu.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
             cp "$TESSDATA_SRC"/osd.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
           fi
-          # Copy required dynamic libraries
           for lib in $(otool -L "$TESS_DIR/tesseract" | grep -oE '/opt/homebrew[^ ]+|/usr/local[^ ]+' | sort -u); do
             cp "$lib" "$TESS_DIR/" 2>/dev/null || true
           done
@@ -90,13 +121,25 @@ jobs:
         working-directory: app
         run: npm ci
 
-      - name: Build and Publish
+      - name: Run tests
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests }}
         working-directory: app
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
-          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
-        run: npm run publish
+        run: npm run test -- --run
+
+      - name: Build macOS packages
+        working-directory: app
+        run: npm run make -- --platform=darwin
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: |
+            app/out/make/**/*.dmg
+            app/out/make/**/*.zip
+            app/out/make/**/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 14
 
   build-linux:
     runs-on: ubuntu-latest
@@ -109,11 +152,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Install Linux build deps
+      - name: Install Linux build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y rpm libarchive-tools tesseract-ocr tesseract-ocr-eng tesseract-ocr-deu
@@ -123,16 +166,13 @@ jobs:
           TESS_DIR=app/resources/tesseract/linux
           mkdir -p "$TESS_DIR/tessdata"
           cp "$(which tesseract)" "$TESS_DIR/"
-          # Copy tessdata language files
           TESSDATA_SRC="/usr/share/tesseract-ocr/5/tessdata"
           if [ -d "$TESSDATA_SRC" ]; then
             cp "$TESSDATA_SRC"/eng.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
             cp "$TESSDATA_SRC"/deu.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
             cp "$TESSDATA_SRC"/osd.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
           fi
-          # Copy required shared libraries
           for lib in $(ldd "$TESS_DIR/tesseract" | grep -oE '/[^ ]+' | sort -u); do
-            # Skip system libs (libc, ld-linux, libm, libpthread, etc.)
             case "$lib" in
               */libc.so*|*/libm.so*|*/libpthread*|*/libdl*|*/ld-linux*|*/librt*|*/libgcc_s*|*/libstdc++*)
                 continue ;;
@@ -144,10 +184,89 @@ jobs:
         working-directory: app
         run: npm ci
 
-      - name: Build and Publish
+      - name: Run tests
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests }}
         working-directory: app
+        run: npm run test -- --run
+
+      - name: Build Linux packages
+        working-directory: app
+        run: npm run make -- --platform=linux
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            app/out/make/**/*.AppImage
+            app/out/make/**/*.deb
+            app/out/make/**/*.rpm
+            app/out/make/**/latest-linux.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-windows
+      - build-macos
+      - build-linux
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.create_release }}
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-artifacts
+          path: dist/macos
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-artifacts
+          path: dist/linux
+
+      - name: Resolve release settings
+        id: release_meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "draft=${{ inputs.release_draft }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          draft: ${{ steps.release_meta.outputs.draft == 'true' }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            dist/**/*.exe
+            dist/**/*.msi
+            dist/**/*.nupkg
+            dist/**/RELEASES
+            dist/**/*.dmg
+            dist/**/*.zip
+            dist/**/*.AppImage
+            dist/**/*.deb
+            dist/**/*.rpm
+            dist/**/latest.yml
+            dist/**/latest-mac.yml
+            dist/**/latest-linux.yml
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
-          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
-        run: npm run publish

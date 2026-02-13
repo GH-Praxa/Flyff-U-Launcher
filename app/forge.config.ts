@@ -254,6 +254,7 @@ const config: ForgeConfig = {
             options: {
                 categories: ["Game"],
                 icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+                bin: "Flyff-U-Launcher",
             },
         }),
     ],
