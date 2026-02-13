@@ -36,6 +36,8 @@ function createStatsEngine(config, initialState) {
 
   // Pending suspect kill (awaiting confirmation)
   let pendingSuspect = null;
+  // Pending level drop candidate to distinguish OCR noise from real mode switches.
+  let pendingLevelDrop = null;
 
   /**
    * Update config
@@ -56,6 +58,8 @@ function createStatsEngine(config, initialState) {
    */
   function setState(newState) {
     state = schema.migrateProfileState(newState);
+    pendingSuspect = null;
+    pendingLevelDrop = null;
   }
 
   /**
@@ -74,6 +78,7 @@ function createStatsEngine(config, initialState) {
     state.lastExpRaw = exp;
     state.lastUpdateTime = now;
     pendingSuspect = null;
+    pendingLevelDrop = null;
   }
 
   /**
@@ -86,6 +91,8 @@ function createStatsEngine(config, initialState) {
     state.rollingKills = [];
     state.lastKillTime = null;
     state.last3Kills = [];
+    pendingSuspect = null;
+    pendingLevelDrop = null;
   }
 
   /**
@@ -95,6 +102,8 @@ function createStatsEngine(config, initialState) {
     state = schema.getDefaultProfileState();
     ensureDailyExpTotal(Date.now());
     state.sessionStartTime = Date.now();
+    pendingSuspect = null;
+    pendingLevelDrop = null;
   }
 
   /**
@@ -204,6 +213,7 @@ function createStatsEngine(config, initialState) {
     if (prevLvl === null || prevExp === null) {
       state.lastLvl = lvl;
       state.lastExp = exp;
+      pendingLevelDrop = null;
       return null;
     }
 
@@ -214,17 +224,43 @@ function createStatsEngine(config, initialState) {
       // Level up occurred - NOT counted as a kill
       // Reset suspect if any
       pendingSuspect = null;
+      pendingLevelDrop = null;
       state.lastLvl = lvl;
       state.lastExp = exp;
       return null;
     }
 
-    // Level decreased (reroll or OCR error)
+    // Level decreased:
+    // - large drops are treated as a mode switch and re-baselined immediately
+    // - small drops require short confirmation to avoid OCR jitter regressions
     if (lvl < prevLvl) {
       pendingSuspect = null;
-      // Keep previous baseline for robustness against OCR regressions.
+      const drop = prevLvl - lvl;
+      const immediateSwitchDrop = 20;
+
+      if (drop >= immediateSwitchDrop) {
+        state.lastLvl = lvl;
+        state.lastExp = exp;
+        pendingLevelDrop = null;
+        return null;
+      }
+
+      if (!pendingLevelDrop || pendingLevelDrop.level !== lvl) {
+        pendingLevelDrop = { level: lvl, firstSeenAt: now, confirmations: 1 };
+        return null;
+      }
+
+      pendingLevelDrop.confirmations += 1;
+      const stableForMs = now - pendingLevelDrop.firstSeenAt;
+      if (pendingLevelDrop.confirmations >= 3 || stableForMs >= 1200) {
+        state.lastLvl = lvl;
+        state.lastExp = exp;
+        pendingLevelDrop = null;
+      }
       return null;
     }
+
+    pendingLevelDrop = null;
 
     // Same level - check for exp change
     const deltaExp = exp - prevExp;

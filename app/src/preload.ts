@@ -152,7 +152,8 @@ contextBridge.exposeInMainWorld("api", {
     pluginsStop: (pluginId: string) => unwrapIpc<{ success: boolean; error?: string }>(ipcRenderer.invoke("plugins:stop", pluginId)),
     pluginsReload: (pluginId: string) => unwrapIpc<{ success: boolean; error?: string }>(ipcRenderer.invoke("plugins:reload", pluginId)),
     pluginsIsEnabled: (pluginId: string) => unwrapIpc<boolean>(ipcRenderer.invoke("plugins:isEnabled", pluginId)),
-    pluginsGetSettingsUI: (pluginId: string) => unwrapIpc<{ url: string; width?: number; height?: number }>(ipcRenderer.invoke("plugins:getSettingsUI", pluginId)),
+    pluginsGetSettingsUI: (pluginId: string) => unwrapIpc<{ url: string; width?: number; height?: number; html?: string; baseHref?: string; css?: string; js?: string }>(ipcRenderer.invoke("plugins:getSettingsUI", pluginId)),
+    pluginsOpenSettingsWindow: (pluginId: string) => unwrapIpc<{ opened?: boolean; alreadyOpen?: boolean }>(ipcRenderer.invoke("plugins:openSettingsWindow", pluginId)),
     pluginsInvokeChannel: (pluginId: string, channel: string, ...args: unknown[]) => unwrapIpc<unknown>(ipcRenderer.invoke("plugins:invokeChannel", pluginId, channel, ...args)),
     pluginsGetSidepanelTabs: () => unwrapIpc<Array<{
         pluginId: string;
@@ -210,6 +211,15 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.on("toast:show", wrapped);
         return () => ipcRenderer.removeListener("toast:show", wrapped);
     },
+    // Logs
+    logsGet: () => unwrapIpc<Array<{ ts: number; level: string; module: string; message: string }>>(ipcRenderer.invoke("logs:get")),
+    logsClear: () => unwrapIpc<boolean>(ipcRenderer.invoke("logs:clear")),
+    logsSave: () => unwrapIpc<string>(ipcRenderer.invoke("logs:save")),
+    onLogsNew: (cb: (entry: { ts: number; level: string; module: string; message: string }) => void) => {
+        const wrapped = (_e: IpcRendererEvent, entry: { ts: number; level: string; module: string; message: string }) => cb(entry);
+        ipcRenderer.on("logs:new", wrapped);
+        return () => ipcRenderer.removeListener("logs:new", wrapped);
+    },
 });
 // Note: overlay/hud/buff-wecker channels removed - will be handled by plugins
 const allowedSend = new Set<string>([
@@ -260,6 +270,7 @@ const allowedInvoke = new Set<string>([
     "plugins:reload",
     "plugins:isEnabled",
     "plugins:getSettingsUI",
+    "plugins:openSettingsWindow",
     "plugins:invokeChannel",
     "plugins:getSidepanelTabs",
     "plugins:getOverlayViews",
@@ -268,8 +279,12 @@ const allowedInvoke = new Set<string>([
     "shoppingList:search",
     "shoppingList:icon",
     "shoppingList:savePrice",
+    // Logs
+    "logs:get",
+    "logs:clear",
+    "logs:save",
 ]);
-const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show"]);
+const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new"]);
 contextBridge.exposeInMainWorld("ipc", {
     send: (channel: string, payload?: unknown) => {
         if (!allowedSend.has(channel))

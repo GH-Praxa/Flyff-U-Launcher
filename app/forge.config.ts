@@ -5,6 +5,8 @@ import { MakerDeb } from "@electron-forge/maker-deb";
 import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerWix } from "@electron-forge/maker-wix";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+import { MakerDMG } from "@electron-forge/maker-dmg";
+import { MakerAppImage } from "@reforged/maker-appimage";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
@@ -13,7 +15,9 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 import fs from "fs";
 import crypto from "crypto";
 
-const iconPath = path.resolve(__dirname, "src/assets/icons/flyff.ico");
+const iconPath = process.platform === "darwin"
+    ? path.resolve(__dirname, "src/assets/icons/flyff.icns")
+    : path.resolve(__dirname, "src/assets/icons/flyff.ico");
 const WIX_UPGRADE_CODE = "f3dd0e42-5e61-4709-b2ad-820051fa8d2a"; // keep stable so MSI upgrades replace existing installs
 const KILL_APP_ACTION = `
     <CustomAction Id="KillFlyffLauncher" Directory="TARGETDIR" ExeCommand="cmd.exe /C taskkill /F /IM Flyff-U-Launcher.exe /T" Execute="deferred" Impersonate="no" Return="ignore" />
@@ -81,12 +85,16 @@ if (fs.existsSync(dataDir)) {
     console.warn("Data directory not found at", dataDir, "- bundle will skip it.");
 }
 
-const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
-if (fs.existsSync(tesseractDir)) {
+// Bundle only platform-specific tesseract binaries (e.g. resources/tesseract/win32/)
+// In packaged builds this becomes: resources/tesseract/<platform>/
+const tesseractPlatformDir = path.resolve(__dirname, "resources", "tesseract", process.platform);
+if (fs.existsSync(tesseractPlatformDir) && fs.readdirSync(tesseractPlatformDir).some((f) => f !== ".gitkeep")) {
+    // Bundle the entire tesseract dir (contains only the current platform's subfolder after CI prep)
+    const tesseractDir = path.resolve(__dirname, "resources", "tesseract");
     extraResource.push(tesseractDir);
 } else {
     // eslint-disable-next-line no-console
-    console.warn("Tesseract payload not found at", tesseractDir, "- bundle will skip it.");
+    console.warn(`Tesseract payload not found for platform '${process.platform}' at`, tesseractPlatformDir, "- bundle will skip it.");
 }
 const defaultPluginsDir = path.resolve(__dirname, "..", "plugins");
 const pluginIdsToBundle = ["api-fetch", "cd-timer", "killfeed"];
@@ -105,11 +113,11 @@ if (fs.existsSync(defaultPluginsDir)) {
     console.warn("Default plugins directory not found at", defaultPluginsDir);
 }
 
-const writeLatestYml = (setupExePath: string, version: string): string => {
-    const fileName = path.basename(setupExePath);
-    const dir = path.dirname(setupExePath);
-    const stat = fs.statSync(setupExePath);
-    const sha512 = crypto.createHash("sha512").update(fs.readFileSync(setupExePath)).digest("base64");
+const writeLatestYml = (artifactPath: string, version: string, ymlName = "latest.yml"): string => {
+    const fileName = path.basename(artifactPath);
+    const dir = path.dirname(artifactPath);
+    const stat = fs.statSync(artifactPath);
+    const sha512 = crypto.createHash("sha512").update(fs.readFileSync(artifactPath)).digest("base64");
     const releaseDate = new Date().toISOString();
     const content = [
         `version: ${version}`,
@@ -122,7 +130,7 @@ const writeLatestYml = (setupExePath: string, version: string): string => {
         `    sha512: ${sha512}`,
         `    size: ${stat.size}`,
     ].join("\n");
-    const target = path.join(dir, "latest.yml");
+    const target = path.join(dir, ymlName);
     fs.writeFileSync(target, content, "utf-8");
     return target;
 };
@@ -140,17 +148,34 @@ const config: ForgeConfig = {
             ensureBundledNodeModules();
         },
         // Electron-Updater erwartet eine latest.yml pro Release.
-        // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make für Squirrel.Windows.
+        // Electron Forge erzeugt sie nicht automatisch, deshalb bauen wir sie nach dem Make.
         postMake: async (_forgeConfig, makeResults) => {
             for (const result of makeResults) {
-                // Use the Squirrel setup executable as the download target (electron-updater expects .exe on Windows)
-                const setupExe = result.artifacts.find((artifact) => artifact.toLowerCase().endsWith("setup.exe"));
-                if (!setupExe) continue;
-
                 const version = result.packageJSON?.version ?? "0.0.0";
-                const latestPath = writeLatestYml(setupExe, version);
-                // Ensure publisher uploads latest.yml as part of artifacts
-                result.artifacts.push(latestPath);
+
+                // Windows: Squirrel setup exe → latest.yml
+                const setupExe = result.artifacts.find((a) => a.toLowerCase().endsWith("setup.exe"));
+                if (setupExe) {
+                    const latestPath = writeLatestYml(setupExe, version, "latest.yml");
+                    result.artifacts.push(latestPath);
+                    continue;
+                }
+
+                // macOS: DMG or ZIP → latest-mac.yml
+                const macArtifact = result.artifacts.find((a) => a.endsWith(".dmg") || (a.endsWith(".zip") && result.platform === "darwin"));
+                if (macArtifact) {
+                    const latestPath = writeLatestYml(macArtifact, version, "latest-mac.yml");
+                    result.artifacts.push(latestPath);
+                    continue;
+                }
+
+                // Linux: AppImage or deb → latest-linux.yml
+                const linuxArtifact = result.artifacts.find((a) => a.endsWith(".AppImage") || a.endsWith(".deb"));
+                if (linuxArtifact) {
+                    const latestPath = writeLatestYml(linuxArtifact, version, "latest-linux.yml");
+                    result.artifacts.push(latestPath);
+                    continue;
+                }
             }
         },
     },
@@ -199,9 +224,37 @@ const config: ForgeConfig = {
                 }
             },
         }),
+        new MakerDMG({
+            format: "ULFO",
+            icon: path.resolve(__dirname, "src/assets/icons/flyff.icns"),
+        }),
         new MakerZIP({}, ["darwin"]),
-        new MakerRpm({}),
-        new MakerDeb({}),
+        new MakerDeb({
+            options: {
+                name: "flyff-u-launcher",
+                productName: "Flyff-U-Launcher",
+                genericName: "Game Launcher",
+                description: "Multi-Instance Launcher for Flyff Universe",
+                categories: ["Game"],
+                icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+            },
+        }),
+        new MakerRpm({
+            options: {
+                name: "flyff-u-launcher",
+                productName: "Flyff-U-Launcher",
+                genericName: "Game Launcher",
+                description: "Multi-Instance Launcher for Flyff Universe",
+                categories: ["Game"],
+                icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+            },
+        }),
+        new MakerAppImage({
+            options: {
+                categories: ["Game"],
+                icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+            },
+        }),
     ],
     plugins: [
         new AutoUnpackNativesPlugin({}),

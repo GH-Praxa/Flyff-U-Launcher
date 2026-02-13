@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="ui_sidepanel.css">
+</head>
+<body>
+  <div id="app">
+    <header class="panel-header">
+      <div class="title">
+        <span class="dot" id="statusDot"></span>
+        <span id="titleLabel">API Fetch</span>
+      </div>
+      <div class="header-actions">
+        <button id="openFolderBtn" class="ghost small" title="Open output folder">&#128193;</button>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn" class="primary">Start</button>
+      <button id="cancelBtn" class="ghost" disabled>Cancel</button>
+    </div>
+
+    <div class="progress-section" id="progressSection">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-info">
+        <span id="progressText">0 / 0</span>
+        <span id="rateInfo" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <input id="filterInput" type="search" placeholder="Filter..." autocomplete="off" />
+      <label class="checkbox select-all">
+        <input id="selectAllCb" type="checkbox" checked />
+        <span id="selectAllLabel">All</span>
+      </label>
+    </div>
+
+    <div class="endpoint-list" id="endpointList"></div>
+
+    <details class="collapsible" id="statusSection">
+      <summary id="statusSummary">Status</summary>
+      <div class="status-table-wrap">
+        <table class="status-table" id="statusTable">
+          <thead>
+            <tr><th id="thEndpoint">Endpoint</th><th id="thStatus">Status</th></tr>
+          </thead>
+          <tbody id="statusBody"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="collapsible" id="errorsSection">
+      <summary>
+        <span id="errorsSummary">Errors</span>
+        <span class="badge" id="errorBadge">0</span>
+      </summary>
+      <ul class="error-list" id="errorList"></ul>
+    </details>
+
+    <details class="collapsible" id="logSection">
+      <summary id="logSummary">Log</summary>
+      <pre class="log-pre" id="logPre"></pre>
+    </details>
+  </div>
+
+  <script src="ui_sidepanel.js"></script>
+</body>
+</html>

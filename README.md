@@ -5,6 +5,10 @@
 **Inoffizieller Desktop-Launcher für Flyff Universe**
 Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in einer App.
 
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black)
+
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
 > Der Launcher hält sich an die Spielregeln. Keine Automationen oder Eingriffe in das Spielgeschehen.
@@ -83,7 +87,13 @@ Frei belegbare Tastenkombinationen (2–3 Tasten) für:
 
 ## Plugins
 
-Plugins werden in `%APPDATA%\Flyff-U-Launcher\plugins` abgelegt und erscheinen automatisch im Sidepanel.
+Plugins werden im App-Datenverzeichnis unter `plugins/` abgelegt und erscheinen automatisch im Sidepanel.
+
+| Plattform | Pfad |
+|-----------|------|
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\plugins\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/plugins/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/plugins/` |
 
 | Plugin | Beschreibung |
 |--------|-------------|
@@ -121,17 +131,29 @@ Plugins werden in `%APPDATA%\Flyff-U-Launcher\plugins` abgelegt und erscheinen a
 
 ## Installation
 
-1. [Neueste Version herunterladen](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) und entpacken
-2. `Flyff-U-Launcher.exe` starten
+| Plattform | Format | Datei |
+|-----------|--------|-------|
+| **Windows** | Setup (empfohlen) | `Flyff-U-Launcher-Setup.exe` |
+| **macOS** | DMG | `Flyff-U-Launcher.dmg` |
+| **Linux** | AppImage / DEB / RPM | `Flyff-U-Launcher.AppImage` |
+
+1. [Neueste Version herunterladen](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
+2. Installieren bzw. starten
 3. Profil anlegen, Job wählen und auf **Spielen** klicken
 
-**OCR/Overlays** erfordern Python 3 (`pip install -r app/ocr/requirements.txt`). Tesseract ist im Launcher enthalten.
+Tesseract (OCR) ist im Launcher enthalten — keine separate Installation nötig.
 
 ---
 
 ## Speicherort
 
-Alle Nutzerdaten liegen unter `%APPDATA%\Flyff-U-Launcher\user\` — Profile, Layouts, Themes, Plugin-Daten und OCR-Kalibrierungen.
+Alle Nutzerdaten liegen im App-Datenverzeichnis unter `user/` — Profile, Layouts, Themes, Plugin-Daten und OCR-Kalibrierungen.
+
+| Plattform | Pfad |
+|-----------|------|
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
 
 ---
 
@@ -147,6 +169,10 @@ Alle Nutzerdaten liegen unter `%APPDATA%\Flyff-U-Launcher\user\` — Profile, La
 
 **Unofficial desktop launcher for Flyff Universe**
 Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one app.
+
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black)
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
@@ -224,7 +250,13 @@ Freely assignable key combinations (2–3 keys) for:
 
 ## Plugins
 
-Drop plugins into `%APPDATA%\Flyff-U-Launcher\plugins` — they appear automatically in the side panel.
+Drop plugins into the app data `plugins/` directory — they appear automatically in the side panel.
+
+| Platform | Path |
+|----------|------|
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\plugins\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/plugins/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/plugins/` |
 
 | Plugin | Description |
 |--------|------------|
@@ -262,14 +294,26 @@ Drop plugins into `%APPDATA%\Flyff-U-Launcher\plugins` — they appear automatic
 
 ## Installation
 
-1. [Download the latest release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) and extract
-2. Run `Flyff-U-Launcher.exe`
+| Platform | Format | File |
+|----------|--------|------|
+| **Windows** | Setup (recommended) | `Flyff-U-Launcher-Setup.exe` |
+| **macOS** | DMG | `Flyff-U-Launcher.dmg` |
+| **Linux** | AppImage / DEB / RPM | `Flyff-U-Launcher.AppImage` |
+
+1. [Download the latest release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
+2. Install or launch
 3. Create a profile, pick a job, and click **Play**
 
-**OCR/Overlays** require Python 3 (`pip install -r app/ocr/requirements.txt`). Tesseract is bundled with the launcher.
+Tesseract (OCR) is bundled with the launcher — no separate installation required.
 
 ---
 
 ## Storage
 
-All user data is stored under `%APPDATA%\Flyff-U-Launcher\user\` — profiles, layouts, themes, plugin data, and OCR calibrations.
+All user data is stored in the app data directory under `user/` — profiles, layouts, themes, plugin data, and OCR calibrations.
+
+| Platform | Path |
+|----------|------|
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |

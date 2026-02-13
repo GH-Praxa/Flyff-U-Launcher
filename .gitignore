@@ -22,6 +22,7 @@ build-temp/
 /.claude/
 /app/.claude/
 /app/src/main/.claude/
+CLAUDE.md
 
 # Python cache
 /app/ocr/__pycache__/

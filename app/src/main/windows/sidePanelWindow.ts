@@ -1,4 +1,4 @@
-﻿import { BrowserWindow, app } from "electron";
+import { BrowserWindow, app } from "electron";
 import path from "path";
 import fs from "fs";
 import { getDebugConfig } from "../debugConfig";
@@ -89,6 +89,11 @@ function buildSidePanelStrings(locale: Locale) {
             noProfileLabel: t("sidePanel.roi.noProfile"),
         },
         pluginTabMissing: t("sidePanel.plugin.tabMissing"),
+        tabLogs: t("sidePanel.tab.logs"),
+        logsTitle: t("sidePanel.logs.title"),
+        logsClear: t("sidePanel.logs.clear"),
+        logsSave: t("sidePanel.logs.save"),
+        logsEmpty: t("sidePanel.logs.empty"),
     };
 }
 
@@ -211,9 +216,45 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     --green-rgb: 46,204,113;
     --tab-active-rgb: 46,204,113;
     --shadow: 0 8px 30px rgba(0,0,0,0.35);
+    --scrollbar-size: 10px;
+    --scroll-track: rgba(255,255,255,0.05);
+    --scroll-track-border: rgba(255,255,255,0.08);
+    --scroll-thumb-border: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.55);
+    --scroll-thumb-top: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.42);
+    --scroll-thumb-bottom: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.22);
+    --scroll-thumb-top-hover: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.58);
+    --scroll-thumb-bottom-hover: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.30);
   }
 
-  *{ box-sizing: border-box; }
+  *,
+  *::before,
+  *::after{
+    box-sizing: border-box;
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--scroll-thumb-border) var(--scroll-track) !important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar{
+    width: var(--scrollbar-size) !important;
+    height: var(--scrollbar-size) !important;
+  }
+  *::-webkit-scrollbar-track{
+    background: var(--scroll-track) !important;
+    border-radius: 999px;
+    border: 1px solid var(--scroll-track-border) !important;
+  }
+  *::-webkit-scrollbar-thumb{
+    background: linear-gradient(180deg, var(--scroll-thumb-top), var(--scroll-thumb-bottom)) !important;
+    border-radius: 999px;
+    border: 1px solid var(--scroll-thumb-border) !important;
+  }
+  *::-webkit-scrollbar-thumb:hover{
+    background: linear-gradient(180deg, var(--scroll-thumb-top-hover), var(--scroll-thumb-bottom-hover)) !important;
+  }
+  *::-webkit-scrollbar-corner{
+    background: transparent !important;
+  }
 
   html,body{
     margin:0;
@@ -551,6 +592,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       <div id="panel">
       <div id="tabs">
         <button class="tab active" data-tab="ocr">OCR / ROI</button>
+        <button class="tab" data-tab="logs">Logs</button>
       </div>
       <div id="content"></div>
     </div>
@@ -615,6 +657,105 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
   const pluginFrames = new Map();
   const pluginBroadcastSubs = new Map(); // "pluginId:channel" -> ipc listener fn
+  const ERROR_LOG_MAX = 500;
+  const errorLogState = {
+    initialized: false,
+    entries: [],
+    listeners: new Set(),
+    unsubscribeLive: null,
+  };
+
+  function normalizeErrorLogEntry(entry) {
+    if (!entry || typeof entry !== "object") return null;
+    const level = String(entry.level || "").toLowerCase();
+    if (level !== "error") return null;
+    const ts = Number(entry.ts);
+    return {
+      ts: Number.isFinite(ts) ? ts : Date.now(),
+      level: "error",
+      module: entry.module ? String(entry.module) : "App",
+      message: entry.message ? String(entry.message) : "",
+    };
+  }
+
+  function notifyErrorLogListeners() {
+    for (const listener of errorLogState.listeners) {
+      try {
+        if (typeof listener === "function") listener();
+      } catch (_err) { /* ignore listener errors */ }
+    }
+  }
+
+  function setErrorLogEntries(entries) {
+    const next = [];
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        const normalized = normalizeErrorLogEntry(entry);
+        if (normalized) next.push(normalized);
+      }
+    }
+    if (next.length > ERROR_LOG_MAX) {
+      next.splice(0, next.length - ERROR_LOG_MAX);
+    }
+    errorLogState.entries = next;
+    notifyErrorLogListeners();
+  }
+
+  function pushErrorLogEntry(entry) {
+    const normalized = normalizeErrorLogEntry(entry);
+    if (!normalized) return;
+    errorLogState.entries.push(normalized);
+    if (errorLogState.entries.length > ERROR_LOG_MAX) {
+      errorLogState.entries.splice(0, errorLogState.entries.length - ERROR_LOG_MAX);
+    }
+    notifyErrorLogListeners();
+  }
+
+  function clearErrorLogEntriesLocal() {
+    errorLogState.entries = [];
+    notifyErrorLogListeners();
+  }
+
+  function onErrorLogStateChange(listener) {
+    errorLogState.listeners.add(listener);
+    return () => {
+      errorLogState.listeners.delete(listener);
+    };
+  }
+
+  async function ensureErrorLogCapture() {
+    if (errorLogState.initialized) return;
+    errorLogState.initialized = true;
+
+    try {
+      const entries = await invokeMain("logs:get");
+      setErrorLogEntries(entries);
+    } catch (err) {
+      console.error("[LogsTab] Failed to initialize error logs", err);
+    }
+
+    const ipc = getIpc();
+    if (ipc && ipc.on) {
+      const removeLiveListener = ipc.on("logs:new", function() {
+        const args = Array.prototype.slice.call(arguments);
+        const entry = args.length > 1 ? args[1] : args[0];
+        pushErrorLogEntry(entry);
+      });
+      if (typeof removeLiveListener === "function") {
+        errorLogState.unsubscribeLive = removeLiveListener;
+      }
+    }
+  }
+
+  // Start capturing error logs globally, independent of active tab/focus.
+  void ensureErrorLogCapture();
+
+  window.addEventListener("beforeunload", () => {
+    if (typeof errorLogState.unsubscribeLive === "function") {
+      errorLogState.unsubscribeLive();
+      errorLogState.unsubscribeLive = null;
+    }
+  });
 
   // Relay plugin broadcasts from main process to plugin iframes via postMessage.
   window.addEventListener("message", function(e) {
@@ -646,6 +787,8 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
   if (resizeGripEl) resizeGripEl.title = STR.resizeTitle;
   const defaultTabBtn = document.querySelector(".tab[data-tab='ocr']");
   if (defaultTabBtn) defaultTabBtn.textContent = STR.tabOcr;
+  const logsTabBtn = document.querySelector(".tab[data-tab='logs']");
+  if (logsTabBtn) logsTabBtn.textContent = STR.tabLogs;
 
   const DEFAULT_THEME_COLORS = {
     bg: "#0b1220",
@@ -687,8 +830,13 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       greenRgb ? "--green-rgb: " + greenRgb + ";" : "",
     ].join("");
     return [
-      ":root{" + vars + extraVars + "}",
-      "*{box-sizing:border-box;}",
+      ":root{" + vars + extraVars + "--scrollbar-size:10px;--scroll-track:rgba(255,255,255,0.05);--scroll-track-border:rgba(255,255,255,0.08);--scroll-thumb-border:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.55);--scroll-thumb-top:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.42);--scroll-thumb-bottom:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.22);--scroll-thumb-top-hover:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.58);--scroll-thumb-bottom-hover:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.30);}",
+      "*,*::before,*::after{box-sizing:border-box;scrollbar-width:thin !important;scrollbar-color:var(--scroll-thumb-border) var(--scroll-track) !important;}",
+      "html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{width:var(--scrollbar-size) !important;height:var(--scrollbar-size) !important;}",
+      "*::-webkit-scrollbar-track{background:var(--scroll-track) !important;border-radius:999px;border:1px solid var(--scroll-track-border) !important;}",
+      "*::-webkit-scrollbar-thumb{background:linear-gradient(180deg, var(--scroll-thumb-top), var(--scroll-thumb-bottom)) !important;border-radius:999px;border:1px solid var(--scroll-thumb-border) !important;}",
+      "*::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg, var(--scroll-thumb-top-hover), var(--scroll-thumb-bottom-hover)) !important;}",
+      "*::-webkit-scrollbar-corner{background:transparent !important;}",
       "html,body{",
       "  margin:0;",
       "  padding:0;",
@@ -972,8 +1120,121 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     }
   }
 
+  function renderLogsTab() {
+    const sec = document.createElement("div");
+    sec.className = "section";
+    sec.style.cssText = "display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;";
+
+    // Header row
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;";
+    const title = document.createElement("div");
+    title.className = "sectionTitle";
+    title.style.marginBottom = "0";
+    title.textContent = STR.logsTitle;
+    header.appendChild(title);
+
+    const btnGroup = document.createElement("div");
+    btnGroup.style.cssText = "display:flex;gap:6px;";
+
+    const clearBtn = document.createElement("button");
+    clearBtn.textContent = STR.logsClear;
+    clearBtn.style.cssText = "border:1px solid var(--stroke);background:rgba(var(--danger-rgb),0.15);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:11px;";
+    clearBtn.onmouseenter = () => { clearBtn.style.borderColor = "rgba(var(--danger-rgb),0.7)"; };
+    clearBtn.onmouseleave = () => { clearBtn.style.borderColor = "var(--stroke)"; };
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = STR.logsSave;
+    saveBtn.style.cssText = "border:1px solid var(--stroke);background:rgba(var(--accent-rgb),0.15);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:11px;";
+    saveBtn.onmouseenter = () => { saveBtn.style.borderColor = "rgba(var(--accent-rgb),0.7)"; };
+    saveBtn.onmouseleave = () => { saveBtn.style.borderColor = "var(--stroke)"; };
+
+    btnGroup.appendChild(clearBtn);
+    btnGroup.appendChild(saveBtn);
+    header.appendChild(btnGroup);
+    sec.appendChild(header);
+
+    // Log container
+    const logContainer = document.createElement("div");
+    logContainer.style.cssText = "flex:1;min-height:0;overflow:auto;font-family:'Cascadia Mono','Fira Code','Consolas',monospace;font-size:11px;line-height:1.5;padding:6px;border:1px solid var(--stroke);border-radius:8px;background:rgba(0,0,0,0.25);white-space:pre-wrap;word-break:break-all;";
+
+    const emptyMsg = document.createElement("div");
+    emptyMsg.className = "hint";
+    emptyMsg.textContent = STR.logsEmpty;
+    emptyMsg.style.padding = "10px";
+
+    function pad2(n) { return String(n).padStart(2, "0"); }
+
+    function formatEntry(e) {
+      const d = new Date(e.ts);
+      const time = pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+      return "[" + time + "] [" + e.level.toUpperCase() + "] [" + e.module + "] " + e.message;
+    }
+
+    function renderEntries(stickToBottom) {
+      const wasNearBottom = stickToBottom || (logContainer.scrollHeight - logContainer.scrollTop - logContainer.clientHeight < 30);
+      logContainer.innerHTML = "";
+      if (!errorLogState.entries.length) {
+        logContainer.appendChild(emptyMsg);
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      for (const e of errorLogState.entries) {
+        const line = document.createElement("div");
+        line.textContent = formatEntry(e);
+        line.style.color = "rgba(var(--danger-rgb),0.9)";
+        frag.appendChild(line);
+      }
+      logContainer.appendChild(frag);
+      if (wasNearBottom) {
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+    }
+
+    // Render existing entries and keep updating from global state.
+    renderEntries(true);
+    const removeStateListener = onErrorLogStateChange(() => renderEntries(false));
+    void ensureErrorLogCapture();
+
+    // Clear button
+    clearBtn.onclick = async () => {
+      try {
+        await invokeMain("logs:clear");
+        clearErrorLogEntriesLocal();
+      } catch (err) {
+        console.error("[LogsTab] Clear failed", err);
+      }
+    };
+
+    // Save button
+    saveBtn.onclick = async () => {
+      try {
+        const filePath = await invokeMain("logs:save");
+        saveBtn.textContent = filePath ? "OK" : STR.logsSave;
+        setTimeout(() => { saveBtn.textContent = STR.logsSave; }, 2000);
+      } catch (err) {
+        console.error("[LogsTab] Save failed", err);
+      }
+    };
+
+    sec.appendChild(logContainer);
+    content.appendChild(sec);
+
+    // Cleanup when tab switches
+    content._cleanup = () => {
+      if (typeof removeStateListener === "function") {
+        removeStateListener();
+      }
+    };
+  }
+
   function renderCoreTab(name) {
     content.innerHTML = "";
+
+    if (name === "logs") {
+      renderLogsTab();
+      return;
+    }
 
     if (name !== "ocr") {
       return;

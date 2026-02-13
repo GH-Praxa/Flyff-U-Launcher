@@ -2,7 +2,7 @@
  * IPC handlers for plugin management operations.
  */
 import { SafeHandle, IpcEvent, assertValidId } from "../common";
-import { app } from "electron";
+import { app, BrowserWindow } from "electron";
 import { pathToFileURL } from "url";
 import type { PluginHost } from "../../plugin";
 import type { PluginStateStore } from "../../plugin/pluginStateStore";
@@ -12,6 +12,7 @@ import { invokePluginHandler } from "../../plugin/pluginIpc";
 export type PluginHandlerOptions = {
     pluginHost: PluginHost;
     pluginStateStore?: PluginStateStore;
+    preloadPath?: string;
 };
 
 /**
@@ -292,13 +293,203 @@ export function registerPluginHandlers(
         const html = fs.readFileSync(entryPath, "utf-8");
         const baseHref = pathToFileURL(path.dirname(entryPath) + path.sep).href;
 
+        // Read sibling CSS/JS for inline injection (sandbox prevents loading external files)
+        const baseDir = path.dirname(entryPath);
+        const baseName = path.basename(entryPath, path.extname(entryPath));
+        const cssPath = path.join(baseDir, `${baseName}.css`);
+        const jsPath = path.join(baseDir, `${baseName}.js`);
+        const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, "utf-8") : "";
+        const js = fs.existsSync(jsPath) ? fs.readFileSync(jsPath, "utf-8") : "";
+
         return {
             url: pathToFileURL(entryPath).href,
             width: manifest.settingsUI.width,
             height: manifest.settingsUI.height,
             html,
             baseHref,
+            css,
+            js,
         };
+    });
+
+    /**
+     * Open a plugin settings UI in a standalone BrowserWindow.
+     * Provides full IPC access via the app preload script.
+     */
+    const openSettingsWindows = new Map<string, BrowserWindow>();
+
+    safeHandle("plugins:openSettingsWindow", async (_e: IpcEvent, pluginId: string) => {
+        assertValidId(pluginId, "pluginId");
+
+        // If window already open for this plugin, focus it
+        const existing = openSettingsWindows.get(pluginId);
+        if (existing && !existing.isDestroyed()) {
+            existing.focus();
+            return { alreadyOpen: true };
+        }
+
+        let plugin = opts.pluginHost.getPlugin(pluginId);
+        let manifest = plugin?.manifest;
+        if (!manifest) {
+            const manifests = await opts.pluginHost.discoverPlugins();
+            manifest = manifests.find((m) => m.id === pluginId);
+        }
+        if (!manifest) throw new Error(`Plugin not found: ${pluginId}`);
+        if (!manifest.settingsUI) throw new Error("Plugin has no settings UI");
+        if (!manifest.permissions.includes("settings:ui")) throw new Error("Plugin missing settings:ui permission");
+
+        const path = require("path");
+        const fs = require("fs");
+        const fallbackDir = path.join(app.getPath("userData"), "plugins", pluginId);
+        const pluginDir = plugin?.context?.pluginDir ?? fallbackDir;
+        const entryPath = path.resolve(pluginDir, manifest.settingsUI.entry);
+        if (!entryPath.startsWith(path.resolve(pluginDir) + path.sep)) throw new Error("Invalid settings UI path");
+        if (!fs.existsSync(entryPath)) throw new Error("Settings UI entry not found");
+
+        let html = fs.readFileSync(entryPath, "utf-8");
+        const baseDir = path.dirname(entryPath);
+        const baseName = path.basename(entryPath, path.extname(entryPath));
+        const cssPath = path.join(baseDir, `${baseName}.css`);
+        const jsPath = path.join(baseDir, `${baseName}.js`);
+        const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, "utf-8") : "";
+        const js = fs.existsSync(jsPath) ? fs.readFileSync(jsPath, "utf-8") : "";
+
+        // Build bridge script: IPC bridge + theme application + scrollbar CSS
+        const SCRIPT_CLOSE = "</scr" + "ipt>";
+        const bridge = `<script>
+(function() {
+    var pluginId = ${JSON.stringify(pluginId)};
+
+    // --- IPC bridge ---
+    window.plugin = {
+        ipc: {
+            invoke: function(channel) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                return window.api.pluginsInvokeChannel(pluginId, channel, ...args);
+            }
+        }
+    };
+
+    // --- Theme support ---
+    function hexToRgb(hex) {
+        var m = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec((hex || "").trim());
+        return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)].join(",") : null;
+    }
+
+    function applyTheme(colors) {
+        if (!colors || typeof colors !== "object") return;
+        var root = document.documentElement;
+        Object.keys(colors).forEach(function(key) {
+            var val = colors[key];
+            if (typeof val === "string" && val.trim()) {
+                root.style.setProperty("--" + key, val.trim());
+            }
+        });
+        // Compute RGB variants for rgba() usage
+        var pairs = [
+            ["accent", "accent-rgb"],
+            ["tabActive", "tab-active-rgb"],
+            ["danger", "danger-rgb"],
+            ["green", "green-rgb"],
+            ["blue", "blue-rgb"]
+        ];
+        pairs.forEach(function(p) {
+            var rgb = hexToRgb(colors[p[0]]);
+            if (rgb) root.style.setProperty("--" + p[1], rgb);
+        });
+    }
+
+    // Fetch current theme on load, listen for live updates
+    window.addEventListener("DOMContentLoaded", function() {
+        if (window.api && window.api.themeCurrent) {
+            window.api.themeCurrent().then(function(snap) {
+                if (snap && snap.colors) applyTheme(snap.colors);
+            }).catch(function() {});
+        }
+        if (window.api && window.api.onThemeUpdate) {
+            window.api.onThemeUpdate(function(payload) {
+                if (payload && payload.colors) applyTheme(payload.colors);
+            });
+        }
+    });
+})();
+${SCRIPT_CLOSE}`;
+
+        // Strip external CSS/JS refs (we inline them)
+        const stripCss = new RegExp(`<link[^>]*${baseName}\\.css[^>]*>`, "i");
+        const stripJs = new RegExp(`<script[^>]*${baseName}\\.js[^>]*>${SCRIPT_CLOSE}`, "i");
+        html = html.replace(stripCss, "");
+        html = html.replace(stripJs, "");
+
+        // Standalone window overrides: scrollable body, themed background, styled scrollbars
+        const windowCss = `
+html, body {
+  height: auto;
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--panel, #0f1a33), var(--panel2, #0d1830));
+}
+#app { height: auto; overflow-y: visible; padding: 10px; }
+::-webkit-scrollbar { width: 10px; height: 8px; }
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid var(--stroke, #1b2b4d);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb, 46,204,113),0.35), rgba(var(--accent-rgb, 46,204,113),0.18));
+  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-rgb, 46,204,113),0.45);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb, 46,204,113),0.45), rgba(var(--accent-rgb, 46,204,113),0.28));
+}
+`;
+        // Inject inline CSS into <head>
+        const allCss = css + windowCss;
+        if (allCss && html.includes("</head>")) {
+            html = html.replace("</head>", `<style>${allCss}</style></head>`);
+        } else if (allCss) {
+            html = `<style>${allCss}</style>${html}`;
+        }
+
+        // Inject bridge + plugin JS before </body>
+        const combinedJs = bridge + (js ? `\n<script>${js}${SCRIPT_CLOSE}` : "");
+        if (html.includes("</body>")) {
+            html = html.replace("</body>", `${combinedJs}</body>`);
+        } else {
+            html += combinedJs;
+        }
+
+        const width = Math.max(400, manifest.settingsUI.width || 520);
+        const height = Math.max(300, manifest.settingsUI.height || 600);
+
+        const win = new BrowserWindow({
+            width,
+            height,
+            minWidth: 380,
+            minHeight: 280,
+            frame: true,
+            resizable: true,
+            title: manifest.name || pluginId,
+            backgroundColor: "#0b1220",
+            webPreferences: {
+                preload: opts.preloadPath,
+                nodeIntegration: false,
+                contextIsolation: true,
+            },
+        });
+
+        win.setMenuBarVisibility(false);
+        openSettingsWindows.set(pluginId, win);
+        win.on("closed", () => openSettingsWindows.delete(pluginId));
+
+        // Write to temp file so preload script gets loaded (data: URLs skip preload)
+        const tempDir = app.getPath("temp");
+        const tempHtmlPath = path.join(tempDir, `flyff-plugin-${pluginId}.html`);
+        fs.writeFileSync(tempHtmlPath, html, "utf-8");
+        win.loadFile(tempHtmlPath);
+
+        return { opened: true };
     });
 
     /**
@@ -331,8 +522,14 @@ export function registerPluginHandlers(
         try {
             // Use the plugin handler registry instead of internal Electron APIs
             const result = await invokePluginHandler(prefixed, ...args);
+            // Plugin handlers wrap results as { ok, data, error }. Unwrap here
+            // so safeHandle doesn't double-wrap. All consumers then get clean data.
             if (result && typeof result === "object" && "ok" in result) {
-                return result as { ok: boolean; data?: unknown; error?: string };
+                const wrapped = result as { ok: boolean; data?: unknown; error?: string };
+                if (!wrapped.ok) {
+                    throw new Error(wrapped.error || "Plugin handler failed");
+                }
+                return wrapped.data;
             }
             return result;
         } catch (err) {
@@ -357,6 +554,8 @@ export function registerPluginHandlers(
             url: string;
             html: string;
             baseHref: string;
+            css: string;
+            js: string;
         }> = [];
 
         for (const manifest of manifests) {

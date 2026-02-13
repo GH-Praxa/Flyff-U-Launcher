@@ -46,3 +46,100 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
         run: npm run publish
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Prepare Tesseract binaries
+        run: |
+          brew install tesseract
+          TESS_DIR=app/resources/tesseract/darwin
+          mkdir -p "$TESS_DIR/tessdata"
+          cp "$(which tesseract)" "$TESS_DIR/"
+          # Copy tessdata language files
+          TESSDATA_SRC="$(brew --prefix)/share/tessdata"
+          if [ -d "$TESSDATA_SRC" ]; then
+            cp "$TESSDATA_SRC"/eng.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+            cp "$TESSDATA_SRC"/deu.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+            cp "$TESSDATA_SRC"/osd.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+          fi
+          # Copy required dynamic libraries
+          for lib in $(otool -L "$TESS_DIR/tesseract" | grep -oE '/opt/homebrew[^ ]+|/usr/local[^ ]+' | sort -u); do
+            cp "$lib" "$TESS_DIR/" 2>/dev/null || true
+          done
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build and Publish
+        working-directory: app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+        run: npm run publish
+
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools tesseract-ocr tesseract-ocr-eng tesseract-ocr-deu
+
+      - name: Prepare Tesseract binaries
+        run: |
+          TESS_DIR=app/resources/tesseract/linux
+          mkdir -p "$TESS_DIR/tessdata"
+          cp "$(which tesseract)" "$TESS_DIR/"
+          # Copy tessdata language files
+          TESSDATA_SRC="/usr/share/tesseract-ocr/5/tessdata"
+          if [ -d "$TESSDATA_SRC" ]; then
+            cp "$TESSDATA_SRC"/eng.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+            cp "$TESSDATA_SRC"/deu.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+            cp "$TESSDATA_SRC"/osd.traineddata "$TESS_DIR/tessdata/" 2>/dev/null || true
+          fi
+          # Copy required shared libraries
+          for lib in $(ldd "$TESS_DIR/tesseract" | grep -oE '/[^ ]+' | sort -u); do
+            # Skip system libs (libc, ld-linux, libm, libpthread, etc.)
+            case "$lib" in
+              */libc.so*|*/libm.so*|*/libpthread*|*/libdl*|*/ld-linux*|*/librt*|*/libgcc_s*|*/libstdc++*)
+                continue ;;
+            esac
+            cp "$lib" "$TESS_DIR/" 2>/dev/null || true
+          done
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build and Publish
+        working-directory: app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+        run: npm run publish

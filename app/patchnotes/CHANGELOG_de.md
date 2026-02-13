@@ -1,6 +1,37 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 2.9.0
+
+### ✨ Neue Funktionen
+- Neues Logs-Tab im Sidepanel mit Live-Fehlerprotokoll (Warn/Error) sowie Löschen- und Speichern-Aktion.
+- Plugin-Settings werden jetzt in einem eigenen Fenster geöffnet, inklusive Theme-Übernahme und sicherer IPC-Bridge.
+- API-Fetch-Plugin 3.0.0 mit neuer nativer Sidepanel-Oberfläche (kein separates Python-UI-Fenster mehr).
+
+### 🚀 Plattform & Distribution
+- Offizielle Build-/Release-Pipeline für Windows, macOS und Linux in GitHub Actions.
+- Neue Paketformate: macOS DMG sowie Linux AppImage/DEB/RPM.
+- Plattformspezifisches Tesseract-Bundling (win32, darwin, linux) inkl. angepasster Laufzeit-Erkennung/Fallback.
+- README aktualisiert mit Installationsformaten und plattformspezifischen Daten-/Plugin-Pfaden.
+
+### 🐛 Fehlerbehebungen
+- Leeres Fenster beim Start nach Einführung der Sidepanel-Logfunktion behoben (renderer-sicheres Logging).
+- Overlays bleiben stabil sichtbar, wenn Child-Windows fokussiert werden; Wiederherstellung nach Fokuswechsel robuster.
+- OCR-Debug-Pfad-Fallback funktioniert jetzt auch korrekt unter Linux/macOS.
+- Killfeed: Race-Conditions bei schnellen OCR-Updates reduziert (profilweises Serialisieren), Broadcast-Updates werden nicht mehr verworfen.
+
+### ⚙️ Verbesserungen
+- Killfeed-Monstererkennung priorisiert jetzt Monster-HP (mit Toleranz), danach Element/Level.
+- TTK-Zielerkennung robuster durch HP-Toleranz; Monster-Grace-Fenster von 5s auf 2s angepasst.
+- Stats-Engine unterscheidet besser zwischen OCR-Levelrauschen und echten Levelwechseln.
+- API-Fetch öffnet Ausgabepfade plattformunabhängig über Electron shell.openPath.
+
+### 🧹 Aufräumarbeiten
+- Alte API-Fetch-Python-Artefakte entfernt (.py, .exe) zugunsten der JS/Sidepanel-Variante.
+- Tesseract-Ressourcen in die neuen Plattform-Unterordner umstrukturiert.
+- Version auf 2.9.0 erhöht.
+
+---
 ## 🆕 Version 2.5.1
 
 ### 🆕 Neues Feature: Giant Tracker

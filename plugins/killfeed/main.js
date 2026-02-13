@@ -96,7 +96,9 @@ let unsubscribeOcr = null;
 
 // Throttle state for broadcasts
 const lastBroadcast = new Map(); // profileId -> timestamp
+const pendingBroadcast = new Map(); // profileId -> timeout handle
 const BROADCAST_INTERVAL_MS = 200; // Max 5 updates/sec
+const ocrLocks = new Map(); // profileId -> Promise (per-profile serialization)
 const DISCORD_EMBED_COLOR = 0x5865f2;
 const STATE_KEY_PREFIX = 'state:';
 
@@ -257,6 +259,50 @@ function findMonsterByLevelElement(level, element) {
     return sameElement[0].m;
   }
   return null;
+}
+
+/**
+ * HP-first monster lookup: find monster by max HP with 3% tolerance.
+ * Narrows by element and level when multiple candidates share similar HP.
+ * Returns null if no match found.
+ */
+function findMonsterByHp(maxHp, element, level) {
+  if (!Number.isFinite(maxHp) || maxHp <= 0) return null;
+  const tolerance = Math.max(1, Math.round(maxHp * 0.03));
+  const candidates = monsterReference.filter((m) =>
+    m && m.hp !== null && m.hp > 0 && Math.abs(m.hp - maxHp) <= tolerance
+  );
+  if (candidates.length === 0) return null;
+
+  // Single match → done
+  const uniqueNames = new Set(candidates.map((m) => m.name));
+  if (uniqueNames.size === 1) return candidates[0];
+
+  // Narrow by element
+  if (element && element !== 'none') {
+    const elFiltered = candidates.filter((m) => m.element === element);
+    if (elFiltered.length > 0) {
+      const elNames = new Set(elFiltered.map((m) => m.name));
+      if (elNames.size === 1) return elFiltered[0];
+      // Continue narrowing with element-filtered set
+      if (Number.isFinite(level) && level >= 1) {
+        const lvlFiltered = elFiltered.filter((m) => m.level === level);
+        if (lvlFiltered.length > 0) return lvlFiltered[0];
+      }
+      return elFiltered[0];
+    }
+  }
+
+  // Narrow by level
+  if (Number.isFinite(level) && level >= 1) {
+    const lvlFiltered = candidates.filter((m) => m.level === level);
+    if (lvlFiltered.length > 0) return lvlFiltered[0];
+  }
+
+  // Still ambiguous → prefer exact HP match, then first by rank
+  const exactHp = candidates.filter((m) => m.hp === maxHp);
+  if (exactHp.length > 0) return exactHp[0];
+  return candidates[0];
 }
 
 function loadMonsterDetails(monsterId) {
@@ -1447,16 +1493,23 @@ function startTtkCombat(tracker, monsterName, maxHp, tickTime) {
 }
 
 function isSameBossTarget(tracker, monsterName, parsedHp) {
+  // HP tolerance: 3% to handle minor OCR digit drift during long fights
+  const hpMatches = (a, b) => {
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return false;
+    const tolerance = Math.max(1, Math.round(Math.max(a, b) * 0.03));
+    return Math.abs(a - b) <= tolerance;
+  };
+
   // Primary check: name match
   if (monsterName && tracker.monsterName) {
     if (monsterName !== tracker.monsterName) return false;
-    // Name matches — verify maxHp if both available
-    if (parsedHp && tracker.monsterMaxHp && parsedHp.max !== tracker.monsterMaxHp) return false;
+    // Name matches — verify maxHp if both available (with tolerance)
+    if (parsedHp && tracker.monsterMaxHp && !hpMatches(parsedHp.max, tracker.monsterMaxHp)) return false;
     return true;
   }
-  // No name available — fall back to maxHp fingerprint
+  // No name available — fall back to maxHp fingerprint (with tolerance)
   if (parsedHp && tracker.monsterMaxHp) {
-    return parsedHp.max === tracker.monsterMaxHp;
+    return hpMatches(parsedHp.max, tracker.monsterMaxHp);
   }
   // Insufficient data — assume same to avoid false pauses
   return true;
@@ -2064,16 +2117,34 @@ async function buildStateSnapshot(profileId) {
 }
 
 /**
- * Broadcast computed state to all UI windows
+ * Broadcast computed state to all UI windows.
+ * Throttled to BROADCAST_INTERVAL_MS but guarantees the latest state
+ * is always sent via a deferred broadcast when throttled.
  */
 async function broadcastState(profileId) {
   const now = Date.now();
   const lastTime = lastBroadcast.get(profileId) || 0;
 
-  // Throttle broadcasts
+  // Throttle broadcasts — schedule deferred broadcast instead of discarding
   if (now - lastTime < BROADCAST_INTERVAL_MS) {
+    if (!pendingBroadcast.has(profileId)) {
+      const delay = BROADCAST_INTERVAL_MS - (now - lastTime);
+      const timer = setTimeout(() => {
+        pendingBroadcast.delete(profileId);
+        broadcastState(profileId).catch(() => {});
+      }, delay);
+      pendingBroadcast.set(profileId, timer);
+    }
     return;
   }
+
+  // Clear any pending deferred broadcast since we're sending now
+  const pending = pendingBroadcast.get(profileId);
+  if (pending) {
+    clearTimeout(pending);
+    pendingBroadcast.delete(profileId);
+  }
+
   lastBroadcast.set(profileId, now);
 
   try {
@@ -2093,11 +2164,17 @@ async function handleOcrUpdate(payload) {
   if (!config.enabled) {
     return;
   }
-  try {
-  return await _handleOcrUpdateInner(payload);
-  } catch (err) {
+
+  // Serialize OCR updates per profile to prevent race conditions
+  // when kills happen in rapid succession.
+  const profileId = payload?.profileId;
+  const key = profileId || '__global__';
+  const prev = ocrLocks.get(key) || Promise.resolve();
+  const next = prev.then(() => _handleOcrUpdateInner(payload)).catch((err) => {
     console.error('[Killfeed] handleOcrUpdate crashed (OCR pipeline preserved):', err);
-  }
+  });
+  ocrLocks.set(key, next);
+  return next;
 }
 
 async function _handleOcrUpdateInner(payload) {
@@ -2132,7 +2209,27 @@ async function _handleOcrUpdateInner(payload) {
   const monsterToken = typeof monsterName === 'string' ? monsterName : (typeof values?.enemyName === 'string' ? values.enemyName : null);
   const parsedMonster = monsterToken ? parseMonsterToken(monsterToken) : null;
   let monsterCandidate = null;
-  if (parsedMonster && parsedMonster.level && parsedMonster.element) {
+
+  // HP-first strategy: most reliable OCR signal for monster identification
+  if (parsedHp && parsedHp.max > 0) {
+    const hpRef = findMonsterByHp(
+      parsedHp.max,
+      parsedMonster ? parsedMonster.element : null,
+      parsedMonster ? parsedMonster.level : null
+    );
+    if (hpRef) {
+      monsterCandidate = {
+        id: hpRef.id,
+        name: hpRef.name,
+        element: hpRef.element,
+        level: hpRef.level,
+        rank: hpRef.rank || null
+      };
+    }
+  }
+
+  // Fallback: level+element when HP is unavailable or didn't match
+  if (!monsterCandidate && parsedMonster && parsedMonster.level && parsedMonster.element) {
     const ref = findMonsterByLevelElement(parsedMonster.level, parsedMonster.element);
     if (ref) {
       monsterCandidate = {
@@ -2209,7 +2306,7 @@ async function _handleOcrUpdateInner(payload) {
 
   // Resolve monster name: prefer current OCR data, fall back to last known
   // monster within a grace window (enemy may have disappeared before EXP tick).
-  const MONSTER_GRACE_MS = 5000;
+  const MONSTER_GRACE_MS = 2000;
   let resolvedMonsterName = (monsterMeta && monsterMeta.name) || monsterName || null;
   let resolvedMonsterMeta = monsterMeta;
 
@@ -2748,6 +2845,9 @@ async function stop() {
   profileLayouts.clear();
   overlayWindows.clear();
   lastBroadcast.clear();
+  for (const timer of pendingBroadcast.values()) clearTimeout(timer);
+  pendingBroadcast.clear();
+  ocrLocks.clear();
   lastKnownMonster.clear();
   monsterDetailsCache.clear();
   monsterReference.length = 0;

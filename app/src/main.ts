@@ -39,7 +39,7 @@ import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
 import { createSafeHandler } from "./main/ipc/common";
 import { applyCSP } from "./main/security/harden";
-import { logWarn, logErr } from "./shared/logger";
+import { logWarn, logErr, getLogEntries, clearLogEntries, setLogListener } from "./shared/logger";
 import { createCoreServices } from "./main/coreServices";
 import { createServiceRegistry } from "./main/plugin/serviceRegistry";
 import { createPluginHost } from "./main/plugin/pluginHost";
@@ -207,25 +207,43 @@ async function copyDefaultPlugins(targetDir: string): Promise<void> {
 }
 
 function configureBundledTesseract(): void {
-    // In packaged builds: process.resourcesPath/tesseract/
-    // In dev mode: __dirname is .vite/build/, so we need to check app/resources/tesseract/
+    const exeName = process.platform === "win32" ? "tesseract.exe" : "tesseract";
+    // Platform-specific subdirectory first, then generic fallback
     const candidates = [
+        resolveResourcePath("tesseract", process.platform),
         resolveResourcePath("tesseract"),
+        path.resolve(__dirname, "..", "resources", "tesseract", process.platform),
         path.resolve(__dirname, "..", "resources", "tesseract"),
+        path.resolve(__dirname, "..", "..", "resources", "tesseract", process.platform),
         path.resolve(__dirname, "..", "..", "resources", "tesseract"),
     ];
-    const tesseractDir = candidates.find((dir) => fs.existsSync(path.join(dir, "tesseract.exe")));
+    const tesseractDir = candidates.find((dir) => fs.existsSync(path.join(dir, exeName)));
     if (tesseractDir) {
-        process.env.TESSERACT_EXE = path.join(tesseractDir, "tesseract.exe");
-        // Add tesseract dir to PATH so Windows can find the DLLs (libtesseract-5.dll etc.)
+        const tesseractExePath = path.join(tesseractDir, exeName);
+        process.env.TESSERACT_EXE = tesseractExePath;
+        // Add tesseract dir to PATH so the OS can find the executable
         process.env.PATH = tesseractDir + path.delimiter + (process.env.PATH || "");
+        // Set platform-specific library search paths for bundled shared libraries
+        if (process.platform === "darwin") {
+            process.env.DYLD_LIBRARY_PATH = tesseractDir + path.delimiter + (process.env.DYLD_LIBRARY_PATH || "");
+        } else if (process.platform === "linux") {
+            process.env.LD_LIBRARY_PATH = tesseractDir + path.delimiter + (process.env.LD_LIBRARY_PATH || "");
+        }
         const tessdata = path.join(tesseractDir, "tessdata");
         if (fs.existsSync(tessdata)) {
             process.env.TESSDATA_PREFIX = tessdata;
         }
+        // Ensure executable permission on non-Windows platforms
+        if (process.platform !== "win32") {
+            try {
+                fs.chmodSync(tesseractExePath, 0o755);
+            } catch { /* ignore */ }
+        }
         console.log("[Tesseract] Bundled tesseract configured:", process.env.TESSERACT_EXE);
     } else {
-        console.warn("[Tesseract] Bundled tesseract.exe not found in:", candidates.join(", "));
+        // Fallback: system-installed tesseract
+        process.env.TESSERACT_EXE = exeName;
+        console.warn("[Tesseract] Bundled tesseract not found, falling back to system-installed:", exeName);
     }
 }
 
@@ -261,6 +279,14 @@ function writeTesseractDiagnostic(): void {
 // ============================================================================
 
 app.whenReady().then(async () => {
+    setLogListener((entry) => {
+        for (const win of BrowserWindow.getAllWindows()) {
+            if (!win.isDestroyed()) {
+                win.webContents.send("logs:new", entry);
+            }
+        }
+    });
+
     // Remove default application menu (File, Edit, View, Window, Help)
     Menu.setApplicationMenu(null);
 
@@ -462,6 +488,33 @@ app.whenReady().then(async () => {
     });
 
     // =========================================================================
+    // Logs IPC
+    // =========================================================================
+    safeHandle("logs:get", async () => {
+        return { ok: true, data: getLogEntries() };
+    });
+    safeHandle("logs:clear", async () => {
+        clearLogEntries();
+        return { ok: true, data: true };
+    });
+    safeHandle("logs:save", async () => {
+        const now = new Date();
+        const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+        const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        const logsDir = path.join(app.getPath("userData"), "user", "logs");
+        await fsp.mkdir(logsDir, { recursive: true });
+        const filePath = path.join(logsDir, `errors-${stamp}.txt`);
+        const entries = getLogEntries();
+        const lines = entries.map((e) => {
+            const d = new Date(e.ts);
+            const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            return `[${time}] [${e.level.toUpperCase()}] [${e.module}] ${e.message}`;
+        });
+        await fsp.writeFile(filePath, lines.join("\n"), "utf-8");
+        return { ok: true, data: filePath };
+    });
+
+    // =========================================================================
     // Client Settings Change Handler
     // =========================================================================
     const onClientSettingsChanged = (settings: ClientSettings) => {
@@ -654,7 +707,7 @@ app.whenReady().then(async () => {
     });
 
     // Register plugin management IPC handlers
-    registerPluginHandlers(safeHandle, { pluginHost, pluginStateStore }, ipcLogErr);
+    registerPluginHandlers(safeHandle, { pluginHost, pluginStateStore, preloadPath }, ipcLogErr);
 
     // Initialize OCR system (load persisted timers, manual overrides)
     await ocrSystem.init();

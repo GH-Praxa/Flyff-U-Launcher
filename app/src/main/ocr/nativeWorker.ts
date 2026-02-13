@@ -49,7 +49,10 @@ function resolveDebugDir(customDir?: string): string {
     try {
         return path.join(app.getPath("userData"), "user", "logs", "ocr");
     } catch {
-        return path.join(process.env.APPDATA || process.env.LOCALAPPDATA || "", "Flyff-U-Launcher", "ocr-debug");
+        const fallback = process.platform === "win32"
+            ? (process.env.APPDATA || process.env.LOCALAPPDATA || "")
+            : (process.env.XDG_CONFIG_HOME || path.join(process.env.HOME || "/tmp", ".config"));
+        return path.join(fallback, "Flyff-U-Launcher", "ocr-debug");
     }
 }
 

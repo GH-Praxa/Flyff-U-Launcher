@@ -1,7 +1,7 @@
 {
   "id": "api-fetch",
   "name": "API Fetch",
-  "version": "1.0.2",
+  "version": "3.0.0",
   "minLauncherVersion": "1.2.0",
   "author": "Praxa",
   "description": "Lädt API-Endpunkte herunter und speichert die Ergebnisse auf dem Rechner.",
@@ -24,8 +24,14 @@
     "ui:launch"
   ],
   "settingsUI": {
-    "entry": "./ui.html",
-    "width": 450,
-    "height": 280
+    "entry": "./ui_sidepanel.html",
+    "width": 520,
+    "height": 600
+  },
+  "ui": {
+    "sidepanelTab": {
+      "label": "API Fetch",
+      "entry": "ui_sidepanel.html"
+    }
   }
 }

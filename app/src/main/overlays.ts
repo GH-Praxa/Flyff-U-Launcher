@@ -248,7 +248,14 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             state.roiOverlayWindow.setBounds(host.bounds);
             const focusedWindow = BrowserWindow.getFocusedWindow();
             const sidePanelWindow = deps.getSidePanelWindow();
-            const hostFocused = focusedWindow && (focusedWindow.id === host.parent.id || focusedWindow === sidePanelWindow);
+            // Show overlay when the host, side panel, or any child/related window is focused.
+            // Also show when no Electron window has focus but this is a child-window scenario
+            // (e.g. overlay button click briefly unfocuses the parent).
+            const hostFocused = focusedWindow && (
+                focusedWindow.id === host.parent.id
+                || focusedWindow === sidePanelWindow
+                || focusedWindow.getParentWindow()?.id === host.parent.id
+            );
             if (hostFocused) {
                 state.roiOverlayWindow.show();
             } else {
@@ -307,7 +314,11 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             state.roiSupportOverlayWindow.setBounds(host.bounds);
             const focusedWindow = BrowserWindow.getFocusedWindow();
             const sidePanelWindow = deps.getSidePanelWindow();
-            const hostFocused = focusedWindow && (focusedWindow.id === host.parent.id || focusedWindow === sidePanelWindow);
+            const hostFocused = focusedWindow && (
+                focusedWindow.id === host.parent.id
+                || focusedWindow === sidePanelWindow
+                || focusedWindow.getParentWindow()?.id === host.parent.id
+            );
             if (hostFocused) {
                 state.roiSupportOverlayWindow.show();
             } else {
@@ -335,18 +346,12 @@ export function createOverlaysManager(deps: OverlaysDeps) {
         }, 100);
     });
 
-    app.on("browser-window-focus", (_, win) => {
-        const sessionWin = deps.getSessionWindow();
-        if (sessionWin && win.id === sessionWin.id) {
-            showAll();
-            return;
-        }
-        for (const entry of deps.getRegistryEntries()) {
-            if (!entry.window.isDestroyed() && win.id === entry.window.id) {
-                showAll();
-                return;
-            }
-        }
+    // When ANY app window regains focus after hideAll(), restore overlays.
+    // The per-tick sync loops (50ms) will correct visibility immediately
+    // based on the actual focused host window, so this is safe even when
+    // a non-game window (e.g. launcher settings) gains focus.
+    app.on("browser-window-focus", () => {
+        showAll();
     });
 
     return {

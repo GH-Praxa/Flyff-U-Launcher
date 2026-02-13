@@ -182,10 +182,16 @@ declare global {
             pluginsStop: (pluginId: string) => Promise<PluginOpResult>;
             pluginsReload: (pluginId: string) => Promise<PluginOpResult>;
             pluginsIsEnabled: (pluginId: string) => Promise<boolean>;
-            pluginsGetSettingsUI: (pluginId: string) => Promise<{ url: string; width?: number; height?: number }>;
+            pluginsGetSettingsUI: (pluginId: string) => Promise<{ url: string; width?: number; height?: number; html?: string; baseHref?: string; css?: string; js?: string }>;
+            pluginsOpenSettingsWindow: (pluginId: string) => Promise<{ opened?: boolean; alreadyOpen?: boolean }>;
             pluginsInvokeChannel: (pluginId: string, channel: string, ...args: unknown[]) => Promise<unknown>;
             onPluginStateChanged: (cb: (state: PluginStateInfo) => void) => () => void;
             onTabBarToggle: (cb: () => void) => () => void;
+            // Logs
+            logsGet: () => Promise<Array<{ ts: number; level: string; module: string; message: string }>>;
+            logsClear: () => Promise<boolean>;
+            logsSave: () => Promise<string>;
+            onLogsNew: (cb: (entry: { ts: number; level: string; module: string; message: string }) => void) => () => void;
         };
         ipc?: {
             send: (channel: string, payload?: unknown) => void;

@@ -57,7 +57,6 @@ import { el, showToast, jobIconSrc } from "../dom-utils";
 export interface ConfigModalDeps {
     snapshotThemeVars: () => Record<string, string>;
     applyThemeToIframe: (iframe: HTMLIFrameElement) => void;
-    openPluginSettingsUI: (plugin: { id: string; name: string; hasSettingsUI?: boolean; enabled?: boolean }) => Promise<void>;
 }
 
 export function openConfigModal(
@@ -65,7 +64,7 @@ export function openConfigModal(
     defaultStyleTab: "theme" | "tabActive" = "theme",
     defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style",
 ) {
-    const { snapshotThemeVars, applyThemeToIframe, openPluginSettingsUI } = deps;
+    const { snapshotThemeVars, applyThemeToIframe } = deps;
     const overlay = el("div", "modalOverlay");
     const modal = el("div", "modal configModal");
     const headerEl = el("div", "modalHeader");
@@ -1110,23 +1109,13 @@ export function openConfigModal(
                 if (!isKillfeed && plugin.hasSettingsUI && plugin.permissions?.includes("settings:ui") && plugin.enabled) {
                     const uiBtn = el("button", "btn pluginBtn", t("config.plugins.openUI" as TranslationKey));
                     uiBtn.addEventListener("click", async () => {
-                        // Directly launch Python UI without dialog
                         uiBtn.disabled = true;
-                        status.textContent = t("config.plugins.status.working");
-                        status.className = "pluginStatus loading";
                         try {
-                            const result = await window.api.pluginsInvokeChannel(plugin.id, "ui:launch");
-                            if (result && (result as { ok?: boolean }).ok) {
-                                showToast(t("config.plugins.uiStarted"), "success");
-                            } else {
-                                showToast((result as { error?: string })?.error || t("config.plugins.uiError"), "error");
-                            }
+                            await window.api.pluginsOpenSettingsWindow(plugin.id);
                         } catch (err) {
                             showToast(String(err), "error");
                         } finally {
                             uiBtn.disabled = false;
-                            status.textContent = getStatusText(plugin.state, plugin.enabled);
-                            status.className = `pluginStatus ${getStatusClass(plugin.state, plugin.enabled)}`;
                         }
                     });
                     actions.append(uiBtn);

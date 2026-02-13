@@ -80,13 +80,17 @@ Plugins benötigen in der Regel Daten und Icons aus der API. Diese kannst du mit
 
 - Öffne **"API-Fetch"**.  
 ![Beschreibung](api_fetch/api_fetch_1.png)  
-![Beschreibung](api_fetch/api_fetch_2.png)
-
-- Plugins erwarten die API-Daten in einem bestimmten Ordner. Stelle sicher, dass dieser als Output angegeben ist.  
-![Beschreibung](api_fetch/api_fetch_3.png)
 
 - Wähle die benötigten Endpunkte aus und klicke auf **"Start"**.  
+![Beschreibung](api_fetch/api_fetch_2.png)
+
+Der Fortschritt lässt sich live verfolgen. Status zeigt auf welche Endpunkte bereits abgearbeitet wurden.
+Durch das API Limit gibt es kurze Pausen um die Raten einzuhalten.
+![Beschreibung](api_fetch/api_fetch_3.png)
+
+API Fetch ist auch im Sidepanel verfügbar
 ![Beschreibung](api_fetch/api_fetch_4.png)
+
 
 :::
 

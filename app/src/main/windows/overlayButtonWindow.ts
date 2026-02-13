@@ -60,7 +60,7 @@ export function createOverlayButtonWindow(opts: {
 
   // A) Normaler Weg: Renderer sendet IPC (via preload: window.ipc.send)
   const ipcHandler = (e: IpcMainEvent, payload: any) => {
-    if (e.sender.id !== wcId) return; // nur dieses Fenster
+    if (!e?.sender || e.sender.id !== wcId) return; // nur dieses Fenster
     handleToggle(payload);
   };
   ipcMain.on("sidepanel:toggle", ipcHandler);

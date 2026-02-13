@@ -140,7 +140,10 @@ window.plugin = {
 
 <\/script>`;
 
-            const html = `${baseTag}${bridgeScript}${uiInfo.html}`;
+            // Inject CSS/JS inline since sandbox prevents loading external files
+            const inlineCss = uiInfo.css ? `<style>${uiInfo.css}</style>` : "";
+            const inlineJs = uiInfo.js ? `<script>${uiInfo.js}<\/script>` : "";
+            const html = `${baseTag}${bridgeScript}${inlineCss}${uiInfo.html}${inlineJs}`;
             frame.srcdoc = html;
         } else if (uiInfo.url) {
             frame.src = uiInfo.url;

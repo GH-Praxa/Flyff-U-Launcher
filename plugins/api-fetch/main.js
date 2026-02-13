@@ -4,7 +4,7 @@ const path = require("path");
 const http = require("http");
 const https = require("https");
 const { URL } = require("url");
-const { spawn } = require("child_process");
+const { shell } = require("electron");
 
 const RATE_LIMIT = {
   maxRequests: 300,
@@ -19,7 +19,6 @@ const USER_AGENT =
 
 let ctxRef;
 let currentJob = null;
-let uiProcess = null;
 let requestsMade = 0;
 
 const pluginRoot = __dirname;
@@ -34,98 +33,6 @@ const outputDir = path.join(
 
 function ensureDir(dirPath) {
   return fsp.mkdir(dirPath, { recursive: true });
-}
-
-function getPythonCommand() {
-  return (
-    process.env.FLYFF_API_FETCH_PYTHON ||
-    process.env.FLYFF_OCR_PYTHON ||
-    process.env.PYTHON ||
-    process.env.PYTHON3 ||
-    (process.platform === "win32" ? "py" : "python3") ||
-    "python"
-  );
-}
-
-function isUiRunning() {
-  return uiProcess && uiProcess.exitCode === null && !uiProcess.killed;
-}
-
-async function launchUi() {
-  if (isUiRunning()) {
-    return { ok: true, alreadyRunning: true };
-  }
-
-  const scriptPath = path.join(pluginRoot, "main.py");
-  if (!fs.existsSync(scriptPath)) {
-    return { ok: false, error: "UI-Skript main.py nicht gefunden" };
-  }
-
-  const pythonCmd = getPythonCommand();
-
-  return await new Promise((resolve) => {
-    let settled = false;
-
-    try {
-      uiProcess = spawn(pythonCmd, [scriptPath], {
-        cwd: pluginRoot,
-        windowsHide: true,
-      });
-    } catch (err) {
-      uiProcess = null;
-      const message = err?.message || String(err);
-      ctxRef?.logger?.error?.(`UI-Start fehlgeschlagen: ${message}`);
-      return resolve({ ok: false, error: message });
-    }
-
-    const finish = (payload) => {
-      if (settled) return;
-      settled = true;
-      resolve(payload);
-    };
-
-    uiProcess.once("error", (err) => {
-      uiProcess = null;
-      const message = err?.message || String(err);
-      ctxRef?.logger?.error?.(`UI-Start fehlgeschlagen: ${message}`);
-      finish({ ok: false, error: message });
-    });
-
-    uiProcess.once("spawn", () => {
-      ctxRef?.logger?.info?.(`UI-Prozess gestartet (${pythonCmd})`);
-      finish({ ok: true });
-    });
-
-    uiProcess.on("exit", (code, signal) => {
-      uiProcess = null;
-      const suffix = signal ? `Signal ${signal}` : `Code ${code}`;
-      ctxRef?.logger?.info?.(`UI-Prozess beendet (${suffix})`);
-    });
-
-    if (uiProcess.stdout) {
-      uiProcess.stdout.on("data", (data) => {
-        const line = data.toString().trim();
-        if (line) ctxRef?.logger?.info?.(`[UI] ${line}`);
-      });
-    }
-
-    if (uiProcess.stderr) {
-      uiProcess.stderr.on("data", (data) => {
-        const line = data.toString().trim();
-        if (line) ctxRef?.logger?.error?.(`[UI] ${line}`);
-      });
-    }
-  });
-}
-
-function stopUiProcess() {
-  if (!isUiRunning()) return;
-  try {
-    uiProcess.kill();
-  } catch {
-    // ignore
-  }
-  uiProcess = null;
 }
 
 async function readEndpoints() {
@@ -487,12 +394,13 @@ async function downloadEndpoint(baseUrl, endpoint, job, cancelFlag) {
 
 async function runJob(ctx, endpoints) {
   const log = makeJobLog();
+  const epList = endpoints.endpoints || [];
   currentJob = {
     running: true,
     cancelled: false,
     startedAt: Date.now(),
     stepsDone: 0,
-    stepsTotal: endpoints.length,
+    stepsTotal: epList.length,
     current: "",
     successes: 0,
     failures: 0,
@@ -500,7 +408,7 @@ async function runJob(ctx, endpoints) {
     errors: [],
     outputDir,
     finishedManifest: "",
-    statuses: (endpoints.endpoints || []).map((ep) => ({
+    statuses: epList.map((ep) => ({
       name: ep.name || ep.path,
       status: "Bereit",
       file: "",
@@ -655,8 +563,7 @@ async function handleOpenOutputDir(payload) {
   const dir = (payload && payload.path) || outputDir;
   try {
     await ensureDir(dir);
-    const command = process.platform === "win32" ? "explorer.exe" : "xdg-open";
-    spawn(command, [dir], { detached: true, stdio: "ignore" }).unref();
+    await shell.openPath(dir);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err?.message || String(err) };
@@ -672,13 +579,15 @@ module.exports = {
     ctx.ipc.handle("job:cancel", handleCancel);
     ctx.ipc.handle("selection:set", (data) => handleSetSelections(ctx, data));
     ctx.ipc.handle("output:open", handleOpenOutputDir);
-    // settingsUI manifest references ui:launch – provide a stub handler to avoid missing IPC errors
-    ctx.ipc.handle("ui:launch", launchUi);
+    ctx.ipc.handle("ui:launch", async () => {
+      const { ipcMain } = require("electron");
+      ipcMain.emit("sidepanel:toggle", null, { focusTab: "plugin:api-fetch" });
+      return { ok: true };
+    });
     ctx.logger.info("api-fetch Plugin geladen");
   },
   async start() {},
   async stop() {
     if (currentJob) currentJob.cancelled = true;
-    stopUiProcess();
   },
 };

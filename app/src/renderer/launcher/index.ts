@@ -27,7 +27,6 @@ import {
 } from "../settings";
 import { type Profile, el, clear, createJobIcon, createJobBadge, decorateJobSelect, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
 import { openConfigModal as _openConfigModal } from "./config-modal";
-import { openPluginSettingsUI as _openPluginSettingsUI } from "./plugin-settings-ui";
 import { createNewsUI } from "./news";
 import { showWindowSelectorForProfile } from "./profile-selectors";
 
@@ -141,13 +140,9 @@ export async function renderLauncher(root: HTMLElement) {
             logErr(err, "renderer");
         }
     }
-    // --- Plugin Settings UI (delegated to module) ---
-    async function openPluginSettingsUI(plugin: { id: string; name: string; hasSettingsUI?: boolean; enabled?: boolean }): Promise<void> {
-        return _openPluginSettingsUI({ snapshotThemeVars, applyThemeToIframe }, plugin);
-    }
     // --- Config Modal (delegated to module) ---
     function openConfigModal(defaultStyleTab: "theme" | "tabActive" = "theme", defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style") {
-        return _openConfigModal({ snapshotThemeVars, applyThemeToIframe, openPluginSettingsUI }, defaultStyleTab, defaultTab);
+        return _openConfigModal({ snapshotThemeVars, applyThemeToIframe }, defaultStyleTab, defaultTab);
     }
     const btnFlyffuniverse = el("button", "btn primary") as HTMLButtonElement;
     btnFlyffuniverse.title = "Flyffuniverse �ffnen";
