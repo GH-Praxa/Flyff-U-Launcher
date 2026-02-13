@@ -139,7 +139,8 @@ const isPrerelease = process.env.PUBLISH_PRERELEASE === "true";
 const isDraft = process.env.PUBLISH_DRAFT === "true";
 const config: ForgeConfig = {
     packagerConfig: {
-        asar: true,
+        // ASAR für Linux deaktiviert - AppImages haben Probleme mit verschachtelten ASAR-Dateien
+        asar: process.platform !== "linux",
         icon: iconPath,
         extraResource,
     },
@@ -287,7 +288,9 @@ const config: ForgeConfig = {
             [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
             [FuseV1Options.EnableNodeCliInspectArguments]: false,
             [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-            [FuseV1Options.OnlyLoadAppFromAsar]: true,
+            // OnlyLoadAppFromAsar deaktiviert - verursacht Probleme bei AppImages
+            // da diese ASAR in einem gemounteten SquashFS verwenden
+            [FuseV1Options.OnlyLoadAppFromAsar]: false,
         }),
     ],
     publishers: [
