@@ -259,40 +259,44 @@ const config: ForgeConfig = {
             },
         }),
     ],
-    plugins: [
-        new AutoUnpackNativesPlugin({}),
-        new VitePlugin({
-            build: [
-                {
-                    entry: "src/main.ts",
-                    config: "vite.main.config.ts",
-                    target: "main",
-                },
-                {
-                    entry: "src/preload.ts",
-                    config: "vite.preload.config.ts",
-                    target: "preload",
-                },
-            ],
-            renderer: [
-                {
-                    name: "main_window",
-                    config: "vite.renderer.config.ts",
-                },
-            ],
-        }),
-        // Fuses deaktiviert für Linux - verursacht Probleme mit AppImages
-        // und ist für Windows/macOS nicht notwendig auf Linux
-        process.platform === "linux" ? null : new FusesPlugin({
-            version: FuseVersion.V1,
-            [FuseV1Options.RunAsNode]: false,
-            [FuseV1Options.EnableCookieEncryption]: true,
-            [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
-            [FuseV1Options.EnableNodeCliInspectArguments]: false,
-            [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-            [FuseV1Options.OnlyLoadAppFromAsar]: true,
-        }),
-    ],
+    plugins: (() => {
+        const plugins = [
+            new AutoUnpackNativesPlugin({}),
+            new VitePlugin({
+                build: [
+                    {
+                        entry: "src/main.ts",
+                        config: "vite.main.config.ts",
+                        target: "main",
+                    },
+                    {
+                        entry: "src/preload.ts",
+                        config: "vite.preload.config.ts",
+                        target: "preload",
+                    },
+                ],
+                renderer: [
+                    {
+                        name: "main_window",
+                        config: "vite.renderer.config.ts",
+                    },
+                ],
+            }),
+        ];
+        // Fuses nur für Windows und macOS aktivieren (Linux hat Probleme mit AppImages)
+        if (process.platform !== "linux") {
+            plugins.push(new FusesPlugin({
+                version: FuseVersion.V1,
+                [FuseV1Options.RunAsNode]: false,
+                [FuseV1Options.EnableCookieEncryption]: true,
+                [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+                [FuseV1Options.EnableNodeCliInspectArguments]: false,
+                [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+                [FuseV1Options.OnlyLoadAppFromAsar]: true,
+            }));
+        }
+        return plugins;
+    })(),
     publishers: [
         new PublisherGithub({
             repository: {
