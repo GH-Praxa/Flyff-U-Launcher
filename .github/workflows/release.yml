@@ -16,6 +16,11 @@ on:
         required: false
         default: false
         type: boolean
+      release_draft:
+        description: "Mark GitHub release as draft"
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -45,6 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
         run: npm run publish
 
   build-macos:
@@ -89,6 +95,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
         run: npm run publish
 
   build-linux:
@@ -142,4 +149,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          PUBLISH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_draft || false }}
         run: npm run publish

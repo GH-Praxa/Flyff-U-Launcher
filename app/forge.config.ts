@@ -136,6 +136,7 @@ const writeLatestYml = (artifactPath: string, version: string, ymlName = "latest
 };
 
 const isPrerelease = process.env.PUBLISH_PRERELEASE === "true";
+const isDraft = process.env.PUBLISH_DRAFT === "true";
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
@@ -297,7 +298,7 @@ const config: ForgeConfig = {
             // Wenn der Workflow mit input `prerelease=true` läuft, veröffentlichen wir als Pre-Release
             // Stable-Releases müssen ebenfalls veröffentlicht sein (kein Draft), damit electron-updater sie sieht.
             prerelease: isPrerelease,
-            draft: false,
+            draft: isDraft,
         }),
     ],
 };
