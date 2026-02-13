@@ -247,26 +247,39 @@ jobs:
           fi
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release_meta.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          draft: ${{ steps.release_meta.outputs.draft == 'true' }}
-          prerelease: ${{ steps.release_meta.outputs.prerelease == 'true' }}
-          generate_release_notes: true
-          files: |
-            dist/windows/**/*.exe
-            dist/windows/**/*.msi
-            dist/windows/**/*.nupkg
-            dist/windows/**/RELEASES
-            dist/windows/**/latest.yml
-            dist/macos/**/*.dmg
-            dist/macos/**/*.zip
-            dist/macos/**/latest-mac.yml
-            dist/linux/**/*.AppImage
-            dist/linux/**/*.deb
-            dist/linux/**/*.rpm
-            dist/linux/**/latest-linux.yml
-          fail_on_unmatched_files: false
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release_meta.outputs.tag }}
+          DRAFT: ${{ steps.release_meta.outputs.draft }}
+          PRERELEASE: ${{ steps.release_meta.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          echo "Creating release for tag: $TAG"
+          echo "Draft: $DRAFT"
+          echo "Prerelease: $PRERELEASE"
+
+          # Collect all files for release
+          FILES=""
+          FILES="$FILES dist/windows/**/* "
+          FILES="$FILES dist/macos/**/* "
+          FILES="$FILES dist/linux/**/* "
+
+          echo "Files to upload: $(echo $FILES | wc -w)"
+
+          # Create or update release
+          gh release create "$TAG" \
+            --title "Flyff-U-Launcher $TAG" \
+            --notes "Release $TAG" \
+            --draft "$DRAFT" \
+            --prerelease "$PRERELEASE" \
+            $FILES || true
+
+          # If release already exists, update it
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release exists, updating..."
+            gh release upload "$TAG" $FILES
+          fi
+
+          echo "Release created/updated successfully"
