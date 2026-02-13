@@ -15,16 +15,3 @@ Die vollständige README und Dokumentation findest du im **live** Branch:
 ## Entwicklung
 
 In diesem Branch werden neue Features getestet, bevor sie in den live Branch übernommen werden.
-
-### Workflow-Testing
-
-GitHub Actions Workflows werden vom dev Branch ausgeführt (siehe `CLAUDE.md` für Details).
-
-**Wichtig:**
-- Builds im dev Branch sind für Tests (Draft-Releases)
-- Produktive Builds und Releases finden im live Branch statt
-
-### Zuletzt aktualisiert
-
-Letzter Commit: `2578448`
-Datum: 2026-02-13
