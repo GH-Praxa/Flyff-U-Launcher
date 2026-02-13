@@ -264,12 +264,9 @@ jobs:
             dist/**/*.AppImage
             dist/**/*.deb
             dist/**/*.rpm
-<<<<<<< HEAD
-=======
             dist/**/latest.yml
             dist/**/latest-mac.yml
             dist/**/latest-linux.yml
->>>>>>> c03b76b (feat: update workflow to build for all platforms as draft release)
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

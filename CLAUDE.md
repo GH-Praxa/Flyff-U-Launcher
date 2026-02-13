@@ -42,3 +42,30 @@ gh workflow run release.yml -f tag_name=v2.9.3 -f release_draft=true -f prerelea
 - **live** → Produktiver Branch (für Releases)
 - **dev** → Entwicklung/Test Branch
 - **main** → Nicht vorhanden (wurde entfernt)
+
+## GitHub Workflow Testing
+
+**Wichtig: GitHub Actions liest Workflows IMMER vom Default-Branch (live)!**
+
+### Workflow-Änderungen testen ohne live zu verändern
+
+Um Workflow-Änderungen im dev Branch zu testen, ohne den live Branch zu verändern:
+
+1. **Default-Branch vorübergehend auf dev ändern**
+   ```bash
+   gh repo edit GH-Praxa/Flyff-U-Launcher --default-branch dev
+   ```
+
+2. **Workflow testen** (er wird jetzt aus dev ausgeführt)
+   ```bash
+   gh workflow run release.yml -f tag_name=v2.9.3 -f release_draft=true
+   ```
+
+3. **Nach erfolgreichem Test: Default-Branch wieder auf live setzen**
+   ```bash
+   gh repo edit GH-Praxa/Flyff-U-Launcher --default-branch live
+   ```
+
+4. **Wenn Workflow korrekt ist**: Änderungen von dev nach live mergen
+
+**Merke: Jeder Workflow-Aufruf verwendet den Workflow aus dem Default-Branch, nicht aus dem auslösenden Branch!**
