@@ -251,13 +251,16 @@ const config: ForgeConfig = {
                 icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
             },
         }),
-        new MakerAppImage({
-            options: {
-                categories: ["Game"],
-                icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
-                bin: "Flyff-U-Launcher",
-            },
-        }),
+        // AppImage deaktiviert - @reforged/maker-appimage hat Strukturprobleme
+        // mit Electron Forge (kopiert App in /usr/lib/<name>/ statt Root)
+        // DEB/RPM funktionieren korrekt und sind vorzuziehen
+        // new MakerAppImage({
+        //     options: {
+        //         categories: ["Game"],
+        //         icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+        //         bin: "Flyff-U-Launcher",
+        //     },
+        // }),
     ],
     plugins: (() => {
         const plugins = [
