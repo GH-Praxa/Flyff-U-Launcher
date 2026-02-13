@@ -280,16 +280,16 @@ const config: ForgeConfig = {
                 },
             ],
         }),
-        new FusesPlugin({
+        // Fuses deaktiviert für Linux - verursacht Probleme mit AppImages
+        // und ist für Windows/macOS nicht notwendig auf Linux
+        process.platform === "linux" ? null : new FusesPlugin({
             version: FuseVersion.V1,
             [FuseV1Options.RunAsNode]: false,
             [FuseV1Options.EnableCookieEncryption]: true,
             [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
             [FuseV1Options.EnableNodeCliInspectArguments]: false,
             [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-            // OnlyLoadAppFromAsar deaktiviert - verursacht Probleme bei AppImages
-            // da diese ASAR in einem gemounteten SquashFS verwenden
-            [FuseV1Options.OnlyLoadAppFromAsar]: false,
+            [FuseV1Options.OnlyLoadAppFromAsar]: true,
         }),
     ],
     publishers: [
