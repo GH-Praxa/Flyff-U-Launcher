@@ -255,9 +255,18 @@ jobs:
           prerelease: ${{ steps.release_meta.outputs.prerelease == 'true' }}
           generate_release_notes: true
           files: |
-            dist/windows/**
-            dist/macos/**
-            dist/linux/**
+            dist/windows/**/*.exe
+            dist/windows/**/*.msi
+            dist/windows/**/*.nupkg
+            dist/windows/**/RELEASES
+            dist/windows/**/latest.yml
+            dist/macos/**/*.dmg
+            dist/macos/**/*.zip
+            dist/macos/**/latest-mac.yml
+            dist/linux/**/*.AppImage
+            dist/linux/**/*.deb
+            dist/linux/**/*.rpm
+            dist/linux/**/latest-linux.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
