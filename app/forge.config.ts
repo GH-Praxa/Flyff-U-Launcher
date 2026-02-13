@@ -139,8 +139,7 @@ const isPrerelease = process.env.PUBLISH_PRERELEASE === "true";
 const isDraft = process.env.PUBLISH_DRAFT === "true";
 const config: ForgeConfig = {
     packagerConfig: {
-        // ASAR für Linux deaktiviert - AppImages haben Probleme mit verschachtelten ASAR-Dateien
-        asar: process.platform !== "linux",
+        asar: true,
         icon: iconPath,
         extraResource,
     },
