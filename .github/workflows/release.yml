@@ -270,19 +270,3 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload updater manifests
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          TAG="${{ steps.release_meta.outputs.tag }}"
-          for manifest in latest.yml latest-mac.yml latest-linux.yml; do
-            path="$(find dist -type f -name "$manifest" | head -n 1 || true)"
-            if [ -z "$path" ]; then
-              echo "::error::Missing updater manifest: $manifest"
-              exit 1
-            fi
-            gh release upload "$TAG" "$path" --clobber
-          done
