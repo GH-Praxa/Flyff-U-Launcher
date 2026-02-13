@@ -46,3 +46,8 @@ nul
 # Local data files
 /git_acl_*.txt
 
+# Local sandbox and testing artifacts
+.local/
+/tmp_run_*/
+*-artifacts/
+
