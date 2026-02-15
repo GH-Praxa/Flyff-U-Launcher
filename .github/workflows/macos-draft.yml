@@ -226,32 +226,32 @@ jobs:
           name: linux-artifacts
           path: dist/linux
 
-      - name: Resolve release settings
-        id: release_meta
+      - name: Collect release assets (deduplicate by filename)
         shell: bash
         run: |
-          echo "tag=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
-          echo "draft=${{ inputs.release_draft }}" >> "$GITHUB_OUTPUT"
-          echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
+          mkdir -p release-assets
+          find dist -type f \( \
+            -name '*.exe' -o -name '*.msi' -o -name '*.nupkg' \
+            -o -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \
+            -o -name 'latest.yml' -o -name 'latest-mac.yml' -o -name 'latest-linux.yml' \
+          \) -exec cp -f {} release-assets/ \;
+          echo "Assets to upload:"
+          ls -la release-assets/
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release_meta.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          draft: ${{ steps.release_meta.outputs.draft == 'true' }}
-          prerelease: ${{ steps.release_meta.outputs.prerelease == 'true' }}
-          generate_release_notes: true
-          files: |
-            dist/**/*.exe
-            dist/**/*.msi
-            dist/**/*.nupkg
-            dist/**/*.dmg
-            dist/**/*.deb
-            dist/**/*.rpm
-            dist/**/latest.yml
-            dist/**/latest-mac.yml
-            dist/**/latest-linux.yml
-          fail_on_unmatched_files: false
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.tag_name }}"
+          DRAFT_FLAG=""
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.release_draft }}" = "true" ]; then DRAFT_FLAG="--draft"; fi
+          if [ "${{ inputs.prerelease }}" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
+
+          gh release create "$TAG" \
+            --title "Flyff-U-Launcher $TAG" \
+            --notes "Release $TAG" \
+            --target "${{ github.sha }}" \
+            $DRAFT_FLAG $PRERELEASE_FLAG \
+            release-assets/*
