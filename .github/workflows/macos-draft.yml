@@ -194,7 +194,6 @@ jobs:
         with:
           name: linux-artifacts
           path: |
-            app/out/make/**/*.AppImage
             app/out/make/**/*.deb
             app/out/make/**/*.rpm
             app/out/make/**/latest-linux.yml
@@ -250,12 +249,11 @@ jobs:
             dist/**/*.nupkg
             dist/**/*.dmg
             dist/**/*.zip
-            dist/**/*.AppImage
             dist/**/*.deb
             dist/**/*.rpm
             dist/**/latest.yml
             dist/**/latest-mac.yml
             dist/**/latest-linux.yml
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

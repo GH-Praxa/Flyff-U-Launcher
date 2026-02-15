@@ -198,7 +198,6 @@ jobs:
         with:
           name: linux-artifacts
           path: |
-            app/out/make/**/*.AppImage
             app/out/make/**/*.deb
             app/out/make/**/*.rpm
             app/out/make/**/latest-linux.yml

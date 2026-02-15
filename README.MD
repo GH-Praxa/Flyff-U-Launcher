@@ -169,7 +169,7 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 |-----------|----------|-------|
 | **Windows** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
 | **macOS** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` |
-| **Linux** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.AppImage` / `.deb` / `.rpm` |
+| **Linux** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Passende Datei herunterladen und installieren
 2. Launcher starten
@@ -378,7 +378,7 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 |----------|----------|------|
 | **Windows** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
 | **macOS** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` |
-| **Linux** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.AppImage` / `.deb` / `.rpm` |
+| **Linux** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Download the appropriate file and install
 2. Launch the application
