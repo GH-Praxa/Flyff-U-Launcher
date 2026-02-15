@@ -1,4 +1,4 @@
-﻿## 基本功能
+## 基本功能
 
 :::accordion[创建档案]
 
@@ -357,5 +357,56 @@ TTK 自动测量与 Boss 怪物的战斗时间——从第一次打击到击杀�
   4. 复选框标记已完成/已购买，"X" 删除条目。
   5. 底部进度条显示所有条目的总和（`价格 × 数量`）单位 FCoin。
 - 存储：价格持久保存在启动器数据目录 (`%APPDATA%/Flyff-U-Launcher/item-prices.json`)，列表本身每个会话重新开始。
+
+:::
+
+:::accordion[升级费用计算器]
+
+计算从 +0 到 +10 的物品升级预期费用 —— 包括所需材料、尝试次数以及不同保护系统的对比。
+
+![说明](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**设置：**
+
+- **骰子类型：** Powerdice 4/6（标准）或 Powerdice 12（更高成功率）
+- **从等级 / 到等级：** 设定升级范围（如 +3 → +7）
+- **模式：**
+  - **对比** – 并排显示两种保护系统的费用
+  - **S-Protect** – 使用普通 S-Protect 卷轴计算
+  - **S-Protect (Low)** – 使用更便宜的 Low S-Protect 卷轴计算
+
+**材料价格：**
+
+在„材料"下可以设置以下物品的当前市场价格：
+- 矿物
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4、6、12
+
+勾选„已拥有"可将材料从费用计算中排除。
+
+![说明](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**结果：**
+
+点击„计算"后，会显示每个升级等级的详细表格：
+
+| 列 | 含义 |
+|----|------|
+| 等级 | 目标升级等级 |
+| 概率 | 成功率（百分比） |
+| 尝试次数 | 预期尝试次数 |
+| 矿物 | 所需矿物 |
+| Eron | 所需 Eron |
+| Penya | Penya 费用 |
+| 保护卷轴 | 所需保护卷轴 |
+| 总费用 | 所有费用的 Penya 总和 |
+
+![说明](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+在对比模式下，两种保护系统（S-Protect vs. S-Protect Low）并排显示。更便宜的选项以绿色高亮。
+
+**存储：** 价格和设置自动保存（`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`）。
 
 :::

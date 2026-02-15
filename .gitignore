@@ -51,3 +51,11 @@ nul
 /tmp_run_*/
 *-artifacts/
 
+# Root-level dev artifacts (not part of the app)
+/docs/
+/src/
+
+# Dependencies
+/node_modules/
+/app/node_modules/
+

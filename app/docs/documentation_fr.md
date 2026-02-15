@@ -1,4 +1,4 @@
-﻿## Fonctionnalités de base
+## Fonctionnalités de base
 
 :::accordion[Créer un profil]
 
@@ -358,5 +358,56 @@ Les outils s’ouvrent via un raccourci ou le menu étoile dans la barre d’ong
   4. La case coche un item acheté/terminé, « X » supprime la ligne.
   5. La barre inférieure affiche la somme (`prix × quantité`) en FCoins.
 - Stockage : les prix sont persistants dans le dossier données du launcher (`%APPDATA%/Flyff-U-Launcher/item-prices.json`) ; la liste est propre à la session.
+
+:::
+
+:::accordion[Calculateur de coûts d'amélioration]
+
+Calcule les coûts estimés pour les améliorations d'objets de +0 à +10 — incluant les matériaux nécessaires, le nombre de tentatives et la comparaison entre différents systèmes de protection.
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**Paramètres :**
+
+- **Type de dé :** Powerdice 4/6 (standard) ou Powerdice 12 (chance de succès plus élevée)
+- **Du niveau / Au niveau :** Définir la plage d'amélioration (ex. +3 → +7)
+- **Mode :**
+  - **Comparer** – Affiche les coûts des deux systèmes de protection côte à côte
+  - **S-Protect** – Calcule avec les scrolls S-Protect classiques
+  - **S-Protect (Low)** – Calcule avec les scrolls S-Protect Low moins chers
+
+**Prix des matériaux :**
+
+Sous « Matériaux » vous pouvez définir les prix actuels du marché pour les objets suivants :
+- Minéral
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4, 6, 12
+
+Avec la case « Possédé », les matériaux sont exclus du calcul des coûts.
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**Résultat :**
+
+Après avoir cliqué sur « Calculer », un tableau détaillé par niveau d'amélioration apparaît :
+
+| Colonne | Signification |
+|---------|---------------|
+| Niveau | Niveau d'amélioration cible |
+| Chance | Chance de succès en pourcentage |
+| Tentatives | Nombre attendu de tentatives |
+| Minéral | Minéraux requis |
+| Eron | Erons requis |
+| Penya | Coûts en Penya |
+| Protections | Scrolls de protection requis |
+| Coût total | Somme de tous les coûts en Penya |
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+En mode comparaison, les deux systèmes de protection (S-Protect vs. S-Protect Low) sont affichés côte à côte. L'option la moins chère est mise en surbrillance en vert.
+
+**Stockage :** Les prix et paramètres sont sauvegardés automatiquement (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::

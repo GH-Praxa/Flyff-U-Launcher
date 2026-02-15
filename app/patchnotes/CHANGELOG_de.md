@@ -1,35 +1,53 @@
 # 📦 Patchnotes
 
 ---
-## 🆕 Version 2.9.0
+## 🆕 Version 3.0.0
+
+### 🆕 Neues Tool: Upgrade-Kosten-Rechner
+- Berechnet die erwarteten Kosten für Item-Upgrades von +0 bis +10
+inklusive Materialbedarf, Versuchsanzahl und Vergleich zwischen Low Sprotect zu Sprotect.
 
 ### ✨ Neue Funktionen
 - Neues Logs-Tab im Sidepanel mit Live-Fehlerprotokoll (Warn/Error) sowie Löschen- und Speichern-Aktion.
-- Plugin-Settings werden jetzt in einem eigenen Fenster geöffnet, inklusive Theme-Übernahme und sicherer IPC-Bridge.
 - API-Fetch-Plugin 3.0.0 mit neuer nativer Sidepanel-Oberfläche (kein separates Python-UI-Fenster mehr).
 
-### 🚀 Plattform & Distribution
-- Offizielle Build-/Release-Pipeline für Windows, macOS und Linux in GitHub Actions.
+### 🚀 Plattform & Distribution - Linux und Mac Support
+- Build-/Release-Pipeline für Windows, macOS und Linux in GitHub Actions.
 - Neue Paketformate: macOS DMG sowie Linux AppImage/DEB/RPM.
 - Plattformspezifisches Tesseract-Bundling (win32, darwin, linux) inkl. angepasster Laufzeit-Erkennung/Fallback.
-- README aktualisiert mit Installationsformaten und plattformspezifischen Daten-/Plugin-Pfaden.
 
 ### 🐛 Fehlerbehebungen
-- Leeres Fenster beim Start nach Einführung der Sidepanel-Logfunktion behoben (renderer-sicheres Logging).
-- Overlays bleiben stabil sichtbar, wenn Child-Windows fokussiert werden; Wiederherstellung nach Fokuswechsel robuster.
-- OCR-Debug-Pfad-Fallback funktioniert jetzt auch korrekt unter Linux/macOS.
+- Fcoin zu Penya Kurs korrigiert
 - Killfeed: Race-Conditions bei schnellen OCR-Updates reduziert (profilweises Serialisieren), Broadcast-Updates werden nicht mehr verworfen.
+
+### 📦 Runtime & Dependencies
+- Sharp-Bibliothek für Bildverarbeitung im Paket gebündelt (keine separate Installation nötig).
 
 ### ⚙️ Verbesserungen
 - Killfeed-Monstererkennung priorisiert jetzt Monster-HP (mit Toleranz), danach Element/Level.
 - TTK-Zielerkennung robuster durch HP-Toleranz; Monster-Grace-Fenster von 5s auf 2s angepasst.
 - Stats-Engine unterscheidet besser zwischen OCR-Levelrauschen und echten Levelwechseln.
-- API-Fetch öffnet Ausgabepfade plattformunabhängig über Electron shell.openPath.
+- ### Weitere Killfeed-Verbesserungen folgen
+- API-Fetch im Zuge der Plattform neu aufgebaut. Weiterhin in den Einstellungen zu öffnen, zusätzlich im Sidepanel.
+- Einstellungen -> Dokumentation erweitert.
 
 ### 🧹 Aufräumarbeiten
 - Alte API-Fetch-Python-Artefakte entfernt (.py, .exe) zugunsten der JS/Sidepanel-Variante.
 - Tesseract-Ressourcen in die neuen Plattform-Unterordner umstrukturiert.
-- Version auf 2.9.0 erhöht.
+
+:::accordion[Speicherpfade nach Plattform]
+Alle Nutzerdaten liegen plattformabhängig in folgenden Verzeichnissen:
+
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**Neue Dateien seit 2.5.1:**
+- `user/tools/upgrades/upgrade_cost_calc.json` — Upgrade-Kosten-Rechner
+- `user/logs/errors-*.txt` — Fehlerprotokolle
+- `user/logs/ocr/` — OCR-Debug-Logs
+
+:::
 
 ---
 ## 🆕 Version 2.5.1

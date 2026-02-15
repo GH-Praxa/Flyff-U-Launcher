@@ -1,4 +1,4 @@
-﻿## Temel Özellikler
+## Temel Özellikler
 
 :::accordion[Profil oluştur]
 
@@ -357,5 +357,56 @@ Araçlar kısayol ile veya sekme çubuğundaki yıldız menüsünden açılır.
   4. Checkbox tamamlanan/alışverişi yapılan itemi işaretler, "X" satırı siler.
   5. Alt çubuk tüm girdilerin toplamını (`fiyat × miktar`) FCoins olarak gösterir.
 - Saklama: fiyatlar launcher veri klasöründe kalıcıdır (`%APPDATA%/Flyff-U-Launcher/item-prices.json`); listenin kendisi her oturumda sıfırdan başlar.
+
+:::
+
+:::accordion[Yükseltme Maliyet Hesaplayıcı]
+
++0'dan +10'a kadar item yükseltmeleri için beklenen maliyetleri hesaplar — gerekli malzemeler, deneme sayısı ve farklı koruma sistemleri arasındaki karşılaştırma dahil.
+
+![Açıklama](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**Ayarlar:**
+
+- **Zar Türü:** Powerdice 4/6 (standart) veya Powerdice 12 (daha yüksek başarı şansı)
+- **Seviyeden / Seviyeye:** Yükseltme aralığını belirle (örn. +3 → +7)
+- **Mod:**
+  - **Karşılaştır** – Her iki koruma sisteminin maliyetlerini yan yana gösterir
+  - **S-Protect** – Normal S-Protect scrolları ile hesaplar
+  - **S-Protect (Low)** – Daha ucuz Low S-Protect scrolları ile hesaplar
+
+**Malzeme Fiyatları:**
+
+„Malzemeler" altında şu itemler için güncel piyasa fiyatlarını ayarlayabilirsin:
+- Mineral
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4, 6, 12
+
+„Sahip" onay kutusu ile malzemeler maliyet hesaplamasından çıkarılır.
+
+![Açıklama](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**Sonuç:**
+
+„Hesapla" butonuna tıkladıktan sonra her yükseltme seviyesi için detaylı bir tablo görünür:
+
+| Sütun | Anlamı |
+|-------|--------|
+| Seviye | Hedef yükseltme seviyesi |
+| Şans | Başarı şansı yüzde olarak |
+| Deneme | Beklenen deneme sayısı |
+| Mineral | Gerekli mineraller |
+| Eron | Gerekli eronlar |
+| Penya | Penya maliyetleri |
+| Korumalar | Gerekli koruma scrolları |
+| Toplam Maliyet | Tüm maliyetlerin toplamı Penya olarak |
+
+![Açıklama](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+Karşılaştırma modunda her iki koruma sistemi (S-Protect vs. S-Protect Low) yan yana gösterilir. Daha ucuz seçenek yeşille vurgulanır.
+
+**Saklama:** Fiyatlar ve ayarlar otomatik olarak kaydedilir (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::

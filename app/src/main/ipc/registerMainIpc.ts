@@ -14,6 +14,7 @@ import { registerClientSettingsHandlers } from "./handlers/clientSettings";
 import { registerPatchnotesHandlers } from "./handlers/patchnotes";
 import { registerDocumentationHandlers } from "./handlers/documentation";
 import { registerShoppingListHandlers } from "./handlers/shoppingList";
+import { registerUpgradeCalcHandlers } from "./handlers/upgradeCalc";
 import type { ClientSettingsStore } from "../clientSettings/store";
 import type { ClientSettings } from "../../shared/schemas";
 import { logErr } from "../../shared/logger";
@@ -109,7 +110,9 @@ export function registerMainIpc(opts: RegisterMainIpcOptions): void {
 
     registerDocumentationHandlers(safeHandle);
 
-    registerShoppingListHandlers(safeHandle);
+registerShoppingListHandlers(safeHandle);
+
+    registerUpgradeCalcHandlers(safeHandle);
 }
 
 // Re-export types that may be needed externally

@@ -27,7 +27,7 @@ import {
     setSequentialGridLoad,
 } from "../settings";
 import { type Profile, qs, el, clear, createJobIcon, showToast, withTimeout, fetchTabLayouts } from "../dom-utils";
-import { tr, buildFcoinConverterHtml, buildShoppingListHtml, getThemeVars } from "./tools-html";
+import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
 
 export async function renderSession(root: HTMLElement) {
 
@@ -1070,6 +1070,16 @@ export async function renderSession(root: HTMLElement) {
         win.document.write(buildShoppingListHtml(currentLocale, theme));
         win.document.close();
     };
+
+    const showUpgradeCalculator = () => {
+        closeToolsMenu();
+        const theme = getThemeVars();
+        const win = window.open("", "upgradeCalculator", "width=900,height=700,menubar=no,toolbar=no,location=no,status=no,resizable=yes");
+        if (!win) { alert(tr("popup.blocked" as TranslationKey)); return; }
+        win.document.open();
+        win.document.write(buildUpgradeCalculatorHtml(currentLocale, theme));
+        win.document.close();
+    };
     type ToolSection = { header: string; entries: ToolEntry[] };
     const toolSections: ToolSection[] = [
         {
@@ -1077,6 +1087,7 @@ export async function renderSession(root: HTMLElement) {
             entries: [
                 { label: tr("tools.menu.fcoin" as TranslationKey), action: showFcoinConverter },
                 { label: t("config.client.hotkeys.showShoppingList" as TranslationKey), action: showShoppingList },
+                { label: t("tools.menu.upgrade" as TranslationKey), action: showUpgradeCalculator },
             ],
         },
         {

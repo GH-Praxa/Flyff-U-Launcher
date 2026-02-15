@@ -205,7 +205,10 @@ contextBridge.exposeInMainWorld("api", {
     // Shopping List
     shoppingListSearch: (query: string, locale: string) => unwrapIpc(ipcRenderer.invoke("shoppingList:search", query, locale)),
     shoppingListIcon: (iconFilename: string) => unwrapIpc<string | null>(ipcRenderer.invoke("shoppingList:icon", iconFilename)),
-    shoppingListSavePrice: (itemId: number | string, price: number) => unwrapIpc(ipcRenderer.invoke("shoppingList:savePrice", itemId, price)),
+shoppingListSavePrice: (itemId: number | string, price: number) => unwrapIpc(ipcRenderer.invoke("shoppingList:savePrice", itemId, price)),
+    // Upgrade Calculator
+    upgradeCalcLoadSettings: () => unwrapIpc<import("./main/ipc/handlers/upgradeCalc").UpgradeCalcSettings>(ipcRenderer.invoke("upgradeCalc:loadSettings")),
+    upgradeCalcSaveSettings: (settings: import("./main/ipc/handlers/upgradeCalc").UpgradeCalcSettings) => unwrapIpc<boolean>(ipcRenderer.invoke("upgradeCalc:saveSettings", settings)),
     onToast: (cb: (payload: { message: string; tone?: "info" | "success" | "error"; ttlMs?: number }) => void) => {
         const wrapped = (_e: IpcRendererEvent, payload: { message: string; tone?: "info" | "success" | "error"; ttlMs?: number }) => cb(payload);
         ipcRenderer.on("toast:show", wrapped);
@@ -275,10 +278,13 @@ const allowedInvoke = new Set<string>([
     "plugins:getSidepanelTabs",
     "plugins:getOverlayViews",
     "profiles:setOverlaySupportTarget",
-    // Shopping List
+// Shopping List
     "shoppingList:search",
     "shoppingList:icon",
     "shoppingList:savePrice",
+    // Upgrade Calculator
+    "upgradeCalc:loadSettings",
+    "upgradeCalc:saveSettings",
     // Logs
     "logs:get",
     "logs:clear",

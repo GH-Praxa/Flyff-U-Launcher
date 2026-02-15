@@ -1,4 +1,53 @@
-﻿# 📦 Patchnotes
+# 📦 Patchnotes
+
+---
+## 🆕 Version 3.0.0
+
+### 🆕 New Tool: Upgrade Cost Calculator
+- Calculates expected costs for item upgrades from +0 to +10
+  including material requirements, number of attempts, and comparison between Low S-Protect and S-Protect.
+
+### ✨ New Features
+- New Logs tab in the sidepanel with live error log (Warn/Error) as well as delete and save actions.
+- API-Fetch plugin 3.0.0 with new native sidepanel interface (no separate Python UI window anymore).
+
+### 🚀 Platform & Distribution - Linux and Mac Support
+- Build/Release pipeline for Windows, macOS, and Linux in GitHub Actions.
+- New package formats: macOS DMG as well as Linux AppImage/DEB/RPM.
+- Platform-specific Tesseract bundling (win32, darwin, linux) including adapted runtime detection/fallback.
+
+### 🐛 Bug Fixes
+- Fcoin to Penya exchange rate corrected
+- Killfeed: Reduced race conditions during fast OCR updates (profile-wise serialization), broadcast updates are no longer discarded.
+
+### 📦 Runtime & Dependencies
+- Sharp library for image processing bundled in the package (no separate installation needed).
+
+### ⚙️ Improvements
+- Killfeed monster detection now prioritizes monster HP (with tolerance), then element/level.
+- TTK target detection more robust through HP tolerance; monster grace window adjusted from 5s to 2s.
+- Stats engine better distinguishes between OCR level noise and actual level changes.
+- Further Killfeed improvements coming soon
+- API-Fetch rebuilt for the platform. Still accessible in settings, additionally in the sidepanel.
+- Settings -> Documentation expanded.
+
+### 🧹 Cleanup
+- Removed old API-Fetch Python artifacts (.py, .exe) in favor of the JS/Sidepanel variant.
+- Restructured Tesseract resources into the new platform subfolders.
+
+:::accordion[Storage Paths by Platform]
+All user data is stored in platform-dependent directories:
+
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**New files since 2.5.1:**
+- `user/tools/upgrades/upgrade_cost_calc.json` — Upgrade Cost Calculator
+- `user/logs/errors-*.txt` — Error logs
+- `user/logs/ocr/` — OCR debug logs
+
+:::
 
 ---
 

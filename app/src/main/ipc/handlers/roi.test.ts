@@ -50,23 +50,24 @@ describe("ROI IPC handlers", () => {
         return handler;
     }
 
-    it("allows opening ROI with string id", async () => {
+it("allows opening ROI with string id", async () => {
         const open = getHandler("roi:open");
         const result = await open({} as IpcEvent, "profile1");
 
         expect(result).toBe(true);
-        expect(roiOpen).toHaveBeenCalledWith("profile1");
+        expect(roiOpen).toHaveBeenCalledWith("profile1", undefined);
     });
 
     it("accepts object payloads for roi:open", async () => {
         const open = getHandler("roi:open");
         await open({} as IpcEvent, { profileId: "profile2" });
 
-        expect(roiOpen).toHaveBeenCalledWith("profile2");
+        expect(roiOpen).toHaveBeenCalledWith("profile2", undefined);
     });
 
-    it("rejects missing profileId on roi:open", async () => {
+    it("rejects missing profileId on roi:open when no overlay target available", async () => {
         const open = getHandler("roi:open");
+        getOverlayTargetId.mockResolvedValue(null);
 
         await expect(open({} as IpcEvent, { wrong: true })).rejects.toBeInstanceOf(ValidationError);
     });
@@ -88,24 +89,25 @@ describe("ROI IPC handlers", () => {
         await expect(save({} as IpcEvent, { profileId: "p3", rois: invalid as RoiData })).rejects.toBeInstanceOf(ValidationError);
     });
 
-    it("derives status from roiLoad when no custom status handler is provided", async () => {
+it("derives status from roiLoad when no custom status handler is provided", async () => {
         const status = getHandler("roi:status");
         const result = await status({} as IpcEvent, "p4") as Record<string, boolean>;
 
         expect(roiLoad).toHaveBeenCalledWith("p4");
-        expect(result).toEqual({ lvl: true, charname: true, exp: true, lauftext: false });
+        expect(result).toEqual({ lvl: true, charname: true, exp: true, lauftext: false, rmExp: false, enemyName: false, enemyHp: false });
     });
 
     it("uses custom roiStatus handler when present", async () => {
         handlers = new Map();
         const safeHandle = createSafeHandle(handlers);
+        roiStatus.mockResolvedValue({ lvl: true, charname: false, exp: true, lauftext: false, rmExp: false, enemyName: false, enemyHp: false });
         registerRoiHandlers(safeHandle, { roiOpen, roiLoad, roiSave, roiStatus });
 
         const status = handlers.get("roi:status")!;
         const result = await status({} as IpcEvent, "custom") as Record<string, boolean>;
 
         expect(roiStatus).toHaveBeenCalledWith("custom");
-        expect(result).toEqual({ lvl: true, charname: false, exp: true, lauftext: false });
+        expect(result).toEqual({ lvl: true, charname: false, exp: true, lauftext: false, rmExp: false, enemyName: false, enemyHp: false });
     });
 
     it("falls back to overlay target id for roi:status", async () => {

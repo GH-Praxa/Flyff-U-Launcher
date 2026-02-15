@@ -1,7 +1,7 @@
 {
   "id": "cd-timer",
   "name": "CD-Timer",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "minLauncherVersion": "1.2.0",
   "author": "Praxa",
   "description": "Cooldown-Timer mit Hotkey-Steuerung und Overlay-Anzeige, benötigt API-Fetch: Items, Skills",

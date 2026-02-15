@@ -1,4 +1,4 @@
-﻿## 基本機能
+## 基本機能
 
 :::accordion[プロファイルを作成]
 
@@ -282,5 +282,56 @@ Giant Tracker は Killfeed プラグイン内の独立ウィンドウです。**
   4. チェックボックスで購入済み/完了をマーク、「X」で削除。
   5. 下部バーに全エントリの合計（`価格 × 数量`）を FCoins で表示。
 - 保存：価格はランチャーデータフォルダに永続化（`%APPDATA%/Flyff-U-Launcher/item-prices.json`）。リスト自体はセッションごとにリセット。
+
+:::
+
+:::accordion[アップグレード費用計算機]
+
++0から+10までのアイテムアップグレードの予想費用を計算 — 必要な素材、試行回数、異なる保護システムの比較を含みます。
+
+![説明](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**設定：**
+
+- **ダイス種類：** Powerdice 4/6（標準）または Powerdice 12（成功率向上）
+- **レベルから / レベルまで：** アップグレード範囲を設定（例：+3 → +7）
+- **モード：**
+  - **比較** – 両方の保護システムのコストを並べて表示
+  - **S-Protect** – 通常の S-Protect スクロールで計算
+  - **S-Protect (Low)** – より安価な Low S-Protect スクロールで計算
+
+**素材価格：**
+
+「素材」で以下のアイテムの現在の市場価格を設定できます：
+- 鉱物
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4、6、12
+
+「所持」チェックボックスで素材を費用計算から除外できます。
+
+![説明](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**結果：**
+
+「計算」をクリックすると、各アップグレードレベルの詳細な表が表示されます：
+
+| 列 | 意味 |
+|----|------|
+| レベル | 目標アップグレードレベル |
+| 確率 | 成功率（パーセント） |
+| 試行回数 | 予想試行回数 |
+| 鉱物 | 必要な鉱物 |
+| Eron | 必要なエロン |
+| Penya | Penya費用 |
+| 保護スクロール | 必要な保護スクロール |
+| 合計費用 | 全費用のPenya合計 |
+
+![説明](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+比較モードでは、両方の保護システム（S-Protect vs. S-Protect Low）が並べて表示されます。より安いオプションは緑色でハイライトされます。
+
+**保存：** 価格と設定は自動的に保存されます（`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`）。
 
 :::

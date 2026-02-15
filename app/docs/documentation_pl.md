@@ -1,4 +1,4 @@
-﻿## Podstawowe funkcje
+## Podstawowe funkcje
 
 :::accordion[Tworzenie profilu]
 
@@ -357,5 +357,56 @@ Narzędzia otworzysz skrótem klawiszowym lub w pasku kart przez menu gwiazdki.
   4. Checkbox oznacza kupione/załatwione, „X” usuwa wpis.
   5. Pasek na dole pokazuje sumę (`cena × ilość`) w FCoins.
 - Zapisywanie: ceny są trwałe w folderze danych launchera (`%APPDATA%/Flyff-U-Launcher/item-prices.json`); lista jest nowa w każdej sesji.
+
+:::
+
+:::accordion[Kalkulator kosztów ulepszeń]
+
+Oblicza oczekiwane koszty ulepszeń przedmiotów od +0 do +10 — w tym wymagane materiały, liczbę prób i porównanie różnych systemów ochrony.
+
+![Opis](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**Ustawienia:**
+
+- **Typ kości:** Powerdice 4/6 (standardowe) lub Powerdice 12 (wyższa szansa powodzenia)
+- **Od poziomu / Do poziomu:** Określ zakres ulepszenia (np. +3 → +7)
+- **Tryb:**
+  - **Porównaj** – Pokazuje koszty obu systemów ochrony obok siebie
+  - **S-Protect** – Oblicza ze zwykłymi scrollami S-Protect
+  - **S-Protect (Low)** – Oblicza z tańszymi scrollami Low S-Protect
+
+**Ceny materiałów:**
+
+W sekcji „Materiały" możesz ustawić aktualne ceny rynkowe dla następujących przedmiotów:
+- Minerał
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4, 6, 12
+
+Zaznaczenie „Posiadane" wyklucza materiały z kalkulacji kosztów.
+
+![Opis](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**Wynik:**
+
+Po kliknięciu „Oblicz" pojawia się szczegółowa tabela dla każdego poziomu ulepszenia:
+
+| Kolumna | Znaczenie |
+|---------|-----------|
+| Poziom | Docelowy poziom ulepszenia |
+| Szansa | Szansa powodzenia w procentach |
+| Próby | Oczekiwana liczba prób |
+| Minerał | Wymagane minerały |
+| Eron | Wymagane erony |
+| Penya | Koszty w Penya |
+| Ochrony | Wymagane scrolla ochronne |
+| Całkowity koszt | Suma wszystkich kosztów w Penya |
+
+![Opis](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+W trybie porównania oba systemy ochrony (S-Protect vs. S-Protect Low) są wyświetlane obok siebie. Tańsza opcja jest podświetlona na zielono.
+
+**Zapisywanie:** Ceny i ustawienia są zapisywane automatycznie (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::

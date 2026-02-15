@@ -370,3 +370,56 @@ Tools lassen sich entweder per Hotkey oder in der Tab-Leiste über das Menü (St
 - Speicherung: Preise werden dauerhaft im Launcher-Datenordner abgelegt (`%APPDATA%/Flyff-U-Launcher/item-prices.json`); die Liste selbst ist pro Sitzung neu.
 
 :::
+
+:::accordion[Upgrade-Kosten-Rechner]
+
+- Berechnet die erwarteten Kosten für Item-Upgrades von +0 bis +10 
+  inklusive Materialbedarf, Versuchsanzahl und Vergleich zwischen Low SProtect und SProtect.
+
+![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**Einstellungen:**
+
+- **Würfel-Typ:** Powerdice 4/6 (Standard) oder Powerdice 12 (höhere Erfolgschance)
+- **Von-Level / Nach-Level:** Upgrade-Bereich festlegen (z.B. +3 → +7)
+- **Modus:**
+  - **Vergleichen** – Zeigt Kosten für beide Schutz-Systeme nebeneinander
+  - **SProtect** – Berechnet mit regulären S-Protect-Scrolls
+  - **Low SProtect** – Berechnet mit günstigeren Low-SProtect-Scrolls
+
+**Materialpreise:**
+
+Unter „Materialien" lassen sich die aktuellen Marktpreise für folgende Items festlegen:
+- Mineral
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4, 6, 12
+
+Mit der Checkbox „Vorhanden" werden Materialien von der Kostenberechnung ausgenommen.
+
+![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**Ergebnis:**
+
+Nach Klick auf „Berechnen" erscheint eine detaillierte Tabelle pro Upgrade-Stufe:
+
+| Spalte | Bedeutung                   |
+|--------|-----------------------------|
+| Level | Ziel-Upgrade-Stufe          |
+| Chance | Erfolgschance in Prozent    |
+| Versuche | Erwartete Anzahl Versuche   |
+| Mineral | Benötigte Mineral           |
+| Eron | Benötigte Eron              |
+| Penya | Penya-Kosten                |
+| Protects | Benötigte SProtect          |
+| Gesamtkosten | Summe aller Kosten in Penya |
+
+![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+Im Vergleichsmodus werden beide Schutz-Systeme (SProtect vs. Low SProtect nebeneinander dargestellt. Die günstigere Option wird grün hervorgehoben.
+
+**Speicherung:** Preise und Einstellungen werden automatisch gespeichert (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
+
+:::
+

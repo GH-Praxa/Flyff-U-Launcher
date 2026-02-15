@@ -1,4 +1,4 @@
-﻿## Basic Features
+## Basic Features
 
 :::accordion[Create Profile]
 
@@ -358,5 +358,56 @@ Tools can be opened via hotkey or in the tab bar through the star menu.
   4. Checkbox marks items as done/bought; "X" removes an entry.
   5. The bar at the bottom shows the sum of all entries (`price × quantity`) in FCoins.
 - Storage: Prices persist in the launcher data folder (`%APPDATA%/Flyff-U-Launcher/item-prices.json`); the list itself is new per session.
+
+:::
+
+:::accordion[Upgrade Cost Calculator]
+
+Calculates expected costs for item upgrades from +0 to +10 — including material requirements, number of attempts, and comparison between different protection systems.
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
+
+**Settings:**
+
+- **Dice Type:** Powerdice 4/6 (standard) or Powerdice 12 (higher success chance)
+- **From Level / To Level:** Define upgrade range (e.g. +3 → +7)
+- **Mode:**
+  - **Compare** – Shows costs for both protection systems side by side
+  - **S-Protect** – Calculates with regular S-Protect scrolls
+  - **S-Protect (Low)** – Calculates with cheaper Low S-Protect scrolls
+
+**Material Prices:**
+
+Under "Materials" you can set current market prices for the following items:
+- Mineral
+- Eron
+- S-Protect
+- Low S-Protect
+- Powerdice 4, 6, 12
+
+With the "Owned" checkbox, materials are excluded from cost calculation.
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
+
+**Result:**
+
+After clicking "Calculate", a detailed table per upgrade level appears:
+
+| Column | Meaning |
+|--------|---------|
+| Level | Target upgrade level |
+| Chance | Success chance in percent |
+| Attempts | Expected number of attempts |
+| Mineral | Required minerals |
+| Eron | Required erons |
+| Penya | Penya costs |
+| Protects | Required protection scrolls |
+| Total Cost | Sum of all costs in Penya |
+
+![Description](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
+
+In comparison mode, both protection systems (S-Protect vs. S-Protect Low) are displayed side by side. The cheaper option is highlighted in green.
+
+**Storage:** Prices and settings are saved automatically (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::

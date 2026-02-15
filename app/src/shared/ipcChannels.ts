@@ -98,10 +98,14 @@ export const IPC_CHANNELS = {
     SIDEPANEL_TOGGLE: "sidepanel:toggle",
     EXP_UPDATE: "exp:update",
 
-    // Shopping List
+// Shopping List
     SHOPPING_LIST_SEARCH: "shoppingList:search",
     SHOPPING_LIST_ICON: "shoppingList:icon",
     SHOPPING_LIST_SAVE_PRICE: "shoppingList:savePrice",
+
+    // Upgrade Calculator
+    UPGRADE_CALC_LOAD_SETTINGS: "upgradeCalc:loadSettings",
+    UPGRADE_CALC_SAVE_SETTINGS: "upgradeCalc:saveSettings",
 
     // Buff-Wecker (optional module)
     BUFF_WECKER_SHOW_PANEL: "buff-wecker/show-panel",
