@@ -132,7 +132,6 @@ jobs:
           name: macos-artifacts
           path: |
             app/out/make/**/*.dmg
-            app/out/make/**/*.zip
             app/out/make/**/latest-mac.yml
           if-no-files-found: error
           retention-days: 14
@@ -248,7 +247,6 @@ jobs:
             dist/**/*.msi
             dist/**/*.nupkg
             dist/**/*.dmg
-            dist/**/*.zip
             dist/**/*.deb
             dist/**/*.rpm
             dist/**/latest.yml
