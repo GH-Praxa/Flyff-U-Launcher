@@ -40,6 +40,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 - Auto-Save und optionaler Layout-Delay für sequentielles Laden
 - Multi-Window: Mehrere unabhängige Session-Fenster parallel nutzen
 - **Hover-Fokus**: Spielfenster wechseln den Fokus durch Hovern — kein Alt+Tab oder Klick nötig
+- Charaktere können direkt ausgeloggt werden, um Powerups zu schützen
 - Fortschrittsanzeige beim Laden der Spielinstanzen
 
 <div align="center">
@@ -249,6 +250,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 - Auto-save and optional layout delay for sequential loading
 - Multi-window: Use multiple independent session windows in parallel
 - **Hover focus**: Game windows switch focus on hover — no Alt+Tab or clicking required
+- Characters can be logged out directly to protect powerups
 - Progress bar shows loading status for game instances
 
 <div align="center">
