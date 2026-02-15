@@ -182,6 +182,8 @@ Der Launcher aktualisiert sich automatisch, sobald eine neue Version verfügbar 
 > **Ist der Download sicher?**
 > Alle Release-Dateien werden automatisiert über GitHub Actions direkt aus dem öffentlichen Quellcode erstellt – ohne manuelle Änderungen. Das bedeutet: Der veröffentlichte Code entspricht exakt dem, was du herunterladen kannst.
 >
+> Windows und macOS zeigen beim ersten Start eine Sicherheitswarnung an (z.B. SmartScreen / Gatekeeper). Das ist normal für nicht signierte Software — ein Code-Signing-Zertifikat kostet mehrere hundert Euro pro Jahr und lohnt sich für ein kostenloses Open-Source-Projekt nicht.
+>
 > Wenn du dennoch Zweifel hast, lade die Dateien bitte nicht herunter. Sicherheit geht immer vor.
 
 ---
@@ -391,6 +393,8 @@ The launcher updates itself automatically when a new version is available.
 
 > **Is the download safe?**
 > All release files are built automatically via GitHub Actions directly from the public source code – no manual modifications. This means: the published code is exactly what you download.
+>
+> Windows and macOS will show a security warning on first launch (e.g. SmartScreen / Gatekeeper). This is normal for unsigned software — a code signing certificate costs several hundred euros per year, which is not justified for a free open-source project.
 >
 > If you still have doubts, please do not download the files. Safety always comes first.
 

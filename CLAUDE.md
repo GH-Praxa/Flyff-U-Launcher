@@ -10,7 +10,7 @@ All features MUST work on **Windows**, **macOS**, and **Linux**. When writing ne
 - Use `process.env.HOME` or `app.getPath()` instead of `APPDATA` / `LOCALAPPDATA` (Windows-only env vars)
 - Test file paths case-sensitively (macOS/Linux filesystems are case-sensitive)
 - For native binaries: provide platform-specific variants under `app/resources/<tool>/<platform>/`
-- Electron Forge makers must include: Squirrel (Windows), DMG (macOS), DEB/RPM/AppImage (Linux)
+- Electron Forge makers must include: Squirrel (Windows), DMG (macOS), DEB/RPM (Linux) — AppImage ist deaktiviert (siehe Stolperfallen)
 
 ## GitHub Workflow Release Process
 
@@ -32,10 +32,29 @@ Alle GitHub Workflows für Releases müssen:
 
 ### Workflow-Ausführung
 
+Der primäre Workflow für Draft-Releases ist **"Draft Release (All Platforms)"** (`macos-draft.yml`):
+
 ```bash
-# Draft-Release über Workflow Dispatch starten
-gh workflow run release.yml -f tag_name=v2.9.3 -f release_draft=true -f prerelease=true
+gh workflow run "Draft Release (All Platforms)" \
+  -f tag_name=v3.0.0 \
+  -f create_release=true \
+  -f release_draft=true \
+  -f prerelease=true \
+  -f run_tests=false
 ```
+
+### Bekannte Stolperfallen im Release-Workflow
+
+1. **AppImage ist deaktiviert** — Der `@reforged/maker-appimage` hat Strukturprobleme mit Electron Forge und ist in `forge.config.ts` auskommentiert. Workflows dürfen **keine `.AppImage`-Dateien erwarten** (kein `fail_on_unmatched_files: true` für AppImage).
+
+2. **Doppelte `latest-mac.yml`** — Der `postMake`-Hook in `forge.config.ts` erzeugt für jeden macOS-Maker (DMG + ZIP) eine eigene `latest-mac.yml`. Der Release-Job sammelt deshalb alle Artifacts mit `find ... -exec cp -f {} release-assets/` in einen flachen Ordner, damit Duplikate automatisch überschrieben werden. **Niemals `softprops/action-gh-release` verwenden** — stattdessen `gh release create` mit dem flachen `release-assets/`-Ordner nutzen.
+
+3. **`gh release create` braucht ein Git-Repo** — Der Release-Job muss einen `actions/checkout@v4`-Schritt enthalten, sonst schlägt `gh` mit `fatal: not a git repository` fehl.
+
+4. **Fehlgeschlagene Drafts aufräumen** — Vor einem erneuten Workflow-Run den alten Draft löschen:
+   ```bash
+   gh release delete v3.0.0 --yes
+   ```
 
 ## Branch-Struktur
 
@@ -69,3 +88,10 @@ Um Workflow-Änderungen im dev Branch zu testen, ohne den live Branch zu veränd
 4. **Wenn Workflow korrekt ist**: Änderungen von dev nach live mergen
 
 **Merke: Jeder Workflow-Aufruf verwendet den Workflow aus dem Default-Branch, nicht aus dem auslösenden Branch!**
+
+## Git Commit Guidelines
+
+**Wichtig: Bei GitHub Pushes, Pull Requests und automatisierten Commits:**
+
+- **Keine Patchnotes** in Commit Messages hinzufügen
+- **Kein "Co-Authored-By"** Tag setzen (dieser ist nur für manuelle Commits gedacht)
