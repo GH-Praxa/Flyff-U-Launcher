@@ -286,8 +286,12 @@ const config: ForgeConfig = {
                 ],
             }),
         ];
-        // Fuses nur für Windows und macOS aktivieren (Linux hat Probleme mit AppImages)
-        if (process.platform !== "linux") {
+        // Fuses nur für Windows aktivieren.
+        // Auf macOS: EnableEmbeddedAsarIntegrityValidation + OnlyLoadAppFromAsar erfordern
+        // eine gültige Apple-Signatur – ohne diese zeigt macOS "damaged and can't be opened"
+        // statt dem normalen "unidentified developer"-Dialog.
+        // Auf Linux: AppImage-Probleme mit Electron Forge.
+        if (process.platform === "win32") {
             plugins.push(new FusesPlugin({
                 version: FuseVersion.V1,
                 [FuseV1Options.RunAsNode]: false,
@@ -296,6 +300,17 @@ const config: ForgeConfig = {
                 [FuseV1Options.EnableNodeCliInspectArguments]: false,
                 [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
                 [FuseV1Options.OnlyLoadAppFromAsar]: true,
+            }));
+        } else if (process.platform === "darwin") {
+            // Nur sichere Fuses ohne Signierungspflicht
+            plugins.push(new FusesPlugin({
+                version: FuseVersion.V1,
+                [FuseV1Options.RunAsNode]: false,
+                [FuseV1Options.EnableCookieEncryption]: true,
+                [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+                [FuseV1Options.EnableNodeCliInspectArguments]: false,
+                [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
+                [FuseV1Options.OnlyLoadAppFromAsar]: false,
             }));
         }
         return plugins;
