@@ -143,6 +143,9 @@ const config: ForgeConfig = {
         icon: iconPath,
         executableName: "Flyff-U-Launcher",
         extraResource,
+        osxSign: {
+            identity: "-", // ad-hoc signing – kein Apple Developer Account nötig
+        },
     },
     rebuildConfig: {},
     hooks: {
