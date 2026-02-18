@@ -1,6 +1,12 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.0.2
+
+### 🐛 Fehlerbehebungen
+- macOS: Fehler "App ist beschädigt und kann nicht geöffnet werden" behoben
+
+---
 ## 🆕 Version 3.0.0
 
 ### 🆕 Neues Tool: Upgrade-Kosten-Rechner

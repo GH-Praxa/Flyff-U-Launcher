@@ -1,6 +1,12 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.0.2
+
+### 🐛 Bug Fixes
+- macOS: Fixed "app is damaged and can't be opened" error
+
+---
 ## 🆕 Version 3.0.0
 
 ### 🆕 New Tool: Upgrade Cost Calculator
