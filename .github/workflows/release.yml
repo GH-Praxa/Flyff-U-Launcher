@@ -130,11 +130,13 @@ jobs:
         working-directory: app
         run: npm run make -- --platform=darwin
 
-      - name: Verify macOS signing
+      - name: Sign macOS app (ad-hoc)
         run: |
           APP=$(find app/out -name "*.app" -type d | head -1)
-          echo "Checking: $APP"
-          codesign -dvv "$APP" 2>&1 || echo "NOT SIGNED"
+          echo "Signing: $APP"
+          codesign --force --deep --sign - "$APP"
+          echo "Verifying:"
+          codesign -dvv "$APP" 2>&1
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
