@@ -258,6 +258,19 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Collect release assets (deduplicate by filename)
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          find dist -type f \( \
+            -name '*.exe' -o -name '*.msi' -o -name '*.nupkg' \
+            -o -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \
+            -o -name 'RELEASES' \
+            -o -name 'latest.yml' -o -name 'latest-mac.yml' -o -name 'latest-linux.yml' \
+          \) -exec cp -f {} release-assets/ \;
+          echo "Assets to upload:"
+          ls -la release-assets/
+
       - name: Publish GitHub release
         shell: bash
         env:
@@ -273,13 +286,11 @@ jobs:
           PRERELEASE_FLAG=""
           [ "$PRERELEASE" = "true" ] && PRERELEASE_FLAG="--prerelease"
 
-          FILES=$(find dist -type f | sort)
-
           gh release create "$TAG" \
             --title "Flyff-U-Launcher $TAG" \
             --notes "Release $TAG" \
             $DRAFT_FLAG \
             $PRERELEASE_FLAG \
-            $FILES
+            release-assets/*
 
           echo "Release created successfully"
