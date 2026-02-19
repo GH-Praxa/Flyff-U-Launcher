@@ -2,6 +2,15 @@
 
 ---
 
+## 🐛 Version 3.0.4
+
+### 🐛 Bug Fixes (macOS)
+- Fixed: "damaged and can't be opened" error — the app inside the DMG is now ad-hoc signed before the DMG is assembled.
+- Fixed: Signing order is now correct: `package → sign → make DMG`.
+- Note: macOS still shows an "unidentified developer" prompt. Right-click the app → **Open** → **Open Anyway**.
+
+---
+
 ## 🆕 Wersja 2.5.1
 
 ### 🆕 Nowa funkcja: Giant Tracker

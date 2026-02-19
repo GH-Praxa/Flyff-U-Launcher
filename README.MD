@@ -7,7 +7,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.4-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-Februar_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -169,7 +169,7 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 | Plattform | Download | Datei |
 |-----------|----------|-------|
 | **Windows** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
-| **macOS** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` |
+| **macOS** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
 | **Linux** | [Neueste Version](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Passende Datei herunterladen und installieren
@@ -185,6 +185,20 @@ Der Launcher aktualisiert sich automatisch, sobald eine neue Version verfügbar 
 > Windows und macOS zeigen beim ersten Start eine Sicherheitswarnung an (z.B. SmartScreen / Gatekeeper). Das ist normal für nicht signierte Software — ein Code-Signing-Zertifikat kostet mehrere hundert Euro pro Jahr und lohnt sich für ein kostenloses Open-Source-Projekt nicht.
 >
 > Wenn du dennoch Zweifel hast, lade die Dateien bitte nicht herunter. Sicherheit geht immer vor.
+
+> **macOS: App öffnen**
+> Da der Launcher keine kostenpflichtige Apple-Signatur trägt, zeigt macOS beim ersten Start einen Sicherheitsdialog.
+>
+> **Option 1 – Rechtsklick:** Rechtsklick auf die App → **"Öffnen"** → "Trotzdem öffnen" klicken.
+>
+> **Option 2 – Systemeinstellungen:** Nach dem blockierten Start: **Systemeinstellungen → Datenschutz & Sicherheit → "Trotzdem öffnen"**.
+>
+> **Option 3 – Terminal:**
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Flyff-U-Launcher.app
+> ```
+>
+> **Intel Mac (x86_64):** Der aktuelle Build ist nur für Apple Silicon (arm64). Auf Intel-Macs kann die App über Rosetta 2 gestartet werden — einfach die arm64-DMG installieren, macOS fragt automatisch, ob Rosetta installiert werden soll.
 
 ---
 
@@ -223,7 +237,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.0-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.4-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-February_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -381,7 +395,7 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 | Platform | Download | File |
 |----------|----------|------|
 | **Windows** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.exe` Setup |
-| **macOS** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` |
+| **macOS** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.dmg` (arm64) |
 | **Linux** | [Latest Release](https://github.com/GH-Praxa/Flyff-U-Launcher/releases) | `.deb` / `.rpm` |
 
 1. Download the appropriate file and install
@@ -397,6 +411,20 @@ The launcher updates itself automatically when a new version is available.
 > Windows and macOS will show a security warning on first launch (e.g. SmartScreen / Gatekeeper). This is normal for unsigned software — a code signing certificate costs several hundred euros per year, which is not justified for a free open-source project.
 >
 > If you still have doubts, please do not download the files. Safety always comes first.
+
+> **macOS: Opening the app**
+> Because the launcher does not carry a paid Apple Developer signature, macOS shows a security prompt on first launch.
+>
+> **Option 1 – Right-click:** Right-click the app → **"Open"** → click "Open Anyway".
+>
+> **Option 2 – System Settings:** After a blocked launch: **System Settings → Privacy & Security → "Open Anyway"**.
+>
+> **Option 3 – Terminal:**
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Flyff-U-Launcher.app
+> ```
+>
+> **Intel Mac (x86_64):** The current build targets Apple Silicon (arm64) only. On Intel Macs, install the arm64 DMG — macOS will prompt you to install Rosetta 2 automatically if not already present.
 
 ---
 

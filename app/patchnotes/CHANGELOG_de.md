@@ -1,6 +1,14 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.0.4
+
+### 🐛 Fehlerbehebungen (macOS)
+- Behoben: "damaged and can't be opened"-Fehler — die App innerhalb der DMG wird jetzt vor dem Zusammenstellen der DMG ad-hoc signiert (zuvor lief der Signierschritt erst nach der fertigen DMG).
+- Behoben: Reihenfolge ist jetzt korrekt: `package → sign → DMG erstellen`.
+- Hinweis: macOS zeigt beim ersten Start weiterhin den "Unbekannter Entwickler"-Dialog. Rechtsklick auf die App → **Öffnen** → **Trotzdem öffnen**, oder Terminal-Befehl im README verwenden.
+
+---
 ## 🆕 Version 3.0.0
 
 ### 🆕 Neues Tool: Upgrade-Kosten-Rechner
