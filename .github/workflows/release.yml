@@ -31,7 +31,7 @@ on:
         default: false
         type: boolean
       use_self_hosted:
-        description: "Auf self-hosted Windows Runner ausführen (Standard: nein)"
+        description: "Auf self-hosted Windows Runner ausfuehren (Standard: nein)"
         required: false
         default: false
         type: boolean
@@ -126,9 +126,20 @@ jobs:
         working-directory: app
         run: npm run test -- --run
 
-      - name: Build macOS packages
+      - name: Package macOS app
         working-directory: app
-        run: npm run make -- --platform=darwin
+        run: npm run package -- --platform=darwin
+
+      - name: Sign macOS app (ad-hoc)
+        run: |
+          APP=$(find app/out -name "*.app" -type d | head -1)
+          echo "Signing: $APP"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict "$APP" && echo "Signature OK" || { echo "Signature FAILED"; exit 1; }
+
+      - name: Make macOS packages
+        working-directory: app
+        run: npm run make -- --platform=darwin --skip-package
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -212,6 +223,9 @@ jobs:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.create_release }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
@@ -254,30 +268,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Creating release for tag: $TAG"
-          echo "Draft: $DRAFT"
-          echo "Prerelease: $PRERELEASE"
+          DRAFT_FLAG=""
+          [ "$DRAFT" = "true" ] && DRAFT_FLAG="--draft"
+          PRERELEASE_FLAG=""
+          [ "$PRERELEASE" = "true" ] && PRERELEASE_FLAG="--prerelease"
 
-          # Collect all files for release
-          FILES=""
-          FILES="$FILES dist/windows/**/* "
-          FILES="$FILES dist/macos/**/* "
-          FILES="$FILES dist/linux/**/* "
+          FILES=$(find dist -type f | sort)
 
-          echo "Files to upload: $(echo $FILES | wc -w)"
-
-          # Create or update release
           gh release create "$TAG" \
             --title "Flyff-U-Launcher $TAG" \
             --notes "Release $TAG" \
-            --draft "$DRAFT" \
-            --prerelease "$PRERELEASE" \
-            $FILES || true
+            $DRAFT_FLAG \
+            $PRERELEASE_FLAG \
+            $FILES
 
-          # If release already exists, update it
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            echo "Release exists, updating..."
-            gh release upload "$TAG" $FILES
-          fi
-
-          echo "Release created/updated successfully"
+          echo "Release created successfully"
