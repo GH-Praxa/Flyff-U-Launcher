@@ -1,1 +1,60 @@
-{}
+{
+  "name": "Flyff-U-Launcher",
+  "productName": "Flyff-U-Launcher",
+  "version": "3.0.3",
+  "description": "My Electron application description",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GH-Praxa/Flyff-U-Launcher.git"
+  },
+  "main": ".vite/build/main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "eslint --ext .ts,.tsx .",
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Praxa",
+    "email": "daniellink94@gmail.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-deb": "^7.10.2",
+    "@electron-forge/maker-dmg": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
+    "@electron-forge/maker-wix": "^7.10.2",
+    "@electron-forge/maker-zip": "^7.10.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
+    "@electron-forge/plugin-fuses": "^7.10.2",
+    "@electron-forge/plugin-vite": "^7.10.2",
+    "@electron-forge/publisher-github": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
+    "@reforged/maker-appimage": "^5.2.0",
+    "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/semver": "^7.7.1",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "electron": "39.2.7",
+    "eslint": "^8.57.1",
+    "eslint-plugin-import": "^2.32.0",
+    "happy-dom": "^20.0.11",
+    "typescript": "~5.7.2",
+    "vite": "^5.4.21",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "electron-updater": "^6.7.3",
+    "semver": "^7.6.0",
+    "sharp": "^0.34.5",
+    "zod": "^4.2.1"
+  }
+}
