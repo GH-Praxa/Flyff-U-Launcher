@@ -1,0 +1,72 @@
+:root.theme-retro-synth{
+  --bg: #0a0414;
+  --panel: #160822;
+  --panel2: #1d0c2f;
+  --stroke: #4f1b84;
+  --text: #ffe5ff;
+  --muted: #ff9c4d;
+  --blue: #ff6ec7;
+  --blue2: #3ad1ff;
+  --danger: #ffb347;
+  --shadow: 0 18px 40px rgba(5,3,16,0.8);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #8cf886;
+  --accent-rgb: 255,110,199;
+  --danger-rgb: 255,179,71;
+  --green-rgb: 140,248,134;
+}
+
+.theme-retro-synth body{
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,110,199,0.2), transparent 40%),
+    radial-gradient(circle at 80% 10%, rgba(58,209,255,0.2), transparent 50%),
+    linear-gradient(180deg, rgba(10,4,20,0.95), #0a0414 70%);
+}
+
+.theme-retro-synth #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.35), rgba(0,0,0,0.85));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-retro-synth #app.sessionRoot .tabBtn{
+  border-color: rgba(var(--accent-rgb),0.55);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+}
+.theme-retro-synth #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.8);
+  box-shadow: 0 4px 18px rgba(var(--accent-rgb),0.25);
+}
+.theme-retro-synth #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.25);
+}
+.theme-retro-synth #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.35), rgba(0,0,0,0.35));
+  border-color: rgba(var(--tab-active-rgb),0.95);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.2),
+    0 12px 28px rgba(0,0,0,0.5);
+}
+
+.theme-retro-synth .btn.primary{
+  background: linear-gradient(135deg, #ff6ec7, #ffb347);
+  border-color: rgba(255,255,255,0.6);
+  color: #130018;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 14px 32px rgba(0,0,0,0.55);
+}
+.theme-retro-synth .btn.primary:hover{
+  background: linear-gradient(135deg, #ff95d9, #ffc87f);
+  border-color: rgba(255,255,255,0.8);
+}
+.theme-retro-synth .topbar .btn.primary{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(var(--accent-rgb),0.45);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.25), 0 10px 22px rgba(0,0,0,0.45);
+}
+.theme-retro-synth .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(var(--accent-rgb),0.75);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.55), 0 12px 26px rgba(0,0,0,0.55);
+}

@@ -1,0 +1,20 @@
+
+:root{
+  --bg: #0b1220;
+  --panel: #0f1a33;
+  --panel2: #0d1830;
+  --stroke: #1b2b4d;
+  --text: #e6eefc;
+  --muted: #294093;
+  --blue: #2c6bff;
+  --blue2: #3b7bff;
+  --danger: #ff3b4f;
+  --shadow: 0 8px 30px rgba(0,0,0,0.35);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #2ecc71;
+  --accent-rgb: 44,107,255;
+  --danger-rgb: 255,59,79;
+  --green-rgb: 46,204,113;
+  --session-tab-height: 40px;
+}

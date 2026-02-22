@@ -1,0 +1,37 @@
+{
+  "id": "api-fetch",
+  "name": "API Fetch",
+  "version": "3.0.1",
+  "minLauncherVersion": "1.2.0",
+  "author": "Praxa",
+  "description": "Lädt API-Endpunkte herunter und speichert die Ergebnisse auf dem Rechner.",
+  "main": "main.js",
+  "requires": [],
+  "permissions": [
+    "ipc:register",
+    "storage:read",
+    "storage:write",
+    "network:fetch",
+    "settings:ui"
+  ],
+  "ipcChannels": [
+    "load:config",
+    "job:start",
+    "job:status",
+    "job:cancel",
+    "selection:set",
+    "output:open",
+    "ui:launch"
+  ],
+  "settingsUI": {
+    "entry": "./ui_sidepanel.html",
+    "width": 520,
+    "height": 600
+  },
+  "ui": {
+    "sidepanelTab": {
+      "label": "API Fetch",
+      "entry": "ui_sidepanel.html"
+    }
+  }
+}

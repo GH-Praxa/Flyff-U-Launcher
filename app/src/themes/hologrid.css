@@ -1,0 +1,53 @@
+:root.theme-hologrid{
+  --bg: #080a12;
+  --panel: #0d1424;
+  --panel2: #11182e;
+  --stroke: #1f2c55;
+  --text: #f2f5ff;
+  --muted: #a4b8ff;
+  --blue: #6df4ff;
+  --blue2: #a28dff;
+  --danger: #ff7eb6;
+  --shadow: 0 18px 45px rgba(4,6,18,0.7);
+  --radius: 16px;
+  --radius2: 12px;
+  --green: #7affd8;
+  --accent-rgb: 109,244,255;
+  --danger-rgb: 255,126,182;
+  --green-rgb: 122,255,216;
+}
+
+.theme-hologrid body{
+  background: radial-gradient(circle at 20% 20%, rgba(255,126,182,0.25), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(122,255,216,0.2), transparent 45%),
+    linear-gradient(180deg, #080a12, #05070d 65%);
+  position: relative;
+}
+
+.theme-hologrid body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px;
+  opacity: 0.6;
+  animation: gridPulse 12s ease-in-out infinite;
+}
+
+@keyframes gridPulse{
+  0%{ transform: scale(1); opacity: 0.35;}
+  50%{ transform: scale(1.02); opacity: 0.65;}
+  100%{ transform: scale(1); opacity: 0.35;}
+}
+
+.theme-hologrid #app.sessionRoot .tabs{
+  border-color: rgba(255,255,255,0.1);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.35), rgba(0,0,0,0.9));
+}
+
+.theme-hologrid .btn:hover{
+  box-shadow: 0 0 20px rgba(var(--accent-rgb),0.25);
+}

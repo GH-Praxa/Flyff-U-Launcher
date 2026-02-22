@@ -1,0 +1,115 @@
+:root.theme-thunderstorm{
+  --bg: #050916;
+  --panel: #0c1125;
+  --panel2: #0f1431;
+  --stroke: #1b2b4b;
+  --text: #e7f2ff;
+  --muted: #8ab4ff;
+  --blue: #68a6ff;
+  --blue2: #8be4ff;
+  --danger: #ffeb59;
+  --shadow: 0 18px 50px rgba(3,7,16,0.9);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #86f0ff;
+  --accent-rgb: 104,166,255;
+  --danger-rgb: 255,235,89;
+  --green-rgb: 134,240,255;
+}
+
+.theme-thunderstorm body{
+  background:
+    radial-gradient(circle at 30% 20%, rgba(134,240,255,0.25), transparent 35%),
+    radial-gradient(circle at 70% 25%, rgba(255,235,89,0.15), transparent 35%),
+    linear-gradient(180deg, rgba(5,9,22,0.95), #050916 70%);
+}
+
+.theme-thunderstorm body::before,
+.theme-thunderstorm body::after{
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: -1;
+}
+
+.theme-thunderstorm body::before{
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255,255,255,0.08), transparent 45%),
+    radial-gradient(circle at 20% 40%, rgba(255,235,89,0.04), transparent 55%);
+  animation: thunderClouds 28s linear infinite;
+}
+
+.theme-thunderstorm body::after{
+  background:
+    radial-gradient(circle at 0% 40%, rgba(105,155,255,0.12), transparent 40%),
+    radial-gradient(circle at 100% 25%, rgba(255,255,255,0.06), transparent 50%);
+  animation: thunderHaze 40s ease-in-out infinite;
+}
+
+.theme-thunderstorm #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.4), rgba(0,0,0,0.9));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-thunderstorm #app.sessionRoot .tabBtn{
+  border-color: rgba(var(--accent-rgb),0.55);
+  background: rgba(255,255,255,0.02);
+  color: var(--text);
+}
+.theme-thunderstorm #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.8);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb),0.25);
+}
+.theme-thunderstorm #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.3);
+}
+.theme-thunderstorm #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.45), rgba(0,0,0,0.4));
+  border-color: rgba(var(--tab-active-rgb),0.9);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.25),
+    0 12px 30px rgba(0,0,0,0.5);
+}
+
+.theme-thunderstorm .btn.primary{
+  background: linear-gradient(135deg, #68a6ff, #8be4ff);
+  border-color: rgba(255,255,255,0.4);
+  color: #040b1b;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 15px 32px rgba(0,0,0,0.45);
+}
+.theme-thunderstorm .btn.primary:hover{
+  background: linear-gradient(135deg, #9cceff, #c1f0ff);
+  border-color: rgba(255,255,255,0.65);
+}
+.theme-thunderstorm .topbar .btn.primary{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(var(--accent-rgb),0.45);
+  color: var(--text);
+}
+.theme-thunderstorm #app.sessionRoot .tabs::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 65%);
+  pointer-events: none;
+  opacity: 0.3;
+}
+.theme-thunderstorm .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(var(--accent-rgb),0.75);
+}
+
+@keyframes thunderClouds{
+  0% { transform: translate3d(-8%,0,0); }
+  50% { transform: translate3d(4%,0,0); }
+  100% { transform: translate3d(-8%,0,0); }
+}
+
+@keyframes thunderHaze{
+  0% { opacity: 0.25; }
+  50% { opacity: 0.55; transform: scale(1.05); }
+  100% { opacity: 0.25; }
+}

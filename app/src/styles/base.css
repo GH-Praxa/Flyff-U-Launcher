@@ -1,0 +1,229 @@
+
+*{ box-sizing: border-box; }
+
+
+html, body{
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+#app{
+  width: 100%;
+  height: 100%;
+}
+
+
+.btn{
+  appearance: none;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  font-weight: 700;
+}
+
+
+.btn:hover{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(var(--accent-rgb),0.35);
+}
+
+
+.btn.primary{
+  background: rgba(var(--accent-rgb),0.18);
+  border-color: rgba(var(--accent-rgb),0.55);
+}
+
+
+.btn.primary:hover{
+  background: rgba(var(--accent-rgb),0.26);
+}
+
+.btn.primary:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn.skillulator{
+
+}
+
+.skillulatorLabel{
+  color: #c79561;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-shadow: 0 0 6px rgba(199,149,97,0.35);
+}
+
+
+.btn.danger{
+  background: rgba(255,59,79,0.12);
+  border-color: rgba(255,59,79,0.35);
+}
+
+
+.btn.danger:hover{
+  background: rgba(255,59,79,0.18);
+  border-color: rgba(255,59,79,0.55);
+}
+
+.btn.warning{
+  background: rgba(255,193,7,0.14);
+  border-color: rgba(255,193,7,0.45);
+}
+
+.btn.warning:hover{
+  background: rgba(255,193,7,0.22);
+  border-color: rgba(255,193,7,0.65);
+}
+
+
+.input, .select{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(var(--accent-rgb),0.12);
+  color: var(--text);
+  outline: none;
+}
+
+
+.input:focus, .select:focus{
+  border-color: rgba(var(--accent-rgb),0.6);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.15);
+}
+
+.select option,
+.select optgroup{
+  background: rgba(var(--accent-rgb),0.12);
+  color: var(--bg);
+}
+
+.select option:disabled{
+  font-weight: 700;
+}
+
+.select option:checked{
+  background: rgba(var(--accent-rgb),0.25);
+}
+
+.select::-webkit-scrollbar{
+  width: 10px;
+}
+
+.select::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+}
+
+.select::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.35), rgba(var(--accent-rgb),0.18));
+  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-rgb),0.45);
+}
+
+.select::-webkit-scrollbar-thumb:hover{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.45), rgba(var(--accent-rgb),0.28));
+}
+
+.select.jobSelect{
+  padding-left: 44px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 22px 22px;
+}
+
+.select.jobSelect.noIcon{
+  padding-left: 12px;
+  background-image: none;
+}
+
+.select.jobSelect option.hasIcon{
+  padding-left: 32px;
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 18px 18px;
+}
+
+
+.muted{ color: var(--muted); }
+
+
+.checkbox{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  color: var(--muted);
+  user-select: none;
+}
+
+
+.dragHandle{
+  cursor: grab;
+  color: var(--muted);
+  font-weight: 900;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.10);
+}
+
+
+.slider{
+  width: min(100%, 340px);
+  accent-color: rgb(var(--accent-rgb));
+}
+.sliderValue{
+  min-width: 64px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.toastContainer{
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  z-index: 1000000;
+}
+
+.toast{
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(16,18,26,0.95);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-weight: 700;
+}
+
+.toast.success{
+  border-color: rgba(46,204,113,0.6);
+  background: rgba(46,204,113,0.9);
+  color: #0d1f12;
+}
+
+.toast.error{
+  border-color: rgba(255,59,79,0.6);
+  background: rgba(255,59,79,0.9);
+  color: #2b0b10;
+}
+
+.toast.info{
+  border-color: rgba(var(--accent-rgb),0.6);
+  background: rgba(var(--accent-rgb),0.9);
+  color: #0b1220;
+}

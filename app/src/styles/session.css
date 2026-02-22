@@ -1,0 +1,736 @@
+#app.sessionRoot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+
+#app.sessionRoot .tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--stroke);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.10), transparent);
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+}
+
+#app.sessionRoot .tabs.isHidden {
+  display: none;
+}
+
+.progressTab{
+  cursor: default;
+  pointer-events: none;
+  font-weight: 800;
+  min-width: 180px;
+  flex: 0 0 180px;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 6px 14px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(20,20,20,0.35);
+  border: 1px solid rgba(var(--accent-rgb),0.75);
+  box-shadow: inset 0 1px 6px rgba(0,0,0,0.35), 0 3px 10px rgba(0,0,0,0.25);
+  color: var(--text);
+}
+
+.progressTab:focus{
+  outline: none;
+}
+
+.toolsMenu{
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: none;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 8px;
+  gap: 4px;
+  background: var(--panel2);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.45);
+  z-index: 9999;
+  backdrop-filter: blur(6px);
+}
+
+.toolsMenu.show{
+  display: flex;
+}
+
+.toolsMenuList{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolsMenuItem{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.02);
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.14s ease;
+}
+
+.toolsMenuItem:hover{
+  background: rgba(var(--accent-rgb),0.14);
+  border-color: rgba(var(--accent-rgb),0.50);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+  transform: translateX(2px);
+}
+
+.toolsMenuItem img{
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+.toolsMenuLabel{
+  flex: 1;
+  letter-spacing: 0.01em;
+}
+
+.toolsMenuArrow{
+  color: rgba(var(--accent-rgb),0.85);
+  font-weight: 800;
+}
+
+.hotkeyBadge{
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(var(--accent-rgb),0.15);
+  color: rgba(var(--accent-rgb),1);
+  white-space: nowrap;
+}
+
+.toolsMenuHeader{
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(var(--accent-rgb),0.6);
+  padding: 8px 10px 4px;
+  user-select: none;
+}
+
+.toolsMenuHeader + .toolsMenuHeader{
+  margin-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 10px;
+}
+
+.hotkeysItem{
+  cursor: default;
+  pointer-events: none;
+}
+
+.hotkeysItem:hover{
+  transform: none;
+}
+
+.progressTabFill{
+  position: absolute;
+  inset: 2px;
+  width: 0%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb),0.35), rgba(var(--accent-rgb),0.9));
+  transition: width 0.15s ease;
+}
+
+.progressTabLabel{
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  font-weight: 800;
+}
+
+#app.sessionRoot .tabs.editMode{
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.18) inset;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.14), transparent);
+}
+
+
+
+#app.sessionRoot .tabBtn{
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+
+  appearance: none;
+  border: 1px solid rgba(var(--accent-rgb),0.55);
+  background: rgba(var(--accent-rgb),0.14);
+  color: var(--text);
+
+  padding: 4px 8px;
+  height: var(--session-tab-height);
+  font-size: 13px;
+  line-height: 1.1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  font-weight: 800;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  position: relative;
+  padding-right: 32px;
+}
+
+
+#app.sessionRoot .tabLabel{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#app.sessionRoot .tabJobIcon{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  padding: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+#app.sessionRoot .tabGlyph{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 4px;
+  color: var(--bg);
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  text-transform: uppercase;
+}
+#app.sessionRoot .tabGlyph.isActive{
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.95), rgba(var(--accent-rgb),0.75));
+  color: #fff;
+}
+
+#app.sessionRoot .tabBtn.sessionTab{
+  flex: 1 1 24ch;
+  min-width: 12ch;
+  max-width: 24ch;
+}
+
+
+#app.sessionRoot .tabBtn:hover{
+  background: rgba(var(--accent-rgb),0.20);
+  border-color: rgba(var(--accent-rgb),0.75);
+}
+
+
+#app.sessionRoot .tabBtn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.18);
+}
+
+
+#app.sessionRoot .tabBtn.iconBtn{
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  padding: 4px 0;
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+}
+
+#app.sessionRoot .tabBtn.lockToggle{
+  font-size: 16px;
+  border-color: rgba(var(--accent-rgb),0.3);
+  background: rgba(var(--accent-rgb),0.12);
+}
+
+#app.sessionRoot .tabBtn.lockToggle.armed{
+  border-color: rgba(var(--accent-rgb),0.8);
+  background: rgba(var(--accent-rgb),0.24);
+  color: var(--text);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.18);
+}
+
+
+#app.sessionRoot .tabBtn.active{
+  background: rgba(var(--tab-active-rgb),0.16);
+  border-color: rgba(var(--tab-active-rgb),0.75);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.12),
+    0 10px 22px rgba(var(--tab-active-rgb),0.10);
+}
+
+
+#app.sessionRoot .tabClose{
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  color: rgba(255,255,255,0.70);
+  font-weight: 900;
+  cursor: pointer;
+
+  padding: 0 7px;
+  border-radius: 8px;
+  line-height: 20px;
+
+  transition: 0.15s ease;
+}
+
+
+#app.sessionRoot .tabClose:hover{
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.95);
+}
+
+
+#app.sessionRoot .tabBtn.plus{
+  margin-left: auto;
+
+  border-color: rgba(var(--accent-rgb),0.65);
+  background: rgba(var(--accent-rgb),0.18);
+}
+
+
+#app.sessionRoot .tabBtn.plus:hover{
+  background: rgba(var(--accent-rgb),0.26);
+  border-color: rgba(var(--accent-rgb),0.85);
+}
+
+
+#app.sessionRoot .tabBtn.splitToggle{
+  width: auto;
+  min-width: 120px;
+  max-width: none;
+  padding: 6px 12px;
+  font-weight: 800;
+}
+
+#app.sessionRoot .tabBtn.splitToggle.active{
+  background: rgba(46,204,113,0.18);
+  border-color: rgba(46,204,113,0.80);
+  box-shadow: 0 0 0 2px rgba(46,204,113,0.12);
+}
+
+#app.sessionRoot .tabBtn.splitPartner{
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  opacity: 0.55;
+}
+
+#app.sessionRoot .tabBtn.splitPartner:hover{
+  border-color: rgba(46,204,113,0.55);
+  background: rgba(46,204,113,0.12);
+  opacity: 1;
+}
+
+#app.sessionRoot .tabBtn.splitPartner.active{
+  opacity: 1;
+}
+
+#app.sessionRoot .tabBtn.splitLeft:hover{
+  box-shadow: -2px 0 0 0 rgba(46,204,113,0.75) inset;
+}
+
+#app.sessionRoot .tabBtn.splitRight:hover{
+  box-shadow: 2px 0 0 0 rgba(var(--accent-rgb),0.85) inset;
+}
+
+#app.sessionRoot .tabBtn.sessionTab.loggedOut{
+  border-style: dashed;
+  border-color: rgba(var(--accent-rgb),0.65);
+  background: rgba(var(--accent-rgb),0.14);
+  color: var(--text);
+}
+
+#app.sessionRoot .tabBtn.sessionTab.loggedOut.active{
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.18);
+}
+
+#app.sessionRoot .tabBtn.sessionTab.loggedOut .tabClose{
+  color: rgba(255,255,255,0.80);
+}
+
+#app.sessionRoot .splitControls{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+
+#app.sessionRoot .splitSlider{
+  appearance: none;
+  width: 140px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(46,204,113,0.80), rgba(var(--accent-rgb),0.85));
+  outline: none;
+  cursor: pointer;
+}
+
+#app.sessionRoot .splitSlider::-webkit-slider-thumb{
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,0.35);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+#app.sessionRoot .splitSliderValue{
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  min-width: 64px;
+  text-align: center;
+}
+
+
+
+#app.sessionRoot .tabBtn.dragging {
+  opacity: 0.70;
+}
+
+
+#app.sessionRoot .tabBtn.dropBefore {
+  box-shadow: -2px 0 0 0 rgba(46,204,113,0.85) inset;
+}
+
+
+#app.sessionRoot .tabBtn.dropAfter {
+  box-shadow: 2px 0 0 0 rgba(var(--accent-rgb),0.95) inset;
+}
+
+/* Layout Tab Styles */
+#app.sessionRoot .tabBtn.layoutTab {
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
+  padding: 6px 12px;
+  padding-right: 32px;
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.18);
+  gap: 6px;
+  align-items: center;
+  position: relative;
+  height: auto;
+  min-height: var(--session-tab-height);
+  overflow: visible;
+}
+
+#app.sessionRoot .tabBtn.layoutTab:hover:not(.active) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: none;
+}
+
+#app.sessionRoot .tabBtn.layoutTab.active,
+[class*="theme-"] #app.sessionRoot .tabBtn.layoutTab.active {
+  background: transparent !important;
+  border-color: rgba(var(--tab-active-rgb),0.85);
+  box-shadow: none !important;
+}
+#app.sessionRoot .tabBtn.layoutTab:not(.active) {
+  box-shadow: none;
+}
+/* Grouped: accent-bordered chips with dividers (like old separated) */
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-grouped .layoutTabChip{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(var(--accent-rgb),0.35);
+}
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-grouped .layoutTabChip.active{
+  border-color: rgba(var(--tab-active-rgb),0.75);
+  background: rgba(var(--tab-active-rgb),0.14);
+}
+
+/* Separated: filled pill style, no visible border */
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-separated .layoutTabChip{
+  background: rgba(var(--accent-rgb),0.14);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 3px 12px;
+  box-shadow: none;
+  font-size: 12px;
+}
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-separated .layoutTabChip.active{
+  background: rgba(var(--tab-active-rgb),0.22);
+  border-color: rgba(var(--tab-active-rgb),0.65);
+  box-shadow: 0 0 8px rgba(var(--tab-active-rgb),0.15);
+}
+
+#app.sessionRoot .layoutTabIcon {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+#app.sessionRoot .layoutTabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(46,204,113,0.85);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+#app.sessionRoot .tabBtn.layoutTab.active .layoutTabBadge {
+  background: rgba(var(--tab-active-rgb),0.90);
+}
+
+/* Layout Tab Context Menu */
+.layoutTabContextMenu {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  padding: 4px 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  min-width: 140px;
+}
+
+.layoutTabContextMenu .contextMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+
+.layoutTabContextMenu .contextMenuItem:hover {
+  background: rgba(var(--accent-rgb),0.18);
+}
+
+/* Layout Tab display modes */
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-grouped,
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-separated{
+  padding: 4px 10px;
+  padding-right: 28px;
+  gap: 10px;
+  max-width: none;
+  align-items: center;
+  min-height: var(--session-tab-height);
+}
+
+#app.sessionRoot .layoutTabGroup{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: none;
+  min-width: 0;
+}
+
+#app.sessionRoot .layoutTabGroup.tight{
+  gap: 6px;
+}
+
+#app.sessionRoot .layoutTabGroup.tight .layoutTabChip + .layoutTabChip{
+  border-left: 1px solid rgba(var(--accent-rgb),0.55);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+
+#app.sessionRoot .layoutTabGroup.separated{
+  gap: 8px;
+}
+
+#app.sessionRoot .layoutTabChip{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: 0.15s ease;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 0 auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+#app.sessionRoot .tabBtn.layoutTab .tabClose{
+  right: 6px;
+}
+
+#app.sessionRoot .layoutTabChip:hover{
+  background: rgba(var(--accent-rgb),0.14);
+  border-color: rgba(var(--accent-rgb),0.45);
+}
+
+#app.sessionRoot .layoutTabChip.active{
+  border-color: rgba(var(--tab-active-rgb),0.80);
+  background: rgba(var(--tab-active-rgb),0.16);
+  box-shadow: 0 0 0 2px rgba(var(--tab-active-rgb),0.18);
+}
+
+#app.sessionRoot .layoutTabChip.loggedOut{
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+/* ── Mini-Grid mode ── */
+#app.sessionRoot .tabBtn.layoutTab.layoutMode-mini-grid{
+  padding: 4px 28px 4px 6px;
+  gap: 0;
+  --mg-cell: max(18px, calc((var(--session-tab-height) - 12px) / var(--mg-rows, 1)));
+  --mg-icon: calc(var(--mg-cell) - 4px);
+}
+
+#app.sessionRoot .miniGrid{
+  display: grid;
+  grid-template-rows: repeat(var(--mg-rows, 1), var(--mg-cell));
+  grid-template-columns: repeat(var(--mg-cols, 1), var(--mg-cell));
+  gap: 2px;
+  user-select: none;
+}
+
+#app.sessionRoot .miniGridCell{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mg-cell);
+  height: var(--mg-cell);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: 0.15s ease;
+}
+
+#app.sessionRoot .miniGridCell.active{
+  background: rgba(var(--tab-active-rgb),0.22);
+  border-color: rgba(var(--tab-active-rgb),0.75);
+  box-shadow: 0 0 6px rgba(var(--tab-active-rgb),0.25);
+}
+
+#app.sessionRoot .miniGridCell.loggedOut{
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+#app.sessionRoot .miniGridIcon{
+  width: var(--mg-icon);
+  height: var(--mg-icon);
+  border-radius: 3px;
+}
+
+#app.sessionRoot .miniGridDot{
+  width: calc(var(--mg-icon) * 0.4);
+  height: calc(var(--mg-icon) * 0.4);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+}
+
+#app.sessionRoot .tabs[data-layout-display="grouped"] .tabBtn.sessionTab{
+  margin-right: 4px;
+}
+
+#app.sessionRoot .tabs[data-layout-display="separated"] .tabBtn.sessionTab{
+  margin-right: 6px;
+}
+
+
+
+#app.sessionRoot .content {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#app.sessionRoot .sessionLoginOverlay{
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(12,18,35,0.92));
+  z-index: 2;
+}
+
+#app.sessionRoot .sessionLoginOverlay.show{
+  display: flex;
+}
+
+#app.sessionRoot .sessionLoginTitle{
+  font-weight: 800;
+  font-size: 18px;
+}
+
+#app.sessionRoot .sessionLoginName{
+  font-weight: 700;
+  font-size: 16px;
+}
+
+#app.sessionRoot .sessionLoginHint{
+  color: var(--muted);
+  max-width: 520px;
+}
+
+#app.sessionRoot .sessionLoginOverlay .btn{
+  min-width: 120px;
+}
+
+
+
+#app.instanceRoot {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}

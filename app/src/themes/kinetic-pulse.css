@@ -1,0 +1,63 @@
+:root.theme-kinetic-pulse{
+  --bg: #05070d;
+  --panel: #0b1624;
+  --panel2: #101a37;
+  --stroke: #25305d;
+  --text: #f4f7ff;
+  --muted: #96a3ff;
+  --blue: #4c6bff;
+  --blue2: #9a8cff;
+  --danger: #ff5b99;
+  --shadow: 0 18px 50px rgba(4,9,22,0.65);
+  --radius: 16px;
+  --radius2: 12px;
+  --green: #4cffd0;
+  --accent-rgb: 76,107,255;
+  --danger-rgb: 255,91,153;
+  --green-rgb: 76,255,208;
+}
+
+.theme-kinetic-pulse body{
+  background: radial-gradient(circle at 20% 30%, rgba(76,107,255,0.35), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(255,91,153,0.35), transparent 40%),
+    linear-gradient(180deg, rgba(5,7,13,0.9), rgba(8,11,20,0.95) 70%, #05070d);
+  position: relative;
+}
+
+.theme-kinetic-pulse body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 42%);
+  opacity: 0.4;
+  animation: pulseGlow 10s ease-in-out infinite;
+}
+
+@keyframes pulseGlow{
+  0%{ transform: scale(1); opacity: 0.35;}
+  50%{ transform: scale(1.08); opacity: 0.55;}
+  100%{ transform: scale(1); opacity: 0.35;}
+}
+
+.theme-kinetic-pulse #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.3), rgba(0,0,0,0.9));
+}
+
+.theme-kinetic-pulse body::after{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 25% 30%, rgba(255,91,153,0.25), transparent 30%),
+    radial-gradient(circle at 80% 40%, rgba(76,255,208,0.18), transparent 35%);
+  animation: plasmaFlow 18s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+@keyframes plasmaFlow{
+  0%{ transform: translate3d(-5%, -5%, 0) scale(1); }
+  50%{ transform: translate3d(5%, 12%, 0) scale(1.05); }
+  100%{ transform: translate3d(-5%, -5%, 0) scale(1); }
+}

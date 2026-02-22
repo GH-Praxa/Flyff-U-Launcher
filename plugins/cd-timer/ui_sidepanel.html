@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="ui_sidepanel.css">
+</head>
+<body>
+  <div id="app">
+    <header class="panel-header">
+      <div class="title">
+        <span class="dot"></span>
+        <span>CD-Timer</span>
+      </div>
+      <div class="badge-count" id="badgeCount">0/0 aktiv</div>
+      <div class="header-actions">
+        <label class="checkbox all-active">
+          <input id="allActiveToggle" type="checkbox" />
+          <span>Alle Aktiv</span>
+        </label>
+        <button id="expireAllBtn" class="ghost">Alle abgelaufen</button>
+        <button id="addBtn" class="primary">+</button>
+      </div>
+    </header>
+
+    <div class="overlay-settings">
+      <div class="overlay-text">
+        <div class="label">Overlay-Position</div>
+        <div class="muted">X/Y in % vom oberen linken Rand. Spalten steuern die Breite.</div>
+      </div>
+      <div class="overlay-actions">
+        <div class="overlay-toggle">
+          <label class="checkbox">
+            <input id="overlayHideToggle" type="checkbox" />
+            <span>Overlay ausblenden</span>
+          </label>
+        </div>
+        <label class="pos slider">
+          <span>X (%)</span>
+          <button type="button" class="step-btn" data-target="overlayPosX" data-dir="-1">-</button>
+          <input id="overlayPosX" type="range" min="0" max="100" step="1" value="75" />
+          <button type="button" class="step-btn" data-target="overlayPosX" data-dir="1">+</button>
+          <span id="overlayPosXVal" class="value">75</span>
+        </label>
+        <label class="pos slider">
+          <span>Y (%)</span>
+          <button type="button" class="step-btn" data-target="overlayPosY" data-dir="-1">-</button>
+          <input id="overlayPosY" type="range" min="0" max="100" step="1" value="5" />
+          <button type="button" class="step-btn" data-target="overlayPosY" data-dir="1">+</button>
+          <span id="overlayPosYVal" class="value">5</span>
+        </label>
+        <label class="pos slider">
+          <span>Icon</span>
+          <button type="button" class="step-btn" data-target="iconSize" data-dir="-1">-</button>
+          <input id="iconSize" type="range" min="24" max="96" step="1" value="52" />
+          <button type="button" class="step-btn" data-target="iconSize" data-dir="1">+</button>
+          <span id="iconSizeVal" class="value">52</span>
+        </label>
+        <label class="cols">
+          <span>Spalten</span>
+          <input id="overlayColumns" type="number" min="1" max="12" step="1" value="5" />
+        </label>
+        <button id="overlayReset" class="ghost small">Reset</button>
+      </div>
+    </div>
+
+    <div id="badgeList" class="badge-list"></div>
+    <div class="add-bottom-rail">
+      <button id="addBtnBottom" class="primary add-bottom-btn">+</button>
+    </div>
+  </div>
+
+  <div id="iconPicker" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Icon auswaehlen</div>
+      <div class="modal-sub">Buffs, Items, Skills aus dem Icons-Ordner</div>
+        </div>
+        <div class="modal-actions">
+          <button id="clearIcon" class="ghost small">Kein Icon</button>
+          <button id="closePicker" class="ghost small">X</button>
+        </div>
+      </div>
+      <div class="tabs" id="iconTabs"></div>
+      <div class="icon-search">
+        <input id="iconSearch" type="search" placeholder="Buff-Name suchen..." autocomplete="off" />
+      </div>
+      <div class="icon-grid" id="iconGrid"></div>
+    </div>
+  </div>
+
+  <script src="ui_sidepanel.js"></script>
+</body>
+</html>

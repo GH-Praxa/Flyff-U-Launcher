@@ -1,0 +1,73 @@
+:root.theme-aurora-pulse{
+  --bg: #031014;
+  --panel: #0a1b27;
+  --panel2: #0f2c3a;
+  --stroke: #1a5470;
+  --text: #f4fcff;
+  --muted: #8cd6ff;
+  --blue: #78f1ff;
+  --blue2: #3c9de0;
+  --danger: #f186ff;
+  --shadow: 0 16px 45px rgba(1,7,21,0.7);
+  --radius: 14px;
+  --radius2: 10px;
+  --green: #8fffcb;
+  --accent-rgb: 120,241,255;
+  --danger-rgb: 241,134,255;
+  --green-rgb: 143,255,203;
+}
+
+.theme-aurora-pulse body{
+  background:
+    radial-gradient(circle at 20% 10%, rgba(120,241,255,0.25), transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(143,255,203,0.3), transparent 40%),
+    radial-gradient(circle at 50% 70%, rgba(241,134,255,0.22), transparent 40%),
+    linear-gradient(180deg, rgba(3,16,20,0.95), #031014 60%);
+}
+
+.theme-aurora-pulse #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.4), rgba(0,0,0,0.9));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-aurora-pulse #app.sessionRoot .tabBtn{
+  border-color: rgba(var(--accent-rgb),0.55);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+}
+.theme-aurora-pulse #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.8);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb),0.2);
+}
+.theme-aurora-pulse #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.25);
+}
+.theme-aurora-pulse #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.32), rgba(0,0,0,0.25));
+  border-color: rgba(var(--tab-active-rgb),0.95);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.25),
+    0 10px 20px rgba(0,0,0,0.4);
+}
+
+.theme-aurora-pulse .btn.primary{
+  background: linear-gradient(135deg, #78f1ff, #84c9ff);
+  border-color: rgba(255,255,255,0.5);
+  color: #05101f;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 12px 28px rgba(5,16,31,0.6);
+}
+.theme-aurora-pulse .btn.primary:hover{
+  background: linear-gradient(135deg, #a8f5ff, #b1d9ff);
+  border-color: rgba(255,255,255,0.7);
+}
+.theme-aurora-pulse .topbar .btn.primary{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(var(--accent-rgb),0.4);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.3), 0 10px 20px rgba(0,0,0,0.45);
+}
+.theme-aurora-pulse .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(var(--accent-rgb),0.65);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.5), 0 12px 26px rgba(0,0,0,0.55);
+}

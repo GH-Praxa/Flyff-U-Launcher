@@ -1,0 +1,78 @@
+:root.theme-crimson-ember{
+  --bg: #030002;
+  --panel: #13060d;
+  --panel2: #1f050f;
+  --stroke: #620008;
+  --text: #fcf0ea;
+  --muted: #c67e7b;
+  --blue: #ff5c4a;
+  --blue2: #ffa042;
+  --danger: #ff2f4b;
+  --shadow: 0 20px 50px rgba(0,0,0,0.85);
+  --radius: 16px;
+  --radius2: 12px;
+  --green: #ffb16c;
+  --accent-rgb: 255,92,74;
+  --danger-rgb: 255,47,75;
+  --green-rgb: 255,177,108;
+}
+
+.theme-crimson-ember body{
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,92,74,0.3), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(255,160,66,0.25), transparent 45%),
+    linear-gradient(180deg, #030002 0%, #0b0004 60%, #1a0000 100%);
+}
+
+.theme-crimson-ember #app.sessionRoot .tabs{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.25), rgba(0,0,0,0.85));
+  border-bottom-color: var(--stroke);
+}
+
+.theme-crimson-ember #app.sessionRoot .tabBtn{
+  border-color: rgba(255,255,255,0.35);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.3));
+  color: var(--text);
+}
+.theme-crimson-ember #app.sessionRoot .tabBtn:hover{
+  border-color: rgba(var(--accent-rgb),0.7);
+  box-shadow: 0 4px 18px rgba(var(--accent-rgb),0.15);
+}
+.theme-crimson-ember #app.sessionRoot .tabBtn:focus-visible{
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.25);
+}
+.theme-crimson-ember #app.sessionRoot .tabBtn.active{
+  background: linear-gradient(180deg, rgba(var(--tab-active-rgb),0.35), rgba(0,0,0,0.45));
+  border-color: rgba(var(--tab-active-rgb),0.95);
+  box-shadow:
+    0 0 0 2px rgba(var(--tab-active-rgb),0.25),
+    0 12px 28px rgba(0,0,0,0.6);
+}
+
+.theme-crimson-ember .btn.primary{
+  background: linear-gradient(135deg, #ff5c4a, #ff9e3a);
+  border-color: rgba(255,255,255,0.55);
+  color: #1a0501;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 14px 32px rgba(0,0,0,0.55);
+}
+.theme-crimson-ember .btn.primary:hover{
+  background: linear-gradient(135deg, #ff755c, #ffc471);
+  border-color: rgba(255,255,255,0.8);
+}
+.theme-crimson-ember .topbar .btn.primary{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(var(--accent-rgb),0.4);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.25), 0 10px 22px rgba(0,0,0,0.45);
+}
+.theme-crimson-ember .topbar .btn.primary:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(var(--accent-rgb),0.65);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.5), 0 12px 26px rgba(0,0,0,0.55);
+}
+
+.theme-crimson-ember .panel{
+  background: linear-gradient(135deg, rgba(19,6,13,0.9), rgba(23,5,12,0.95));
+  border-color: rgba(255,92,74,0.18);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+}

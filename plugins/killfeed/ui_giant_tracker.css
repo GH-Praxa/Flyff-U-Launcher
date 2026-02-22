@@ -1,0 +1,739 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  background: var(--bg, #1a1a2e);
+  color: var(--text, #e0e0e0);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.gt-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.gt-header {
+  padding: 12px 16px;
+  background: var(--panel, #2d2d44);
+  border-bottom: 1px solid var(--stroke, rgba(255, 255, 255, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gt-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gt-profile {
+  font-size: 12px;
+  color: var(--muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Filter bar */
+.gt-filters {
+  padding: 8px 16px;
+  background: var(--panel2, #252540);
+  border-bottom: 1px solid var(--stroke, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gt-filter-group {
+  display: flex;
+  gap: 4px;
+}
+
+.gt-filter-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #ccc);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gt-filter-btn:hover {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.15);
+}
+
+.gt-filter-btn.active {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.3);
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.6);
+  color: var(--text, #e0e0e0);
+}
+
+.gt-sort-select {
+  padding: 4px 8px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  background: var(--bg, #1a1a2e);
+  color: var(--text, #e0e0e0);
+  font-size: 12px;
+}
+
+.gt-search {
+  flex: 1;
+  min-width: 120px;
+  padding: 4px 10px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  background: var(--bg, #1a1a2e);
+  color: var(--text, #e0e0e0);
+  font-size: 12px;
+}
+
+.gt-search:focus {
+  outline: none;
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.6);
+}
+
+/* Cards grid */
+.gt-cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.gt-card {
+  background: var(--panel, #2d2d44);
+  border-radius: 8px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.08));
+  transition: border-color 0.2s;
+}
+
+.gt-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.gt-card.rank-giant {
+  border-left: 3px solid #fbbf24;
+}
+
+.gt-card.rank-violet {
+  border-left: 3px solid #a855f7;
+}
+
+.gt-card.rank-boss {
+  border-left: 3px solid #ef4444;
+}
+
+/* Card header */
+.gt-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--stroke, rgba(255, 255, 255, 0.06));
+}
+
+.gt-monster-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.gt-icon-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.gt-icon-placeholder.rank-giant {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.gt-icon-placeholder.rank-violet {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.gt-icon-placeholder.rank-boss {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.gt-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gt-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-card-meta {
+  font-size: 11px;
+  color: var(--muted, #888);
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.gt-element-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.gt-element-badge.fire { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.gt-element-badge.water { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.gt-element-badge.earth { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+.gt-element-badge.wind { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.gt-element-badge.electricity { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
+/* Combat stats (HP / ATK) */
+.gt-card-combat {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.gt-combat-stat {
+  color: var(--muted, #999);
+  font-family: 'Consolas', monospace;
+  cursor: default;
+}
+
+/* Compact card: quick stats in header */
+.gt-card-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.gt-quick-stat {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 12px;
+}
+
+.gt-quick-stat .gt-kills-label {
+  color: var(--muted, #888);
+  font-size: 11px;
+}
+
+.gt-quick-stat .gt-kills-value {
+  font-family: 'Consolas', monospace;
+  font-weight: 600;
+  color: rgb(var(--tab-active-rgb, 99, 102, 241));
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Card actions bar (compact + expanded footer) */
+.gt-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+}
+
+.gt-card-last-kill {
+  color: var(--muted, #666);
+}
+
+.gt-card-drop-summary {
+  color: var(--muted, #888);
+  margin-left: auto;
+}
+
+.gt-expand-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #ccc);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.gt-expand-btn:hover {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.2);
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.4);
+}
+
+/* Expanded card */
+.gt-card.expanded {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Kill stats */
+.gt-kills-table {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.gt-kills-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gt-kills-row:last-child {
+  border-bottom: none;
+}
+
+.gt-kills-label {
+  color: var(--muted, #888);
+}
+
+.gt-kills-value {
+  font-family: 'Consolas', monospace;
+  font-weight: 600;
+  color: rgb(var(--tab-active-rgb, 99, 102, 241));
+}
+
+/* Drop section */
+.gt-drops {
+  padding: 8px 12px;
+  border-top: 1px solid var(--stroke, rgba(255, 255, 255, 0.06));
+}
+
+.gt-drops-summary {
+  font-size: 11px;
+  color: var(--muted, #999);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.gt-drops-summary-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-log-drop-btn {
+  padding: 3px 10px;
+  border: 1px solid rgba(var(--tab-active-rgb, 99, 102, 241), 0.5);
+  border-radius: 4px;
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.2);
+  color: var(--text, #e0e0e0);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gt-log-drop-btn:hover {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.35);
+}
+
+/* Drop history (collapsible) */
+.gt-drop-history {
+  margin-top: 6px;
+}
+
+.gt-drop-toggle {
+  border: none;
+  background: none;
+  color: var(--muted, #888);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.gt-drop-toggle:hover {
+  color: var(--text, #ccc);
+}
+
+.gt-drop-list {
+  display: none;
+  margin-top: 4px;
+}
+
+.gt-drop-list.open {
+  display: block;
+}
+
+.gt-drop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 6px;
+}
+
+.gt-drop-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-drop-item-kills {
+  color: var(--muted, #888);
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.gt-drop-item-time {
+  color: var(--muted, #666);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.gt-drop-delete-btn {
+  border: 1px solid rgba(var(--danger-rgb, 255, 99, 132), 0.5);
+  background: rgba(var(--danger-rgb, 255, 99, 132), 0.15);
+  color: #ffd8df;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gt-drop-delete-btn:hover {
+  background: rgba(var(--danger-rgb, 255, 99, 132), 0.3);
+}
+
+/* Last kill time */
+.gt-last-kill {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--muted, #666);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Empty state */
+.gt-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--muted, #666);
+  font-size: 14px;
+}
+
+/* Drop dialog (modal) */
+.gt-drop-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.gt-drop-modal.open {
+  display: flex;
+}
+
+.gt-drop-dialog {
+  width: min(100%, 600px);
+  max-height: calc(100vh - 32px);
+  background: var(--panel, #2d2d44);
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gt-drop-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--stroke, rgba(255, 255, 255, 0.1));
+}
+
+.gt-drop-dialog-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.gt-drop-dialog-close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text, #e0e0e0);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.gt-drop-dialog-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.gt-drop-search {
+  margin: 8px 16px;
+  padding: 6px 10px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  background: var(--bg, #1a1a2e);
+  color: var(--text, #e0e0e0);
+  font-size: 12px;
+  width: calc(100% - 32px);
+}
+
+.gt-drop-search:focus {
+  outline: none;
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.6);
+}
+
+.gt-loot-grid {
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+  max-height: 400px;
+}
+
+.gt-loot-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gt-loot-item:hover {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.2);
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.4);
+}
+
+.gt-loot-item-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.gt-loot-item-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.gt-loot-item-name {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-loot-item-prob {
+  font-size: 10px;
+  color: var(--muted, #888);
+}
+
+.gt-loot-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 16px;
+  color: var(--muted, #888);
+  font-size: 12px;
+}
+
+/* Loading state */
+.gt-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--muted, #888);
+  font-size: 14px;
+}
+
+/* Scrollbar */
+.gt-cards::-webkit-scrollbar,
+.gt-loot-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gt-cards::-webkit-scrollbar-track,
+.gt-loot-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gt-cards::-webkit-scrollbar-thumb,
+.gt-loot-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.gt-cards::-webkit-scrollbar-thumb:hover,
+.gt-loot-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Rarity filter bar */
+.gt-rarity-filter {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 8px;
+  flex-wrap: wrap;
+}
+
+.gt-rarity-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, 0.12));
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #ccc);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gt-rarity-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gt-rarity-btn.active {
+  background: rgba(var(--tab-active-rgb, 99, 102, 241), 0.25);
+  border-color: rgba(var(--tab-active-rgb, 99, 102, 241), 0.5);
+}
+
+/* Rarity color accents */
+.gt-rarity-btn.rarity-common { border-left: 3px solid #9ca3af; }
+.gt-rarity-btn.rarity-uncommon { border-left: 3px solid #22c55e; }
+.gt-rarity-btn.rarity-rare { border-left: 3px solid #3b82f6; }
+.gt-rarity-btn.rarity-veryrare { border-left: 3px solid #a855f7; }
+.gt-rarity-btn.rarity-unique { border-left: 3px solid #f59e0b; }
+.gt-rarity-btn.rarity-ultimate { border-left: 3px solid #ef4444; }
+
+/* Loot items rarity border */
+.gt-loot-item.rarity-uncommon { border-left: 2px solid #22c55e; }
+.gt-loot-item.rarity-rare { border-left: 2px solid #3b82f6; }
+.gt-loot-item.rarity-veryrare { border-left: 2px solid #a855f7; }
+.gt-loot-item.rarity-unique { border-left: 2px solid #f59e0b; }
+.gt-loot-item.rarity-ultimate { border-left: 2px solid #ef4444; }
+
+/* Rarity tag in prob line */
+.gt-rarity-tag {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 0 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.gt-rarity-tag.rarity-uncommon { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.gt-rarity-tag.rarity-rare { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.gt-rarity-tag.rarity-veryrare { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.gt-rarity-tag.rarity-unique { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.gt-rarity-tag.rarity-ultimate { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+/* Loot pool preview (drops tab) */
+.gt-loot-pool-preview {
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--stroke, rgba(255, 255, 255, 0.06));
+}
+
+.gt-loot-pool-preview-title {
+  font-size: 10px;
+  color: var(--muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.gt-loot-pool-preview-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.gt-loot-pool-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 10px;
+}
+
+.gt-loot-pool-preview-item img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+/* TTK display */
+.gt-ttk-compact {
+  font-size: 10px;
+  color: var(--muted, #888);
+  font-family: 'Consolas', monospace;
+  margin-top: 2px;
+}
+
+.gt-ttk-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gt-ttk-row:first-of-type {
+  margin-top: 2px;
+}

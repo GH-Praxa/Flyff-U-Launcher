@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Killfeed Settings</title>
+  <link rel="stylesheet" href="ui_settings.css">
+</head>
+<body>
+  <div class="settings-container">
+    <h1>Killfeed Settings</h1>
+
+    <!-- General Settings -->
+    <div class="setting-group">
+      <h2>General</h2>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Enabled
+          <small>Enable kill tracking and statistics</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="enabled" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Discord Leaderboard
+          <small>Erlaubt das Senden der Killfeed-Werte an einen Discord-Webhook</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="allowDiscord">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="setting-group" id="discordSettings" style="display: none;">
+      <h2>Discord Einstellungen</h2>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Webhook URL
+          <small>Webhook des Discord-Channels fuer die Bestenliste</small>
+        </div>
+        <input type="url" id="discordWebhook" class="text-input" placeholder="https://discord.com/api/webhooks/...">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Anzeigename
+          <small>Name, der in der Discord-Bestenliste angezeigt wird</small>
+        </div>
+        <input type="text" id="discordPlayerName" class="text-input" maxlength="64" placeholder="z.B. Praxa">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Server / Channel Label
+          <small>Wird im Discord-Embed als Kontext angezeigt</small>
+        </div>
+        <input type="text" id="discordServerName" class="text-input" maxlength="64" placeholder="z.B. Gilde oder Channel">
+      </div>
+
+      <p class="helper-text">
+        Hinweis: Der Webhook sollte nur Berechtigungen fuer den gewaehlten Channel haben. Mentions werden deaktiviert.
+      </p>
+    </div>
+
+    <!-- Persistence Settings -->
+    <div class="setting-group">
+      <h2>Data Persistence</h2>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Storage Mode
+          <small>How to persist kill history data</small>
+        </div>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="persistMode" value="none" checked>
+            <span>None</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="persistMode" value="json">
+            <span>JSON</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="persistMode" value="csv">
+            <span>CSV</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detection Settings -->
+    <div class="setting-group">
+      <h2>Kill Detection</h2>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Epsilon (%)
+          <small>Minimum EXP change to count as kill</small>
+        </div>
+        <input type="number" id="epsilon" class="number-input" value="0.001" min="0.001" max="1" step="0.001">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Rolling Window (sec)
+          <small>Time window for rate calculations</small>
+        </div>
+        <input type="number" id="rollingWindow" class="number-input" value="300" min="10" max="3600" step="10">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="button-row">
+      <button id="saveBtn" class="btn btn-primary">Save</button>
+      <button id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+  </div>
+
+  <script src="ui_settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>API Fetch Settings</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #0f1a33;
+      --stroke: #1b2b4d;
+      --text: #e6eefc;
+      --muted: #6b7ba8;
+      --accent: #2ecc71;
+      --accent-rgb: 46,204,113;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 24px;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    p {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 20px;
+    }
+    button {
+      background: linear-gradient(180deg, var(--accent), #32d17f);
+      color: #0b1220;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.35);
+      transition: filter 120ms;
+    }
+    button:hover { filter: brightness(1.08); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>API Fetch</h1>
+    <p>Konfiguration und Downloads im Side Panel.</p>
+    <button id="openBtn">Side Panel öffnen</button>
+  </div>
+  <script>
+    document.getElementById("openBtn").addEventListener("click", function() {
+      if (window.plugin && window.plugin.ipc) {
+        window.plugin.ipc.invoke("ui:launch");
+      }
+    });
+  </script>
+</body>
+</html>

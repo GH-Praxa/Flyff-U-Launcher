@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "ocr": false,
+  "lifecycle": false,
+  "ipc": false,
+  "discord": false
+}
