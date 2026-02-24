@@ -1033,6 +1033,7 @@ export function openConfigModal(
         try {
             await patchClientSettings({ showAnnouncements: next });
             showToast(t("config.client.showAnnouncementsSaved" as TranslationKey), "success");
+            window.dispatchEvent(new CustomEvent("launcherSettingChanged", { detail: { key: "showAnnouncements", value: next } }));
         }
         catch (err) {
             showToast(String(err), "error");
@@ -1045,6 +1046,7 @@ export function openConfigModal(
         try {
             await patchClientSettings({ collapsibleOpenProfiles: next });
             showToast(t("config.client.collapsibleOpenProfilesSaved" as TranslationKey), "success");
+            window.dispatchEvent(new CustomEvent("launcherSettingChanged", { detail: { key: "collapsibleOpenProfiles", value: next } }));
         }
         catch (err) {
             showToast(String(err), "error");

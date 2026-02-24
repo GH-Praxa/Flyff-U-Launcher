@@ -647,14 +647,11 @@ export async function renderLauncher(root: HTMLElement) {
     openProfilesListWrapper.append(openProfilesList);
     openProfilesBox.append(openProfilesHeader, openProfilesListWrapper);
 
-    let profilesCollapsible = true;
-
     if (localStorage.getItem(PROFILES_COLLAPSE_KEY) === "1") {
         openProfilesBox.classList.add("collapsed");
         openProfilesToggle.textContent = "▸";
     }
     openProfilesHeader.addEventListener("click", () => {
-        if (!profilesCollapsible) return;
         const isCollapsed = openProfilesBox.classList.toggle("collapsed");
         openProfilesToggle.textContent = isCollapsed ? "▸" : "▾";
         localStorage.setItem(PROFILES_COLLAPSE_KEY, isCollapsed ? "1" : "0");
@@ -1034,15 +1031,24 @@ export async function renderLauncher(root: HTMLElement) {
     setInterval(refreshBadge, 5000);
     window.addEventListener("focus", refreshBadge);
     const settings = await window.api.clientSettingsGet().catch((): null => null) as { showAnnouncements?: boolean; collapsibleOpenProfiles?: boolean } | null;
-    if (settings?.showAnnouncements !== false) {
+    if (settings?.showAnnouncements === false) {
+        announcementsSection.style.display = "none";
+    } else {
         annUI.loadAnnouncements().catch(console.error);
     }
     if (settings?.collapsibleOpenProfiles === false) {
-        profilesCollapsible = false;
-        openProfilesBox.classList.remove("collapsed");
-        openProfilesToggle.style.display = "none";
-        openProfilesHeader.style.cursor = "default";
+        openProfilesBox.style.display = "none";
     }
+    window.addEventListener("launcherSettingChanged", (e: Event) => {
+        const { key, value } = (e as CustomEvent<{ key: string; value: boolean }>).detail;
+        if (key === "showAnnouncements") {
+            announcementsSection.style.display = value === false ? "none" : "";
+            if (value !== false) annUI.loadAnnouncements().catch(console.error);
+        }
+        if (key === "collapsibleOpenProfiles") {
+            openProfilesBox.style.display = value === false ? "none" : "";
+        }
+    });
     loadNews().catch(console.error);
     await reload();
 

@@ -103,6 +103,10 @@ export function registerLogsHandlers(
         });
 
         if (!response.ok) {
+            if (response.status === 404 || response.status === 401 || response.status === 403) {
+                // Webhook deleted, invalid, or unauthorized — treat as unconfigured
+                return { ok: true, data: { noWebhook: true } };
+            }
             const errText = await response.text().catch(() => "");
             throw new Error(`Discord webhook failed: ${response.status}${errText ? ` ${errText}` : ""}`);
         }

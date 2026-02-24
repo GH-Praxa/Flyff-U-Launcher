@@ -18,8 +18,8 @@ export const URLS = {
     GITHUB_REPO: "https://github.com/GH-Praxa/Flyff-U-Launcher/releases",
     /** Package.json for version check */
     GITHUB_PACKAGE: "https://raw.githubusercontent.com/Sparx94/Flyff-U-Launcher/1.0/app/package.json",
-    /** Live announcements JSON (edit on GitHub, no app update required) */
-    GITHUB_ANNOUNCEMENTS: "https://raw.githubusercontent.com/GH-Praxa/Flyff-U-Launcher/main/announcements.json",
+    /** Live announcements Markdown (edit on GitHub, no app update required) */
+    GITHUB_ANNOUNCEMENTS: "https://raw.githubusercontent.com/GH-Praxa/Flyff-U-Launcher/main/announcements.md",
 } as const;
 
 // ============================================================================
