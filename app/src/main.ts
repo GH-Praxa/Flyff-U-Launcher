@@ -314,7 +314,10 @@ app.whenReady().then(async () => {
     // =========================================================================
     // Logs IPC
     // =========================================================================
-    registerLogsHandlers(safeHandle, services.clientSettings);
+    registerLogsHandlers(safeHandle, services.clientSettings, {
+        preloadPath,
+        getLocale: () => clientLocale,
+    });
 
     // =========================================================================
     // Client Settings Change Handler

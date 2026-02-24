@@ -357,6 +357,21 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       0 0 0 1px rgba(var(--tab-active-rgb,46,204,113),0.25),
       0 8px 18px rgba(0,0,0,0.35);
   }
+  .tab.plugin-tab{
+    border-color: rgba(160,120,255,0.35);
+    color: rgba(200,170,255,0.85);
+  }
+  .tab.plugin-tab:hover{
+    border-color: rgba(160,120,255,0.70);
+  }
+  .tab.plugin-tab.active{
+    border-color: rgba(160,120,255,0.90);
+    background: linear-gradient(180deg, rgba(160,120,255,0.26), rgba(0,0,0,0.25));
+    color: rgba(220,200,255,1);
+    box-shadow:
+      0 0 0 1px rgba(160,120,255,0.25),
+      0 8px 18px rgba(0,0,0,0.35);
+  }
 
   #content{
     padding: 10px;
@@ -637,8 +652,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
       <div id="panel">
       <div id="tabs">
-        <button class="tab active" data-tab="ocr">OCR / ROI</button>
-        <button class="tab" data-tab="logs">Logs</button>
+        <button class="tab active" data-tab="ocr">Scans</button>
       </div>
       <div id="content"></div>
     </div>
@@ -833,8 +847,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
   if (resizeGripEl) resizeGripEl.title = STR.resizeTitle;
   const defaultTabBtn = document.querySelector(".tab[data-tab='ocr']");
   if (defaultTabBtn) defaultTabBtn.textContent = STR.tabOcr;
-  const logsTabBtn = document.querySelector(".tab[data-tab='logs']");
-  if (logsTabBtn) logsTabBtn.textContent = STR.tabLogs;
 
   const DEFAULT_THEME_COLORS = {
     bg: "#0b1220",
@@ -1394,11 +1406,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
   function renderCoreTab(name) {
     content.innerHTML = "";
-
-    if (name === "logs") {
-      renderLogsTab();
-      return;
-    }
 
     if (name !== "ocr") {
       return;
@@ -2002,7 +2009,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
 
       for (const tab of tabsData) {
         const btn = document.createElement("button");
-        btn.className = "tab";
+        btn.className = "tab plugin-tab";
         btn.dataset.tab = "plugin:" + tab.pluginId;
         btn.textContent = tab.label;
         btn.onclick = () => setTab("plugin:" + tab.pluginId);

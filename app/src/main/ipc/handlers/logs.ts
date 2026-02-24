@@ -4,11 +4,17 @@ import fsp from "fs/promises";
 import { getLogEntries, clearLogEntries } from "../../../shared/logger";
 import type { SafeHandle } from "../common";
 import type { ClientSettingsStore } from "../../clientSettings/store";
+import { openLogsWindow } from "../../windows/logsWindow";
+import type { Locale } from "../../../shared/schemas";
 
 const SEND_COOLDOWN_MS = 60_000;
 let lastSendTs: number | null = null;
 
-export function registerLogsHandlers(safeHandle: SafeHandle, clientSettings: ClientSettingsStore): void {
+export function registerLogsHandlers(
+    safeHandle: SafeHandle,
+    clientSettings: ClientSettingsStore,
+    windowOpts?: { preloadPath: string; getLocale: () => Locale },
+): void {
     safeHandle("logs:get", async () => {
         return { ok: true, data: getLogEntries() };
     });
@@ -103,5 +109,11 @@ export function registerLogsHandlers(safeHandle: SafeHandle, clientSettings: Cli
 
         lastSendTs = Date.now();
         return { ok: true, data: { sent: true } };
+    });
+
+    safeHandle("logs:openWindow", async () => {
+        if (!windowOpts) return { ok: true, data: false };
+        openLogsWindow({ preloadPath: windowOpts.preloadPath, locale: windowOpts.getLocale() });
+        return { ok: true, data: true };
     });
 }

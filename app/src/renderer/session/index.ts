@@ -1123,7 +1123,20 @@ export async function renderSession(root: HTMLElement) {
             toolsList.append(item);
         }
     }
-    tabsBar.append(tabsSpacer, tabsProgress, splitControls, btnTabHeight, btnHotkeys, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
+    const btnLogs = el("button", "tabBtn iconBtn") as HTMLButtonElement;
+    btnLogs.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="4.5" y1="5.5" x2="11.5" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="8" x2="11.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="10.5" x2="8.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+    btnLogs.title = "Logs";
+    btnLogs.draggable = false;
+    btnLogs.setAttribute("aria-label", "Logs");
+    btnLogs.onclick = async () => {
+        try {
+            await window.ipc.invoke("logs:openWindow");
+        } catch (err) {
+            console.error("[Session] Failed to open logs window", err);
+        }
+    };
+
+    tabsBar.append(tabsSpacer, tabsProgress, splitControls, btnTabHeight, btnLogs, btnHotkeys, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
     document.body.append(toolsMenu, hotkeysMenu);
 
     function isOpen(profileId: string) {

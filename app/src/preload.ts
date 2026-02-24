@@ -223,6 +223,8 @@ shoppingListSavePrice: (itemId: number | string, price: number) => unwrapIpc(ipc
     logsGet: () => unwrapIpc<Array<{ ts: number; level: string; module: string; message: string }>>(ipcRenderer.invoke("logs:get")),
     logsClear: () => unwrapIpc<boolean>(ipcRenderer.invoke("logs:clear")),
     logsSave: () => unwrapIpc<string>(ipcRenderer.invoke("logs:save")),
+    logsSendToDiscord: (userNote: string | null, userName: string | null) => unwrapIpc<{ sent?: boolean; cooldownMs?: number; noWebhook?: boolean; noLogs?: boolean }>(ipcRenderer.invoke("logs:sendToDiscord", userNote, userName)),
+    logsOpenWindow: () => unwrapIpc<boolean>(ipcRenderer.invoke("logs:openWindow")),
     onLogsNew: (cb: (entry: { ts: number; level: string; module: string; message: string }) => void) => {
         const wrapped = (_e: IpcRendererEvent, entry: { ts: number; level: string; module: string; message: string }) => cb(entry);
         ipcRenderer.on("logs:new", wrapped);
@@ -295,6 +297,7 @@ const allowedInvoke = new Set<string>([
     "logs:clear",
     "logs:save",
     "logs:sendToDiscord",
+    "logs:openWindow",
     "clientSettings:get",
 ]);
 const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new"]);
