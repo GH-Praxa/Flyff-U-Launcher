@@ -1,4 +1,12 @@
 {
   "version": 1,
-  "items": []
+  "items": [
+    {
+      "id": "test-1",
+      "type": "info",
+      "title": "Test",
+      "body": "test",
+      "date": "2026-02-24"
+    }
+  ]
 }
