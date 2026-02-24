@@ -681,7 +681,6 @@ html, body {
             }
         }
 
-        console.log("[Plugins] getOverlayViews count", overlays.length, "ids", overlays.map((o) => o.pluginId));
         return overlays;
     });
 }

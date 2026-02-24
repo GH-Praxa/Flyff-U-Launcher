@@ -112,7 +112,6 @@ export const DEFAULT_HOTKEYS: Hotkeys = {
 };
 
 export function normalizeHotkeySettings(raw: unknown, fallback?: Hotkeys): Hotkeys {
-    console.log("[DEBUG normalizeHotkeySettings] raw:", JSON.stringify(raw), "fallback:", JSON.stringify(fallback));
     const baseToggle = fallback?.toggleOverlays ?? null;
     const baseSidePanelToggle = fallback?.sidePanelToggle ?? null;
     const baseTabBarToggle = fallback?.tabBarToggle ?? null;
@@ -130,7 +129,6 @@ export function normalizeHotkeySettings(raw: unknown, fallback?: Hotkeys): Hotke
             return null;
         if (rawVal !== undefined) {
             const sanitized = sanitizeHotkeyChord(rawVal);
-            console.log(`[DEBUG pick] key=${key}, rawVal=${JSON.stringify(rawVal)}, sanitized=${JSON.stringify(sanitized)}, base=${JSON.stringify(base)}`);
             return sanitized ?? base;
         }
         for (const legacyKey of legacyKeys) {
@@ -139,7 +137,6 @@ export function normalizeHotkeySettings(raw: unknown, fallback?: Hotkeys): Hotke
                 continue;
             if (legacyVal !== undefined) {
                 const sanitized = sanitizeHotkeyChord(legacyVal);
-                console.log(`[DEBUG legacy] key=${key}, legacyKey=${legacyKey}, rawVal=${JSON.stringify(legacyVal)}, sanitized=${JSON.stringify(sanitized)}`);
                 if (sanitized)
                     return sanitized;
             }
@@ -161,20 +158,17 @@ export function normalizeHotkeySettings(raw: unknown, fallback?: Hotkeys): Hotke
 }
 
 export function mergeHotkeySettings(current: Hotkeys | undefined | null, patch: Hotkeys | null | undefined, fallback?: Hotkeys): Hotkeys {
-    console.log("[DEBUG mergeHotkeySettings] current:", JSON.stringify(current), "patch:", JSON.stringify(patch));
     const next = normalizeHotkeySettings(current ?? null, fallback);
     if (!patch || typeof patch !== "object")
         return next;
     const apply = (key: keyof Hotkeys) => {
         if (key in patch) {
             const value = (patch as Record<string, unknown>)[key];
-            console.log(`[DEBUG mergeHotkeySettings apply] key=${key}, value=${JSON.stringify(value)}`);
             if (value === null) {
                 next[key] = null;
             }
             else if (value !== undefined) {
                 const normalized = sanitizeHotkeyChord(value);
-                console.log(`[DEBUG mergeHotkeySettings apply] normalized=${JSON.stringify(normalized)}`);
                 if (normalized) {
                     next[key] = normalized;
                 }

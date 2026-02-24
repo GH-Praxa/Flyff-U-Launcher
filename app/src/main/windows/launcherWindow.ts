@@ -45,9 +45,9 @@ export function createLauncherWindow(opts: {
         child.setMenuBarVisibility(false);
     });
     hardenWebviews(win);
-    // if (!app.isPackaged) {
-    //     win.webContents.openDevTools({ mode: "detach" });
-    // }
+    if (!app.isPackaged) {
+        win.webContents.openDevTools({ mode: "detach" });
+    }
 
     // Fix Windows DWM flicker/ghost window during move/resize
     if (process.platform === "win32") {

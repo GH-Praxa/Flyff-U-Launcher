@@ -563,7 +563,7 @@ export function registerSessionHandlers(
                     click: () => finish("dissolve"),
                 },
                 { type: "separator" },
-                { label: labelCancel, role: "cancel" },
+                { label: labelCancel },
             ]);
             menu.popup({
                 window: win,

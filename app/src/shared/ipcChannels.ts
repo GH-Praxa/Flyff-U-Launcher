@@ -63,6 +63,7 @@ export const IPC_CHANNELS = {
     // News
     NEWS_FETCH: "news:fetch",
     NEWS_FETCH_ARTICLE: "news:fetchArticle",
+    ANNOUNCEMENTS_FETCH: "announcements:fetch",
 
     // ROI
     ROI_OPEN: "roi:open",

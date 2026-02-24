@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 3.1.0
+
+### ✨ Yeni Özellikler
+
+**Launcher Duyuruları**
+- Sağ paneldeki yeni bölüm, uygulama güncellemesi gerektirmeden geliştirici mesajlarını gösterir
+- Türler: 🐛 Hata, ℹ Bilgi, ✨ Özellik, ⚠ Uyarı — her biri farklı renkle
+- Tam lokalizasyon: mesajlar desteklenen 8 dile çevrilebilir
+- Ayarlar → İstemci Ayarları → „Launcher duyurularını göster" altında devre dışı bırakılabilir
+- Sağ paneldeki açık profiller artık daraltılabilir
+
+---
+
 ## 🐛 Version 3.0.5
 
 ### 🐛 Hata Düzeltmeleri

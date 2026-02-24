@@ -11,5 +11,9 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "src/themes/index.ts",
+    "src/ui/ProfileList.tsx"
+  ]
 }

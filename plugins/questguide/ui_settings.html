@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Guide Settings</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13px;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            width: 300px;
+            min-height: 160px;
+        }
+        h3 {
+            font-size: 15px;
+            color: #e94560;
+            margin-bottom: 16px;
+        }
+        .setting-group {
+            margin-bottom: 16px;
+        }
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #888;
+            font-size: 12px;
+        }
+        .setting-group select {
+            width: 100%;
+            padding: 8px 10px;
+            background: #0f0f23;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .setting-group select:focus {
+            border-color: #e94560;
+        }
+        .actions {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        button {
+            padding: 8px 18px;
+            background: #e94560;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.85; }
+        .status {
+            font-size: 12px;
+            color: #4ade80;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h3>Quest Guide Settings</h3>
+
+    <div class="setting-group">
+        <label>Language</label>
+        <select id="language">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="pl">Polski</option>
+            <option value="ru">Русский</option>
+            <option value="tr">Türkçe</option>
+            <option value="cn">中文</option>
+            <option value="jp">日本語</option>
+        </select>
+    </div>
+
+    <div class="actions">
+        <button id="saveBtn">Save</button>
+        <span class="status" id="status"></span>
+    </div>
+
+    <script>
+        async function invoke(channel, ...args) {
+            if (window.api && window.api.pluginsInvokeChannel) {
+                return await window.api.pluginsInvokeChannel('questguide', channel, ...args);
+            }
+            if (window.plugin && window.plugin.ipc && window.plugin.ipc.invoke) {
+                return await window.plugin.ipc.invoke(channel, ...args);
+            }
+            throw new Error('IPC unavailable');
+        }
+
+        async function loadSettings() {
+            try {
+                var result = await invoke('quest:settings:get');
+                if (result && result.settings) {
+                    document.getElementById('language').value = result.settings.language || 'en';
+                }
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+            }
+        }
+
+        async function saveSettings() {
+            var settings = {
+                language: document.getElementById('language').value
+            };
+
+            try {
+                await invoke('quest:settings:set', settings);
+                var status = document.getElementById('status');
+                status.textContent = 'Saved!';
+                status.style.color = '#4ade80';
+                setTimeout(function() { status.textContent = ''; }, 2000);
+            } catch (err) {
+                console.error('Failed to save settings:', err);
+                var status = document.getElementById('status');
+                status.textContent = 'Error!';
+                status.style.color = '#e94560';
+            }
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', saveSettings);
+        loadSettings();
+    </script>
+</body>
+</html>

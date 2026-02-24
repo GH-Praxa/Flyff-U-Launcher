@@ -74,7 +74,7 @@ describe('Hotkey Utilities', () => {
         it('should merge new hotkey into existing settings', () => {
             const current = {
                 ...DEFAULT_HOTKEYS,
-                tabBarToggle: null,
+                tabBarToggle: null as (string[] | null),
             };
             const patch = { tabBarToggle: ['Ctrl', 'T'] };
             const result = mergeHotkeySettings(current, patch, DEFAULT_HOTKEYS);
@@ -97,7 +97,7 @@ describe('Hotkey Utilities', () => {
                 ...DEFAULT_HOTKEYS,
                 tabBarToggle: ['Ctrl', 'T'] as string[],
             };
-            const patch = { tabBarToggle: null };
+            const patch = { tabBarToggle: null as (string[] | null) };
             const result = mergeHotkeySettings(current, patch as any, DEFAULT_HOTKEYS);
             expect(result.tabBarToggle).toBeNull();
         });

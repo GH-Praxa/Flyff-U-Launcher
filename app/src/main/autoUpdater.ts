@@ -28,7 +28,8 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
     if (process.env.GH_TOKEN) {
         feedConfig.token = process.env.GH_TOKEN;
     }
-    autoUpdater.setFeedURL(feedConfig);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    autoUpdater.setFeedURL(feedConfig as any);
 
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;

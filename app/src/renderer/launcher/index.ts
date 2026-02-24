@@ -28,6 +28,7 @@ import {
 import { type Profile, el, clear, createJobIcon, createJobBadge, decorateJobSelect, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
 import { openConfigModal as _openConfigModal } from "./config-modal";
 import { createNewsUI } from "./news";
+import { createAnnouncementsUI } from "./announcements";
 import { showWindowSelectorForProfile } from "./profile-selectors";
 
 export let langMenuCloser: ((e: MouseEvent) => void) | null = null;
@@ -249,7 +250,7 @@ export async function renderLauncher(root: HTMLElement) {
     btnConfig.append(configIcon);
     btnConfig.addEventListener("click", () => openConfigModal());
     header.append(btnGithub, btnConfig, updateNotice);
-    const runtimeVersion = await window.api.appGetVersion().catch(() => null);
+    const runtimeVersion = await window.api.appGetVersion().catch((): null => null);
     const launcherVersion = (typeof runtimeVersion === "string" && runtimeVersion.trim())
         ? runtimeVersion.trim()
         : pkg.version;
@@ -514,7 +515,8 @@ export async function renderLauncher(root: HTMLElement) {
                                 id: layout.id,
                                 name: nextName,
                                 tabs: layout.tabs,
-                                split: layout.split ?? null,
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                split: (layout.split ?? null) as any,
                                 activeId: layout.activeId ?? null,
                                 loggedOutChars: layout.loggedOutChars,
                             });
@@ -620,21 +622,53 @@ export async function renderLauncher(root: HTMLElement) {
     createActions.append(btnAdd, btnCancel);
     createPanel.append(createGrid, createActions);
     left.append(createPanel, list, tipsBanner);
+    // --- Announcements section (hidden until items are loaded) ---
+    const announcementsSection = el("div", "announcementsSection");
+    announcementsSection.style.display = "none";
+    const announcementsSectionTitle = el("div", "announcementsSectionTitle", "Launcher-News");
+    const announcementsList = el("div", "announcementsList");
+    announcementsSection.append(announcementsSectionTitle, announcementsList);
+
     const newsHeader = el("div", "newsHeader");
     const newsTitle = el("div", "panelTitle", t("news.title"));
     newsHeader.append(newsTitle);
     const newsState = el("div", "newsState muted", t("news.loading"));
     const newsList = el("div", "newsList");
-    const openProfilesTitle = el("div", "openProfilesTitle", t("news.openProfiles"));
-    const openProfilesList = el("div", "openProfilesList");
+
+    // --- Open profiles (collapsible) ---
+    const PROFILES_COLLAPSE_KEY = "launcher:openProfiles:collapsed";
     const openProfilesBox = el("div", "openProfiles");
-    openProfilesBox.append(openProfilesTitle, openProfilesList);
-    right.append(newsHeader, newsState, newsList, openProfilesBox);
+    const openProfilesHeader = el("div", "openProfilesHeader");
+    const openProfilesTitle = el("div", "openProfilesTitle", t("news.openProfiles"));
+    const openProfilesToggle = el("span", "openProfilesToggle", "▾");
+    openProfilesHeader.append(openProfilesTitle, openProfilesToggle);
+    const openProfilesListWrapper = el("div", "openProfilesListWrapper");
+    const openProfilesList = el("div", "openProfilesList");
+    openProfilesListWrapper.append(openProfilesList);
+    openProfilesBox.append(openProfilesHeader, openProfilesListWrapper);
+
+    let profilesCollapsible = true;
+
+    if (localStorage.getItem(PROFILES_COLLAPSE_KEY) === "1") {
+        openProfilesBox.classList.add("collapsed");
+        openProfilesToggle.textContent = "▸";
+    }
+    openProfilesHeader.addEventListener("click", () => {
+        if (!profilesCollapsible) return;
+        const isCollapsed = openProfilesBox.classList.toggle("collapsed");
+        openProfilesToggle.textContent = isCollapsed ? "▸" : "▾";
+        localStorage.setItem(PROFILES_COLLAPSE_KEY, isCollapsed ? "1" : "0");
+    });
+
+    right.append(announcementsSection, newsHeader, newsState, newsList, openProfilesBox);
     root.append(header, filterBar, body);
     body.append(left, right);
     // --- News (delegated to module) ---
     const newsUI = createNewsUI({ newsState, newsList });
     const loadNews = newsUI.loadNews;
+
+    // --- Announcements (delegated to module) ---
+    const annUI = createAnnouncementsUI({ announcementsSection, announcementsList });
 
     async function refreshOpenProfilesBadge() {
 
@@ -999,6 +1033,16 @@ export async function renderLauncher(root: HTMLElement) {
     refreshBadge();
     setInterval(refreshBadge, 5000);
     window.addEventListener("focus", refreshBadge);
+    const settings = await window.api.clientSettingsGet().catch((): null => null) as { showAnnouncements?: boolean; collapsibleOpenProfiles?: boolean } | null;
+    if (settings?.showAnnouncements !== false) {
+        annUI.loadAnnouncements().catch(console.error);
+    }
+    if (settings?.collapsibleOpenProfiles === false) {
+        profilesCollapsible = false;
+        openProfilesBox.classList.remove("collapsed");
+        openProfilesToggle.style.display = "none";
+        openProfilesHeader.style.cursor = "default";
+    }
     loadNews().catch(console.error);
     await reload();
 

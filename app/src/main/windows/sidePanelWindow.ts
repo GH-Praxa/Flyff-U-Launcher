@@ -94,6 +94,14 @@ function buildSidePanelStrings(locale: Locale) {
         logsClear: t("sidePanel.logs.clear"),
         logsSave: t("sidePanel.logs.save"),
         logsEmpty: t("sidePanel.logs.empty"),
+        logsSendDiscord: t("sidePanel.logs.sendDiscord"),
+        logsSendDiscordCooldown: t("sidePanel.logs.sendDiscordCooldown"),
+        logsReportTitle: t("sidePanel.logs.reportTitle"),
+        logsReportWhen: t("sidePanel.logs.reportWhen"),
+        logsReportWhenHint: t("sidePanel.logs.reportWhenHint"),
+        logsReportName: t("sidePanel.logs.reportName"),
+        logsReportSend: t("sidePanel.logs.reportSend"),
+        logsReportCancel: t("sidePanel.logs.reportCancel"),
     };
 }
 
@@ -507,17 +515,55 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     color: var(--danger);
   }
 
-  .ocrList{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-  .ocrRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--stroke); background: rgba(255,255,255,0.04); }
-  .ocrLabel{ font-size:13px; color: var(--muted); font-weight:500; min-width:80px; }
-  .ocrValue{ font-size:15px; color: var(--text); font-weight:600; font-family: "Consolas", "Monaco", monospace; }
-  .ocrRowExpanded{ flex-wrap:wrap; gap:12px; }
-  .ocrLabelWrap{ display:flex; flex:0 0 auto; align-items:center; gap:6px; }
-  .ocrTimerWrap{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
-  .ocrTimerLabel{ font-size:11px; color: var(--muted); text-transform:uppercase; letter-spacing:0.03em; }
-  .ocrTimerInput{ width:90px; border-radius:10px; border:1px solid var(--stroke); background: rgba(255,255,255,0.05); color: var(--text); padding:6px 10px; font-size:13px; }
-  .ocrTimerInput:focus{ outline:none; border-color: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.9); box-shadow: 0 0 0 2px rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.22); }
-  .ocrTimerUnit{ font-size:11px; color: var(--muted); }
+  .collapsible{ border:1px solid var(--stroke); border-radius:12px; background:rgba(255,255,255,0.02); overflow:hidden; margin-top:8px; }
+  .collapsibleHeader{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; cursor:pointer; background:rgba(255,255,255,0.03); transition:background 120ms ease; user-select:none; }
+  .collapsibleHeader:hover{ background:rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.10); }
+  .collapsibleHeaderTitle{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .collapsibleArrow{ font-size:10px; color:var(--muted); transition:transform 200ms ease; }
+  .collapsible.open .collapsibleArrow{ transform:rotate(90deg); }
+  .collapsibleContent{ display:none; padding:10px 12px; border-top:1px solid var(--stroke); }
+  .collapsible.open .collapsibleContent{ display:block; }
+
+  .ocrPrimary{ display:flex; flex-direction:column; gap:6px; }
+  .ocrCompactRow{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.04); gap:8px; }
+  .ocrCompactLabel{ font-size:12px; color:var(--muted); min-width:50px; }
+  .ocrCompactValue{ font-size:14px; color:var(--text); font-weight:600; font-family:"Consolas","Monaco",monospace; flex:1; }
+  .ocrCompactValue.stale{ opacity:0.5; }
+  .ocrStatusDot{ width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+  .ocrStatusDot.active{ background:rgba(var(--accent-rgb,var(--tab-active-rgb,46,204,113)),0.9); box-shadow:0 0 6px rgba(var(--accent-rgb,var(--tab-active-rgb,46,204,113)),0.5); }
+  .ocrStatusDot.inactive{ background:var(--muted); }
+  .ocrSettingsBtn{ width:24px; height:24px; border-radius:6px; border:1px solid var(--stroke); background:transparent; color:var(--muted); cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; transition:all 120ms ease; flex-shrink:0; }
+  .ocrSettingsBtn:hover{ background:rgba(var(--accent-rgb),0.15); color:var(--text); border-color:rgba(var(--accent-rgb),0.5); }
+  .ocrSettingsBtn:disabled{ opacity:0.3; cursor:not-allowed; }
+  .ocrFooter{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0 0 0; margin-top:8px; border-top:1px solid var(--stroke); }
+  .ocrFooterText{ font-size:11px; color:var(--muted); }
+  .ocrFooterStatus{ display:flex; align-items:center; gap:6px; font-size:11px; }
+  .ocrFooterStatus.ok{ color:rgba(var(--green-rgb),0.9); }
+  .ocrFooterStatus.warn{ color:rgba(255,170,80,0.9); }
+  .ocrFooterStatus.error{ color:rgba(var(--danger-rgb),0.9); }
+
+  .settingsOverlay{ position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .settingsOverlay.open{ display:flex; }
+  .settingsModal{ background:var(--panel); border:1px solid var(--stroke); border-radius:14px; width:90%; max-width:320px; max-height:85%; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  .settingsModalHeader{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--stroke); background:linear-gradient(180deg, rgba(var(--accent-rgb),0.12), transparent); }
+  .settingsModalTitle{ font-size:13px; font-weight:600; color:var(--text); }
+  .settingsModalClose{ width:26px; height:26px; border-radius:8px; border:1px solid var(--stroke); background:transparent; color:var(--muted); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .settingsModalClose:hover{ background:rgba(var(--danger-rgb),0.2); color:var(--text); border-color:rgba(var(--danger-rgb),0.5); }
+  .settingsModalBody{ padding:12px 14px; display:flex; flex-direction:column; gap:14px; }
+  .settingsSection{ display:flex; flex-direction:column; gap:8px; }
+  .settingsSectionTitle{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .settingsRow{ display:flex; align-items:center; gap:8px; }
+  .settingsRow label{ font-size:11px; color:var(--text); display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .settingsRow input[type="number"]{ width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--stroke); background:rgba(255,255,255,0.05); color:var(--text); font-size:12px; }
+  .settingsRow input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--accent); }
+  .settingsRow .btn{ padding:6px 10px; font-size:11px; }
+  .settingsSliderGroup{ display:flex; flex-direction:column; gap:6px; }
+  .settingsSliderRow{ display:flex; align-items:center; gap:8px; }
+  .settingsSliderRow span:first-child{ width:20px; font-size:10px; color:var(--muted); }
+  .settingsSliderRow input[type="range"]{ flex:1; height:4px; accent-color:var(--accent); }
+  .settingsSliderRow span:last-child{ width:40px; font-size:10px; text-align:right; font-family:monospace; color:var(--text); }
+  .settingsHint{ font-size:10px; color:var(--muted); margin-top:4px; }
+  .settingsError{ font-size:10px; color:var(--danger); }
 
   .switch{
     position:relative;
@@ -1149,8 +1195,26 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     saveBtn.onmouseenter = () => { saveBtn.style.borderColor = "rgba(var(--accent-rgb),0.7)"; };
     saveBtn.onmouseleave = () => { saveBtn.style.borderColor = "var(--stroke)"; };
 
+    const discordBtn = document.createElement("button");
+    discordBtn.textContent = STR.logsSendDiscord;
+    discordBtn.disabled = true;
+    discordBtn.style.cssText = "border:1px solid var(--stroke);background:rgba(88,101,242,0.15);color:var(--text);border-radius:8px;padding:4px 10px;cursor:not-allowed;font-size:11px;opacity:0.45;";
+    discordBtn.onmouseenter = () => { if (!discordBtn.disabled) discordBtn.style.borderColor = "rgba(88,101,242,0.7)"; };
+    discordBtn.onmouseleave = () => { discordBtn.style.borderColor = "var(--stroke)"; };
+    let discordCooldownTimer = null;
+
+    // Enable Discord button only when telemetry (Discord communication) is permitted
+    invokeMain("clientSettings:get").then((s) => {
+      if (s?.sendTelemetry) {
+        discordBtn.disabled = false;
+        discordBtn.style.opacity = "";
+        discordBtn.style.cursor = "pointer";
+      }
+    }).catch(() => { /* ignore */ });
+
     btnGroup.appendChild(clearBtn);
     btnGroup.appendChild(saveBtn);
+    btnGroup.appendChild(discordBtn);
     header.appendChild(btnGroup);
     sec.appendChild(header);
 
@@ -1217,6 +1281,102 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       }
     };
 
+    // Discord button
+    function startDiscordCooldown(remainingMs) {
+      discordBtn.disabled = true;
+      discordBtn.style.opacity = "0.55";
+      discordBtn.style.cursor = "not-allowed";
+      const endTs = Date.now() + remainingMs;
+      function tick() {
+        const left = Math.ceil((endTs - Date.now()) / 1000);
+        if (left <= 0) {
+          discordBtn.textContent = STR.logsSendDiscord;
+          discordBtn.disabled = false;
+          discordBtn.style.opacity = "";
+          discordBtn.style.cursor = "pointer";
+          if (discordCooldownTimer !== null) { clearInterval(discordCooldownTimer); discordCooldownTimer = null; }
+          return;
+        }
+        discordBtn.textContent = STR.logsSendDiscordCooldown.replace("{s}", String(left));
+      }
+      tick();
+      discordCooldownTimer = setInterval(tick, 500);
+    }
+    discordBtn.onclick = () => {
+      if (discordBtn.disabled) return;
+
+      // Build report dialog overlay
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;";
+
+      const dialog = document.createElement("div");
+      dialog.style.cssText = "background:var(--panel,#0d1926);border:1px solid var(--stroke,rgba(255,255,255,0.12));border-radius:14px;padding:20px;width:320px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);";
+
+      const titleEl = document.createElement("div");
+      titleEl.textContent = STR.logsReportTitle;
+      titleEl.style.cssText = "font-size:14px;font-weight:600;color:var(--text,#e0e8f0);";
+
+      const whenLabel = document.createElement("label");
+      whenLabel.style.cssText = "display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-muted,rgba(224,232,240,0.6));";
+      whenLabel.textContent = STR.logsReportWhen;
+      const whenArea = document.createElement("textarea");
+      whenArea.placeholder = STR.logsReportWhenHint;
+      whenArea.rows = 3;
+      whenArea.style.cssText = "resize:vertical;background:rgba(0,0,0,0.25);border:1px solid var(--stroke,rgba(255,255,255,0.12));border-radius:8px;color:var(--text,#e0e8f0);font-size:12px;padding:6px 8px;font-family:inherit;min-height:60px;";
+      whenLabel.appendChild(whenArea);
+
+      const nameLabel = document.createElement("label");
+      nameLabel.style.cssText = "display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-muted,rgba(224,232,240,0.6));";
+      nameLabel.textContent = STR.logsReportName;
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.style.cssText = "background:rgba(0,0,0,0.25);border:1px solid var(--stroke,rgba(255,255,255,0.12));border-radius:8px;color:var(--text,#e0e8f0);font-size:12px;padding:6px 8px;font-family:inherit;";
+      nameLabel.appendChild(nameInput);
+
+      const btnRow = document.createElement("div");
+      btnRow.style.cssText = "display:flex;gap:8px;justify-content:flex-end;margin-top:4px;";
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = STR.logsReportCancel;
+      cancelBtn.style.cssText = "border:1px solid var(--stroke,rgba(255,255,255,0.12));background:transparent;color:var(--text,#e0e8f0);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:12px;";
+
+      const sendBtn = document.createElement("button");
+      sendBtn.textContent = STR.logsReportSend;
+      sendBtn.style.cssText = "border:1px solid rgba(88,101,242,0.5);background:rgba(88,101,242,0.2);color:var(--text,#e0e8f0);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:12px;";
+
+      btnRow.appendChild(cancelBtn);
+      btnRow.appendChild(sendBtn);
+      dialog.appendChild(titleEl);
+      dialog.appendChild(whenLabel);
+      dialog.appendChild(nameLabel);
+      dialog.appendChild(btnRow);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+      whenArea.focus();
+
+      const close = () => overlay.remove();
+      cancelBtn.onclick = close;
+      overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+      sendBtn.onclick = async () => {
+        close();
+        try {
+          const userNote = whenArea.value.trim();
+          const userName = nameInput.value.trim();
+          const result = await invokeMain("logs:sendToDiscord", userNote || null, userName || null);
+          if (result.cooldownMs) {
+            startDiscordCooldown(result.cooldownMs);
+          } else if (result.sent) {
+            discordBtn.textContent = "OK";
+            startDiscordCooldown(60_000);
+          }
+          // noWebhook / noLogs: silently ignore
+        } catch (err) {
+          console.error("[LogsTab] sendToDiscord failed", err);
+        }
+      };
+    };
+
     sec.appendChild(logContainer);
     content.appendChild(sec);
 
@@ -1224,6 +1384,10 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     content._cleanup = () => {
       if (typeof removeStateListener === "function") {
         removeStateListener();
+      }
+      if (discordCooldownTimer !== null) {
+        clearInterval(discordCooldownTimer);
+        discordCooldownTimer = null;
       }
     };
   }
@@ -1250,440 +1414,529 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
       heading.className = "sectionTitle";
       heading.textContent = STR.ocrTitle;
 
-      const ocrItems = [
-        { key: "lvl", label: STR.ocrFields.lvl, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
-        { key: "exp", label: STR.ocrFields.exp, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
-        { key: "charname", label: STR.ocrFields.charname, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
-        { key: "lauftext", label: STR.ocrFields.lauftext, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
-        { key: "rmExp", label: STR.ocrFields.rmExp, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit, target: "support" },
-        { key: "enemyName", label: STR.ocrFields.enemyName, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
-        { key: "enemyHp", label: STR.ocrFields.enemyHp, format: v => (v === null || v === undefined || v === "" ? "-" : String(v)), unit: STR.timerUnit },
+      const formatVal = (v) => (v === null || v === undefined || v === "" ? "-" : String(v));
+
+      const primaryList = document.createElement("div");
+      primaryList.className = "ocrPrimary";
+
+      const allFields = [
+        { key: "lvl", label: STR.ocrFields.lvl, target: "fighter", isPrimary: true },
+        { key: "exp", label: STR.ocrFields.exp, target: "fighter", isPrimary: true },
+        { key: "charname", label: STR.ocrFields.charname, target: "fighter", isPrimary: false },
+        { key: "lauftext", label: STR.ocrFields.lauftext, target: "fighter", isPrimary: false },
+        { key: "rmExp", label: STR.ocrFields.rmExp, target: "support", isPrimary: false },
+        { key: "enemyName", label: STR.ocrFields.enemyName, target: "fighter", isPrimary: true },
+        { key: "enemyHp", label: STR.ocrFields.enemyHp, target: "fighter", isPrimary: true },
       ];
       const defaultTimers = { lvl: 200, exp: 200, charname: 300, lauftext: 400, rmExp: 200, enemyName: 300, enemyHp: 200 };
-      const ocrTargets = ocrItems.reduce((acc, item) => {
-        acc[item.key] = item.target === "support" ? "support" : "fighter";
+      const ocrTargets = allFields.reduce((acc, item) => {
+        acc[item.key] = item.target;
         return acc;
       }, {});
 
       const valueEls = {};
-      const timerInputs = {};
-      const enableChecks = {};
-      const list = document.createElement("div");
-      list.className = "ocrList";
+      const dots = {};
+      const settingsBtns = {};
 
-      let manualLevelInput = null;
-      let manualLevelToggle = null;
-      let manualLevelProfileId = null;
-      let manualExpInput = null;
-      let manualExpButton = null;
-      let manualExpProfileId = null;
-      const clampManualLevelValue = (val) => {
-        const n = Number(val);
-        if (!Number.isFinite(n)) return 1;
-        return Math.min(300, Math.max(1, Math.round(n)));
+      const createRow = (field) => {
+        const row = document.createElement("div");
+        row.className = "ocrCompactRow";
+
+        const label = document.createElement("div");
+        label.className = "ocrCompactLabel";
+        label.textContent = field.label;
+
+        const value = document.createElement("div");
+        value.className = "ocrCompactValue";
+        value.textContent = "-";
+        valueEls[field.key] = value;
+
+        const dot = document.createElement("div");
+        dot.className = "ocrStatusDot";
+        dots[field.key] = dot;
+
+        const btn = document.createElement("button");
+        btn.className = "ocrSettingsBtn";
+        btn.innerHTML = "\u2699";
+        btn.title = STR.timerLabel.replace(":", "") + " / ROI";
+        btn.disabled = true;
+        settingsBtns[field.key] = btn;
+
+        row.append(label, value, dot, btn);
+        return row;
       };
-      const disableManualLevelControls = () => {
-        manualLevelProfileId = null;
-        if (manualLevelInput) {
-          manualLevelInput.value = "";
-          manualLevelInput.disabled = true;
-        }
-        if (manualLevelToggle) {
-          manualLevelToggle.checked = false;
-          manualLevelToggle.disabled = true;
-        }
-      };
-      const disableManualExpControls = () => {
-        manualExpProfileId = null;
-        if (manualExpInput) {
-          manualExpInput.value = "";
-          manualExpInput.disabled = true;
-        }
-        if (manualExpButton) {
-          manualExpButton.disabled = true;
-        }
-      };
-      const updateManualLevelDisplay = (val) => {
-        if (!manualLevelInput) return;
-        if (document.activeElement === manualLevelInput) return;
-        if (val === null || val === undefined || val === "") return;
-        const next = clampManualLevelValue(val);
-        const nextStr = String(next);
-        if (manualLevelInput.value !== nextStr) {
-          manualLevelInput.value = nextStr;
-        }
-      };
-      const setManualExpProfile = (profileId) => {
-        manualExpProfileId = profileId;
-        if (manualExpInput) {
-          manualExpInput.value = "";
-          manualExpInput.disabled = !profileId;
-        }
-        if (manualExpButton) {
-          manualExpButton.disabled = !profileId;
-        }
-      };
-      const syncManualLevelState = async (profileId, fallbackValue) => {
-        manualLevelProfileId = profileId;
-        if (!manualLevelInput || !manualLevelToggle) return;
-        if (!profileId) {
-          disableManualLevelControls();
-          return;
-        }
-        try{
-          const state = await invokeMain("ocr:manualLevel:get", profileId);
-          const value = (state && typeof state.value === "number") ? state.value : fallbackValue;
-          if (value !== undefined && value !== null) {
-            updateManualLevelDisplay(value);
-          }
-          manualLevelToggle.checked = !!(state && state.enabled);
-          manualLevelToggle.disabled = false;
-          manualLevelInput.disabled = !manualLevelToggle.checked;
-        }catch(err){
-          console.error("ocr:manualLevel:get failed", err);
-          disableManualLevelControls();
-        }
-      };
+
+      const lvlRow = createRow(allFields.find(f => f.key === "lvl"));
+      const expRow = createRow(allFields.find(f => f.key === "exp"));
+      const enemyRow = createRow(allFields.find(f => f.key === "enemyName"));
+      const enemyHpRow = createRow(allFields.find(f => f.key === "enemyHp"));
+
+      primaryList.append(lvlRow, expRow, enemyRow, enemyHpRow);
+
+      const footer = document.createElement("div");
+      footer.className = "ocrFooter";
+      const footerText = document.createElement("div");
+      footerText.className = "ocrFooterText";
+      footerText.textContent = "-";
+      const footerStatus = document.createElement("div");
+      footerStatus.className = "ocrFooterStatus";
+      const statusIcon = document.createElement("span");
+      statusIcon.textContent = "\u2713";
+      const statusText = document.createElement("span");
+      statusText.textContent = "OK";
+      footerStatus.append(statusIcon, statusText);
+      footer.append(footerText, footerStatus);
+      primaryList.append(footer);
+
+      const settingsOverlay = document.createElement("div");
+      settingsOverlay.className = "settingsOverlay";
+
+      const settingsModal = document.createElement("div");
+      settingsModal.className = "settingsModal";
+
+      const modalHeader = document.createElement("div");
+      modalHeader.className = "settingsModalHeader";
+      const modalTitle = document.createElement("div");
+      modalTitle.className = "settingsModalTitle";
+      modalTitle.textContent = "";
+      const modalClose = document.createElement("button");
+      modalClose.className = "settingsModalClose";
+      modalClose.textContent = "\u00D7";
+      modalHeader.append(modalTitle, modalClose);
+      settingsModal.append(modalHeader);
+
+      const modalBody = document.createElement("div");
+      modalBody.className = "settingsModalBody";
+
+      const timerSection = document.createElement("div");
+      timerSection.className = "settingsSection";
+      const timerSectionTitle = document.createElement("div");
+      timerSectionTitle.className = "settingsSectionTitle";
+      timerSectionTitle.textContent = STR.timerLabel.replace(":", "");
+      const timerRow = document.createElement("div");
+      timerRow.className = "settingsRow";
+      const timerInput = document.createElement("input");
+      timerInput.type = "number";
+      timerInput.min = "0";
+      timerInput.max = "60000";
+      timerInput.step = "100";
+      timerInput.value = "0";
+      const timerUnit = document.createElement("span");
+      timerUnit.style.fontSize = "11px";
+      timerUnit.style.color = "var(--muted)";
+      timerUnit.textContent = STR.timerUnit;
+      const timerActiveLabel = document.createElement("label");
+      const timerActiveCheck = document.createElement("input");
+      timerActiveCheck.type = "checkbox";
+      timerActiveLabel.append(timerActiveCheck, document.createTextNode(" " + STR.active));
+      timerRow.append(timerInput, timerUnit, timerActiveLabel);
+      timerSection.append(timerSectionTitle, timerRow);
+
+      const roiSection = document.createElement("div");
+      roiSection.className = "settingsSection";
+      const roiSectionTitle = document.createElement("div");
+      roiSectionTitle.className = "settingsSectionTitle";
+      roiSectionTitle.textContent = "ROI";
+      const roiRow = document.createElement("div");
+      roiRow.className = "settingsRow";
+      const roiSetBtn = document.createElement("button");
+      roiSetBtn.className = "btn";
+      roiSetBtn.textContent = STR.roi.set;
+      const roiShowLabel = document.createElement("label");
+      const roiShowCheck = document.createElement("input");
+      roiShowCheck.type = "checkbox";
+      roiShowLabel.append(roiShowCheck, document.createTextNode(" " + STR.roi.show));
+      roiRow.append(roiSetBtn, roiShowLabel);
+      roiSection.append(roiSectionTitle, roiRow);
+
+      const roiManualSection = document.createElement("div");
+      roiManualSection.className = "settingsSection";
+      const roiManualTitle = document.createElement("div");
+      roiManualTitle.className = "settingsSectionTitle";
+      roiManualTitle.textContent = STR.roi.manualTitle;
+      const sliderGroup = document.createElement("div");
+      sliderGroup.className = "settingsSliderGroup";
+      const sliders = {};
+      ["x", "y", "w", "h"].forEach(axis => {
+        const row = document.createElement("div");
+        row.className = "settingsSliderRow";
+        const label = document.createElement("span");
+        label.textContent = axis.toUpperCase();
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = "0";
+        slider.max = "1";
+        slider.step = "0.001";
+        slider.value = "0";
+        const display = document.createElement("span");
+        display.textContent = "0.000";
+        row.append(label, slider, display);
+        sliderGroup.append(row);
+        sliders[axis] = { slider, display };
+        slider.addEventListener("input", () => {
+          display.textContent = slider.valueAsNumber.toFixed(3);
+        });
+      });
+      roiManualSection.append(roiManualTitle, sliderGroup);
+
+      const hintDiv = document.createElement("div");
+      hintDiv.className = "settingsHint";
+      hintDiv.textContent = STR.timerHint;
+
+      const manualSection = document.createElement("div");
+      manualSection.className = "settingsSection";
+      const manualSectionTitle = document.createElement("div");
+      manualSectionTitle.className = "settingsSectionTitle";
+      manualSectionTitle.textContent = STR.manual;
+      const manualRow = document.createElement("div");
+      manualRow.className = "settingsRow";
+      const manualInput = document.createElement("input");
+      manualInput.type = "number";
+      manualInput.min = "0";
+      manualInput.max = "999999";
+      manualInput.step = "1";
+      manualInput.placeholder = "";
+      manualInput.style.width = "90px";
+      const manualActiveLabel = document.createElement("label");
+      const manualActiveCheck = document.createElement("input");
+      manualActiveCheck.type = "checkbox";
+      manualActiveLabel.append(manualActiveCheck, document.createTextNode(" " + STR.active));
+      const manualSetBtn = document.createElement("button");
+      manualSetBtn.className = "btn";
+      manualSetBtn.textContent = STR.manualSet;
+      manualRow.append(manualInput, manualActiveLabel, manualSetBtn);
+      manualSection.append(manualSectionTitle, manualRow);
+
+      modalBody.append(manualSection, timerSection, roiSection, roiManualSection, hintDiv);
+      settingsModal.append(modalBody);
+      settingsOverlay.append(settingsModal);
+
+      sec.append(heading, primaryList, settingsOverlay);
 
       let currentProfileId = null;
       let currentSupportProfileId = null;
+      let currentFieldKey = null;
+      let currentTimers = {};
+      let currentRoiData = { fighter: {}, support: {} };
+      let currentVis = { fighter: {}, support: {} };
+
       const getProfileIdForKey = (key) => (ocrTargets[key] === "support" ? currentSupportProfileId : currentProfileId);
+      const roisForKey = (key) => key === "rmExp" ? currentRoiData.support : currentRoiData.fighter;
+      const visForKey = (key) => key === "rmExp" ? currentVis.support : currentVis.fighter;
 
-      ocrItems.forEach(item => {
-        const row = document.createElement("div");
-        row.className = "ocrRow ocrRowExpanded";
-        const manualWraps = [];
+      const openSettings = async (key) => {
+        const field = allFields.find(f => f.key === key);
+        if (!field) return;
+        currentFieldKey = key;
+        const profileId = getProfileIdForKey(key);
+        if (!profileId) return;
 
-        const labelWrap = document.createElement("div");
-        labelWrap.className = "ocrLabelWrap";
-        const labelEl = document.createElement("div");
-        labelEl.className = "ocrLabel";
-        labelEl.textContent = item.label;
-        labelWrap.append(labelEl);
+        modalTitle.textContent = field.label + " " + STR.timerLabel.replace(":", "").toLowerCase();
 
-        const value = document.createElement("div");
-        value.className = "ocrValue";
-        value.textContent = "-";
-        valueEls[item.key] = { el: value, format: item.format };
+        const timerVal = currentTimers[key] ?? defaultTimers[key] ?? 0;
+        timerInput.value = String(timerVal);
+        timerActiveCheck.checked = timerVal > 0;
+        timerInput.disabled = timerVal === 0;
 
-        const timerWrap = document.createElement("div");
-        timerWrap.className = "ocrTimerWrap";
-        const timerLabel = document.createElement("span");
-        timerLabel.className = "ocrTimerLabel";
-        timerLabel.textContent = STR.timerLabel;
-        const timerInput = document.createElement("input");
-        timerInput.type = "number";
-        timerInput.className = "ocrTimerInput";
-        timerInput.min = "0";
-        timerInput.max = "60000";
-        timerInput.step = "100";
-        timerInput.value = "0";
-        timerInput.placeholder = "0";
-        const timerUnit = document.createElement("span");
-        timerUnit.className = "ocrTimerUnit";
-        timerUnit.textContent = STR.timerUnit;
+        const rois = roisForKey(key);
+        const roi = rois?.[key];
+        const hasRoi = !!roi;
 
-        const enableWrap = document.createElement("label");
-        enableWrap.className = "ocrTimerLabel";
-        enableWrap.style.display = "flex";
-        enableWrap.style.alignItems = "center";
-        enableWrap.style.gap = "4px";
-        enableWrap.textContent = "";
-        const enableCheck = document.createElement("input");
-        enableCheck.type = "checkbox";
-        enableCheck.checked = true;
-        const enableText = document.createElement("span");
-        enableText.textContent = STR.active;
-        enableWrap.append(enableCheck, enableText);
-
-        enableChecks[item.key] = enableCheck;
-
-        timerInput.addEventListener("change", async () => {
-          const profileId = getProfileIdForKey(item.key);
-          if (!profileId) return;
-          const ms = parseInt(timerInput.value, 10) || 0;
-          enableCheck.checked = ms > 0;
-          timerInput.disabled = !enableCheck.checked;
-          await invokeMain("ocr:setTimer", { profileId, key: item.key, ms });
+        if (hasRoi) {
+          sliders.x.slider.value = String(roi.x ?? 0.05);
+          sliders.y.slider.value = String(roi.y ?? 0.05);
+          sliders.w.slider.value = String(roi.width ?? roi.w ?? 0.25);
+          sliders.h.slider.value = String(roi.height ?? roi.h ?? 0.08);
+        } else {
+          sliders.x.slider.value = "0.05";
+          sliders.y.slider.value = "0.05";
+          sliders.w.slider.value = "0.25";
+          sliders.h.slider.value = "0.08";
+        }
+        Object.values(sliders).forEach(({ slider, display }) => {
+          display.textContent = slider.valueAsNumber.toFixed(3);
         });
 
-        enableCheck.addEventListener("change", async () => {
-          const profileId = getProfileIdForKey(item.key);
-          if (!profileId) return;
-          if (!enableCheck.checked) {
+        const vis = visForKey(key);
+        roiShowCheck.checked = !!(vis && vis[key]);
+        roiShowCheck.disabled = !hasRoi;
+
+        if (key === "lvl") {
+          manualSection.style.display = "";
+          manualActiveLabel.style.display = "";
+          manualInput.placeholder = STR.manualLevelPlaceholder;
+          manualInput.max = "200";
+          const manualEntry = await invokeMain("ocr:manualLevel:get", profileId).catch(() => null);
+          manualInput.value = manualEntry?.value != null ? String(manualEntry.value) : "";
+          manualActiveCheck.checked = !!manualEntry?.enabled;
+          if (manualEntry?.enabled) {
+            timerActiveCheck.checked = false;
             timerInput.disabled = true;
-            timerInput.value = "0";
-            await invokeMain("ocr:setTimer", { profileId, key: item.key, ms: 0 });
-          } else {
-            timerInput.disabled = false;
-            const fallback = defaultTimers[item.key] ?? 0;
-            const ms = parseInt(timerInput.value, 10) || fallback;
-            timerInput.value = String(ms);
-            await invokeMain("ocr:setTimer", { profileId, key: item.key, ms });
           }
-        });
-
-        if (item.key === "lvl") {
-          const manualWrap = document.createElement("div");
-          manualWrap.style.display = "flex";
-          manualWrap.style.alignItems = "center";
-          manualWrap.style.gap = "8px";
-          manualWrap.style.flexBasis = "100%";
-          manualWrap.style.marginTop = "6px";
-
-          const manualLabel = document.createElement("span");
-          manualLabel.className = "ocrTimerLabel";
-          manualLabel.textContent = STR.manualLevel;
-
-          manualLevelInput = document.createElement("input");
-          manualLevelInput.type = "number";
-          manualLevelInput.className = "ocrTimerInput";
-          manualLevelInput.min = "1";
-          manualLevelInput.max = "300";
-          manualLevelInput.step = "1";
-          manualLevelInput.placeholder = STR.manualLevelPlaceholder;
-          manualLevelInput.value = "";
-          manualLevelInput.disabled = true;
-
-          const pushManualUpdate = async (enabledOverride) => {
-            if (!manualLevelProfileId) return;
-            const enabled = typeof enabledOverride === "boolean" ? enabledOverride : (manualLevelToggle?.checked ?? false);
-            const fallbackVal = value.textContent && value.textContent.trim() ? value.textContent : "1";
-            const nextVal = clampManualLevelValue(manualLevelInput.value || fallbackVal);
-            manualLevelInput.value = String(nextVal);
-            try{
-              await invokeMain("ocr:manualLevel:set", {
-                profileId: manualLevelProfileId,
-                value: nextVal,
-                enabled,
-              });
-            }catch(err){
-              console.error("ocr:manualLevel:set failed", err);
-            }
-          };
-
-          manualLevelInput.addEventListener("change", () => {
-            void pushManualUpdate();
-          });
-
-          const manualToggleWrap = document.createElement("label");
-          manualToggleWrap.className = "ocrTimerLabel";
-          manualToggleWrap.style.display = "flex";
-          manualToggleWrap.style.alignItems = "center";
-          manualToggleWrap.style.gap = "4px";
-          manualToggleWrap.textContent = "";
-          manualLevelToggle = document.createElement("input");
-          manualLevelToggle.type = "checkbox";
-          manualLevelToggle.checked = false;
-          manualLevelToggle.disabled = true;
-          const manualToggleText = document.createElement("span");
-          manualToggleText.textContent = STR.manual;
-          manualToggleWrap.append(manualLevelToggle, manualToggleText);
-
-          manualLevelToggle.addEventListener("change", () => {
-            if (manualLevelInput) manualLevelInput.disabled = !manualLevelToggle.checked;
-            void pushManualUpdate(manualLevelToggle.checked);
-          });
-
-          manualWrap.append(manualLabel, manualLevelInput, manualToggleWrap);
-          manualWraps.push(manualWrap);
+        } else if (key === "exp") {
+          manualSection.style.display = "";
+          manualActiveLabel.style.display = "none";
+          manualInput.placeholder = STR.manualExpPlaceholder;
+          manualInput.max = "100";
+          manualInput.value = "";
+        } else {
+          manualSection.style.display = "none";
         }
 
-        if (item.key === "exp") {
-          const manualExpWrap = document.createElement("div");
-          manualExpWrap.style.display = "flex";
-          manualExpWrap.style.alignItems = "center";
-          manualExpWrap.style.gap = "8px";
-          manualExpWrap.style.flexBasis = "100%";
-          manualExpWrap.style.marginTop = "6px";
+        settingsOverlay.classList.add("open");
+      };
 
-          const manualExpLabel = document.createElement("span");
-          manualExpLabel.className = "ocrTimerLabel";
-          manualExpLabel.textContent = STR.manualExp;
+      const closeSettings = () => {
+        settingsOverlay.classList.remove("open");
+        currentFieldKey = null;
+      };
 
-          manualExpInput = document.createElement("input");
-          manualExpInput.type = "text";
-          manualExpInput.className = "ocrTimerInput";
-          manualExpInput.placeholder = STR.manualExpPlaceholder;
-          manualExpInput.value = "";
-          manualExpInput.disabled = true;
-          manualExpInput.inputMode = "decimal";
+      manualSection.style.display = "none";
 
-          manualExpButton = document.createElement("button");
-          manualExpButton.className = "btn";
-          manualExpButton.textContent = STR.manualSet;
-          manualExpButton.disabled = true;
-
-          const pushManualExp = async () => {
-            if (!manualExpProfileId) return;
-            const rawVal = manualExpInput?.value ?? "";
-            const trimmed = rawVal.trim();
-            if (!trimmed) {
-              manualExpInput.value = "";
-              return;
-            }
-            manualExpButton.disabled = true;
-            try{
-              await invokeMain("ocr:manualExp:set", {
-                profileId: manualExpProfileId,
-                value: trimmed,
-              });
-            }catch(err){
-              console.error("ocr:manualExp:set failed", err);
-            }finally{
-              manualExpInput.value = "";
-              manualExpButton.disabled = !manualExpProfileId;
-            }
-          };
-
-          manualExpInput.addEventListener("keydown", (ev) => {
-            if (ev.key === "Enter") {
-              ev.preventDefault();
-              void pushManualExp();
-            }
-          });
-          manualExpButton.addEventListener("click", () => {
-            void pushManualExp();
-          });
-
-          manualExpWrap.append(manualExpLabel, manualExpInput, manualExpButton);
-          manualWraps.push(manualExpWrap);
+      manualSetBtn.addEventListener("click", async () => {
+        if (!currentFieldKey) return;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return;
+        const val = parseFloat(manualInput.value);
+        if (Number.isNaN(val)) return;
+        if (currentFieldKey === "lvl") {
+          await invokeMain("ocr:manualLevel:set", { profileId, value: Math.round(val), enabled: manualActiveCheck.checked }).catch(() => {});
+        } else if (currentFieldKey === "exp") {
+          await invokeMain("ocr:manualExp:set", { profileId, value: val }).catch(() => {});
         }
-
-        timerInputs[item.key] = timerInput;
-        timerWrap.append(timerLabel, timerInput, timerUnit, enableWrap);
-
-        row.append(labelWrap, value, timerWrap);
-        if (manualWraps.length) {
-          manualWraps.forEach((wrap) => row.append(wrap));
-        }
-        list.append(row);
       });
 
-      const note = document.createElement("div");
-      note.className = "hint";
-      note.textContent = STR.timerHint;
+      manualActiveCheck.addEventListener("change", async () => {
+        if (currentFieldKey !== "lvl") return;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return;
+        await invokeMain("ocr:manualLevel:set", { profileId, enabled: manualActiveCheck.checked }).catch(() => {});
+        if (manualActiveCheck.checked) {
+          timerActiveCheck.checked = false;
+          timerInput.disabled = true;
+          timerInput.value = "0";
+          currentTimers[currentFieldKey] = 0;
+          await invokeMain("ocr:setTimer", { profileId, key: currentFieldKey, ms: 0 }).catch(() => {});
+        }
+      });
 
-      let ocrInterval = null;
+      modalClose.addEventListener("click", closeSettings);
+      settingsOverlay.addEventListener("click", (e) => {
+        if (e.target === settingsOverlay) closeSettings();
+      });
+
+      Object.entries(settingsBtns).forEach(([key, btn]) => {
+        btn.addEventListener("click", () => openSettings(key));
+      });
+
+      timerInput.addEventListener("change", async () => {
+        if (!currentFieldKey) return;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return;
+        const ms = parseInt(timerInput.value, 10) || 0;
+        timerActiveCheck.checked = ms > 0;
+        timerInput.disabled = ms === 0;
+        currentTimers[currentFieldKey] = ms;
+        await invokeMain("ocr:setTimer", { profileId, key: currentFieldKey, ms });
+      });
+
+      timerActiveCheck.addEventListener("change", async () => {
+        if (!currentFieldKey) return;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return;
+        if (!timerActiveCheck.checked) {
+          timerInput.disabled = true;
+          timerInput.value = "0";
+          currentTimers[currentFieldKey] = 0;
+          await invokeMain("ocr:setTimer", { profileId, key: currentFieldKey, ms: 0 });
+        } else {
+          timerInput.disabled = false;
+          const fallback = defaultTimers[currentFieldKey] ?? 200;
+          timerInput.value = String(fallback);
+          currentTimers[currentFieldKey] = fallback;
+          await invokeMain("ocr:setTimer", { profileId, key: currentFieldKey, ms: fallback });
+          if (currentFieldKey === "lvl" && manualActiveCheck.checked) {
+            manualActiveCheck.checked = false;
+            await invokeMain("ocr:manualLevel:set", { profileId, enabled: false }).catch(() => {});
+          }
+        }
+      });
+
+      roiSetBtn.addEventListener("click", async () => {
+        if (!currentFieldKey) return;
+        const key = currentFieldKey;
+        closeSettings();
+        await openRoiCalibratorFor(key);
+      });
+
+      roiShowCheck.addEventListener("change", async () => {
+        if (!currentFieldKey) return;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return;
+        const vis = visForKey(currentFieldKey);
+        vis[currentFieldKey] = roiShowCheck.checked;
+        await setRoiVisibility(profileId, currentFieldKey, roiShowCheck.checked);
+      });
+
+      const applyRoiFromSliders = async () => {
+        if (!currentFieldKey) return false;
+        const profileId = getProfileIdForKey(currentFieldKey);
+        if (!profileId) return false;
+
+        const payload = {
+          x: Math.max(0, Math.min(1, sliders.x.slider.valueAsNumber)),
+          y: Math.max(0, Math.min(1, sliders.y.slider.valueAsNumber)),
+          width: Math.max(0.001, Math.min(1, sliders.w.slider.valueAsNumber)),
+          height: Math.max(0.001, Math.min(1, sliders.h.slider.valueAsNumber)),
+        };
+
+        const rois = roisForKey(currentFieldKey) || {};
+        const updated = { ...rois, [currentFieldKey]: payload };
+
+        try {
+          await invokeMain("roi:save", { profileId, rois: updated });
+          if (currentFieldKey === "rmExp") {
+            currentRoiData.support = updated;
+          } else {
+            currentRoiData.fighter = updated;
+          }
+          roiShowCheck.disabled = false;
+          return true;
+        } catch (err) {
+          console.error("[ROI] save failed", err);
+          return false;
+        }
+      };
+
+      Object.values(sliders).forEach(({ slider }) => {
+        slider.addEventListener("change", () => {
+          void applyRoiFromSliders();
+        });
+      });
+
 
       const loadTimers = async (profileId, target) => {
         if (!profileId) return;
         try {
           const timers = await invokeMain("ocr:getTimers", profileId);
-          for (const key of Object.keys(timerInputs)) {
-            if (ocrTargets[key] !== target) continue;
-            const val = timers && typeof timers[key] === "number" ? timers[key] : 0;
-            timerInputs[key].value = String(val);
-            const enabled = val > 0;
-            timerInputs[key].disabled = !enabled;
-            if (enableChecks[key]) {
-              enableChecks[key].checked = enabled;
-              enableChecks[key].disabled = false;
-            }
-          }
+          allFields.forEach(field => {
+            if (ocrTargets[field.key] !== target) return;
+            currentTimers[field.key] = timers && typeof timers[field.key] === "number" ? timers[field.key] : 0;
+          });
         } catch (err) {
           console.error("Failed to load OCR timers", err);
         }
       };
 
-      const applyTimerAvailability = () => {
-        ocrItems.forEach((item) => {
-          const timer = timerInputs[item.key];
-          const check = enableChecks[item.key];
-          const hasProfile = !!getProfileIdForKey(item.key);
-          if (check) {
-            if (!hasProfile) {
-              check.checked = false;
-            }
-            check.disabled = !hasProfile;
+      const loadRoiData = async () => {
+        try {
+          const fighterId = currentProfileId;
+          const supportId = currentSupportProfileId;
+
+          if (fighterId) {
+            const [rois, vis] = await Promise.all([
+              invokeMain("roi:load", fighterId),
+              invokeMain("roi:visibility:get", fighterId),
+            ]);
+            currentRoiData.fighter = rois || {};
+            currentVis.fighter = vis || {};
+          } else {
+            currentRoiData.fighter = {};
+            currentVis.fighter = {};
           }
-          if (timer) {
-            const enabled = (check ? check.checked : true) && hasProfile;
-            timer.disabled = !enabled;
+
+          if (supportId) {
+            const [rois, vis] = await Promise.all([
+              invokeMain("roi:load", supportId),
+              invokeMain("roi:visibility:get", supportId),
+            ]);
+            currentRoiData.support = rois || {};
+            currentVis.support = vis || {};
+          } else {
+            currentRoiData.support = {};
+            currentVis.support = {};
           }
-        });
+        } catch (err) {
+          console.error("Failed to load ROI data", err);
+        }
       };
 
-      const STALE_THRESHOLD_MS = 1500; // 1.5 seconds
+      const STALE_THRESHOLD_MS = 1500;
+      let ocrInterval = null;
 
       const refreshOcr = async () => {
         try {
           const profileId = await getActiveOverlayProfileId();
           const supportProfileId = await getSupportOverlayProfileId();
-          if (!profileId && !supportProfileId) {
-            note.textContent = STR.noTarget;
-            ocrItems.forEach((item) => {
-              if (timerInputs[item.key]) {
-                timerInputs[item.key].disabled = true;
-              }
-              if (enableChecks[item.key]) {
-                enableChecks[item.key].disabled = true;
-                enableChecks[item.key].checked = false;
-              }
-            });
-            Object.keys(valueEls).forEach((k) => {
-              valueEls[k].el.textContent = valueEls[k].format(null);
-              valueEls[k].el.style.opacity = "1";
-            });
-            currentProfileId = null;
-            currentSupportProfileId = null;
-            disableManualLevelControls();
-            disableManualExpControls();
-            return;
-          }
 
           const fighterChanged = profileId !== currentProfileId;
           const supportChanged = supportProfileId !== currentSupportProfileId;
           currentProfileId = profileId;
           currentSupportProfileId = supportProfileId;
-          if (fighterChanged) {
-            setManualExpProfile(profileId);
-          }
-          if (fighterChanged && profileId) {
-            await loadTimers(profileId, "fighter");
-          }
-          if (supportChanged && supportProfileId) {
-            await loadTimers(supportProfileId, "support");
+
+          if (!profileId && !supportProfileId) {
+            valueEls.lvl.textContent = "-";
+            valueEls.exp.textContent = "-";
+            valueEls.enemyName.textContent = "-";
+            valueEls.enemyHp.textContent = "-";
+            Object.values(dots).forEach(dot => dot.className = "ocrStatusDot inactive");
+            Object.values(settingsBtns).forEach(btn => btn.disabled = true);
+            footerText.textContent = STR.noTarget;
+            footerStatus.className = "ocrFooterStatus warn";
+            statusIcon.textContent = "\u26A0";
+            statusText.textContent = STR.noTarget.split(" ")[0];
+            return;
           }
 
-          applyTimerAvailability();
+          if (fighterChanged && profileId) await loadTimers(profileId, "fighter");
+          if (supportChanged && supportProfileId) await loadTimers(supportProfileId, "support");
+          if (fighterChanged || supportChanged) await loadRoiData();
 
           const dataFighter = profileId ? await invokeMain("ocr:getLatest", profileId) : null;
           const dataSupport = supportProfileId ? await invokeMain("ocr:getLatest", supportProfileId) : null;
-          if (profileId && manualLevelProfileId !== profileId) {
-            await syncManualLevelState(profileId, dataFighter?.lvl ?? null);
-          } else if (!profileId) {
-            disableManualLevelControls();
-          } else {
-            updateManualLevelDisplay(dataFighter?.lvl ?? null);
-          }
-          if (!profileId) {
-            disableManualExpControls();
-          }
+
           const now = Date.now();
           const updatedAtFighter = dataFighter?.updatedAt ?? 0;
           const updatedAtSupport = dataSupport?.updatedAt ?? 0;
           const isStaleFighter = updatedAtFighter > 0 && (now - updatedAtFighter) > STALE_THRESHOLD_MS;
           const isStaleSupport = updatedAtSupport > 0 && (now - updatedAtSupport) > STALE_THRESHOLD_MS;
 
-          ["lvl", "exp", "charname", "lauftext", "enemyName", "enemyHp"].forEach((k) => {
-            const v = dataFighter ? dataFighter[k] : null;
-            valueEls[k].el.textContent = valueEls[k].format(v);
-            valueEls[k].el.style.opacity = isStaleFighter ? "0.5" : "1";
-          });
-          const rmVal = dataSupport ? (dataSupport.rmExp ?? dataSupport.exp ?? null) : null;
-          if (valueEls.rmExp) {
-            valueEls.rmExp.el.textContent = valueEls.rmExp.format(rmVal);
-            valueEls.rmExp.el.style.opacity = isStaleSupport ? "0.5" : "1";
-          }
+          valueEls.lvl.textContent = formatVal(dataFighter?.lvl);
+          valueEls.exp.textContent = formatVal(dataFighter?.exp);
+          valueEls.enemyName.textContent = formatVal(dataFighter?.enemyName);
+          valueEls.enemyHp.textContent = formatVal(dataFighter?.enemyHp);
 
-          const noteParts = [
-            profileId ? STR.roi.overlayProfile + ": " + profileId + (isStaleFighter ? " " + STR.stale : "") : null,
-            supportProfileId ? STR.roi.supportProfile + ": " + supportProfileId + (isStaleSupport ? " " + STR.stale : "") : null,
-          ].filter(Boolean);
-          note.textContent = noteParts.join(" | ") || STR.noTarget;
+          const fOk = !isStaleFighter;
+          dots.lvl.className       = "ocrStatusDot " + (dataFighter?.lvl       && fOk ? "active" : "inactive");
+          dots.exp.className       = "ocrStatusDot " + (dataFighter?.exp       && fOk ? "active" : "inactive");
+          dots.enemyName.className = "ocrStatusDot " + (dataFighter?.enemyName && fOk ? "active" : "inactive");
+          dots.enemyHp.className   = "ocrStatusDot " + (dataFighter?.enemyHp   && fOk ? "active" : "inactive");
+
+          allFields.forEach(field => {
+            const btn = settingsBtns[field.key];
+            if (!btn) return;
+            btn.disabled = !getProfileIdForKey(field.key);
+          });
+
+          const noteParts = [];
+          if (profileId) noteParts.push(profileId + (isStaleFighter ? " " + STR.stale : ""));
+          if (supportProfileId) noteParts.push(STR.supportLabel + ": " + supportProfileId + (isStaleSupport ? " " + STR.stale : ""));
+          footerText.textContent = noteParts.join(" | ") || STR.noTarget;
+
+          if (isStaleFighter || isStaleSupport) {
+            footerStatus.className = "ocrFooterStatus warn";
+            statusIcon.textContent = "\u26A0";
+            statusText.textContent = STR.stale.replace(/[()]/g, "");
+          } else {
+            footerStatus.className = "ocrFooterStatus ok";
+            statusIcon.textContent = "\u2713";
+            statusText.textContent = "OK";
+          }
         } catch (err) {
-          note.textContent = STR.unavailable;
+          footerText.textContent = STR.unavailable;
+          footerStatus.className = "ocrFooterStatus error";
+          statusIcon.textContent = "\u2717";
+          statusText.textContent = "Error";
         }
       };
 
@@ -1694,497 +1947,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         if (ocrInterval) clearInterval(ocrInterval);
       };
 
-      sec.append(heading, list, note);
       return { section: sec, cleanup };
-    };
-
-    const buildRoiSection = () => {
-      const sec = document.createElement("div");
-      sec.className = "section";
-
-      const heading = document.createElement("div");
-      heading.className = "sectionTitle";
-      heading.textContent = STR.roi.title;
-
-      const list = document.createElement("div");
-      list.className = "roiList";
-
-      const allRow = document.createElement("div");
-      allRow.className = "roiRow accent";
-      const allLeft = document.createElement("div");
-      allLeft.className = "roiLeft";
-      const allLabel = document.createElement("div");
-      allLabel.className = "roiLabel";
-      allLabel.textContent = STR.roi.all;
-      allLeft.append(allLabel);
-      const allActions = document.createElement("div");
-      allActions.className = "roiActions";
-      const allToggle = document.createElement("div");
-      allToggle.className = "roiToggle";
-      const allCb = document.createElement("input");
-      allCb.type = "checkbox";
-      allCb.id = "roi-cb-all";
-      allCb.checked = false;
-      allCb.disabled = true;
-      const allToggleLabel = document.createElement("label");
-      allToggleLabel.htmlFor = "roi-cb-all";
-      allToggleLabel.textContent = STR.roi.showAll;
-      allToggleLabel.style.cursor = "pointer";
-      allToggle.append(allCb, allToggleLabel);
-      allActions.append(allToggle);
-      allRow.append(allLeft, allActions);
-      list.append(allRow);
-
-      const rows = ROI_ITEMS.map(item => {
-        const row = document.createElement("div");
-        row.className = "roiRow";
-        if (item.target === "support") {
-          row.classList.add("support");
-        }
-
-        const left = document.createElement("div");
-        left.className = "roiLeft";
-        const labelEl = document.createElement("div");
-        labelEl.className = "roiLabel";
-        labelEl.textContent = item.label;
-        left.append(labelEl);
-
-        const statusWrap = document.createElement("div");
-        statusWrap.className = "roiStatus";
-        const dot = document.createElement("div");
-        dot.className = "roiDot";
-        if (item.target === "support") {
-          dot.classList.add("support");
-        }
-        const text = document.createElement("div");
-        text.textContent = STR.roi.notSet;
-        statusWrap.append(dot, text);
-
-        const actions = document.createElement("div");
-        actions.className = "roiActions";
-
-        const btnSet = document.createElement("button");
-        btnSet.className = "btn btnBrown";
-        btnSet.textContent = STR.roi.set;
-        btnSet.onclick = () => openRoiCalibratorFor(item.key);
-
-        const btnDebug = document.createElement("button");
-        btnDebug.className = "btn";
-        btnDebug.textContent = STR.roi.debug;
-        btnDebug.onclick = async () => {
-          const pid = profileIdForKey(item.key);
-          if (!pid) {
-            alert(STR.roi.alertNoProfile);
-            return;
-          }
-          btnDebug.disabled = true;
-          btnDebug.textContent = STR.roi.debugSaving;
-          try{
-            const filePath = await invokeMain("roi:debug:save", { profileId: pid, key: item.key });
-            alert(fmt(STR.roi.debugSaved, { path: filePath || "" }));
-          }catch(err){
-            console.error("roi:debug:save failed", err);
-            alert(fmt(STR.roi.debugFailed, { error: err?.message || err }));
-          }finally{
-            btnDebug.disabled = false;
-            btnDebug.textContent = STR.roi.debug;
-          }
-        };
-
-        const toggle = document.createElement("div");
-        toggle.className = "roiToggle";
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.checked = false;
-        cb.id = "roi-cb-" + item.key;
-        if (item.target === "support") {
-          cb.style.accentColor = "rgb(255,170,80)";
-        }
-        cb.addEventListener("change", () => {
-          const pid = profileIdForKey(item.key);
-          if(DEBUG_SIDEPANEL) console.log("[ROI] checkbox change", item.key, cb.checked, "profileId:", pid);
-          if (!pid) {
-            if(DEBUG_SIDEPANEL) console.log("[ROI] no profileId, skipping save");
-            return;
-          }
-          setRoiVisibility(pid, item.key, cb.checked).then(() => {
-            updateAllCheckbox();
-            refresh();
-          });
-        });
-        const toggleLabel = document.createElement("label");
-        toggleLabel.htmlFor = "roi-cb-" + item.key;
-        toggleLabel.textContent = STR.roi.show;
-        toggleLabel.style.cursor = "pointer";
-        toggle.append(cb, toggleLabel);
-
-        actions.append(btnSet, btnDebug, toggle);
-
-        row.append(left, statusWrap, actions);
-        list.append(row);
-        return { key: item.key, dot, text, statusWrap, checkbox: cb, btnSet, btnDebug, target: item.target };
-      });
-      const manualWrapper = document.createElement("div");
-      manualWrapper.className = "roiManual";
-
-      const manualTitle = document.createElement("div");
-      manualTitle.className = "roiManualTitle";
-      manualTitle.textContent = STR.roi.manualTitle;
-      manualWrapper.append(manualTitle);
-
-      const manualSelectWrap = document.createElement("div");
-      manualSelectWrap.className = "roiManualField";
-      const manualSelectLabel = document.createElement("div");
-      manualSelectLabel.className = "roiManualLabel";
-      manualSelectLabel.textContent = STR.roi.field;
-      const manualSelect = document.createElement("select");
-      manualSelect.classList.add("roiManualControl", "roiManualSelect");
-      manualSelectWrap.append(manualSelectLabel, manualSelect);
-      manualWrapper.append(manualSelectWrap);
-
-      ROI_ITEMS.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.key;
-        option.textContent = item.label;
-        manualSelect.append(option);
-      });
-
-      const manualSliderGroup = document.createElement("div");
-      manualSliderGroup.className = "roiManualSliderGroup";
-      const manualSliders = {};
-      ([
-        { key: "x", label: STR.roi.axis.x },
-        { key: "y", label: STR.roi.axis.y },
-        { key: "w", label: STR.roi.axis.w },
-        { key: "h", label: STR.roi.axis.h },
-      ]).forEach(field => {
-        const fieldWrap = document.createElement("div");
-        fieldWrap.className = "roiManualField";
-        const fieldLabel = document.createElement("div");
-        fieldLabel.className = "roiManualLabel";
-        fieldLabel.textContent = field.label;
-        const sliderWrap = document.createElement("div");
-        sliderWrap.className = "roiManualSlider";
-        const slider = document.createElement("input");
-        slider.type = "range";
-        slider.classList.add("roiManualControl", "roiManualRange");
-        slider.min = "0";
-        slider.max = "1";
-        slider.step = "0.001";
-        slider.value = "0";
-        const valueDisplay = document.createElement("div");
-        valueDisplay.className = "roiManualValue";
-        valueDisplay.textContent = "0.000";
-        sliderWrap.append(slider, valueDisplay);
-        const stepBox = document.createElement("div");
-        stepBox.className = "roiManualStepper";
-        const minus = document.createElement("button");
-        minus.type = "button";
-        minus.className = "roiManualStepperBtn";
-        minus.textContent = "-";
-        const plus = document.createElement("button");
-        plus.type = "button";
-        plus.className = "roiManualStepperBtn";
-        plus.textContent = "+";
-        const adjust = (delta) => {
-          const next = Math.max(0, Math.min(1, slider.valueAsNumber + delta));
-          slider.value = String(next);
-          slider.dispatchEvent(new Event("input"));
-        };
-        minus.addEventListener("click", (e) => {
-          e.preventDefault();
-          adjust(-0.001);
-        });
-        plus.addEventListener("click", (e) => {
-          e.preventDefault();
-          adjust(0.001);
-        });
-        stepBox.append(minus, plus);
-        sliderWrap.append(stepBox);
-        fieldWrap.append(fieldLabel, sliderWrap);
-        manualSliderGroup.append(fieldWrap);
-        manualSliders[field.key] = { slider, display: valueDisplay };
-        slider.addEventListener("input", () => {
-          valueDisplay.textContent = slider.valueAsNumber.toFixed(3);
-          scheduleManualApply();
-        });
-      });
-      manualWrapper.append(manualSliderGroup);
-
-      const manualActions = document.createElement("div");
-      manualActions.className = "roiManualActions";
-      const manualDeleteBtn = document.createElement("button");
-      manualDeleteBtn.className = "btn";
-      manualDeleteBtn.textContent = STR.roi.remove;
-      manualActions.append(manualDeleteBtn);
-      manualWrapper.append(manualActions);
-
-      const manualFeedback = document.createElement("div");
-      manualFeedback.className = "hint roiManualFeedback";
-      manualFeedback.dataset.state = "info";
-      manualFeedback.textContent = STR.roi.manual.hint;
-      manualWrapper.append(manualFeedback);
-      let fighterProfileId = null;
-      let supportProfileId = null;
-      let currentRoiData = { fighter: {}, support: {} };
-      let currentVis = { fighter: {}, support: {} };
-      let manualActiveKey = manualSelect.value || ROI_ITEMS[0]?.key || "exp";
-      manualSelect.value = manualActiveKey;
-      let manualControlsEnabled = false;
-      let manualSuppressApply = false;
-      let lastApplied = null;
-      let lastAppliedKey = null;
-      const profileIdForKey = (key) => key === "rmExp" ? supportProfileId : fighterProfileId;
-      const roisForKey = (key) => key === "rmExp" ? currentRoiData.support : currentRoiData.fighter;
-      const visForKey = (key) => key === "rmExp" ? currentVis.support : currentVis.fighter;
-
-      const getManualLabel = () => ROI_ITEMS.find(item => item.key === manualActiveKey)?.label ?? manualActiveKey;
-
-      function scheduleManualApply() {
-        if (!manualControlsEnabled || manualSuppressApply) return;
-        applyManualValues({ silent: true });
-      }
-
-      async function applyManualValues({ silent = false } = {}) {
-        const pid = profileIdForKey(manualActiveKey);
-        if (!pid) {
-          if (!silent) notifyManual(STR.roi.manual.noProfile, "error");
-          return false;
-        }
-        const normalized = gatherManualValues();
-        if (!normalized) {
-          notifyManual(STR.roi.manual.invalid, "error");
-          return false;
-        }
-        const label = getManualLabel();
-        const payload = {
-          x: normalized.x,
-          y: normalized.y,
-          width: normalized.w,
-          height: normalized.h,
-        };
-        if (lastAppliedKey === manualActiveKey &&
-          lastApplied &&
-          lastApplied.x === payload.x &&
-          lastApplied.y === payload.y &&
-          lastApplied.width === payload.width &&
-          lastApplied.height === payload.height
-        ) {
-          return true;
-        }
-        lastApplied = { ...payload };
-        lastAppliedKey = manualActiveKey;
-        const base = roisForKey(manualActiveKey) || {};
-        const updated = { ...base, [manualActiveKey]: payload };
-        try {
-          await invokeMain("roi:save", { profileId: pid, rois: updated });
-          if (manualActiveKey === "rmExp") {
-            currentRoiData = { ...currentRoiData, support: updated };
-          } else {
-            currentRoiData = { ...currentRoiData, fighter: updated };
-          }
-          const message = silent ? STR.roi.manual.updated : fmt(STR.roi.manual.saved, { label });
-          notifyManual(message, silent ? "info" : "success");
-          return true;
-        } catch (err) {
-          console.error("[ROI] manual save failed", err);
-          const reason = err && typeof err === "object" && "message" in err ? err.message : String(err);
-          notifyManual(fmt(STR.roi.manual.saveError, { reason: reason || "" }), "error");
-          return false;
-        }
-      }
-
-      const clamp01 = (n) => Math.max(0, Math.min(1, n));
-      const formatDecimal = (value) => typeof value === "number" ? value.toFixed(3) : "";
-      function notifyManual(message, state = "info") {
-        manualFeedback.textContent = message;
-        manualFeedback.dataset.state = state;
-      }
-      function updateManualInputs() {
-        const region = roisForKey(manualActiveKey)?.[manualActiveKey];
-        const fallback = { x: 0.05, y: 0.05, w: 0.25, h: 0.08 };
-        const base = {
-          x: typeof region?.x === "number" ? region.x : fallback.x,
-          y: typeof region?.y === "number" ? region.y : fallback.y,
-          w: typeof region?.width === "number"
-            ? region.width
-            : typeof region?.w === "number"
-              ? region.w
-              : fallback.w,
-          h: typeof region?.height === "number"
-            ? region.height
-            : typeof region?.h === "number"
-              ? region.h
-              : fallback.h,
-        };
-        manualSuppressApply = true;
-        Object.entries(manualSliders).forEach(([axis, { slider, display }]) => {
-          const value = base[axis];
-          slider.value = String(value);
-          display.textContent = value.toFixed(3);
-          slider.dispatchEvent(new Event("input"));
-        });
-        manualSuppressApply = false;
-        manualDeleteBtn.disabled = !manualControlsEnabled || !roisForKey(manualActiveKey)?.[manualActiveKey];
-      }
-      function setManualControlsEnabled(enabled) {
-        manualControlsEnabled = enabled;
-        manualSelect.disabled = !enabled;
-        Object.values(manualSliders).forEach(({ slider }) => {
-          slider.disabled = !enabled;
-        });
-        const hasRoi = !!(roisForKey(manualActiveKey)?.[manualActiveKey]);
-        manualDeleteBtn.disabled = !enabled || !hasRoi;
-      }
-      function gatherManualValues() {
-        const result = {};
-        for (const key of ["x", "y", "w", "h"]) {
-          const slider = manualSliders[key]?.slider;
-          if (!slider) return null;
-          const parsed = slider.valueAsNumber;
-          if (Number.isNaN(parsed)) {
-            return null;
-          }
-          result[key] = clamp01(parsed);
-        }
-        result.w = Math.max(0.001, result.w);
-        result.h = Math.max(0.001, result.h);
-        return result;
-      }
-      manualSelect.addEventListener("change", () => {
-        manualActiveKey = manualSelect.value;
-        lastApplied = null;
-        lastAppliedKey = null;
-        setManualControlsEnabled(!!profileIdForKey(manualActiveKey));
-        updateManualInputs();
-        notifyManual(STR.roi.manual.valuesAdjusted, "info");
-      });
-      setManualControlsEnabled(false);
-      updateManualInputs();
-
-      manualDeleteBtn.addEventListener("click", async () => {
-        const pid = profileIdForKey(manualActiveKey);
-        if (!pid) {
-          notifyManual(STR.roi.manual.noProfile, "error");
-          return;
-        }
-        if (!roisForKey(manualActiveKey)?.[manualActiveKey]) {
-          notifyManual(STR.roi.manual.noneToRemove, "error");
-          return;
-        }
-        const label = ROI_ITEMS.find(item => item.key === manualActiveKey)?.label ?? manualActiveKey;
-        const current = { ...(roisForKey(manualActiveKey) || {}) };
-        delete current[manualActiveKey];
-        manualDeleteBtn.disabled = true;
-        try {
-          await invokeMain("roi:save", { profileId: pid, rois: current });
-          if (manualActiveKey === "rmExp") {
-            currentRoiData = { ...currentRoiData, support: current };
-          } else {
-            currentRoiData = { ...currentRoiData, fighter: current };
-          }
-          notifyManual(fmt(STR.roi.manual.removed, { label }), "success");
-        } catch (err) {
-          console.error("[ROI] manual delete failed", err);
-          notifyManual(STR.roi.manual.removeError, "error");
-        } finally {
-          manualDeleteBtn.disabled = false;
-          await refresh();
-        }
-      });
-
-      const updateAllCheckbox = () => {
-        const relevant = rows.filter(r => profileIdForKey(r.key));
-        const allChecked = relevant.length > 0 && relevant.every(r => r.checkbox?.checked);
-        allCb.checked = allChecked;
-        allCb.disabled = relevant.length === 0;
-      };
-
-      allCb.addEventListener("change", async () => {
-        if(DEBUG_SIDEPANEL) console.log("[ROI] ALL checkbox change", allCb.checked);
-        const checked = allCb.checked;
-        for (const r of rows) {
-          const pid = profileIdForKey(r.key);
-          if (r.checkbox && pid) {
-            r.checkbox.checked = checked;
-            await setRoiVisibility(pid, r.key, checked);
-          }
-        }
-        refresh();
-      });
-
-      const note = document.createElement("div");
-      note.className = "hint";
-      note.textContent = STR.roi.status.loading;
-
-      const applyStatus = (roisFighter, roisSupport, visFighter, visSupport, fighterId, supportId) => {
-        fighterProfileId = fighterId;
-        supportProfileId = supportId;
-        currentRoiData = { fighter: roisFighter || {}, support: roisSupport || {} };
-        currentVis = { fighter: visFighter || {}, support: visSupport || {} };
-        lastApplied = null;
-        lastAppliedKey = null;
-        rows.forEach(r => {
-          const pid = profileIdForKey(r.key);
-          const rois = r.target === "support" ? currentRoiData.support : currentRoiData.fighter;
-          const vis = r.target === "support" ? currentVis.support : currentVis.fighter;
-          const on = !!(rois && rois[r.key]);
-          r.dot.classList.toggle("on", on);
-          r.statusWrap.classList.toggle("on", on);
-          r.text.textContent = pid ? "" : STR.roi.noProfileLabel;
-          if (r.checkbox) {
-            const v = vis && typeof vis[r.key] === "boolean" ? vis[r.key] : false;
-            r.checkbox.checked = !!v;
-            r.checkbox.disabled = !pid;
-          }
-          if (r.btnSet) {
-            r.btnSet.disabled = !pid;
-          }
-          if (r.btnDebug) {
-            r.btnDebug.disabled = !pid;
-          }
-        });
-        updateAllCheckbox();
-        setManualControlsEnabled(!!profileIdForKey(manualActiveKey));
-        updateManualInputs();
-      };
-
-      applyStatus({}, {}, {}, {}, null, null);
-
-      async function refresh() {
-        try{
-          const [fighterId, supportId] = await Promise.all([
-            getActiveOverlayProfileId(),
-            getSupportOverlayProfileId(),
-          ]);
-          const [fighterRois, fighterVis] = fighterId ? await Promise.all([
-            loadRoiData(fighterId),
-            loadRoiVisibility(fighterId),
-          ]) : [null, null];
-          const [supportRois, supportVis] = supportId ? await Promise.all([
-            loadRoiData(supportId),
-            loadRoiVisibility(supportId),
-          ]) : [null, null];
-          if (!fighterId && !supportId) {
-            note.textContent = STR.noTarget;
-            applyStatus({}, {}, {}, {}, null, null);
-            return;
-          }
-          const noteText = [
-            fighterId ? STR.roi.overlayProfile + ": " + fighterId : null,
-            supportId ? STR.roi.supportProfile + ": " + supportId : null,
-          ].filter(Boolean).join(" | ");
-          note.textContent = noteText || STR.noTarget;
-          applyStatus(fighterRois || {}, supportRois || {}, fighterVis || {}, supportVis || {}, fighterId, supportId);
-        }catch(_err){
-          note.textContent = STR.roi.status.error;
-        }
-      }
-
-      refresh();
-
-      sec.append(heading, list, manualWrapper, note);
-      return { section: sec, cleanup: null };
     };
 
     const ocrSection = buildOcrSection();
@@ -2193,14 +1956,6 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     }
     if (ocrSection?.cleanup) {
       cleanups.push(ocrSection.cleanup);
-    }
-
-    const roiSection = buildRoiSection();
-    if (roiSection?.section) {
-      content.append(roiSection.section);
-    }
-    if (roiSection?.cleanup) {
-      cleanups.push(roiSection.cleanup);
     }
 
     content._cleanup = () => {
@@ -2214,7 +1969,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     };
   }
 
-  // Cleanup old tab before rendering new
+  // Cleanup old tab when rendering new
   function setTab(name) {
     if (content._cleanup) {
       content._cleanup();

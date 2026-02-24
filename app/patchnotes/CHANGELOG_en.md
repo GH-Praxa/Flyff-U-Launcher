@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.1.0
+
+### ✨ New Features
+
+**Launcher Announcements**
+- New section in the right panel shows live messages from the developer without requiring an app update
+- Types: 🐛 Bug, ℹ Info, ✨ Feature, ⚠ Warning — each with distinct color coding
+- Fully localized: messages can be translated into all 8 supported languages
+- Can be disabled under Settings → Client Settings → "Show launcher announcements"
+- Open profiles in the right panel are now collapsible
+
+---
 ## 🐛 Version 3.0.5
 
 ### 🐛 Bug Fixes

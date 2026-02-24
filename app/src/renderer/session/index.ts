@@ -27,7 +27,9 @@ import {
     setSequentialGridLoad,
 } from "../settings";
 import { type Profile, qs, el, clear, createJobIcon, showToast, withTimeout, fetchTabLayouts } from "../dom-utils";
-import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
+import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUnifiedUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
+import { setRootVar } from "../cssVarsManager";
+import { applyStoredTabActiveColor } from "../theme";
 
 export async function renderSession(root: HTMLElement) {
 
@@ -162,7 +164,7 @@ export async function renderSession(root: HTMLElement) {
     function enqueueLayoutApply(task: () => Promise<void>): Promise<void> {
 
         const run = layoutApplyChain.then(() => task());
-        layoutApplyChain = run.catch(() => undefined);
+        layoutApplyChain = run.catch((): void => undefined);
         return run;
     }
 
@@ -234,7 +236,7 @@ export async function renderSession(root: HTMLElement) {
     let activeTabId: string | null = null;     // Current active tab ID (single or layout)
     let activeProfileId: string | null = null; // Current active profile ID within a tab
     let layoutState: LayoutState | null = null; // Current visible layout (for rendering)
-    let currentSplitRatio = defaultSplitRatio;
+    let currentSplitRatio: number = defaultSplitRatio;
 
     const refreshLayoutDisplayMode = () => {
 
@@ -422,8 +424,8 @@ export async function renderSession(root: HTMLElement) {
             tab.tabBtn.classList.add("layoutMode-mini-grid");
             const config = GRID_CONFIGS[tab.layout.type] ?? { rows: 1, cols: 1 };
             const grid = el("div", "miniGrid");
-            (grid as HTMLElement).style.setProperty("--mg-rows", String(config.rows));
-            (grid as HTMLElement).style.setProperty("--mg-cols", String(config.cols));
+            (grid as HTMLElement).dataset.rows = String(config.rows);
+            (grid as HTMLElement).dataset.cols = String(config.cols);
             const sortedCells = [...tab.layout.cells].sort((a, b) => a.position - b.position);
             const cellEls: HTMLElement[] = [];
             for (const cell of sortedCells) {
@@ -743,7 +745,7 @@ export async function renderSession(root: HTMLElement) {
     function applyTabHeight(px: number) {
 
         const clamped = Math.max(28, Math.min(64, Math.round(px)));
-        document.documentElement.style.setProperty("--session-tab-height", `${clamped}px`);
+        setRootVar("--session-tab-height", `${clamped}px`);
         persistTabHeight(clamped);
         return clamped;
     }
@@ -1073,11 +1075,10 @@ export async function renderSession(root: HTMLElement) {
 
     const showUpgradeCalculator = () => {
         closeToolsMenu();
-        const theme = getThemeVars();
-        const win = window.open("", "upgradeCalculator", "width=900,height=700,menubar=no,toolbar=no,location=no,status=no,resizable=yes");
+        const win = window.open("", "upgradeCalculator", "width=980,height=760,menubar=no,toolbar=no,location=no,status=no,resizable=yes");
         if (!win) { alert(tr("popup.blocked" as TranslationKey)); return; }
         win.document.open();
-        win.document.write(buildUpgradeCalculatorHtml(currentLocale, theme));
+        win.document.write(buildUnifiedUpgradeCalculatorHtml(currentLocale, getThemeVars()));
         win.document.close();
     };
     type ToolSection = { header: string; entries: ToolEntry[] };
@@ -1087,7 +1088,12 @@ export async function renderSession(root: HTMLElement) {
             entries: [
                 { label: tr("tools.menu.fcoin" as TranslationKey), action: showFcoinConverter },
                 { label: t("config.client.hotkeys.showShoppingList" as TranslationKey), action: showShoppingList },
-                { label: t("tools.menu.upgrade" as TranslationKey), action: showUpgradeCalculator },
+            ],
+        },
+        {
+            header: "Upgrade-Rechner",
+            entries: [
+                { label: "🎲 " + t("tools.menu.upgrade" as TranslationKey), action: showUpgradeCalculator },
             ],
         },
         {
@@ -1414,8 +1420,6 @@ export async function renderSession(root: HTMLElement) {
     }
 
     function scheduleAutoSave() {
-
-        console.log("[autoSave] scheduleAutoSave called, currentLayoutId:", currentLayoutId, "isApplyingLayout:", isApplyingLayout, "autoSaveLayouts:", autoSaveLayouts);
         if (!autoSaveLayouts) {
             if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
             setAutoSaveTimeout(null);
@@ -1429,8 +1433,6 @@ export async function renderSession(root: HTMLElement) {
     }
 
     async function autoSaveLayout() {
-
-        console.log("[autoSave] autoSaveLayout called");
         if (!autoSaveLayouts) return;
         if (!currentLayoutId || tabs.length === 0) return;
         if (!window.api.tabLayoutsSave) return;
@@ -1453,7 +1455,6 @@ export async function renderSession(root: HTMLElement) {
             }
         }
         const loggedOutChars = Array.from(loggedOutSet);
-        console.log("[autoSave] loggedOutChars:", loggedOutChars);
         const firstLayout = layoutsForSave[0]?.layout ?? null;
         const payload = {
             id: currentLayoutId,
@@ -1464,10 +1465,8 @@ export async function renderSession(root: HTMLElement) {
             activeId: activeProfileId,
             loggedOutChars,
         };
-        console.log("[autoSave] Saving payload:", JSON.stringify(payload));
         try {
             await window.api.tabLayoutsSave(payload);
-            console.log("[autoSave] Save successful");
         }
         catch (err) {
             console.error("[autoSave] Save failed:", err);
@@ -3123,7 +3122,7 @@ export async function renderSession(root: HTMLElement) {
         if (!window.api.tabLayoutsPending)
             return false;
         try {
-            const pending = await window.api.tabLayoutsPending();
+            const pending = await window.api.tabLayoutsPending() as TabLayout | null | undefined;
             if (pending && typeof pending === "object" && pending.id) {
                 markInitialLayoutHandled(pending.id);
                 await applyLayout(pending);
@@ -3161,12 +3160,12 @@ export async function renderSession(root: HTMLElement) {
                 .tabLayoutsApply(initialLayoutId)
                 .catch((err) => {
                 logErr(err, "renderer");
-                return applyInitialLayoutById(initialLayoutId).catch(() => undefined);
+                return applyInitialLayoutById(initialLayoutId).catch((): void => undefined);
             });
             initialLayoutFallbackTimer = setTimeout(() => {
                 if (!initialLayoutPendingId)
                     return;
-                applyInitialLayoutById(initialLayoutPendingId).catch(() => undefined);
+                applyInitialLayoutById(initialLayoutPendingId).catch((): void => undefined);
             }, 800);
             let initialWatchAttempts = 0;
             const initialWatch = window.setInterval(() => {
@@ -3183,13 +3182,13 @@ export async function renderSession(root: HTMLElement) {
                     return;
                 }
                 initialWatchAttempts += 1;
-                applyInitialLayoutById(initialLayoutId).catch(() => undefined);
+                applyInitialLayoutById(initialLayoutId).catch((): void => undefined);
             }, 1200);
             // Kick an immediate watchdog pass as well
             setTimeout(() => {
                 if (tabs.length === 0) {
                     initialWatchAttempts += 1;
-                    applyInitialLayoutById(initialLayoutId).catch(() => undefined);
+                    applyInitialLayoutById(initialLayoutId).catch((): void => undefined);
                 }
             }, 300);
             return;
@@ -3210,7 +3209,7 @@ export async function renderSession(root: HTMLElement) {
                 layoutState = layout;
                 activeTabId = layoutTab.id;
                 // Set active profile from layout
-                const activeCell = layout.cells.find((c) => c.position === layout.activePosition) ?? layout.cells[0];
+                const activeCell = layout.cells.find((c: GridCell) => c.position === layout.activePosition) ?? layout.cells[0];
                 activeProfileId = activeCell?.id ?? null;
                 currentSplitRatio = layout.ratio ?? currentSplitRatio;
                 // Update UI
@@ -3226,7 +3225,6 @@ export async function renderSession(root: HTMLElement) {
         });
     }
     startInitialLoad().catch((err) => logErr(err, "renderer"));
-    syncEditModeUi();
     updateLoginOverlay();
     updateSplitButton();
     syncTabClasses();

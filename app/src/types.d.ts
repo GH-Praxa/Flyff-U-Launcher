@@ -33,3 +33,7 @@ declare module "*.webp" {
     export default src;
 }
 
+interface Window {
+    /** CSP nonce injected by the preload for <style> elements. */
+    __cspNonce?: string;
+}

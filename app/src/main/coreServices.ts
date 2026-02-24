@@ -133,6 +133,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         preloadPath: opts.preloadPath,
         followIntervalMs: opts.followIntervalMs,
         sessionRegistry,
+        getLocale: async () => (await clientSettings.get()).locale,
     });
 
     // Tab window factory for multi-window support
@@ -162,6 +163,8 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
 
         // Inherit UI position persistence setting from client settings
         tabsManager.setUiPositionPersistenceEnabled(settings.persistGameUiPositions ?? false);
+        // Inherit game font setting
+        tabsManager.setGameFont(settings.gameFont ?? null);
 
         // Reset tabs when window is closed
         win.on("closed", () => {
@@ -289,14 +292,13 @@ export function createPluginServiceAdapters(
         sessionWindow: {
             get: () => core.sessionWindow.get(),
             ensure: () => {
-                // Note: the real ensure() is async, but the interface expects sync
-                // We return the existing window or create synchronously
+                // Note: the real ensure() is async, but the interface expects sync.
+                // Trigger async creation and return the window if it already exists.
+                // Plugins should use get() after onReady() to reliably access the window.
                 const existing = core.sessionWindow.get();
                 if (existing) return existing;
-                // For the sync case, trigger async creation but return null
-                // Plugins should use get() after onReady()
-                core.sessionWindow.ensure();
-                return core.sessionWindow.get()!;
+                void core.sessionWindow.ensure();
+                return core.sessionWindow.get() ?? null!;
             },
             getBounds: () => {
                 const win = core.sessionWindow.get();

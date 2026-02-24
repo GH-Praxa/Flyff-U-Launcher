@@ -51,6 +51,15 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
+    "@fontsource/cinzel": "^5.2.8",
+    "@fontsource/josefin-sans": "^5.2.8",
+    "@fontsource/lato": "^5.2.7",
+    "@fontsource/montserrat": "^5.2.8",
+    "@fontsource/nunito": "^5.2.7",
+    "@fontsource/open-sans": "^5.2.7",
+    "@fontsource/raleway": "^5.2.8",
+    "@fontsource/roboto": "^5.2.10",
+    "@fontsource/ubuntu": "^5.2.8",
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.7.3",
     "semver": "^7.6.0",

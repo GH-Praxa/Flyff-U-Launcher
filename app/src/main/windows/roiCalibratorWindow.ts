@@ -32,6 +32,7 @@ export function createRoiCalibratorWindow(opts: {
     activeKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp";
     allowedKeys?: readonly ("lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp")[];
     skipParent?: boolean;
+    strings?: { btnClose: string; btnCancel: string; hint: string; errorBridge: string } | null;
 }) {
     // When skipParent is true, create as a top-level window to avoid
     // BrowserView z-order issues (BrowserViews are always drawn on top of child windows)
@@ -89,18 +90,16 @@ export function createRoiCalibratorWindow(opts: {
   #bg { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:0; pointer-events:none; }
   #c { position:absolute; inset:0; z-index:1; pointer-events:auto; }
   #bar {
-    position:absolute; left:50%; top:12px; transform:translateX(-50%);
+    position:absolute; right:12px; bottom:12px;
     display:flex; gap:8px; z-index:2; pointer-events:auto;
-    background: rgba(0,0,0,0.55); padding:10px; border-radius:10px;
+    background: rgb(18,18,18); padding:10px; border-radius:10px;
     font-family: Segoe UI, Arial; color:white; user-select:none;
+    border: 1px solid rgba(255,255,255,0.12);
   }
   .roiBtn { cursor:pointer; border-radius:8px; border:1px solid rgba(255,255,255,0.15);
             background: rgba(255,255,255,0.08); color:white; padding:6px 10px; min-width:76px; }
   .roiBtn.active { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.18); }
-  button { cursor:pointer; border-radius:8px; border:1px solid rgba(255,255,255,0.15);
-           background: rgba(255,255,255,0.08); color:white; padding:6px 10px; }
-  button.primary { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.25); }
-  .hint { opacity:.85; font-size:12px; margin-left:8px; align-self:center; white-space:nowrap; }
+  .hint { opacity:.75; font-size:11px; margin-left:6px; align-self:center; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -115,9 +114,7 @@ export function createRoiCalibratorWindow(opts: {
     <button id="btnRmExp" class="roiBtn">RM EXP</button>
     <button id="btnEnemyName" class="roiBtn">ENEMY</button>
     <button id="btnEnemyHp" class="roiBtn">ENEMY HP</button>
-    <button id="btnSave" class="primary">Schliessen</button>
-    <button id="btnCancel">Abbrechen</button>
-    <div class="hint">TAB/1-7 wechseln, ESC abbrechen (Speichert automatisch beim Loslassen)</div>
+    <div class="hint"></div>
   </div>
 </div>
 
@@ -125,6 +122,7 @@ export function createRoiCalibratorWindow(opts: {
   window.__ROI_BG__ = undefined;
   window.__ROI_ACTIVE__ = undefined;
   window.__ROI_ALLOWED_KEYS__ = undefined;
+  window.__ROI_STRINGS__ = undefined;
   // wird spaeter per file:// Pfad ersetzt
   // Bridge vollstaendig inline: Hash auslesen und ipcRenderer via require nutzen.
   function getBridge() {
@@ -156,6 +154,7 @@ export function createRoiCalibratorWindow(opts: {
   }
 
   const bridge = getBridge();
+  const S = window.__ROI_STRINGS__ || {};
   const roisRaw = ${initial};
   console.log("[ROI CALIB] roisRaw:", JSON.stringify(roisRaw));
   console.log("[ROI CALIB] __ROI_ALLOWED_KEYS__:", JSON.stringify(window.__ROI_ALLOWED_KEYS__));
@@ -205,7 +204,7 @@ export function createRoiCalibratorWindow(opts: {
 
   if(!bridge || !bridge.channel){
     console.error("roi bridge missing");
-    alert("ROI-Bridge fehlt - bitte App neu starten und erneut versuchen.");
+    alert(S.errorBridge ?? "ROI bridge missing – please restart the app and try again.");
     throw new Error("roi bridge missing");
   }
   const log = (msg, payload) => {
@@ -258,13 +257,8 @@ export function createRoiCalibratorWindow(opts: {
     btn.onclick = () => { setActive(key); log("btn:" + key); };
   });
 
-  // Update hint text based on allowed keys
   const hintEl = document.querySelector(".hint");
-  if (hintEl && ROI_KEYS.length === 1) {
-    hintEl.textContent = "ESC abbrechen (Speichert automatisch beim Loslassen)";
-  } else if (hintEl) {
-    hintEl.textContent = "TAB/1-" + ROI_KEYS.length + " wechseln, ESC abbrechen (Speichert automatisch beim Loslassen)";
-  }
+  if (hintEl) hintEl.textContent = S.hint ?? "";
 
   const initialActive = (window.__ROI_ACTIVE__ && ROI_KEYS.includes(window.__ROI_ACTIVE__)) ? window.__ROI_ACTIVE__ : null;
   let activeKey = initialActive || ROI_KEYS.find(k => rois[k]) || ROI_KEYS[0] || "exp";
@@ -427,19 +421,7 @@ export function createRoiCalibratorWindow(opts: {
     window.close();
   }
 
-  document.getElementById("btnCancel").onclick = cancel;
 
-  document.getElementById("btnSave").onclick = () => {
-    log("save");
-    console.log("[ROI CALIB] save click");
-    const cleaned = {};
-    ROI_KEYS.forEach((k) => {
-      if (rois[k]) cleaned[k] = rois[k];
-    });
-    console.log("[ROI CALIB] send rois keys=" + Object.keys(cleaned).join(","));
-    bridge.send?.({ ok:true, rois: cleaned, done: true });
-    window.close();
-  };
 </script>
 </body>
 </html>
@@ -455,13 +437,14 @@ export function createRoiCalibratorWindow(opts: {
         const finalHtml = html
             .replace('window.__ROI_BG__ = undefined;', `window.__ROI_BG__ = ${JSON.stringify(imgUrl)};`)
             .replace('window.__ROI_ACTIVE__ = undefined;', `window.__ROI_ACTIVE__ = ${JSON.stringify(opts.activeKey ?? null)};`)
-            .replace('window.__ROI_ALLOWED_KEYS__ = undefined;', `window.__ROI_ALLOWED_KEYS__ = ${JSON.stringify(opts.allowedKeys ?? null)};`);
+            .replace('window.__ROI_ALLOWED_KEYS__ = undefined;', `window.__ROI_ALLOWED_KEYS__ = ${JSON.stringify(opts.allowedKeys ?? null)};`)
+            .replace('window.__ROI_STRINGS__ = undefined;', `window.__ROI_STRINGS__ = ${JSON.stringify(opts.strings ?? null)};`);
         await fs.writeFile(htmlPath, finalHtml, "utf-8");
 
         win.loadURL(pathToFileURL(htmlPath).toString() + `#${encodeURIComponent(opts.channel)}`).catch((err) => console.error("[RoiCalibratorWindow] load failed", err));
         win.on("closed", () => {
-            fs.unlink(htmlPath).catch(() => undefined);
-            fs.unlink(pngPath).catch(() => undefined);
+            fs.unlink(htmlPath).catch((): void => undefined);
+            fs.unlink(pngPath).catch((): void => undefined);
         });
     })().catch((err) => console.error("[RoiCalibratorWindow] temp write failed", err));
     return win;
@@ -481,6 +464,7 @@ export async function openRoiCalibratorWindow(opts: {
     activeKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp";
     allowedKeys?: readonly ("lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp")[];
     skipParent?: boolean;
+    strings?: { btnClose: string; btnCancel: string; hint: string; errorBridge: string } | null;
 }): Promise<boolean> {
     const channel = `roi-calib:${opts.profileId}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
     const win = createRoiCalibratorWindow({
@@ -493,6 +477,7 @@ export async function openRoiCalibratorWindow(opts: {
         activeKey: opts.activeKey,
         allowedKeys: opts.allowedKeys,
         skipParent: opts.skipParent,
+        strings: opts.strings,
     });
     let followIv: NodeJS.Timeout | null = null;
     if (opts.follow?.getBounds) {
@@ -548,7 +533,7 @@ export async function openRoiCalibratorWindow(opts: {
                 followIv = null;
             }
         };
-        type RoiCalibPayload = { ok?: boolean; rois?: HudRois; cancel?: boolean };
+        type RoiCalibPayload = { ok?: boolean; done?: boolean; rois?: HudRois; cancel?: boolean };
         const onMessage = async (_e: Electron.IpcMainEvent, payload: RoiCalibPayload) => {
             try {
                 console.log("[ROI CALIB MAIN] received payload", JSON.stringify(payload));

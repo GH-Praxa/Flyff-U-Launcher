@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 3.1.0
+
+### ✨ Nouvelles fonctionnalités
+
+**Annonces du launcher**
+- Nouvelle section dans le panneau droit affichant des messages du développeur sans mise à jour de l'application
+- Types : 🐛 Bug, ℹ Info, ✨ Fonctionnalité, ⚠ Avertissement — chacun avec une couleur distincte
+- Entièrement localisé : les messages peuvent être traduits dans les 8 langues prises en charge
+- Désactivable dans Paramètres → Paramètres client → « Afficher les annonces du launcher »
+- Les profils ouverts dans le panneau droit sont désormais repliables
+
+---
+
 ## 🐛 Version 3.0.5
 
 ### 🐛 Corrections de bugs

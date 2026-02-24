@@ -98,16 +98,12 @@ export function createRoiStore() {
             return migrated;
         },
         async set(profileId: string, rois: HudRois): Promise<void> {
-            console.log("[ROI STORE] set called profileId:", profileId, "input rois keys:", Object.keys(rois));
             debugLog("ocr", "[ROI STORE] set called profileId:", profileId, "input rois:", JSON.stringify(rois));
             const db = await readDb();
             const migrated = normalizeOptional(migrateRois(rois));
-            console.log("[ROI STORE] migrated keys:", Object.keys(migrated));
             debugLog("ocr", "[ROI STORE] migrated:", JSON.stringify(migrated));
             db[profileId] = migrated;
-            console.log("[ROI STORE] writing to:", roisPath());
             await writeDb(db);
-            console.log("[ROI STORE] writeDb completed, db keys for profile:", Object.keys(db[profileId] || {}));
             debugLog("ocr", "[ROI STORE] writeDb completed");
         },
         async remove(profileId: string): Promise<void> {

@@ -145,7 +145,7 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
 
 export async function showGridConfigModal(initialProfileId: string, layoutType: string): Promise<any | null> {
 
-    const config = GRID_CONFIGS[layoutType];
+    const config = GRID_CONFIGS[layoutType as LayoutType];
     if (!config) return null;
     // Get all profiles with tab mode
     const allProfiles = await window.api.profilesList();
@@ -161,7 +161,7 @@ export async function showGridConfigModal(initialProfileId: string, layoutType: 
     return new Promise((resolve) => {
         const overlay = el("div", "modalOverlay");
         const modal = el("div", "modal");
-        const header = el("div", "modalHeader", `${t("layout.select")} - ${layoutDisplayNames[layoutType]}`);
+        const header = el("div", "modalHeader", `${t("layout.select")} - ${layoutDisplayNames[layoutType as LayoutType]}`);
         const body = el("div", "modalBody");
         const hint = el("div", "modalHint", t("layout.gridHint") || "W�hlen Sie Profile f�r die Zellen");
         const grid = el("div", "layoutGrid");

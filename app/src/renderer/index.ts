@@ -93,7 +93,7 @@ async function main() {
             }
         });
     }
-    window.addEventListener("focus", applyStoredTabActiveColor);
+    window.addEventListener("focus", () => applyStoredTabActiveColor());
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden)
             applyStoredTabActiveColor();

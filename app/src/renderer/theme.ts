@@ -3,6 +3,7 @@ import { resetThemeEffect, setThemeEffect } from "../themeAnimations";
 import { logErr } from "../shared/logger";
 import pkg from "../../package.json";
 import { STORAGE_THEME_KEY, STORAGE_TAB_ACTIVE_KEY, GITHUB_PACKAGE_URL } from "./constants";
+import { setRootVar, removeRootVar } from "./cssVarsManager";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -463,7 +464,7 @@ export function setTabActiveColor(hex: string | null, options?: SetTabActiveColo
 
         if (rgb) {
 
-            root.style.setProperty("--tab-active-rgb", rgb);
+            setRootVar("--tab-active-rgb", rgb);
 
             if (options?.manual) {
 
@@ -493,7 +494,7 @@ export function setTabActiveColor(hex: string | null, options?: SetTabActiveColo
 
     }
 
-    root.style.removeProperty("--tab-active-rgb");
+    removeRootVar("--tab-active-rgb");
 
     if (options?.manual === false) {
 
@@ -691,7 +692,7 @@ export function applyTheme(theme: string) {
 
     if (finalTabRgb) {
 
-        root.style.setProperty("--tab-active-rgb", finalTabRgb);
+        setRootVar("--tab-active-rgb", finalTabRgb);
 
     }
 
@@ -825,7 +826,7 @@ export async function hydrateThemeFromSnapshot(): Promise<ThemeUpdatePayload | n
 
         }
 
-        return snap;
+        return snap as ThemeUpdatePayload;
 
     }
 

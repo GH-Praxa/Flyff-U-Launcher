@@ -122,8 +122,9 @@ describe("Session IPC handlers", () => {
         const safeHandle = createSafeHandle(handlers);
         registerSessionHandlers(
             safeHandle,
-            { sessionTabs, sessionWindow, sessionRegistry, profiles, createInstanceWindow, createTabWindow, getLocale },
-            logErr,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { sessionTabs, sessionWindow, sessionRegistry, profiles, createInstanceWindow, createTabWindow, getLocale } as any,
+            logErr as any,
         );
     });
 

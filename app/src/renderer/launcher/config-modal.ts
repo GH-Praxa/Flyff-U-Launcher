@@ -51,6 +51,8 @@ import {
     autoSaveLayouts,
     setAutoSaveLayouts,
     onLayoutTabDisplayChange,
+    applyLauncherFont,
+    applyLauncherFontSize,
 } from "../settings";
 import { el, showToast, jobIconSrc } from "../dom-utils";
 
@@ -277,6 +279,65 @@ export function openConfigModal(
             uiPosCheckbox.checked = !!val;
         },
     };
+    const annRow = el("div", "row clientControlRow clientAnnRow");
+    const annLabelWrap = el("div", "rowLeft");
+    const annLabel = el("div", "rowName", t("config.client.showAnnouncements" as TranslationKey));
+    const annHint = el("div", "muted", t("config.client.showAnnouncements.hint" as TranslationKey));
+    annLabelWrap.append(annLabel, annHint);
+    const annInputWrap = el("div", "rowActions");
+    const annCheckboxLabel = document.createElement("label");
+    annCheckboxLabel.className = "checkbox";
+    const annCheckbox = document.createElement("input");
+    annCheckbox.type = "checkbox";
+    const annText = document.createElement("span");
+    annText.textContent = t("config.client.showAnnouncements.label" as TranslationKey);
+    annCheckboxLabel.append(annCheckbox, annText);
+    annInputWrap.append(annCheckboxLabel);
+    annRow.append(annLabelWrap, annInputWrap);
+    const annToggle = {
+        get: () => annCheckbox.checked,
+        set: (val: boolean) => { annCheckbox.checked = !!val; },
+    };
+    const collapsibleRow = el("div", "row clientControlRow clientCollapsibleRow");
+    const collapsibleLabelWrap = el("div", "rowLeft");
+    const collapsibleLabel = el("div", "rowName", t("config.client.collapsibleOpenProfiles" as TranslationKey));
+    const collapsibleHint = el("div", "muted", t("config.client.collapsibleOpenProfiles.hint" as TranslationKey));
+    collapsibleLabelWrap.append(collapsibleLabel, collapsibleHint);
+    const collapsibleInputWrap = el("div", "rowActions");
+    const collapsibleCheckboxLabel = document.createElement("label");
+    collapsibleCheckboxLabel.className = "checkbox";
+    const collapsibleCheckbox = document.createElement("input");
+    collapsibleCheckbox.type = "checkbox";
+    const collapsibleText = document.createElement("span");
+    collapsibleText.textContent = t("config.client.collapsibleOpenProfiles.label" as TranslationKey);
+    collapsibleCheckboxLabel.append(collapsibleCheckbox, collapsibleText);
+    collapsibleInputWrap.append(collapsibleCheckboxLabel);
+    collapsibleRow.append(collapsibleLabelWrap, collapsibleInputWrap);
+    const collapsibleToggle = {
+        get: () => collapsibleCheckbox.checked,
+        set: (val: boolean) => { collapsibleCheckbox.checked = !!val; },
+    };
+    const telemetryRow = el("div", "row clientControlRow clientTelemetryRow");
+    const telemetryLabelWrap = el("div", "rowLeft");
+    const telemetryLabel = el("div", "rowName", t("config.client.sendTelemetry" as TranslationKey));
+    const telemetryHint = el("div", "muted", t("config.client.sendTelemetry.hint" as TranslationKey));
+    telemetryLabelWrap.append(telemetryLabel, telemetryHint);
+    const telemetryInputWrap = el("div", "rowActions");
+    const telemetryCheckboxLabel = document.createElement("label");
+    telemetryCheckboxLabel.className = "checkbox";
+    const telemetryCheckbox = document.createElement("input");
+    telemetryCheckbox.type = "checkbox";
+    const telemetryText = document.createElement("span");
+    telemetryText.textContent = t("config.client.sendTelemetry.label" as TranslationKey);
+    telemetryCheckboxLabel.append(telemetryCheckbox, telemetryText);
+    telemetryInputWrap.append(telemetryCheckboxLabel);
+    telemetryRow.append(telemetryLabelWrap, telemetryInputWrap);
+    const telemetryToggle = {
+        get: () => telemetryCheckbox.checked,
+        set: (val: boolean) => {
+            telemetryCheckbox.checked = !!val;
+        },
+    };
     const toastRow = el("div", "row clientControlRow clientToastRow");
     const toastLabelWrap = el("div", "rowLeft");
     const toastLabel = el("div", "rowName", t("config.client.toastDuration"));
@@ -357,6 +418,187 @@ export function openConfigModal(
     });
     launcherHeightInputWrap.append(launcherHeightDecBtn, launcherHeightInput, launcherHeightIncBtn, launcherHeightValue);
     launcherHeightRow.append(launcherHeightLabelWrap, launcherHeightInputWrap);
+    // ── Game Font Row ──────────────────────────────────────────────────
+    // Load Google Fonts in the launcher window so the preview works
+    const PREVIEW_FONTS_URL =
+        "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700" +
+        "&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700" +
+        "&family=Lato:wght@400;700&family=Montserrat:wght@400;700" +
+        "&family=Raleway:wght@400;700&family=Nunito:wght@400;700" +
+        "&family=Ubuntu:wght@400;700&family=Cinzel:wght@400;700&display=swap";
+    if (!document.querySelector(`link[href="${PREVIEW_FONTS_URL}"]`)) {
+        const previewFontsLink = document.createElement("link");
+        previewFontsLink.rel = "stylesheet";
+        previewFontsLink.href = PREVIEW_FONTS_URL;
+        document.head.appendChild(previewFontsLink);
+    }
+    const FONT_OPTIONS: Array<{ value: string | null; label: string }> = [
+        { value: null,           label: t("config.client.gameFont.default" as TranslationKey) },
+        { value: "Josefin Sans", label: "Josefin Sans" },
+        { value: "Roboto",       label: "Roboto" },
+        { value: "Open Sans",    label: "Open Sans" },
+        { value: "Lato",         label: "Lato" },
+        { value: "Montserrat",   label: "Montserrat" },
+        { value: "Raleway",      label: "Raleway" },
+        { value: "Nunito",       label: "Nunito" },
+        { value: "Ubuntu",        label: "Ubuntu" },
+        { value: "Cinzel",        label: "Cinzel" },
+        { value: "sans-serif",   label: "sans-serif (System)" },
+        { value: "serif",        label: "serif (System)" },
+        { value: "monospace",    label: "Monospace (System)" },
+        { value: "__custom__",   label: t("config.client.gameFont.custom" as TranslationKey) },
+    ];
+    const fontRow = el("div", "row clientControlRow clientFontRow");
+    const fontLabelWrap = el("div", "rowLeft");
+    const fontLabel = el("div", "rowName", t("config.client.gameFont" as TranslationKey));
+    const fontHint = el("div", "muted", t("config.client.gameFont.hint" as TranslationKey));
+    fontLabelWrap.append(fontLabel, fontHint);
+    const fontActions = el("div", "rowActions fontActions");
+    const fontSelect = document.createElement("select");
+    fontSelect.className = "select";
+    for (const opt of FONT_OPTIONS) {
+        const o = document.createElement("option");
+        o.value = opt.value ?? "__default__";
+        o.textContent = opt.label;
+        fontSelect.append(o);
+    }
+    const fontCustomInput = document.createElement("input");
+    fontCustomInput.type = "text";
+    fontCustomInput.className = "input";
+    fontCustomInput.placeholder = t("config.client.gameFont.customPlaceholder" as TranslationKey);
+    fontCustomInput.style.display = "none";
+    fontCustomInput.style.marginTop = "6px";
+    fontCustomInput.style.width = "220px";
+    const fontPreview = el("div", "fontPreview muted");
+    fontPreview.style.marginTop = "6px";
+    fontPreview.style.fontSize = "15px";
+    fontPreview.style.letterSpacing = "0.02em";
+    fontPreview.textContent = t("config.client.gameFont.preview" as TranslationKey);
+    fontActions.append(fontSelect, fontCustomInput, fontPreview);
+    fontRow.append(fontLabelWrap, fontActions);
+
+    const applyFontPreview = (font: string | null) => {
+        fontPreview.style.fontFamily = font ? `"${font}", sans-serif` : "";
+    };
+
+    const getFontSelectValue = (): string | null => {
+        if (fontSelect.value === "__default__") return null;
+        if (fontSelect.value === "__custom__") {
+            const v = fontCustomInput.value.trim();
+            return v || null;
+        }
+        return fontSelect.value;
+    };
+
+    const syncFontSelectFromValue = (font: string | null) => {
+        if (!font) {
+            fontSelect.value = "__default__";
+            fontCustomInput.style.display = "none";
+            fontCustomInput.value = "";
+        } else {
+            const known = FONT_OPTIONS.find((o) => o.value === font && o.value !== null && o.value !== "__custom__");
+            if (known) {
+                fontSelect.value = font;
+                fontCustomInput.style.display = "none";
+                fontCustomInput.value = "";
+            } else {
+                fontSelect.value = "__custom__";
+                fontCustomInput.style.display = "";
+                fontCustomInput.value = font;
+            }
+        }
+        applyFontPreview(font);
+    };
+
+    let fontSaveTimer: ReturnType<typeof setTimeout> | null = null;
+    const persistFont = async (font: string | null) => {
+        if (fontSaveTimer) { clearTimeout(fontSaveTimer); fontSaveTimer = null; }
+        try {
+            await patchClientSettings({ gameFont: font } as Parameters<typeof patchClientSettings>[0]);
+            applyLauncherFont(font);
+            showToast(t("config.client.gameFont.saved" as TranslationKey), "success");
+        } catch (err) {
+            showToast(String(err), "error");
+        }
+    };
+
+    fontSelect.addEventListener("change", async () => {
+        const isCustom = fontSelect.value === "__custom__";
+        fontCustomInput.style.display = isCustom ? "" : "none";
+        if (!isCustom) {
+            const font = getFontSelectValue();
+            applyFontPreview(font);
+            await persistFont(font);
+        } else {
+            fontCustomInput.value = "";
+            fontCustomInput.focus();
+        }
+    });
+
+    fontCustomInput.addEventListener("input", () => {
+        const v = fontCustomInput.value.trim();
+        applyFontPreview(v || null);
+        if (fontSaveTimer) clearTimeout(fontSaveTimer);
+        fontSaveTimer = setTimeout(() => {
+            void persistFont(v || null);
+        }, 800);
+    });
+
+    // ── Launcher Font Size Row ──────────────────────────────────────────
+    const LAUNCHER_FONT_SIZE_MIN = 75;
+    const LAUNCHER_FONT_SIZE_MAX = 150;
+    const LAUNCHER_FONT_SIZE_STEP = 5;
+    const LAUNCHER_FONT_SIZE_DEFAULT = 100;
+    const clampFontSize = (v: number) =>
+        Math.round(Math.min(LAUNCHER_FONT_SIZE_MAX, Math.max(LAUNCHER_FONT_SIZE_MIN, v)) / LAUNCHER_FONT_SIZE_STEP) * LAUNCHER_FONT_SIZE_STEP;
+
+    const fontSizeRow = el("div", "row clientControlRow clientFontSizeRow");
+    const fontSizeLabelWrap = el("div", "rowLeft");
+    const fontSizeLabel = el("div", "rowName", t("config.client.launcherFontSize" as TranslationKey));
+    const fontSizeHint = el("div", "muted", t("config.client.launcherFontSize.hint" as TranslationKey));
+    fontSizeLabelWrap.append(fontSizeLabel, fontSizeHint);
+    const fontSizeInputWrap = el("div", "rowActions");
+    const fontSizeInput = document.createElement("input");
+    fontSizeInput.type = "range";
+    fontSizeInput.min = String(LAUNCHER_FONT_SIZE_MIN);
+    fontSizeInput.max = String(LAUNCHER_FONT_SIZE_MAX);
+    fontSizeInput.step = String(LAUNCHER_FONT_SIZE_STEP);
+    fontSizeInput.value = String(LAUNCHER_FONT_SIZE_DEFAULT);
+    fontSizeInput.className = "slider";
+    fontSizeInput.style.width = "220px";
+    const fontSizeValue = el("div", "sliderValue badge", "100%");
+    const fontSizeDecBtn = createNudgeButton("-5", () => {
+        const current = Number.isFinite(fontSizeInput.valueAsNumber) ? fontSizeInput.valueAsNumber : LAUNCHER_FONT_SIZE_DEFAULT;
+        fontSizeInput.value = String(clampFontSize(current - LAUNCHER_FONT_SIZE_STEP));
+        fontSizeInput.dispatchEvent(new Event("change"));
+    });
+    const fontSizeIncBtn = createNudgeButton("+5", () => {
+        const current = Number.isFinite(fontSizeInput.valueAsNumber) ? fontSizeInput.valueAsNumber : LAUNCHER_FONT_SIZE_DEFAULT;
+        fontSizeInput.value = String(clampFontSize(current + LAUNCHER_FONT_SIZE_STEP));
+        fontSizeInput.dispatchEvent(new Event("change"));
+    });
+
+    let fontSizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
+    fontSizeInput.addEventListener("change", () => {
+        const v = clampFontSize(fontSizeInput.valueAsNumber);
+        fontSizeInput.value = String(v);
+        fontSizeValue.textContent = `${v}%`;
+        applyLauncherFontSize(v === LAUNCHER_FONT_SIZE_DEFAULT ? null : v);
+        if (fontSizeSaveTimer) clearTimeout(fontSizeSaveTimer);
+        fontSizeSaveTimer = setTimeout(async () => {
+            fontSizeSaveTimer = null;
+            try {
+                await patchClientSettings({ launcherFontSize: v === LAUNCHER_FONT_SIZE_DEFAULT ? null : v } as Parameters<typeof patchClientSettings>[0]);
+                showToast(t("config.client.launcherFontSize.saved" as TranslationKey), "success");
+            } catch (err) {
+                showToast(String(err), "error");
+            }
+        }, 600);
+    });
+
+    fontSizeInputWrap.append(fontSizeDecBtn, fontSizeInput, fontSizeIncBtn, fontSizeValue);
+    fontSizeRow.append(fontSizeLabelWrap, fontSizeInputWrap);
+
     const clientGrid = el("div", "clientGrid");
     clientGrid.append(
         clientRow,            // Fullscreen toggle
@@ -368,7 +610,12 @@ export function openConfigModal(
         gridBorderRow,        // Highlight active grid view
         autoSaveRow,          // Layout auto-save
         uiPosRow,             // Persist game UI positions
-        toastRow              // Toast duration
+        annRow,               // Show launcher announcements
+        collapsibleRow,       // Collapsible open profiles
+        telemetryRow,         // Send launch telemetry (opt-in)
+        toastRow,             // Toast duration
+        fontRow,              // Game font
+        fontSizeRow,          // Launcher font size
     );
     clientSection.append(clientTitle, clientGrid);
 
@@ -505,7 +752,7 @@ export function openConfigModal(
         }
         captureTarget = null;
         // Re-enable global hotkeys after recording
-        window.api?.hotkeysResume?.().catch(() => undefined);
+        window.api?.hotkeysResume?.().catch((): void => undefined);
     };
 
     const finalizeCapture = () => {
@@ -593,7 +840,7 @@ export function openConfigModal(
             captureActive = true;
             captureTarget = def.key;
             // Pause global hotkeys so they don't intercept key presses during recording
-            window.api?.hotkeysPause?.().catch(() => undefined);
+            window.api?.hotkeysPause?.().catch((): void => undefined);
             showToast(t("config.client.hotkeys.recordHint" as TranslationKey), "info");
             recordBtn.textContent = t("config.client.hotkeys.recording" as TranslationKey);
             setHotkeyBadge(def.key, null);
@@ -653,11 +900,18 @@ export function openConfigModal(
         autoSaveToggle.set(settings.autoSaveLayouts ?? DEFAULT_CLIENT_SETTINGS.autoSaveLayouts);
         setAutoSaveLayouts(settings.autoSaveLayouts ?? DEFAULT_CLIENT_SETTINGS.autoSaveLayouts);
         uiPosToggle.set(settings.persistGameUiPositions ?? DEFAULT_CLIENT_SETTINGS.persistGameUiPositions);
+        annToggle.set(settings.showAnnouncements ?? DEFAULT_CLIENT_SETTINGS.showAnnouncements);
+        collapsibleToggle.set(settings.collapsibleOpenProfiles ?? DEFAULT_CLIENT_SETTINGS.collapsibleOpenProfiles);
+        telemetryToggle.set(settings.sendTelemetry ?? DEFAULT_CLIENT_SETTINGS.sendTelemetry);
+        syncFontSelectFromValue(settings.gameFont ?? null);
+        const savedFontSize = settings.launcherFontSize ?? LAUNCHER_FONT_SIZE_DEFAULT;
+        fontSizeInput.value = String(clampFontSize(savedFontSize));
+        fontSizeValue.textContent = `${clampFontSize(savedFontSize)}%`;
         if (revisionAtRequest === hotkeyRevision) {
             applyHotkeyState(settings);
         }
     };
-    refreshClientSettings().catch(() => undefined);
+    refreshClientSettings().catch((): void => undefined);
     fullscreenCheckbox.addEventListener("change", async () => {
         const next = fullscreenCheckbox.checked;
         try {
@@ -772,6 +1026,42 @@ export function openConfigModal(
             showToast(String(err), "error");
             const current = await loadClientSettings();
             uiPosToggle.set(current?.persistGameUiPositions ?? DEFAULT_CLIENT_SETTINGS.persistGameUiPositions);
+        }
+    });
+    annCheckbox.addEventListener("change", async () => {
+        const next = !!annCheckbox.checked;
+        try {
+            await patchClientSettings({ showAnnouncements: next });
+            showToast(t("config.client.showAnnouncementsSaved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            annToggle.set(current?.showAnnouncements ?? DEFAULT_CLIENT_SETTINGS.showAnnouncements);
+        }
+    });
+    collapsibleCheckbox.addEventListener("change", async () => {
+        const next = !!collapsibleCheckbox.checked;
+        try {
+            await patchClientSettings({ collapsibleOpenProfiles: next });
+            showToast(t("config.client.collapsibleOpenProfilesSaved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            collapsibleToggle.set(current?.collapsibleOpenProfiles ?? DEFAULT_CLIENT_SETTINGS.collapsibleOpenProfiles);
+        }
+    });
+    telemetryCheckbox.addEventListener("change", async () => {
+        const next = !!telemetryCheckbox.checked;
+        try {
+            await patchClientSettings({ sendTelemetry: next });
+            showToast(t("config.client.sendTelemetrySaved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            telemetryToggle.set(current?.sendTelemetry ?? DEFAULT_CLIENT_SETTINGS.sendTelemetry);
         }
     });
     launcherWidthInput.addEventListener("change", async () => {
@@ -1214,8 +1504,10 @@ export function openConfigModal(
 
     function getThemeColors(themeId: string): ThemeColors {
 
-        if (isThemeKey(themeId) && themeColorCache[themeId])
-            return { ...themeColorCache[themeId]! };
+        if (isThemeKey(themeId)) {
+            const cached = getThemeColorsFromStore(themeId);
+            if (cached) return { ...cached };
+        }
         if (isThemeKey(themeId) && currentTheme === themeId) {
             const colors = getActiveThemeColors();
             const builtin = THEMES.find((t) => t.id === themeId);

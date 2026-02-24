@@ -97,7 +97,7 @@ export function createHotkeysManager(deps: HotkeysDeps) {
         if (!target) return;
         try {
             const locale = deps.getLocale();
-            const settingsSnap = await deps.getClientSettings().catch(() => null);
+            const settingsSnap = await deps.getClientSettings().catch((): null => null);
             const effectiveTtlMs = Math.min(60, Math.max(1, settingsSnap?.toastDurationSeconds ?? deps.getToastDurationMs() / 1000)) * 1000;
             const image = await target.webContents.capturePage();
             const buffer = image.toPNG();

@@ -1,6 +1,8 @@
 import type { TranslationKey } from "../i18n/translations";
 import manifest from "./themes.json";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore import.meta.glob only available in Vite renderer build
 const themeStyles = import.meta.glob("./*.css", { eager: true });
 const styleIds = Object.keys(themeStyles).map((file) =>
     file.replace(/^\.\//, "").replace(/\.css$/, "")

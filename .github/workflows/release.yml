@@ -69,6 +69,9 @@ jobs:
 
       - name: Build Windows packages
         working-directory: app
+        env:
+          TELEMETRY_WEBHOOK_URL: ${{ secrets.TELEMETRY_WEBHOOK_URL }}
+          LOGS_WEBHOOK_URL: ${{ secrets.LOGS_WEBHOOK_URL }}
         run: npm run make -- --platform=win32
 
       - name: Upload Windows artifacts
@@ -128,6 +131,9 @@ jobs:
 
       - name: Package macOS app
         working-directory: app
+        env:
+          TELEMETRY_WEBHOOK_URL: ${{ secrets.TELEMETRY_WEBHOOK_URL }}
+          LOGS_WEBHOOK_URL: ${{ secrets.LOGS_WEBHOOK_URL }}
         run: npm run package -- --platform=darwin
 
       - name: Sign macOS app (ad-hoc)
@@ -201,6 +207,9 @@ jobs:
 
       - name: Build Linux packages
         working-directory: app
+        env:
+          TELEMETRY_WEBHOOK_URL: ${{ secrets.TELEMETRY_WEBHOOK_URL }}
+          LOGS_WEBHOOK_URL: ${{ secrets.LOGS_WEBHOOK_URL }}
         run: npm run make -- --platform=linux
 
       - name: Upload Linux artifacts

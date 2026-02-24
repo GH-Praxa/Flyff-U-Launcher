@@ -6,6 +6,7 @@ import type { SessionWindowController } from "../windows/sessionWindow";
 import { GRID_CONFIGS, LAYOUT, TIMINGS } from "../../shared/constants";
 import { logErr } from "../../shared/logger"; // Added import
 import type { GridCell, MultiViewLayout } from "../../shared/schemas";
+import { getBundledFontFaceCSS } from "./bundledFonts";
 export function createSessionTabsManager(opts: {
     sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
     flyffUrl: string;
@@ -20,7 +21,7 @@ export function createSessionTabsManager(opts: {
     // When true, keep layout cells even if their BrowserView has not been created yet (sequential grid load).
     let layoutAllowsMissingViews = false;
     const defaultSplitRatio = LAYOUT.DEFAULT_SPLIT_RATIO;
-    let sessionSplitRatio = defaultSplitRatio;
+    let sessionSplitRatio: number = defaultSplitRatio;
     let sessionVisible = true;
     let sessionBounds: ViewBounds = { x: 0, y: 60, width: 1200, height: 700 };
     const gridGap = LAYOUT.GRID_GAP;
@@ -35,6 +36,48 @@ export function createSessionTabsManager(opts: {
     let lastLayoutSnapshot: Array<{ id: string; position: number }> = [];
     const uiPositionCleanups = new Map<string, () => void>();
     let uiPositionPersistenceEnabled = false;
+    // Font injection state
+    const fontNavigateCleanups = new Map<string, () => void>();
+    // Maps each BrowserView to the CSS key returned by insertCSS (used for removal).
+    // Keys become invalid after page navigation, but we still track them so we can
+    // call removeInsertedCSS when explicitly clearing the font (font set to null).
+    const fontCssKeysByView = new Map<BrowserView, string>();
+    let currentGameFont: string | null = null;
+    // Track which session partitions have already had their font CSP patched.
+    const patchedFontCspSessions = new Set<string>();
+
+    const GOOGLE_FRAME_SOURCES = "https://www.google.com https://accounts.google.com https://recaptcha.net https://www.recaptcha.net";
+
+    function patchCspDirective(csp: string, directive: string, additionalSources: string): string {
+        const regex = new RegExp(`(${directive}[^;]*)`, "i");
+        if (regex.test(csp)) {
+            return csp.replace(regex, `$1 ${additionalSources}`);
+        }
+        return `${csp}; ${directive} 'self' ${additionalSources}`;
+    }
+
+    function ensureFontCspForSession(partition: string, sess: Electron.Session): void {
+        if (patchedFontCspSessions.has(partition)) return;
+        patchedFontCspSessions.add(partition);
+        sess.webRequest.onHeadersReceived((details, callback) => {
+            const headers: Record<string, string[]> = { ...(details.responseHeaders as Record<string, string[]>) };
+            const cspKey = Object.keys(headers).find(k => k.toLowerCase() === "content-security-policy");
+            if (cspKey) {
+                let csp = Array.isArray(headers[cspKey]) ? headers[cspKey][0] : String(headers[cspKey]);
+                if (csp) {
+                    if (!csp.includes("font-src")) {
+                        csp = `${csp}; font-src 'self' data: https://fonts.gstatic.com`;
+                    } else if (!/font-src[^;]*data:/.test(csp)) {
+                        csp = csp.replace(/(font-src[^;]*)/, "$1 data:");
+                    }
+                    csp = patchCspDirective(csp, "frame-src", GOOGLE_FRAME_SOURCES);
+                    csp = patchCspDirective(csp, "child-src", GOOGLE_FRAME_SOURCES);
+                    headers[cspKey] = [csp];
+                }
+            }
+            callback({ responseHeaders: headers });
+        });
+    }
     const ACTIVE_BORDER_CSS = `
         html, body {
             outline: 3px solid #2ecc71 !important;
@@ -88,6 +131,140 @@ export function createSessionTabsManager(opts: {
         }
         catch (err) {
             logErr(err, "SessionTabs");
+        }
+    }
+    function buildFontCSS(font: string): string {
+        // For bundled fonts: @font-face with data URI + font-family override.
+        const bundled = getBundledFontFaceCSS(font);
+        if (bundled) return bundled;
+        // For system / custom fonts: just the font-family override (no @font-face needed).
+        return `*, *::before, *::after { font-family: ${JSON.stringify(font)}, sans-serif !important; }`;
+    }
+
+    /**
+     * Builds a JS snippet that intercepts CanvasRenderingContext2D.prototype.font
+     * to replace the font-family portion of every canvas font string (e.g. "16px Arial"
+     * → "16px Josefin Sans") while preserving size, weight, and style.
+     *
+     * This is a no-op for WebGL games — they never call the Canvas 2D font setter.
+     * For Canvas 2D games (Phaser canvas mode, etc.) it overrides text rendering.
+     *
+     * The interceptor is installed only once per page (guarded by __lch_canvas_intercepted__).
+     * Updating the active font later just requires setting window.__lch_canvas_font__.
+     */
+    function buildCanvasFontInterceptorJS(fontName: string): string {
+        const nameJSON = JSON.stringify(fontName);
+        // String array join avoids template-literal escape-sequence ambiguity.
+        return [
+            '(function(){',
+            'window.__lch_canvas_font__=' + nameJSON + ';',
+            // Pre-load so the font is ready for canvas rendering on the next draw call.
+            'if(document.fonts){',
+            '  document.fonts.load("16px "+' + nameJSON + ').catch(function(){});',
+            '  document.fonts.load("bold 16px "+' + nameJSON + ').catch(function(){});',
+            '}',
+            // Only install the prototype patch once per page navigation.
+            'if(window.__lch_canvas_intercepted__)return;',
+            'window.__lch_canvas_intercepted__=true;',
+            'var desc=Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,"font");',
+            'if(!desc||!desc.set)return;',
+            'var origSet=desc.set;',
+            // Regex matches the size token (and optional /line-height) plus trailing whitespace,
+            // then captures everything after as the family to be replaced.
+            // Examples: "16px Arial"  →  "16px <target>"
+            //           "bold 14px/1.2 sans-serif"  →  "bold 14px/1.2 <target>"
+            'var re=/(\\d+(?:\\.\\d+)?(?:px|pt|em|rem|%|vw|vh|vmin|vmax|ex|ch)(?:\\/[\\d.]+(?:px|pt|em|rem|%)?)?)(\\s+).+$/i;',
+            'Object.defineProperty(CanvasRenderingContext2D.prototype,"font",{',
+            'configurable:true,get:desc.get,',
+            'set:function(v){',
+            'var f=window.__lch_canvas_font__;',
+            'if(!f){origSet.call(this,v);return;}',
+            'var m=String(v).replace(re,"$1$2"+f);',
+            'origSet.call(this,m);',
+            '}});',
+            'console.log("[Launcher] Canvas 2D font interceptor installed");',
+            '})()',
+        ].join('');
+    }
+    function applyFontToView(view: BrowserView): void {
+        if (view.webContents.isDestroyed()) return;
+
+        // Always remove the previously injected CSS first (key is page-scoped and
+        // becomes invalid after navigation anyway, but explicit removal is cleaner).
+        const prevKey = fontCssKeysByView.get(view);
+        if (prevKey) {
+            fontCssKeysByView.delete(view);
+            try {
+                const rm = view.webContents.removeInsertedCSS(prevKey);
+                if (rm && typeof (rm as Promise<void>).then === "function") {
+                    (rm as Promise<void>).catch(() => {});
+                }
+            } catch { /* view may be destroyed */ }
+        }
+        // Also remove the complementary <style> element injected via executeJavaScript.
+        view.webContents.executeJavaScript(
+            `(function(){var s=document.getElementById('__lch_font__');if(s)s.remove();})()`
+        ).catch(() => {});
+
+        const font = currentGameFont;
+        if (!font) {
+            // Clear canvas interceptor so text returns to the game's default font.
+            view.webContents.executeJavaScript(
+                '(function(){window.__lch_canvas_font__=null;})()'
+            ).catch(() => {});
+            return;
+        }
+
+        const css = buildFontCSS(font);
+
+        // ── Primary: insertCSS with user origin ──────────────────────────────
+        // cssOrigin:'user' gives our stylesheet the highest cascade priority:
+        // user !important > author !important, regardless of specificity.
+        try {
+            const res = view.webContents.insertCSS(css, { cssOrigin: "user" });
+            const setKey = (key: string) => { fontCssKeysByView.set(view, key); };
+            if (res && typeof (res as Promise<string>).then === "function") {
+                (res as Promise<string>).then(setKey).catch((e) => logErr(e, "SessionTabs"));
+            } else if (typeof res === "string") {
+                setKey(res as string);
+            }
+        } catch (e) { logErr(e, "SessionTabs"); }
+
+        // ── Complementary: <style> element via executeJavaScript ─────────────
+        // Handles edge cases where insertCSS alone may not be effective
+        // (e.g. canvas-based overlays, iframes with strict isolation, etc.).
+        // The CSS string is safe to embed: base64 contains no backticks or ${.
+        try {
+            const escaped = css.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
+            view.webContents.executeJavaScript(`(function(){
+                try {
+                    var s=document.getElementById('__lch_font__');
+                    if(!s){s=document.createElement('style');s.id='__lch_font__';document.head.appendChild(s);}
+                    s.textContent=\`${escaped}\`;
+                } catch(e){}
+            })()`).catch(() => {});
+        } catch { /* view may be destroyed */ }
+
+        // ── Canvas 2D font interceptor ─────────────────────────────────────────
+        // Patches CanvasRenderingContext2D.prototype.font so every ctx.font = "16px X"
+        // call has its font-family replaced with the user's chosen font.
+        // Complete no-op for WebGL games (they never touch the Canvas 2D font setter).
+        try {
+            view.webContents.executeJavaScript(buildCanvasFontInterceptorJS(font)).catch(() => {});
+        } catch { /* view may be destroyed */ }
+    }
+    function registerFontForView(profileId: string, view: BrowserView): () => void {
+        // Apply font after every full page load (did-finish-load ensures DOM is ready)
+        const onFinishLoad = () => { applyFontToView(view); };
+        view.webContents.on("did-finish-load", onFinishLoad);
+        return () => {
+            try { view.webContents.off("did-finish-load", onFinishLoad); } catch { /* destroyed */ }
+        };
+    }
+    function setGameFont(font: string | null): void {
+        currentGameFont = font;
+        for (const view of sessionViews.values()) {
+            applyFontToView(view);
         }
     }
     function refreshActiveBorder(layout: Array<{ id: string; position: number }> = lastLayoutSnapshot) {
@@ -494,11 +671,14 @@ export function createSessionTabsManager(opts: {
             logErr(err, "SessionTabs");
         }
         hardenGameContents(view.webContents);
+        ensureFontCspForSession(`persist:${profileId}`, view.webContents.session);
         const cleanup = registerUiPositionInjection(
             view.webContents,
             () => uiPositionPersistenceEnabled,
         );
         uiPositionCleanups.set(profileId, cleanup);
+        const fontCleanup = registerFontForView(profileId, view);
+        fontNavigateCleanups.set(profileId, fontCleanup);
         sessionViews.set(profileId, view);
         return view;
     }
@@ -522,7 +702,7 @@ export function createSessionTabsManager(opts: {
             return false;
         }
         loadedProfiles.add(profileId);
-        view.webContents.loadURL(opts.flyffUrl).catch(() => undefined);
+        view.webContents.loadURL(opts.flyffUrl).catch((): void => undefined);
         return true;
     }
     function destroySessionView(profileId: string) {
@@ -531,6 +711,9 @@ export function createSessionTabsManager(opts: {
             return;
         const uiCleanup = uiPositionCleanups.get(profileId);
         if (uiCleanup) { uiCleanup(); uiPositionCleanups.delete(profileId); }
+        const fontCleanup = fontNavigateCleanups.get(profileId);
+        if (fontCleanup) { fontCleanup(); fontNavigateCleanups.delete(profileId); }
+        fontCssKeysByView.delete(view);
         removeActiveBorder(view);
         const win = opts.sessionWindow.get();
         if (win) {
@@ -542,7 +725,8 @@ export function createSessionTabsManager(opts: {
             }
         }
         try {
-            view.webContents.destroy();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (view.webContents as any).destroy?.();
         }
         catch (err) {
             logErr(err, "SessionTabs");
@@ -586,7 +770,8 @@ export function createSessionTabsManager(opts: {
             }
         }
         try {
-            view.webContents.destroy();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (view.webContents as any).destroy?.();
         }
         catch (err) {
             logErr(err, "SessionTabs");
@@ -1052,6 +1237,10 @@ export function createSessionTabsManager(opts: {
         layoutAllowsMissingViews = false;
         loggedOutProfiles.clear();
         activeBorderCssByView.clear();
+        for (const cleanup of fontNavigateCleanups.values()) cleanup();
+        fontNavigateCleanups.clear();
+        fontCssKeysByView.clear();
+        patchedFontCspSessions.clear();
         hoverBorderTargetId = null;
         lastLayoutSnapshot = [];
         for (const cleanup of uiPositionCleanups.values()) cleanup();
@@ -1099,6 +1288,7 @@ export function createSessionTabsManager(opts: {
         setBounds,
         setVisible,
         setActiveGridBorderEnabled,
+        setGameFont,
         setUiPositionPersistenceEnabled,
         getUiPositionPersistenceEnabled,
         setMultiLayout,

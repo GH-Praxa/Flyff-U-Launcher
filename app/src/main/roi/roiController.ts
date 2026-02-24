@@ -7,6 +7,8 @@ import { openRoiCalibratorWindow } from "../windows/roiCalibratorWindow";
 import type { RoiStore, HudRois } from "./roiStore";
 import { TIMINGS } from "../../shared/constants";
 import { debugLog } from "../debugConfig";
+import { translate, DEFAULT_LOCALE } from "../../i18n/translations";
+import type { Locale } from "../../shared/schemas";
 
 /** Map of profile IDs to instance windows */
 export type InstanceRegistry = {
@@ -53,6 +55,8 @@ export interface RoiControllerOptions {
     sessionRegistry?: {
         list(): SessionRegistryEntry[];
     };
+    /** Returns the current UI locale for calibrator window translations. */
+    getLocale?: () => Promise<Locale> | Locale;
 }
 
 /**
@@ -68,22 +72,36 @@ export function createRoiController(options: RoiControllerOptions) {
         preloadPath,
         followIntervalMs = TIMINGS.OVERLAY_FOLLOW_MS,
         sessionRegistry,
+        getLocale,
     } = options;
 
-    // When calibrating only a subset (currently rmExp for supporter),
-    // merge the new ROI into the existing set so other ROIs are not dropped.
+    const getCalibratorStrings = async (roiKeyCount: number) => {
+        const locale: Locale = (await getLocale?.()) ?? DEFAULT_LOCALE;
+        const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+        const n = String(roiKeyCount);
+        return {
+            btnClose: t("roiCalibrator.btnClose"),
+            btnCancel: t("roiCalibrator.btnCancel"),
+            hint: roiKeyCount === 1
+                ? t("roiCalibrator.hintSingle")
+                : t("roiCalibrator.hintMulti").replace("{n}", n),
+            errorBridge: t("roiCalibrator.errorBridge"),
+        };
+    };
+
+    // When calibrating a specific ROI key, merge into existing so other ROIs are not dropped.
     const persistRois = async (
         profileId: string,
         rois: HudRois,
         roiKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp"
     ) => {
-        if (roiKey === "rmExp") {
+        if (roiKey) {
             const existing = await roiStore.get(profileId);
             const merged: HudRois = { ...(existing ?? {}) };
-            if (rois.rmExp) {
-                merged.rmExp = rois.rmExp;
+            if (rois[roiKey]) {
+                merged[roiKey] = rois[roiKey];
             } else {
-                delete merged.rmExp;
+                delete merged[roiKey];
             }
             await roiStore.set(profileId, merged);
             return;
@@ -137,9 +155,10 @@ export function createRoiController(options: RoiControllerOptions) {
             return { x: b.x, y: b.y, width: b.width, height: b.height };
         };
 
-        // For rmExp (supporter), only show rmExp in the calibrator
-        const filteredExisting = roiKey === "rmExp" ? { rmExp: existing?.rmExp } : existing;
-        const allowedKeys = roiKey === "rmExp" ? ["rmExp"] as const : undefined;
+        // When a specific key is requested, restrict the calibrator to that key only.
+        const filteredExisting = roiKey ? { [roiKey]: existing?.[roiKey] } : existing;
+        const allowedKeys = roiKey ? [roiKey] : undefined;
+        const strings = await getCalibratorStrings(allowedKeys?.length ?? 7);
         debugLog("ocr", "[ROI CONTROLLER] openFromInstance roiKey:", roiKey, "allowedKeys:", allowedKeys, "filteredExisting:", JSON.stringify(filteredExisting));
 
         await openRoiCalibratorWindow({
@@ -151,6 +170,7 @@ export function createRoiController(options: RoiControllerOptions) {
             preloadPath,
             activeKey: roiKey,
             allowedKeys,
+            strings,
             onSave: async (rois: HudRois) => {
                 debugLog("ocr", "[ROI CALIB MAIN] onSave instance profileId:", profileId, "rois:", JSON.stringify(rois));
                 await persistRois(profileId, rois, roiKey);
@@ -218,8 +238,9 @@ export function createRoiController(options: RoiControllerOptions) {
             };
         };
 
-        const filteredExisting = roiKey === "rmExp" ? { rmExp: existing?.rmExp } : existing;
-        const allowedKeys = roiKey === "rmExp" ? ["rmExp"] as const : undefined;
+        const filteredExisting = roiKey ? { [roiKey]: existing?.[roiKey] } : existing;
+        const allowedKeys = roiKey ? [roiKey] : undefined;
+        const strings = await getCalibratorStrings(allowedKeys?.length ?? 7);
 
         await openRoiCalibratorWindow({
             profileId,
@@ -236,6 +257,7 @@ export function createRoiController(options: RoiControllerOptions) {
             preloadPath,
             activeKey: roiKey,
             allowedKeys,
+            strings,
             onSave: async (rois: HudRois) => {
                 debugLog("ocr", "[ROI CALIB MAIN] onSave registry profileId:", profileId, "rois:", JSON.stringify(rois));
                 await persistRois(profileId, rois, roiKey);
@@ -310,9 +332,10 @@ export function createRoiController(options: RoiControllerOptions) {
             };
         };
 
-        // For rmExp (supporter), only show rmExp in the calibrator
-        const filteredExisting = roiKey === "rmExp" ? { rmExp: existing?.rmExp } : existing;
-        const allowedKeys = roiKey === "rmExp" ? ["rmExp"] as const : undefined;
+        // When a specific key is requested, restrict the calibrator to that key only.
+        const filteredExisting = roiKey ? { [roiKey]: existing?.[roiKey] } : existing;
+        const allowedKeys = roiKey ? [roiKey] : undefined;
+        const strings = await getCalibratorStrings(allowedKeys?.length ?? 7);
         debugLog("ocr", "[ROI CONTROLLER] openFromSessionTab roiKey:", roiKey, "allowedKeys:", allowedKeys, "filteredExisting:", JSON.stringify(filteredExisting));
 
         // Don't use parent: win here! BrowserViews are always drawn on top of
@@ -333,6 +356,7 @@ export function createRoiController(options: RoiControllerOptions) {
             preloadPath,
             activeKey: roiKey,
             allowedKeys,
+            strings,
             onSave: async (rois: HudRois) => {
                 debugLog("ocr", "[ROI CALIB MAIN] onSave tab profileId:", profileId, "rois:", JSON.stringify(rois));
                 await persistRois(profileId, rois, roiKey);

@@ -7,7 +7,7 @@
 export { generateId, suppressError, safeCallback } from "./utils";
 
 // Logger
-export { logWarn, logErr, logDebug } from "./logger";
+export { logWarn, logErr, logInfo } from "./logger";
 
 // Constants
 export { TIMINGS, LAYOUT, GRID_CONFIGS } from "./constants";
@@ -27,7 +27,6 @@ export {
     type TabLayout,
     type RoiRect,
     type SplitPair,
-    type ValidationResult,
 } from "./schemas";
 
 // IPC Channels

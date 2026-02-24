@@ -19,11 +19,11 @@ const roiSample: RoiData = {
 
 describe("ROI IPC handlers", () => {
     let handlers: Map<string, Handler>;
-    const roiOpen = vi.fn<[], Promise<boolean>>();
-    const roiLoad = vi.fn<[string], Promise<RoiData | null>>();
-    const roiSave = vi.fn<[string, RoiData], Promise<boolean>>();
-    const roiStatus = vi.fn<[string], Promise<Record<string, boolean>>>();
-    const getOverlayTargetId = vi.fn<[], Promise<string | null>>();
+    const roiOpen = vi.fn<() => Promise<boolean>>();
+    const roiLoad = vi.fn<(profileId: string) => Promise<RoiData | null>>();
+    const roiSave = vi.fn<(profileId: string, rois: RoiData) => Promise<boolean>>();
+    const roiStatus = vi.fn<(profileId: string) => Promise<Record<string, boolean>>>();
+    const getOverlayTargetId = vi.fn<() => Promise<string | null>>();
 
     beforeEach(() => {
         roiOpen.mockReset();

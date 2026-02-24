@@ -95,7 +95,7 @@ export async function persistOcrTimerSettings(
             enemyName: sanitizedPatch.enemyName ?? base.enemyName,
             enemyHp: sanitizedPatch.enemyHp ?? base.enemyHp,
         };
-        const hasActiveTimer = Object.values(next).some((value) => value > 0);
+        const hasActiveTimer = Object.values(next).some((value) => (value as number) > 0);
         if (hasActiveTimer) {
             return [...remaining, next];
         }

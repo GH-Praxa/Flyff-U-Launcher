@@ -14,10 +14,22 @@ type Profile = {
     overlayTarget?: boolean;
     overlayIconKey?: string;
 };
-type TabLayoutSplit = {
-    leftId: string;
-    rightId: string;
+type GridCell = {
+    id: string;
+    position: number;
+};
+type MultiViewLayout = {
+    type: "single" | "split-2" | "row-3" | "row-4" | "grid-4" | "grid-5" | "grid-6" | "grid-7" | "grid-8";
+    cells: GridCell[];
     ratio?: number;
+    activePosition?: number;
+};
+type TabLayoutSplit =
+    | { leftId: string; rightId: string; ratio?: number; }
+    | MultiViewLayout;
+type SavedLayoutTab = {
+    name?: string;
+    layout: MultiViewLayout;
 };
 type TabLayout = {
     id: string;
@@ -26,7 +38,9 @@ type TabLayout = {
     updatedAt: string;
     tabs: string[];
     split?: TabLayoutSplit | null;
+    layouts?: SavedLayoutTab[];
     activeId?: string | null;
+    loggedOutChars?: string[];
 };
 type RoiRect = {
     x: number;
@@ -45,6 +59,7 @@ type BuffWeckerOverlayPayload = Record<string, unknown>;
 type BuffWeckerPingResult = { ok?: boolean; error?: string; disabled?: boolean };
 type BuffWeckerScanResult = Record<string, unknown> | { error: string };
 type ThemePushPayload = {
+    id?: string;
     colors?: Partial<Record<string, string>>;
     builtin?: { tabActive?: string };
 };
@@ -192,6 +207,64 @@ declare global {
             logsClear: () => Promise<boolean>;
             logsSave: () => Promise<string>;
             onLogsNew: (cb: (entry: { ts: number; level: string; module: string; message: string }) => void) => () => void;
+            // Profile overlay support
+            profilesGetOverlayTargetId: () => Promise<string | null>;
+            profilesGetOverlaySupportTargetId: () => Promise<string | null>;
+            profilesSetOverlaySupportTarget: (profileId: string | null, iconKey?: string) => Promise<Profile[]>;
+            // Multi-window management
+            openTabWithLayout: (profileId: string, layoutType: string, windowId?: string) => Promise<boolean>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            createWindowWithLayout: (layout: any, windowId: string, initialProfileId?: string) => Promise<void>;
+            createTabWindow: (name?: string) => Promise<string>;
+            listTabWindows: () => Promise<Array<{ id: string; name?: string; title?: string; tabCount?: number }>>;
+            closeTabWindow: (windowId: string) => Promise<void>;
+            renameTabWindow: (windowId: string, newName: string) => Promise<void>;
+            updateWindowTitle: (layoutTypes: string[]) => Promise<void>;
+            // Session tabs (extended)
+            sessionTabsGetOpenProfiles: () => Promise<string[]>;
+            sessionTabsGetAllOpenProfiles: () => Promise<string[]>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            sessionTabsSetMultiLayout: (layout: any, options?: { ensureViews?: boolean; allowMissingViews?: boolean }) => Promise<void>;
+            sessionTabsOpenInCell: (position: number, profileId: string, options?: { activate?: boolean; forceLoad?: boolean }) => Promise<void>;
+            sessionTabsUpdateCell: (position: number, profileId: string | null) => Promise<void>;
+            sessionTabsShowLayoutMenu: (coords: { x: number; y: number }) => Promise<string | null>;
+            // News & announcements
+            fetchAnnouncements: () => Promise<unknown>;
+            // Client settings
+            clientSettingsGet: () => Promise<unknown>;
+            clientSettingsPatch: (patch: unknown) => Promise<unknown>;
+            // Hotkeys
+            hotkeysPause: () => Promise<void>;
+            hotkeysResume: () => Promise<void>;
+            // Feature flags
+            featuresGet: () => Promise<unknown>;
+            featuresPatch: (patch: unknown) => Promise<unknown>;
+            // Documentation
+            patchnotesGet: (locale: string) => Promise<string>;
+            documentationGet: (locale: string) => Promise<{ content: string; assetsPath: string }>;
+            // Session events
+            onSessionWindowCloseRequested: (cb: () => void) => void;
+            onLayoutsChanged: (cb: () => void) => void;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onLayoutCreated: (cb: (layout: any) => void) => void;
+            onOpenTabWithLayout: (cb: (profileId: string, layoutType: string) => void) => void;
+            onTabHotkeyNavigate: (cb: (payload: { side?: "left" | "right"; dir: "prev" | "next" }) => void) => () => void;
+            onShowFcoinConverter: (cb: () => void) => () => void;
+            onShowShoppingList: (cb: () => void) => () => void;
+            // Shopping list
+            shoppingListSearch: (query: string, locale: string) => Promise<unknown>;
+            shoppingListIcon: (iconFilename: string) => Promise<string | null>;
+            shoppingListSavePrice: (itemId: number | string, price: number) => Promise<unknown>;
+            // Upgrade calculator
+            upgradeCalcLoadSettings: () => Promise<unknown>;
+            upgradeCalcSaveSettings: (settings: unknown) => Promise<boolean>;
+            // Toast notifications
+            onToast: (cb: (payload: { message: string; tone?: "info" | "success" | "error"; ttlMs?: number }) => void) => () => void;
+            // Tab layouts (pending)
+            tabLayoutsPending: () => Promise<unknown>;
+            // Plugin UI
+            pluginsGetSidepanelTabs: () => Promise<unknown[]>;
+            pluginsGetOverlayViews: () => Promise<unknown[]>;
         };
         ipc?: {
             send: (channel: string, payload?: unknown) => void;

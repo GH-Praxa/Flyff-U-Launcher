@@ -19,7 +19,7 @@ export async function loadFeatureFlags() {
 
     try {
 
-        featureFlags = await window.api.featuresGet();
+        featureFlags = await window.api.featuresGet() as FeatureFlags;
 
     }
 
@@ -64,6 +64,14 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     tabLayoutDisplay: "compact",
 
     fcoinRate: 200_000_000,
+
+    gameFont: null,
+
+    sendTelemetry: false,
+
+    showAnnouncements: true,
+
+    collapsibleOpenProfiles: true,
 
 };
 
@@ -291,6 +299,54 @@ export function setAutoSaveLayouts(value: boolean) {
 
 }
 
+// ── Launcher UI Font ──────────────────────────────────────────────────
+//
+// Applies a font-family override to the launcher window itself by injecting
+// a <style> element. For bundled fonts (Josefin Sans, Roboto, …) the Google
+// Fonts stylesheet is loaded so the font is available in the launcher renderer
+// even before the config modal has been opened.
+
+const LAUNCHER_BUNDLED_FONTS = [
+    "Josefin Sans","Roboto","Open Sans","Lato",
+    "Montserrat","Raleway","Nunito","Ubuntu","Cinzel",
+];
+const LAUNCHER_FONTS_URL =
+    "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700" +
+    "&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700" +
+    "&family=Lato:wght@400;700&family=Montserrat:wght@400;700" +
+    "&family=Raleway:wght@400;700&family=Nunito:wght@400;700" +
+    "&family=Ubuntu:wght@400;700&family=Cinzel:wght@400;700&display=swap";
+
+export function applyLauncherFontSize(size: number | null): void {
+    const existing = document.getElementById("__lch_launcher_font_size__");
+    if (existing) existing.remove();
+    if (!size || size === 100) return;
+    const style = document.createElement("style");
+    style.id = "__lch_launcher_font_size__";
+    style.textContent = `html { font-size: ${size}% !important; }`;
+    if (window.__cspNonce) style.setAttribute("nonce", window.__cspNonce);
+    document.head.appendChild(style);
+}
+
+export function applyLauncherFont(font: string | null): void {
+    const existing = document.getElementById("__lch_launcher_font__");
+    if (existing) existing.remove();
+    if (!font) return;
+    // Ensure Google Fonts is present for bundled fonts.
+    if (LAUNCHER_BUNDLED_FONTS.includes(font) &&
+        !document.querySelector(`link[href="${LAUNCHER_FONTS_URL}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = LAUNCHER_FONTS_URL;
+        document.head.appendChild(link);
+    }
+    const style = document.createElement("style");
+    style.id = "__lch_launcher_font__";
+    style.textContent = `*, *::before, *::after { font-family: ${JSON.stringify(font)}, sans-serif !important; }`;
+    if (window.__cspNonce) style.setAttribute("nonce", window.__cspNonce);
+    document.head.appendChild(style);
+}
+
 // ── Load / Patch Client Settings ─────────────────────────────────────
 
 export async function loadClientSettings(): Promise<ClientSettings> {
@@ -303,7 +359,7 @@ export async function loadClientSettings(): Promise<ClientSettings> {
 
     try {
 
-        const settings = await window.api.clientSettingsGet();
+        const settings = await window.api.clientSettingsGet() as ClientSettings;
 
         const size = normalizeLauncherSize({
 
@@ -343,6 +399,16 @@ export async function loadClientSettings(): Promise<ClientSettings> {
 
             fcoinRate: typeof settings.fcoinRate === "number" && settings.fcoinRate > 0 ? settings.fcoinRate : DEFAULT_CLIENT_SETTINGS.fcoinRate,
 
+            gameFont: typeof settings.gameFont === "string" ? settings.gameFont : null,
+
+            launcherFontSize: typeof settings.launcherFontSize === "number" ? settings.launcherFontSize : null,
+
+            sendTelemetry: typeof settings.sendTelemetry === "boolean" ? settings.sendTelemetry : false,
+
+            showAnnouncements: typeof settings.showAnnouncements === "boolean" ? settings.showAnnouncements : true,
+
+            collapsibleOpenProfiles: typeof settings.collapsibleOpenProfiles === "boolean" ? settings.collapsibleOpenProfiles : true,
+
         };
 
         setLayoutDelaySeconds(normalized.layoutDelaySeconds);
@@ -356,6 +422,10 @@ export async function loadClientSettings(): Promise<ClientSettings> {
         setLayoutTabDisplay(normalized.tabLayoutDisplay);
 
         applyLocale(normalized.locale);
+
+        applyLauncherFont(normalized.gameFont);
+
+        applyLauncherFontSize(normalized.launcherFontSize ?? null);
 
         return normalized;
 
@@ -383,7 +453,7 @@ export async function syncLocaleFromSettings(): Promise<void> {
 
     try {
 
-        const settings = await window.api.clientSettingsGet();
+        const settings = await window.api.clientSettingsGet() as ClientSettings;
 
         const nextLocale = settings?.locale ?? DEFAULT_LOCALE;
 
@@ -409,6 +479,6 @@ export async function patchClientSettings(patch: Partial<ClientSettings>): Promi
 
         return null;
 
-    return await window.api.clientSettingsPatch(patch);
+    return await window.api.clientSettingsPatch(patch) as ClientSettings | null;
 
 }

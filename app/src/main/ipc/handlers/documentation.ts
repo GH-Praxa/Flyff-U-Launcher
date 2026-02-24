@@ -93,8 +93,6 @@ function imageToDataUrl(imagePath: string): string | null {
  * Processes markdown content and embeds images as base64 data URLs.
  */
 function embedImages(content: string, assetsPath: string): string {
-    // eslint-disable-next-line no-console
-    console.log("[Documentation] Assets path:", assetsPath);
     // Replace ![alt](filename) with embedded base64 images
     return content.replace(
         /!\[([^\]]*)\]\(([^)]+)\)/g,
@@ -104,8 +102,6 @@ function embedImages(content: string, assetsPath: string): string {
                 return match;
             }
             const imagePath = path.join(assetsPath, "screenshots", src);
-            // eslint-disable-next-line no-console
-            console.log("[Documentation] Looking for image:", imagePath, "exists:", fs.existsSync(imagePath));
             const dataUrl = imageToDataUrl(imagePath);
             if (dataUrl) {
                 return `![${alt}](${dataUrl})`;

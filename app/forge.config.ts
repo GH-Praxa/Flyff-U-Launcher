@@ -201,10 +201,10 @@ const config: ForgeConfig = {
             manufacturer: "Praxa",
             description: "Flyff-U-Launcher",
             icon: iconPath,
-            appIconPath: iconPath,
+            // appIconPath: iconPath, // not in MakerWixConfig type
             shortcutName: "Flyff-U-Launcher",
             shortcutFolderName: "Flyff-U-Launcher",
-            createDesktopShortcut: true,
+            // createDesktopShortcut: true, // not in MakerWixConfig type
             programFilesFolderName: "Flyff-U-Launcher",
             exe: "Flyff-U-Launcher",
             arch: "x64",
@@ -276,6 +276,11 @@ const config: ForgeConfig = {
                         target: "main",
                     },
                     {
+                        entry: "src/main/ocr/timerSchedulerWorker.ts",
+                        config: "vite.main.config.ts",
+                        target: "main",
+                    },
+                    {
                         entry: "src/preload.ts",
                         config: "vite.preload.config.ts",
                         target: "preload",
@@ -291,6 +296,7 @@ const config: ForgeConfig = {
         ];
         // Fuses nur für Windows und macOS aktivieren (Linux hat Probleme mit AppImages)
         if (process.platform !== "linux") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             plugins.push(new FusesPlugin({
                 version: FuseVersion.V1,
                 [FuseV1Options.RunAsNode]: false,
@@ -299,7 +305,7 @@ const config: ForgeConfig = {
                 [FuseV1Options.EnableNodeCliInspectArguments]: false,
                 [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
                 [FuseV1Options.OnlyLoadAppFromAsar]: true,
-            }));
+            }) as any);
         }
         return plugins;
     })(),

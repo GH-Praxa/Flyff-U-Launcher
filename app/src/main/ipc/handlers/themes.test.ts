@@ -70,8 +70,10 @@ describe("Theme IPC handlers", () => {
         mockWindows.length = 0;
         logErr.mockReset();
         Object.values(fsState.mock).forEach((fn) => typeof fn === "function" && fn.mockReset?.());
-        electronApp.getPath.mockClear();
-        electronBrowserWindow.getAllWindows.mockClear();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (electronApp.getPath as any).mockClear();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (electronBrowserWindow.getAllWindows as any).mockClear();
 
         themes = {
             list: vi.fn().mockResolvedValue([]),
@@ -82,8 +84,9 @@ describe("Theme IPC handlers", () => {
         const safeHandle = createSafeHandle(handlers);
         registerThemeHandlers(
             safeHandle,
-            { themes },
-            logErr,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { themes } as any,
+            logErr as any,
         );
     });
 

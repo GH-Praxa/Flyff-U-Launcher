@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Guide</title>
+    <link rel="stylesheet" href="ui_sidepanel.css">
+</head>
+<body>
+    <div class="quest-guide">
+        <header class="header">
+            <h2 id="headerTitle">Quest Guide</h2>
+        </header>
+
+        <div class="search-bar">
+            <svg class="search-icon" viewBox="0 0 16 16" width="14" height="14">
+                <circle cx="6.5" cy="6.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <line x1="10.5" y1="10.5" x2="15" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search quests, NPCs, items...">
+        </div>
+
+        <div class="filters">
+            <div class="filter-row ocr-level-row">
+                <div class="filter-field">
+                    <label id="labelOcrLevel">OCR Level:</label>
+                    <span id="ocrLevelDisplay" class="ocr-level-display">--</span>
+                    <span id="ocrIndicator" class="ocr-indicator" title="Level via OCR erkannt" style="display:none;">OCR</span>
+                </div>
+                <div class="filter-field region-field">
+                    <label id="labelRegion">Region:</label>
+                    <select id="regionSelect">
+                        <option value="">All</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-row level-mode-row">
+                <div class="level-mode-radios">
+                    <label class="radio-label">
+                        <input type="radio" name="levelMode" value="ocr" id="modeOcr" checked>
+                        <span id="labelModeOcr">OCR ±</span>
+                        <input type="number" id="ocrRangeInput" class="inline-range" min="0" max="50" value="5">
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="levelMode" value="manual" id="modeManual">
+                        <span id="labelModeManual">Lv:</span>
+                        <input type="number" id="manualLevelInput" class="inline-level" min="1" max="190" value="1">
+                        <span>±</span>
+                        <input type="number" id="manualRangeInput" class="inline-range" min="0" max="50" value="5">
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="levelMode" value="fixed" id="modeFixed">
+                        <span id="labelModeFixed">Min-Max:</span>
+                        <input type="number" id="minLevelInput" class="inline-level" min="1" max="190" value="1">
+                        <span>-</span>
+                        <input type="number" id="maxLevelInput" class="inline-level" min="1" max="190" value="30">
+                    </label>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="type-toggle" id="typeToggle">
+                    <button class="type-btn active" data-type="all" id="btnAll">All</button>
+                    <button class="type-btn" data-type="chain" id="btnChain">Chain</button>
+                    <button class="type-btn" data-type="daily" id="btnDaily">Daily</button>
+                    <button class="type-btn" data-type="repeat" id="btnRepeat">Repeat</button>
+                    <button class="type-btn" data-type="category" id="btnCategory">Category</button>
+                </div>
+                <div class="subcategory-toggle" id="subcategoryToggle" style="display:none;"></div>
+            </div>
+            <div class="filter-row checkboxes">
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="showCompleted">
+                    <span id="labelCompleted">Completed</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="showUnavailable">
+                    <span id="labelUnavailable">Unavailable</span>
+                </label>
+                <button id="resetProgressBtn" class="btn-reset-progress" title="Reset Progress">&#x21BA;</button>
+            </div>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+            <span class="stat-item" id="statTotal">Total: 0</span>
+            <span class="stat-item" id="statAvailable">Avail: 0</span>
+            <span class="stat-item" id="statCompleted">Done: 0</span>
+        </div>
+
+        <div class="quest-list" id="questList">
+            <div class="loading" id="loadingMsg">Loading quests...</div>
+        </div>
+    </div>
+
+    <script src="ui_sidepanel.js"></script>
+</body>
+</html>

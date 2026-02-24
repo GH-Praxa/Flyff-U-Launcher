@@ -33,7 +33,6 @@ export function registerRoiHandlers(
     };
 
     safeHandle("roi:open", async (_e: IpcEvent, arg: unknown) => {
-        console.log("[ROI IPC] roi:open received arg:", JSON.stringify(arg));
         let profileId = typeof arg === "string"
             ? arg
             : (arg && typeof arg === "object" && "profileId" in arg && typeof (arg as { profileId: unknown }).profileId === "string")
@@ -42,7 +41,6 @@ export function registerRoiHandlers(
         const roiKey = (arg && typeof arg === "object" && "roiKey" in arg && typeof (arg as { roiKey: unknown }).roiKey === "string")
             ? (arg as { roiKey: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp" }).roiKey
             : undefined;
-        console.log("[ROI IPC] roi:open parsed profileId:", profileId, "roiKey:", roiKey);
         if (!profileId && opts.getOverlayTargetId) {
             profileId = await opts.getOverlayTargetId();
         }
@@ -50,7 +48,6 @@ export function registerRoiHandlers(
             throw new ValidationError("roi:open: missing profileId");
         }
         assertValidId(profileId, "profileId");
-        console.log("[ROI IPC] roi:open calling roiOpen with profileId:", profileId, "roiKey:", roiKey);
         return await opts.roiOpen(profileId, roiKey);
     });
 

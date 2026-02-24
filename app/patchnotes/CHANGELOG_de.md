@@ -1,6 +1,65 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.1.0
+
+### ✨ Neue Funktionen
+
+**Launcher-Ankündigungen**
+- Neuer Bereich im rechten Panel zeigt Live-Nachrichten vom Entwickler ohne App-Update
+- Typen: 🐛 Bug, ℹ Info, ✨ Feature, ⚠ Warnung — jeweils farblich hervorgehoben
+- Vollständig lokalisiert: Nachrichten können in allen 8 Sprachen übersetzt werden
+- Deaktivierbar unter Einstellungen → Client-Einstellungen → „Launcher-Ankündigungen anzeigen"
+- Geöffnete Profile im rechten Panel sind jetzt auf- und zuklappbar
+
+**Schriftart- & Schriftgröße-Einstellung**
+- Neue Einstellung "Overlay- & UI-Schriftart" in den Client-Einstellungen
+- 9 vorinstallierte Google Fonts: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel
+- Benutzerdefinierte Schriftarten möglich
+- Schriftart wird in Launcher-Overlays und DOM-basierte UI-Elemente injiziert
+- Canvas 2D Font-Interceptor für Phaser-basierte Spiele
+- Neue Einstellung "Schriftgröße des Launchers": Textgröße im Launcher-Fenster skalierbar (75–150%)
+
+**Fehlerbericht-Funktion**
+- Neues Log-Panel im Side Panel: Logs anzeigen, speichern und löschen
+- Fehlerbericht direkt an Discord senden — mit optionaler Beschreibung und Discord-Tag
+- 60-Sekunden-Cooldown zum Schutz vor versehentlichem Mehrfachsenden
+
+**Quest Guide Plugin**
+- Neues gebündeltes Plugin mit Quest-Chain-Visualisierung und Fortschritts-Tracking
+- Eigener Tab im Side Panel sowie eigene Einstellungen-UI
+- Unterstützt API-Abfragen für Quest, NPC, Monster und Item
+
+**Unified Upgrade-Rechner**
+- Upgrade-Rechner zu einem einheitlichen Fenster mit Sidebar-Navigation zusammengeführt
+- Kombiniert: Waffen-Upgrade, Schmuck-Upgrade, Rüstungs-Piercing, Waffen-Piercing und Ultimate-Upgrades
+
+**Telemetrie (opt-in)**
+- Neue Client-Einstellung: Anonyme Startstatistiken senden (Version + zufällige ID)
+- Opt-in, keine persönlichen Daten, jederzeit deaktivierbar
+
+**ROI-Kalibrierung**
+- Lokalisierte Strings für den ROI-Kalibrator (alle Sprachen)
+- Verbesserte Persistierung für einzelne ROI-Keys
+
+### 🚀 Performance
+
+**OCR-Optimierung**
+- ROI Pixel-Hash-Cache eingeführt
+- OCR wird übersprungen wenn sich der Frame nicht geändert hat
+- Reduziert CPU-Last bei statischen Spielinhalten
+
+### 📦 Linux-Support
+
+- Tesseract-Binärdateien und Bibliotheken für Linux hinzugefügt
+- tessdata-Sprachdateien für Linux gebündelt
+
+### 🌐 Übersetzungen
+
+- Neue Übersetzungen für Schriftart- und Schriftgröße-Einstellungen in allen Sprachen
+- ROI-Kalibrator jetzt vollständig lokalisiert
+
+---
 ## 🐛 Version 3.0.5
 
 ### 🐛 Fehlerbehebungen

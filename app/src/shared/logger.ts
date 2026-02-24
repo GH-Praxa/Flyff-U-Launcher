@@ -31,6 +31,10 @@ export const logWarn = (msg: unknown, moduleName?: string) => {
     console.warn(`[${moduleName ?? "App"}]`, msg);
 };
 
+export const logInfo = (msg: unknown, moduleName?: string) => {
+    console.log(`[${moduleName ?? "App"}]`, msg);
+};
+
 export function getLogEntries(): LogEntry[] {
     return [...logBuffer];
 }

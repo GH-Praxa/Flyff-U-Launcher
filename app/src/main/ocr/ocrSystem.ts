@@ -103,7 +103,7 @@ function isImageNearlyUniform(img: NativeImage): boolean {
     try {
         const { width, height } = img.getSize();
         if (width === 0 || height === 0) return true;
-        const buf = img.getBitmap();
+        const buf = img.getBitmap() as unknown as Buffer | null | undefined;
         if (!buf || buf.length < 4) return true;
         const totalPixels = width * height;
         let minLum = 255;
@@ -146,7 +146,7 @@ function detectElement(img: NativeImage): string | null {
     try {
         const { width, height } = img.getSize();
         if (width <= 0 || height <= 0) return null;
-        const buf = img.getBitmap();
+        const buf = img.getBitmap() as unknown as Buffer | null | undefined;
         if (!buf || buf.length < 4) return null;
         let sumR = 0, sumG = 0, sumB = 0, totalWeight = 0, survivedPixels = 0;
         const startX = Math.floor(width * 0.25);
@@ -203,7 +203,7 @@ function detectHpBar(img: NativeImage): boolean {
     try {
         const { width, height } = img.getSize();
         if (width <= 0 || height <= 0) return false;
-        const buf = img.getBitmap();
+        const buf = img.getBitmap() as unknown as Buffer | null | undefined;
         if (!buf || buf.length < 4) return false;
         const totalPixels = width * height;
         let hpPixels = 0;
@@ -292,6 +292,20 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     // ── Monster lookup ─────────────────────────────────────────
     const monsterLookup = createMonsterLookup();
 
+    // ── ROI pixel-hash cache (skip Tesseract when frame unchanged) ──
+    const roiFrameCache = new Map<string, { hash: number; value: string }>();
+
+    /** Fast 32-bit rolling hash over sampled bytes of a PNG buffer. */
+    function pngHash(buf: Buffer): number {
+        let h = 0x811c9dc5;
+        const step = Math.max(1, Math.floor(buf.length / 512));
+        for (let i = 0; i < buf.length; i += step) {
+            h ^= buf[i]!;
+            h = (Math.imul(h, 0x01000193) >>> 0);
+        }
+        return h;
+    }
+
     // ── OCR cache & manual level overrides ──────────────────────
     const ocrCache = new Map<string, {
         lvl?: string; exp?: string; rmExp?: string; charname?: string;
@@ -358,6 +372,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     const lastLevelChangeAt = new Map<string, number>();
     const expLevelUpLocks = new Map<string, number>();
     const lastEnemyMeta = new Map<string, { level: number | null; element: string | null; maxHp: number | null; updatedAt: number }>();
+    const lastEnemyLog = new Map<string, number>();
 
     const handleExpLevelUp = (profileId: string, prevExp: unknown, nextExp: unknown, now: number) => {
         const lastLockAt = expLevelUpLocks.get(profileId) ?? 0;
@@ -658,11 +673,19 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
             if (process.env.FLYFF_OCR_SAVE_ROI === "1") {
                 try {
-                    const fs = await import("fs");
-                    const debugPath = require("path").join(app.getAppPath(), "ocr", "debug");
-                    await fs.promises.mkdir(debugPath, { recursive: true });
-                    await fs.promises.writeFile(require("path").join(debugPath, `roi_${key}_${Date.now()}.png`), png);
+                    const fsDyn = await import("fs");
+                    const debugPath = path.join(app.getAppPath(), "ocr", "debug");
+                    await fsDyn.promises.mkdir(debugPath, { recursive: true });
+                    await fsDyn.promises.writeFile(path.join(debugPath, `roi_${key}_${Date.now()}.png`), png);
                 } catch { /* ignore */ }
+            }
+
+            // Fast path: if pixel content unchanged, reuse last OCR result
+            const frameCacheKey = `${profileId}:${key}`;
+            const frameHash = pngHash(png);
+            const frameCached = roiFrameCache.get(frameCacheKey);
+            if (frameCached && frameCached.hash === frameHash && frameCached.value !== "") {
+                return frameCached.value;
             }
 
             const kind = KEY_TO_OCR_KIND[key];
@@ -760,12 +783,19 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 if (!candidate) return "";
                 if (typeof response.value === "string" && response.value.trim()) {
                     const num = Number(response.value.replace(",", "."));
-                    if (Number.isFinite(num) && num >= 0 && num <= 100) return `${num.toFixed(4)}%`;
+                    if (Number.isFinite(num) && num >= 0 && num <= 100) {
+                        const r = `${num.toFixed(4)}%`;
+                        roiFrameCache.set(frameCacheKey, { hash: frameHash, value: r });
+                        return r;
+                    }
                 }
+                roiFrameCache.set(frameCacheKey, { hash: frameHash, value: candidate });
                 return candidate;
             }
 
-            return raw || fallback || "";
+            const finalVal = raw || fallback || "";
+            if (finalVal) roiFrameCache.set(frameCacheKey, { hash: frameHash, value: finalVal });
+            return finalVal;
         } catch (err) {
             logErr(err, `OCR scan ${key}`);
             return null;
@@ -778,8 +808,6 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         const prevValue = (cached as Record<string, unknown>)[key];
         const now = Date.now();
         let shouldUpdate = true;
-        const lastEnemyLog = (applyOcrResult as unknown as { _enemyLog?: Map<string, number> })._enemyLog || new Map<string, number>();
-        (applyOcrResult as unknown as { _enemyLog?: Map<string, number> })._enemyLog = lastEnemyLog;
 
         const isExpLike = key === "exp" || key === "rmExp";
         if (isExpLike && result !== "" && typeof result === "string") {

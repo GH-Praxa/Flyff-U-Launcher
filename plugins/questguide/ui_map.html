@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPC Location</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 12px;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        /* ── Toolbar ─────────────────────────────────────────────────────── */
+        #toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #16213e;
+            border-bottom: 1px solid #2a2a4a;
+            flex-shrink: 0;
+            min-height: 44px;
+        }
+
+        #toolbar-portrait {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: #0f0f23;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        #toolbar-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #e94560;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #toolbar-coords {
+            font-size: 10px;
+            color: #888;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .toolbar-btn {
+            padding: 4px 10px;
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 4px;
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .toolbar-btn:hover { background: #3a3a5a; color: #fff; }
+
+        /* ── Map area ────────────────────────────────────────────────────── */
+        #map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+            background: #0a0a1a;
+        }
+        #map-container.dragging { cursor: grabbing; }
+
+        /* Tile layer – scaled and panned via CSS transform */
+        #map-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+        }
+
+        .tile {
+            position: absolute;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        /* ── NPC Marker (screen-space, NOT inside #map-layer) ────────────── */
+        /*
+         * Kept outside map-layer so it stays fixed-size at all zoom levels.
+         * Position is updated in applyTransform() whenever pan or zoom changes.
+         */
+        #npc-marker {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            display: none;   /* hidden until map data arrives */
+        }
+
+        .pulse-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: rgba(233, 69, 96, 0.4);
+            animation: pulse 1.6s ease-out infinite;
+        }
+        .pulse-ring.delay { animation-delay: 0.6s; }
+
+        .marker-dot {
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            background: #e94560;
+            box-shadow: 0 0 8px rgba(233, 69, 96, 0.9), 0 0 2px #fff;
+        }
+
+        /* NPC icon floating above the marker dot */
+        .marker-npc-icon {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 2px solid #e94560;
+            background: #0f0f23;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.7);
+            /* Center horizontally over the dot; sit above it with a small gap */
+            left: 50%;
+            bottom: calc(100% + 7px);
+            transform: translateX(-50%);
+            display: none;
+        }
+        /* Small triangle connector pointing down from icon to dot */
+        .marker-npc-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #e94560;
+        }
+
+        @keyframes pulse {
+            0%   { transform: scale(1);   opacity: 0.7; }
+            100% { transform: scale(3.2); opacity: 0;   }
+        }
+
+        /* ── Spawn Areas ──────────────────────────────────────────────────── */
+        .spawn-area {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .spawn-area-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 2px;
+        }
+        .spawn-area-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid;
+            border-radius: 2px;
+        }
+        .spawn-area.aggro-high .spawn-area-fill { background: rgba(239, 68, 68, 0.3); }
+        .spawn-area.aggro-high .spawn-area-border { border-color: rgba(239, 68, 68, 0.8); }
+        .spawn-area.aggro-medium .spawn-area-fill { background: rgba(251, 191, 36, 0.25); }
+        .spawn-area.aggro-medium .spawn-area-border { border-color: rgba(251, 191, 36, 0.7); }
+        .spawn-area.aggro-low .spawn-area-fill { background: rgba(34, 197, 94, 0.2); }
+        .spawn-area.aggro-low .spawn-area-border { border-color: rgba(34, 197, 94, 0.6); }
+
+        /* ── Status message ──────────────────────────────────────────────── */
+        #status-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            text-align: center;
+            font-size: 13px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <img id="toolbar-portrait" alt="">
+        <span id="toolbar-title">NPC Location</span>
+        <span id="toolbar-coords"></span>
+        <button class="toolbar-btn" id="btn-center"   title="Center on NPC">&#x25CE;</button>
+        <button class="toolbar-btn" id="btn-zoom-in"  title="Zoom in">+</button>
+        <button class="toolbar-btn" id="btn-zoom-out" title="Zoom out">&#x2212;</button>
+    </div>
+
+    <div id="map-container">
+        <div id="map-layer"></div>
+        <!-- Marker is a sibling of #map-layer so it stays fixed-size regardless of zoom -->
+        <div id="npc-marker">
+            <img class="marker-npc-icon" id="marker-icon" alt="">
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring delay"></div>
+            <div class="marker-dot"></div>
+        </div>
+        <div id="status-msg">Loading map data&hellip;</div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        // Convert Windows backslash path to file:// URL
+        function toFileUrl(absPath) {
+            var s = String(absPath).replace(/\\/g, '/');
+            return /^[A-Za-z]:/.test(s) ? 'file:///' + s : 'file://' + s;
+        }
+
+        // ── DOM refs ───────────────────────────────────────────────────────
+        var portrait     = document.getElementById('toolbar-portrait');
+        var titleEl      = document.getElementById('toolbar-title');
+        var coordsEl     = document.getElementById('toolbar-coords');
+        var mapContainer = document.getElementById('map-container');
+        var mapLayer     = document.getElementById('map-layer');
+        var marker       = document.getElementById('npc-marker');
+        var statusMsg    = document.getElementById('status-msg');
+
+        // ── Pan / Zoom state ───────────────────────────────────────────────
+        var zoom      = 1.0;
+        var panX      = 0;
+        var panY      = 0;
+        var npcX      = 0;
+        var npcZ      = 0;   // world Z coordinate (for display)
+        var npcPixelY = 0;   // pixel Y on map: mapHeight - worldZ (Z-axis is flipped)
+        var tileSize  = 512;
+
+        function applyTransform() {
+            mapLayer.style.transform =
+                'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+
+            // Keep marker at fixed pixel size; update its screen-space position
+            marker.style.left = (npcX      * zoom + panX) + 'px';
+            marker.style.top  = (npcPixelY * zoom + panY) + 'px';
+        }
+
+        function centerOnNpc(targetZoom) {
+            var toolbar = document.getElementById('toolbar');
+            var tbh = toolbar && toolbar.offsetHeight > 0 ? toolbar.offsetHeight : 44;
+            var w = window.innerWidth;
+            var h = window.innerHeight - tbh;
+            if (targetZoom == null) targetZoom = h / (tileSize * 4);
+            zoom = Math.max(0.05, Math.min(4.0, targetZoom));
+            panX = w / 2 - npcX      * zoom;
+            panY = h / 2 - npcPixelY * zoom;
+            applyTransform();
+        }
+
+        // ── Initialize from data fetched via preload ───────────────────────
+        function initMap(data) {
+            var tileName  = data.tileName  || '';
+            tileSize      = Number(data.tileSize)  || 512;
+            var mapWidth  = Number(data.mapWidth)  || 10752;
+            var mapHeight = Number(data.mapHeight) || 8192;
+            npcX          = Number(data.x)         || 0;
+            npcZ          = Number(data.z)         || 0;
+            // FlyffU world Z increases northward; tile row 0 is at the top (north).
+            // Convert world Z to map pixel Y by flipping the axis.
+            npcPixelY     = mapHeight - npcZ;
+            var npcName   = data.npcName           || 'NPC';
+            var worldName = data.worldName         || '';
+            var cacheDir  = data.cacheDir          || '';
+            var npcIcon   = data.npcIcon           || null;
+
+            // ── Toolbar ────────────────────────────────────────────────────
+            document.title = 'NPC Location \u2013 ' + npcName;
+            titleEl.textContent  = npcName + (worldName ? '  \u2014  ' + worldName : '');
+            coordsEl.textContent = 'X ' + Math.round(npcX) + '   Z ' + Math.round(npcZ);
+
+            if (npcIcon) {
+                portrait.src = toFileUrl(npcIcon);
+                portrait.style.display = 'block';
+                portrait.onerror = function () { this.style.display = 'none'; };
+
+                // Show NPC icon on the marker itself
+                var markerIcon = document.getElementById('marker-icon');
+                markerIcon.src = toFileUrl(npcIcon);
+                markerIcon.style.display = 'block';
+                markerIcon.onerror = function () { this.style.display = 'none'; };
+            }
+
+            // ── Tile grid ──────────────────────────────────────────────────
+            mapLayer.style.width  = mapWidth  + 'px';
+            mapLayer.style.height = mapHeight + 'px';
+
+            if (tileName) {
+                statusMsg.style.display = 'none';
+                var tilesX = Math.ceil(mapWidth  / tileSize);
+                var tilesY = Math.ceil(mapHeight / tileSize);
+
+                for (var ty = 0; ty < tilesY; ty++) {
+                    for (var tx = 0; tx < tilesX; tx++) {
+                        var img = document.createElement('img');
+                        img.className = 'tile';
+                        img.style.left   = (tx * tileSize) + 'px';
+                        img.style.top    = (ty * tileSize) + 'px';
+                        img.style.width  = tileSize + 'px';
+                        img.style.height = tileSize + 'px';
+                        img.src          = toFileUrl(
+                            cacheDir + '/world/tiles/' + tileName + tx + '-' + ty + '-0.png'
+                        );
+                        img.loading = 'lazy';
+                        img.onerror = function () { this.style.visibility = 'hidden'; };
+                        mapLayer.appendChild(img);
+                    }
+                }
+            } else {
+                statusMsg.textContent = 'No map tiles available for this world.';
+            }
+
+            // Show marker and center immediately.
+            // Uses window.innerWidth/innerHeight (always valid) rather than
+            // getBoundingClientRect, which returns 0 before the first layout pass.
+            marker.style.display = 'block';
+            
+            // ── Spawn Areas ────────────────────────────────────────────────
+            var spawns = data.spawns;
+            console.log('[QuestGuide Map] Spawns data:', spawns);
+            if (spawns && spawns.length > 0) {
+                console.log('[QuestGuide Map] Rendering ' + spawns.length + ' spawn areas');
+                for (var si = 0; si < spawns.length; si++) {
+                    var sp = spawns[si];
+                    // Convert spawn area to pixel coordinates
+                    // left/right are X coordinates, top/bottom are Z coordinates (need to flip Z)
+                    var spLeft = sp.left;
+                    var spRight = sp.right;
+                    var spTop = mapHeight - sp.bottom;  // flip Z axis
+                    var spBottom = mapHeight - sp.top;  // flip Z axis
+                    var spWidth = spRight - spLeft;
+                    var spHeight = spBottom - spTop;
+                    
+                    console.log('[QuestGuide Map] Spawn ' + si + ':', sp, '-> pixels:', {left: spLeft, top: spTop, width: spWidth, height: spHeight});
+                    
+                    var aggro = sp.aggressivity || 0;
+                    var aggroClass = aggro >= 100 ? 'aggro-high' : aggro >= 50 ? 'aggro-medium' : 'aggro-low';
+                    
+                    var spawnDiv = document.createElement('div');
+                    spawnDiv.className = 'spawn-area ' + aggroClass;
+                    spawnDiv.style.left = spLeft + 'px';
+                    spawnDiv.style.top = spTop + 'px';
+                    spawnDiv.style.width = spWidth + 'px';
+                    spawnDiv.style.height = spHeight + 'px';
+                    
+                    var fillDiv = document.createElement('div');
+                    fillDiv.className = 'spawn-area-fill';
+                    spawnDiv.appendChild(fillDiv);
+                    
+                    var borderDiv = document.createElement('div');
+                    borderDiv.className = 'spawn-area-border';
+                    spawnDiv.appendChild(borderDiv);
+                    
+                    mapLayer.appendChild(spawnDiv);
+                }
+            } else {
+                console.log('[QuestGuide Map] No spawns data available');
+            }
+            
+            centerOnNpc();
+        }
+
+        // ── Fetch data from main process via preload ───────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.mapApi) {
+                statusMsg.textContent = 'mapApi not available (preload missing?)';
+                return;
+            }
+            window.mapApi.getMapData().then(function (data) {
+                if (data) {
+                    initMap(data);
+                } else {
+                    statusMsg.textContent = 'No map data received.';
+                }
+            }).catch(function (err) {
+                statusMsg.textContent = 'Error: ' + (err && err.message || String(err));
+            });
+        });
+
+        // ── Mouse pan ──────────────────────────────────────────────────────
+        var dragging  = false;
+        var dragStart = { x: 0, y: 0, panX: 0, panY: 0 };
+
+        mapContainer.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            dragging  = true;
+            dragStart = { x: e.clientX, y: e.clientY, panX: panX, panY: panY };
+            mapContainer.classList.add('dragging');
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', function (e) {
+            if (!dragging) return;
+            panX = dragStart.panX + (e.clientX - dragStart.x);
+            panY = dragStart.panY + (e.clientY - dragStart.y);
+            applyTransform();
+        });
+
+        window.addEventListener('mouseup', function () {
+            if (!dragging) return;
+            dragging = false;
+            mapContainer.classList.remove('dragging');
+        });
+
+        // ── Scroll-wheel zoom (centered on cursor) ─────────────────────────
+        mapContainer.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            var rect    = mapContainer.getBoundingClientRect();
+            var mouseX  = e.clientX - rect.left;
+            var mouseY  = e.clientY - rect.top;
+            var factor  = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+            var newZoom = Math.max(0.05, Math.min(4.0, zoom * factor));
+
+            panX = mouseX - (mouseX - panX) * (newZoom / zoom);
+            panY = mouseY - (mouseY - panY) * (newZoom / zoom);
+            zoom = newZoom;
+            applyTransform();
+        }, { passive: false });
+
+        // ── Toolbar buttons ────────────────────────────────────────────────
+        document.getElementById('btn-center').addEventListener('click', function () {
+            centerOnNpc();
+        });
+
+        document.getElementById('btn-zoom-in').addEventListener('click', function () {
+            var rect    = mapContainer.getBoundingClientRect();
+            var newZoom = Math.min(4.0, zoom * 1.3);
+            panX = rect.width  / 2 - (rect.width  / 2 - panX) * (newZoom / zoom);
+            panY = rect.height / 2 - (rect.height / 2 - panY) * (newZoom / zoom);
+            zoom = newZoom;
+            applyTransform();
+        });
+
+        document.getElementById('btn-zoom-out').addEventListener('click', function () {
+            var rect    = mapContainer.getBoundingClientRect();
+            var newZoom = Math.max(0.05, zoom / 1.3);
+            panX = rect.width  / 2 - (rect.width  / 2 - panX) * (newZoom / zoom);
+            panY = rect.height / 2 - (rect.height / 2 - panY) * (newZoom / zoom);
+            zoom = newZoom;
+            applyTransform();
+        });
+
+    })();
+    </script>
+</body>
+</html>

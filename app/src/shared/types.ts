@@ -2,6 +2,13 @@ export type IpcWebviewReadyPayload = {
     profileId: string;
 };
 
+export type ViewBounds = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
 // Profile type alias (shared with schemas)
 export type Profile = import("./schemas").Profile;
 

@@ -12,13 +12,12 @@ export async function openPluginSettingsUI(
     plugin: { id: string; name: string; hasSettingsUI?: boolean; enabled?: boolean },
 ): Promise<void> {
     const { snapshotThemeVars, applyThemeToIframe } = deps;
-    console.log("[PluginUI] open", { id: plugin.id, name: plugin.name, enabled: plugin.enabled, hasSettingsUI: plugin.hasSettingsUI });
     if (!plugin.hasSettingsUI) {
         showToast(t("config.plugins.noUI"), "info");
         return;
     }
     if (plugin.enabled === false) {
-        showToast(t("config.plugins.isDisabled"), "warning");
+        showToast(t("config.plugins.isDisabled"), "info");
         return;
     }
     const overlay = el("div", "pluginUiOverlay");
@@ -66,12 +65,10 @@ export async function openPluginSettingsUI(
             close();
     });
     frame.addEventListener("load", () => {
-        console.log("[PluginUI] iframe loaded", plugin.id);
         applyThemeToIframe(frame);
     });
     try {
         const uiInfo = await window.api.pluginsGetSettingsUI(plugin.id);
-        console.log("[PluginUI] settings UI info", uiInfo);
         if (!uiInfo) {
             throw new Error("No UI URL available");
         }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { UpgradeCalculator } from "../../../src/tools/upgradeCalculator.js";
-import { LevelCosts } from "../../../src/tools/upgradeCalculator.js";
+import { UpgradeCalculator } from "./upgradeCalculator.js";
+import { LevelCosts } from "./upgradeCalculator.js";
 import {
   getUpgradeData,
   getProbabilityForLevel,
@@ -9,7 +9,7 @@ import {
   DICE_4_6_PROBS,
   DICE_12_PROBS,
   LEVEL_COSTS,
-} from "../../../src/tools/upgradeData.js";
+} from "./upgradeData.js";
 
 describe("UpgradeCalculator", () => {
   let calculator: UpgradeCalculator;

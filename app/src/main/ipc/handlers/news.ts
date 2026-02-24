@@ -3,7 +3,7 @@
  */
 import https from "https";
 import { SafeHandle, IpcEvent, ValidationError, PermissionError } from "../common";
-import { TIMINGS } from "../../../shared/constants";
+import { TIMINGS, URLS } from "../../../shared/constants";
 
 export function registerNewsHandlers(
     safeHandle: SafeHandle,
@@ -60,6 +60,14 @@ export function registerNewsHandlers(
             }
         }
         return await fetchWithFallback(url);
+    });
+
+    safeHandle("announcements:fetch", async (_e: IpcEvent) => {
+        const text = await fetchWithFallback(URLS.GITHUB_ANNOUNCEMENTS);
+        if (Buffer.byteLength(text, "utf-8") > 65536) {
+            throw new ValidationError("announcements payload exceeds 64 KB limit");
+        }
+        return text;
     });
 
     safeHandle("news:fetchArticle", async (_e: IpcEvent, rawUrl: string) => {

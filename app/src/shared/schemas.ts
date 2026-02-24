@@ -147,6 +147,18 @@ export const ClientSettingsSchema = z.object({
     persistGameUiPositions: z.boolean(),
     tabLayoutDisplay: z.enum(["compact", "grouped", "separated", "mini-grid"]),
     fcoinRate: z.number().positive(),
+    /** Font family injected into the game client via CSS (null = game default). */
+    gameFont: z.string().nullable().optional(),
+    /** Font size scale for the launcher UI in percent (75–150, null = default 100). */
+    launcherFontSize: z.number().nullable().optional(),
+    /** Sends anonymous startup data (version + random ID) to the developer. Opt-in. */
+    sendTelemetry: z.boolean(),
+    /** Discord webhook URL for sending error logs from the side panel. Stored in user data, not source. */
+    logsWebhook: z.string().optional(),
+    /** Show launcher announcements (bugs, features in progress) in the right panel. Default: true. */
+    showAnnouncements: z.boolean(),
+    /** Allow the open profiles section to be collapsed. Default: true. */
+    collapsibleOpenProfiles: z.boolean(),
 });
 export type ClientSettings = z.infer<typeof ClientSettingsSchema>;
 export const ClientSettingsPatchSchema = ClientSettingsSchema.partial();

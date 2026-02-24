@@ -5,9 +5,24 @@ import mineralsIcon from "../../assets/minerals.png";
 import eronsIcon from "../../assets/erons.png";
 import powerdice4Icon from "../../assets/powerdice4.png";
 import powerdice6Icon from "../../assets/powerdice6.png";
+import powerdice8Icon from "../../assets/powerdice8.png";
+import powerdice10Icon from "../../assets/powerdice10.png";
 import powerdice12Icon from "../../assets/powerdice12.png";
 import sprotectIcon from "../../assets/sprotect.png";
 import lowsprotectIcon from "../../assets/lowsprotect.png";
+import xprotectIcon from "../../assets/xprotect.png";
+import sunstoneIcon from "../../assets/sunstone.png";
+import aprotectIcon from "../../assets/aprotect.png";
+import gprotectIcon from "../../assets/gprotect.png";
+import ultimateorbIcon from "../../assets/ultimateorb.png";
+import guruIcon from "../../assets/guru.png";
+import weaponIcon from "../../assets/itm_weaaxebehemoth.png";
+import curseJewelryIcon from "../../assets/curse_jewelry_fragment.png";
+import weaswowoodenIcon from "../../assets/weaswowooden.png";
+import mvag02upperIcon from "../../assets/mvag02upper.png";
+import armshibuckleIcon from "../../assets/armshibuckle.png";
+import goreIcon from "../../assets/gore.png";
+import weastaegoIcon from "../../assets/weastaego.png";
 
 export function localeToIntl(loc: string): string {
     return loc === "cn" ? "zh-CN" :
@@ -335,634 +350,1221 @@ searchInput.focus();
 </script></body></html>`;
 }
 
-export function buildUpgradeCalculatorHtml(locale: string, theme: ThemeVars): string {
+// ============================================================================
+// Unified Upgrade Calculator  (all upgrade types in one window with sidebar nav)
+// Replaces: buildUpgradeCalculatorHtml, buildJewelryUpgradeHtml,
+//           buildArmorPiercingHtml, buildWeaponPiercingHtml, buildUltimateUpgradeHtml
+// ============================================================================
+
+export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVars): string {
     const intlLocale = localeToIntl(locale);
-    const fmt = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 });
-    const upgradeTexts = {
-        title: tr("tools.upgrade.title" as TranslationKey),
-        diceTypeLabel: tr("tools.upgrade.diceTypeLabel" as TranslationKey),
-        dice4_6: tr("tools.upgrade.dice4_6" as TranslationKey),
-        dice12: tr("tools.upgrade.dice12" as TranslationKey),
-        systemLabel: tr("tools.upgrade.systemLabel" as TranslationKey),
-        sProtect: tr("tools.upgrade.sProtect" as TranslationKey),
-        sProtectLow: tr("tools.upgrade.sProtectLow" as TranslationKey),
-        compare: tr("tools.upgrade.compare" as TranslationKey),
-        fromLevel: tr("tools.upgrade.fromLevel" as TranslationKey),
-        toLevel: tr("tools.upgrade.toLevel" as TranslationKey),
-        sProtectPrice: tr("tools.upgrade.sProtectPrice" as TranslationKey),
-        sProtectLowPrice: tr("tools.upgrade.sProtectLowPrice" as TranslationKey),
-        dice4Price: tr("tools.upgrade.dice4Price" as TranslationKey),
-        dice6Price: tr("tools.upgrade.dice6Price" as TranslationKey),
-        dice12Price: tr("tools.upgrade.dice12Price" as TranslationKey),
-        owned: tr("tools.upgrade.owned" as TranslationKey),
-        materials: tr("tools.upgrade.materials" as TranslationKey),
-        calculate: tr("tools.upgrade.calculate" as TranslationKey),
-        level: tr("tools.upgrade.level" as TranslationKey),
-        chance: tr("tools.upgrade.chance" as TranslationKey),
-        attempts: tr("tools.upgrade.attempts" as TranslationKey),
-        mineral: tr("tools.upgrade.mineral" as TranslationKey),
-        eron: tr("tools.upgrade.eron" as TranslationKey),
-        penya: tr("tools.upgrade.penya" as TranslationKey),
-        protects: tr("tools.upgrade.protects" as TranslationKey),
-        totalCost: tr("tools.upgrade.totalCost" as TranslationKey),
-        total: tr("tools.upgrade.total" as TranslationKey),
-        cheaper: tr("tools.upgrade.cheaper" as TranslationKey),
-    };
     const ar = theme.accentRgb;
 
-    const GAME_DATA = {
-        dice4_6: [0.88888889, 0.82352941, 0.75, 0.34736999, 0.20622583, 0.09782638, 0.04562014, 0.01201637, 0.00308911, 0.00050293],
-        dice12: [1.0, 1.0, 0.86363636, 0.42264973, 0.24440677, 0.11894919, 0.06385147, 0.01773627, 0.00442309, 0.00067675],
-        costs: [
-            { level: 1, mineral: 10, penya: 2000 },
-            { level: 2, mineral: 14, penya: 4000 },
-            { level: 3, mineral: 20, penya: 8000 },
-            { level: 4, mineral: 27, penya: 15000 },
-            { level: 5, mineral: 38, penya: 30000 },
-            { level: 6, mineral: 54, penya: 60000 },
-            { level: 7, mineral: 75, penya: 75000 },
-            { level: 8, mineral: 105, penya: 125000 },
-            { level: 9, mineral: 148, penya: 250000 },
-            { level: 10, mineral: 207, penya: 300000 },
-        ]
+    // Translation strings (weapon/armor tab uses i18n; other tabs use fixed German labels)
+    const T = {
+        sProtect:      tr("tools.upgrade.sProtect"      as TranslationKey),
+        sProtectLow:   tr("tools.upgrade.sProtectLow"   as TranslationKey),
+        compare:       tr("tools.upgrade.compare"       as TranslationKey),
+        fromLevel:     tr("tools.upgrade.fromLevel"     as TranslationKey),
+        toLevel:       tr("tools.upgrade.toLevel"       as TranslationKey),
+        owned:         tr("tools.upgrade.owned"         as TranslationKey),
+        materials:     tr("tools.upgrade.materials"     as TranslationKey),
+        calculate:     tr("tools.upgrade.calculate"     as TranslationKey),
+        level:         tr("tools.upgrade.level"         as TranslationKey),
+        chance:        tr("tools.upgrade.chance"        as TranslationKey),
+        attempts:      tr("tools.upgrade.attempts"      as TranslationKey),
+        mineral:       tr("tools.upgrade.mineral"       as TranslationKey),
+        eron:          tr("tools.upgrade.eron"          as TranslationKey),
+        penya:         tr("tools.upgrade.penya"         as TranslationKey),
+        total:         tr("tools.upgrade.total"         as TranslationKey),
+        totalCost:     tr("tools.upgrade.totalCost"     as TranslationKey),
+        cheaper:       tr("tools.upgrade.cheaper"       as TranslationKey),
+        diceTypeLabel: "Power Dice",
+        dice4_6:       "Power Dice 6",
+        dice12:        "Power Dice 12",
     };
 
     const ICONS = {
-        penya: penyaIcon,
-        minerals: mineralsIcon,
-        erons: eronsIcon,
-        powerdice4: powerdice4Icon,
-        powerdice6: powerdice6Icon,
-        powerdice12: powerdice12Icon,
-        sprotect: sprotectIcon,
+        penya:       penyaIcon,
+        minerals:    mineralsIcon,
+        erons:       eronsIcon,
+        d4:          powerdice4Icon,
+        d6:          powerdice6Icon,
+        d8:          powerdice8Icon,
+        d10:         powerdice10Icon,
+        d12:         powerdice12Icon,
+        sprotect:    sprotectIcon,
         lowsprotect: lowsprotectIcon,
+        xprotect:    xprotectIcon,
+        sunstone:    sunstoneIcon,
+        aprotect:    aprotectIcon,
+        gprotect:    gprotectIcon,
+        ultimateorb: ultimateorbIcon,
+        guru:        guruIcon,
+        weapon:      weaponIcon,
+        jewelry:     curseJewelryIcon,
+        weaswowooden: weaswowoodenIcon,
+        mvag02upper: mvag02upperIcon,
+        armshibuckle: armshibuckleIcon,
+        gore: goreIcon,
+        weastaego: weastaegoIcon,
     };
 
-    const DEFAULT_SETTINGS = {
-        prices: { mineral: 1000, eron: 1000, sProtect: 18000000, sProtectLow: 10000000, dice4: 500000, dice6: 500000, dice12: 1000000 },
-        owned: { mineral: false, eron: false, sProtect: false, sProtectLow: false, dice4: false, dice6: false, dice12: false },
+    const DEFAULT_WS = {
+        prices: { mineral: 1000, eron: 1000, sProtect: 18000000, sProtectLow: 10000000, dice6: 500000, dice12: 1000000 },
+        owned:  { mineral: false, eron: false, sProtect: false, sProtectLow: false, dice6: false, dice12: false },
         diceType: "dice4_6",
-        systemMode: "compare"
+        systemMode: "compare",
+        bonus: { fwcActive: false, fwcValue: 100, eventActive: false, eventValue: 0 },
     };
 
-    return `<!doctype html>
-<html lang="${intlLocale}">
-<head>
+    // All game data bundled for client-side JS
+    const GD = {
+        weapon: {
+            dice4_6: [0.88888889, 0.82352941, 0.75, 0.34736999, 0.20622583, 0.09782638, 0.04562014, 0.01201637, 0.00308911, 0.00050293],
+            dice12:  [1.0, 1.0, 0.86363636, 0.42264973, 0.24440677, 0.11894919, 0.06385147, 0.01773627, 0.00442309, 0.00067675],
+            costs: [
+                {l:1,m:10,p:2000},{l:2,m:14,p:4000},{l:3,m:20,p:8000},{l:4,m:27,p:15000},
+                {l:5,m:38,p:30000},{l:6,m:54,p:60000},{l:7,m:75,p:75000},
+                {l:8,m:105,p:125000},{l:9,m:148,p:250000},{l:10,m:207,p:300000},
+            ],
+        },
+        jewelry: {
+            d8:  [0.8888888900, 0.8235294118, 0.4581044440, 0.2493069984, 0.1418051957, 0.0911834609, 0.0610808317, 0.0409199117, 0.0282296525, 0.0177362748, 0.0120163682, 0.0095524157, 0.0054401086, 0.0038016583, 0.0024485555, 0.0013861777, 0.0006200876, 0.0001560417, 0.0000766121, 0.0000015698],
+            d10: [1.0000000000, 1.0000000000, 0.5569985570, 0.2968258491, 0.1688875608, 0.1088714130, 0.0724875434, 0.0505493442, 0.0322209144, 0.0209832282, 0.0171175271, 0.0136224870, 0.0077555964, 0.0054401086, 0.0035080404, 0.0019884101, 0.0008906052, 0.0002244043, 0.0001102193, 0.0000022601],
+            penya: new Array(20).fill(0),
+            max: 20,
+        },
+        armorPiercing: {
+            d8:  [0.75, 0.3021030303, 0.0557040404, 0.0038016583],
+            d10: [0.8636363636, 0.3603978509, 0.0785111200, 0.0054401086],
+            penya: [1120000, 1400000, 1680000, 1960000],
+            max: 4,
+        },
+        weaponPiercing: {
+            d8:   [0.3021030253, 0.0847440919, 0.0227015537, 0.0058936935, 0.0015076521, 0.3021030253, 0.0847440919, 0.0227015537, 0.0058936935, 0.0015076521],
+            d10:  [0.3603978509, 0.1012233924, 0.0322209144, 0.0084214794, 0.0022126466, 0.3603978509, 0.1012233924, 0.0322209144, 0.0084214794, 0.0022126466],
+            p1h:  [1120000, 1400000, 1680000, 1960000, 2240000],
+            p2h:  [1120000, 1400000, 1680000, 1960000, 2240000, 2520000, 2800000, 3080000, 3360000, 3640000],
+            max1h: 5,
+            max2h: 10,
+        },
+        ultimate: {
+            wProbs: [0.0244824095, 0.0177362748, 0.0133482050, 0.0100237399, 0.0073587053, 0.0054401086, 0.0038016583, 0.0019884101, 0.0008184658, 0.0003050380],
+            wMin:   [50, 100, 150, 200, 250, 300, 350, 400, 450, 500],
+            wPenya: [20000, 40000, 80000, 150000, 300000, 500000, 750000, 900000, 1200000, 1500000],
+            jProbs: [0.0073587053, 0.0054401086, 0.0030891066, 0.0017758901, 0.0009657416, 0.0005029272, 0.0003050380, 0.0001408741, 0.0000766121, 0.0000391396],
+            jPenya: [20000, 40000, 80000, 150000, 300000, 500000, 750000, 900000, 1200000, 1500000],
+        },
+    };
+
+    const STR = {
+        sProtect:    T.sProtect,
+        sProtectLow: T.sProtectLow,
+        total:       T.total,
+        totalCost:   T.totalCost,
+        owned:       T.owned,
+    };
+
+    return `<!doctype html><html lang="${intlLocale}"><head>
   <meta charset="utf-8" />
-  <title>${upgradeTexts.title}</title>
+  <title>🎲 Upgrade-Rechner</title>
   <style>
     :root { color-scheme: dark; --ar: ${ar}; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: ${theme.bg}; color: ${theme.text}; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    .container { flex: 1; overflow-y: auto; padding: 16px; max-width: 1000px; margin: 0 auto; width: 100%; }
-    .container::-webkit-scrollbar { width: 6px; }
-    .container::-webkit-scrollbar-thumb { background: rgba(var(--ar), 0.25); border-radius: 3px; }
-    h1 { margin: 0 0 16px; font-size: 16px; font-weight: 700; text-align: center; color: rgba(var(--ar), 0.9); letter-spacing: 0.02em; }
-    .card { background: ${theme.panel}; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid ${theme.stroke}; }
-    .card-title { font-size: 13px; font-weight: 700; color: rgba(var(--ar), 0.7); margin-bottom: 12px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
-    .card-title img { width: 20px; height: 20px; object-fit: contain; }
-    .form-row { display: flex; gap: 12px; margin-bottom: 8px; }
-    .form-group { flex: 1; min-width: 0; }
-    label { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(var(--ar), 0.55); }
-    label img { width: 16px; height: 16px; object-fit: contain; }
-    input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(var(--ar), 0.25); background: ${theme.panel2}; color: ${theme.text}; font-size: 13px; }
-    input:focus, select:focus { outline: none; border-color: rgba(var(--ar), 0.7); box-shadow: 0 0 0 2px rgba(var(--ar), 0.15); }
-    button { padding: 8px 16px; border-radius: 8px; border: none; background: rgba(var(--ar), 0.2); color: rgba(var(--ar), 0.9); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    button:hover { background: rgba(var(--ar), 0.35); }
-    button img { width: 18px; height: 18px; object-fit: contain; }
-    .btn-calculate { width: 100%; background: rgba(var(--ar), 0.25); padding: 10px; margin-top: 8px; }
-    .btn-calculate:hover { background: rgba(var(--ar), 0.45); }
+    body { font-family: system-ui, -apple-system, sans-serif; background: ${theme.bg}; color: ${theme.text}; display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 172px; flex-shrink: 0; background: ${theme.panel}; border-right: 1px solid ${theme.stroke}; display: flex; flex-direction: column; padding: 10px 7px; gap: 3px; overflow-y: auto; }
+    .sidebar-title { font-size: 10px; font-weight: 700; color: rgba(var(--ar), 0.5); padding: 2px 7px 8px; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid rgba(var(--ar), 0.1); margin-bottom: 3px; }
+    .nav-btn { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border-radius: 8px; border: none; background: transparent; color: rgba(var(--ar), 0.5); font-size: 11.5px; font-weight: 600; cursor: pointer; text-align: left; width: 100%; transition: background 0.12s, color 0.12s; }
+    .nav-icon { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; opacity: 0.65; transition: opacity 0.12s; }
+    .nav-btn:hover .nav-icon, .nav-btn.active .nav-icon { opacity: 1; }
+    .nav-btn:hover { background: rgba(var(--ar), 0.08); color: rgba(var(--ar), 0.85); }
+    .nav-btn.active { background: rgba(var(--ar), 0.15); color: rgba(var(--ar), 0.95); }
+
+    /* ── Content ── */
+    .content { flex: 1; overflow-y: auto; padding: 14px 16px; }
+    .content::-webkit-scrollbar { width: 6px; }
+    .content::-webkit-scrollbar-thumb { background: rgba(var(--ar), 0.22); border-radius: 3px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Cards ── */
+    h2 { font-size: 14px; font-weight: 700; color: rgba(var(--ar), 0.9); margin: 0 0 12px; display: flex; align-items: center; gap: 7px; }
+    h2 img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .card { background: ${theme.panel}; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid ${theme.stroke}; }
+    .card-title { font-size: 11px; font-weight: 700; color: rgba(var(--ar), 0.6); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 5px; }
+    .card-title img { width: 15px; height: 15px; object-fit: contain; }
+
+    /* ── Form ── */
+    .form-row { display: flex; gap: 9px; margin-bottom: 7px; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 130px; }
+    label { display: flex; align-items: center; gap: 5px; margin: 7px 0 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(var(--ar), 0.5); }
+    label img { width: 13px; height: 13px; object-fit: contain; }
+    input, select { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(var(--ar), 0.22); background: ${theme.panel2}; color: ${theme.text}; font-size: 12px; }
+    input:focus, select:focus { outline: none; border-color: rgba(var(--ar), 0.65); box-shadow: 0 0 0 2px rgba(var(--ar), 0.12); }
+    .btn-calc { width: 100%; padding: 9px 14px; border-radius: 8px; border: none; background: rgba(var(--ar), 0.2); color: rgba(var(--ar), 0.9); font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 7px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-calc:hover { background: rgba(var(--ar), 0.38); }
+    .btn-calc img { width: 15px; height: 15px; object-fit: contain; }
+
+    /* ── Tables ── */
     .hidden { display: none !important; }
     table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th { text-align: left; padding: 8px 6px; color: rgba(var(--ar), 0.5); font-weight: 700; border-bottom: 1px solid rgba(var(--ar), 0.15); }
-    th.img-header { padding: 8px 4px; width: 28px; }
-    th img { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; }
-    td { padding: 6px; border-bottom: 1px solid rgba(var(--ar), 0.06); }
-    td.img-cell { padding: 4px; text-align: center; }
-    td.img-cell img { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; }
+    th { text-align: left; padding: 7px 5px; color: rgba(var(--ar), 0.5); font-weight: 700; border-bottom: 1px solid rgba(var(--ar), 0.15); }
+    th.r { text-align: right; }
+    th.ic { padding: 7px 3px; width: 25px; }
+    th.ic img { width: 14px; height: 14px; object-fit: contain; vertical-align: middle; }
+    td { padding: 5px; border-bottom: 1px solid rgba(var(--ar), 0.06); }
     tr:last-child td { border-bottom: none; }
-    .number { text-align: right; font-variant-numeric: tabular-nums; }
+    .r { text-align: right; font-variant-numeric: tabular-nums; }
+    .lvc { font-weight: 600; color: rgba(var(--ar), 0.8); }
+    .already-done { font-size: 10px; font-weight: 400; opacity: 0.6; color: rgba(var(--ar), 1); margin-left: 3px; }
     .total-row { background: rgba(var(--ar), 0.08); font-weight: 700; }
     .total-row td { border-bottom: none; }
-    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .comparison-card { background: rgba(var(--ar), 0.05); border-radius: 10px; padding: 14px; border: 2px solid transparent; transition: all 0.2s ease; }
-    .comparison-card.cheaper { border-color: rgba(76, 175, 80, 0.6); background: rgba(76, 175, 80, 0.1); }
-    .comparison-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .comparison-header img { width: 24px; height: 24px; object-fit: contain; }
-    .comparison-title { font-size: 12px; font-weight: 700; color: rgba(var(--ar), 0.8); }
-    .comparison-value { font-size: 16px; font-weight: 700; color: rgba(var(--ar), 0.95); display: flex; align-items: center; gap: 6px; }
-    .comparison-value img { width: 18px; height: 18px; object-fit: contain; }
-    .comparison-details { font-size: 10px; color: rgba(var(--ar), 0.5); margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
-    .comparison-detail { display: flex; align-items: center; gap: 3px; }
-    .comparison-detail img { width: 14px; height: 14px; object-fit: contain; }
-    .cheaper-badge { background: rgba(76, 175, 80, 0.25); color: #6fcf73; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
-    .price-input { width: 100%; }
-    .level-cell { font-weight: 600; color: rgba(var(--ar), 0.8); }
-    .dice-select { position: relative; }
-    .dice-icons { display: flex; gap: 4px; align-items: center; }
-    .dice-icons img { width: 16px; height: 16px; object-fit: contain; }
-    .materials-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .material-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(var(--ar), 0.04); border-radius: 8px; }
-    .material-row.disabled { opacity: 0.4; }
-    .material-icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
-    .material-price { flex: 1; min-width: 0; }
-    .material-price input { padding: 6px 8px; font-size: 12px; }
-    .material-check { display: flex; align-items: center; gap: 4px; font-size: 10px; color: rgba(var(--ar), 0.6); cursor: pointer; }
-    .material-check input { width: 14px; height: 14px; accent-color: rgba(var(--ar), 0.8); cursor: pointer; }
-    .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(var(--ar), 0.5); margin: 12px 0 8px; padding-top: 8px; border-top: 1px solid rgba(var(--ar), 0.1); }
+
+    /* ── Dice Segmented Picker ── */
+    .dice-seg { display: flex; gap: 4px; flex-wrap: wrap; }
+    .dseg-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 6px; border-radius: 8px; border: 1px solid rgba(var(--ar), 0.22); background: ${theme.panel2}; color: rgba(var(--ar), 0.5); font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; min-width: 80px; }
+    .dseg-btn:hover { background: rgba(var(--ar), 0.1); color: rgba(var(--ar), 0.85); }
+    .dseg-btn.active { background: rgba(var(--ar), 0.2); color: rgba(var(--ar), 0.92); border-color: rgba(var(--ar), 0.5); }
+    .dseg-icon { width: 18px; height: 18px; object-fit: contain; }
+
+    /* ── Comparison cards (weapon tab) ── */
+    .cmp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .cmp-card { background: rgba(var(--ar), 0.05); border-radius: 10px; padding: 12px; border: 2px solid transparent; }
+    .cmp-card.cheaper { border-color: rgba(76,175,80,0.55); background: rgba(76,175,80,0.07); }
+    .cmp-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+    .cmp-head img { width: 20px; height: 20px; object-fit: contain; }
+    .cmp-title { font-size: 11px; font-weight: 700; color: rgba(var(--ar), 0.75); }
+    .cmp-value { font-size: 14px; font-weight: 700; color: rgba(var(--ar), 0.95); display: flex; align-items: center; gap: 5px; }
+    .cmp-value img { width: 15px; height: 15px; object-fit: contain; }
+    .cmp-details { font-size: 10px; color: rgba(var(--ar), 0.5); margin-top: 5px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .cmp-detail { display: flex; align-items: center; gap: 3px; }
+    .cmp-detail img { width: 12px; height: 12px; object-fit: contain; }
+    .cheaper-badge { background: rgba(76,175,80,0.2); color: #6fcf73; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    .cmp-footer { margin-top: 9px; font-size: 11px; color: rgba(var(--ar), 0.55); text-align: center; }
+
+    /* ── Materials grid (weapon tab) ── */
+    .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(var(--ar), 0.5); margin: 10px 0 6px; padding-top: 7px; border-top: 1px solid rgba(var(--ar), 0.08); }
+    .mat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .mat-row { display: flex; align-items: center; gap: 6px; padding: 5px 7px; background: rgba(var(--ar), 0.04); border-radius: 8px; }
+    .mat-icon { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
+    .mat-price { flex: 1; min-width: 0; }
+    .mat-price input { padding: 5px 7px; font-size: 11px; }
+    .mat-check { display: flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(var(--ar), 0.5); cursor: pointer; white-space: nowrap; }
+    .mat-check input { width: 12px; height: 12px; accent-color: rgba(var(--ar), 0.8); cursor: pointer; }
+
+    /* ── Inner tabs (ultimate) ── */
+    .inner-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+    .inner-tab { flex: 1; padding: 7px; border-radius: 8px; border: 1px solid rgba(var(--ar), 0.18); background: ${theme.panel}; color: rgba(var(--ar), 0.5); font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .inner-tab img { width: 16px; height: 16px; object-fit: contain; opacity: 0.6; }
+    .inner-tab.active img { opacity: 1; }
+    .inner-tab.active { background: rgba(var(--ar), 0.2); color: rgba(var(--ar), 0.92); border-color: rgba(var(--ar), 0.45); }
+    .note { font-size: 10px; color: rgba(var(--ar), 0.38); margin-top: 6px; font-style: italic; }
+    .dice-icons { display: flex; gap: 3px; align-items: center; }
+    .dice-icons img { width: 14px; height: 14px; object-fit: contain; }
+
+    /* ── Bonus Bar ── */
+    .bonus-bar { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; margin: 0 0 12px; background: ${theme.panel}; border-radius: 10px; border: 1px solid ${theme.stroke}; flex-wrap: wrap; }
+    .bonus-fwc-group { display: flex; flex-direction: column; gap: 4px; }
+    .bonus-fwc-row, .bonus-event-group { display: flex; align-items: center; gap: 6px; }
+    .bonus-fwc-cfgrow { display: flex; align-items: center; gap: 5px; padding-left: 18px; }
+    .bonus-toggle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: rgba(var(--ar), 0.55); cursor: pointer; user-select: none; }
+    .bonus-toggle input[type=checkbox] { accent-color: rgba(var(--ar), 0.9); width: 13px; height: 13px; cursor: pointer; }
+    .bonus-toggle.on { color: rgba(var(--ar), 0.9); }
+    .bonus-pct-badge { font-size: 10px; font-weight: 700; color: #6fcf73; background: rgba(76,175,80,.12); padding: 1px 6px; border-radius: 8px; }
+    .bonus-cfg-btn { background: rgba(var(--ar), 0.07); border: 1px solid rgba(var(--ar), 0.18); border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; color: rgba(var(--ar), 0.5); padding: 0; transition: background .12s; }
+    .bonus-cfg-btn:hover { background: rgba(var(--ar), 0.15); color: rgba(var(--ar), .9); }
+    .bonus-cfg-input { width: 52px; padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(var(--ar), 0.3); background: ${theme.panel2}; color: ${theme.text}; font-size: 12px; font-weight: 700; }
+    .bonus-spin { width: 60px; padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(var(--ar), 0.22); background: ${theme.panel2}; color: ${theme.text}; font-size: 12px; font-weight: 700; }
+    .bonus-unit { font-size: 11px; color: rgba(var(--ar), 0.45); font-weight: 700; }
+    .bonus-sep { width: 1px; align-self: stretch; background: rgba(var(--ar), 0.12); flex-shrink: 0; }
+    .bonus-total-badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: rgba(76,175,80,.1); color: #6fcf73; white-space: nowrap; align-self: center; }
+    .bonus-total-badge.zero { background: rgba(var(--ar), .06); color: rgba(var(--ar), .4); }
   </style>
-</head>
-<body>
-  <div class="container">
-    <h1>${upgradeTexts.title}</h1>
+</head><body>
 
-    <div class="card">
-      <div class="card-title">
-        <img src="${ICONS.powerdice6}" alt="Dice" />
-        ${upgradeTexts.systemLabel}
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>
-            <div class="dice-icons"><img src="${ICONS.powerdice4}" /><img src="${ICONS.powerdice6}" /></div>
-            ${upgradeTexts.diceTypeLabel}
+  <!-- Sidebar navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-title">Upgrade-Rechner</div>
+    <button id="nav-weapon"         class="nav-btn"><img src="${ICONS.weaswowooden}" class="nav-icon" /><img src="${ICONS.mvag02upper}" class="nav-icon" /><img src="${ICONS.armshibuckle}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d4}" class="nav-icon" /><img src="${ICONS.sprotect}" class="nav-icon" /></button>
+    <button id="nav-jewelry"        class="nav-btn"><img src="${ICONS.gore}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.aprotect}" class="nav-icon" /></button>
+    <button id="nav-armorPiercing"  class="nav-btn"><img src="${ICONS.mvag02upper}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.gprotect}" class="nav-icon" /></button>
+    <button id="nav-weaponPiercing" class="nav-btn"><img src="${ICONS.weaswowooden}" class="nav-icon" /><img src="${ICONS.armshibuckle}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.gprotect}" class="nav-icon" /></button>
+    <button id="nav-ultimateWeapon" class="nav-btn"><img src="${ICONS.ultimateorb}" class="nav-icon" /><img src="${ICONS.weapon}" class="nav-icon" /></button>
+    <button id="nav-ultimateJewelry" class="nav-btn"><img src="${ICONS.ultimateorb}" class="nav-icon" /><img src="${ICONS.jewelry}" class="nav-icon" /></button>
+  </nav>
+
+  <main class="content">
+
+    <!-- ══ Waffe / Rüstung ══════════════════════════════════════════════ -->
+    <section id="panel-weapon" class="panel">
+      <h2>Waffe-Rüstung-Schild Upgrade</h2>
+      <!-- Bonus Bar — moved into active panel by switchTab() -->
+      <div class="bonus-bar" id="bonus-bar">
+        <!-- FWC -->
+        <div class="bonus-fwc-group">
+          <div class="bonus-fwc-row">
+            <label class="bonus-toggle" id="bonus-fwcLabel">
+              <input type="checkbox" id="bonus-fwcOn" />
+              FWC
+            </label>
+            <span class="bonus-pct-badge" id="bonus-fwcBadge">+100%</span>
+            <button class="bonus-cfg-btn" id="bonus-fwcCfgBtn" title="FWC Bonus konfigurieren">⚙</button>
+          </div>
+          <div class="bonus-fwc-cfgrow hidden" id="bonus-fwcCfgRow">
+            <input type="number" class="bonus-cfg-input" id="bonus-fwcPct" min="0" max="100" step="1" value="100" />
+            <span class="bonus-unit">%</span>
+          </div>
+        </div>
+        <div class="bonus-sep"></div>
+        <!-- Event -->
+        <div class="bonus-event-group">
+          <label class="bonus-toggle" id="bonus-eventLabel">
+            <input type="checkbox" id="bonus-eventOn" />
+            Event
           </label>
-          <select id="diceType">
-            <option value="dice4_6">${upgradeTexts.dice4_6}</option>
-            <option value="dice12">${upgradeTexts.dice12}</option>
-          </select>
+          <span class="bonus-pct-badge" id="bonus-eventBadge" style="opacity:.35">+0%</span>
+          <input type="number" class="bonus-spin" id="bonus-eventPct" min="0" max="100" step="0.5" value="0" />
+          <span class="bonus-unit">%</span>
         </div>
-        <div class="form-group">
-          <label>${upgradeTexts.fromLevel}</label>
-          <select id="fromLevel">
-            ${Array.from({length: 10}, (_, i) => `<option value="${i+1}"${i===0?' selected':''}>+${i}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>${upgradeTexts.toLevel}</label>
-          <select id="toLevel">
-            ${Array.from({length: 10}, (_, i) => `<option value="${i+2}"${i===9?' selected':''}>+${i+1}</option>`).join('')}
-          </select>
-        </div>
+        <div class="bonus-total-badge zero" id="bonus-totalBadge">+0%</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Modus</label>
-          <select id="systemMode">
-            <option value="compare">${upgradeTexts.compare}</option>
-            <option value="sProtect">${upgradeTexts.sProtect}</option>
-            <option value="sProtectLow">${upgradeTexts.sProtectLow}</option>
-          </select>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>${T.diceTypeLabel}</label>
+            <div class="dice-seg" id="w-diceType" data-val="dice4_6">
+              <button type="button" class="dseg-btn active" data-val="dice4_6">
+                <img src="${ICONS.d6}" class="dseg-icon" />${T.dice4_6}
+              </button>
+              <button type="button" class="dseg-btn" data-val="dice12">
+                <img src="${ICONS.d12}" class="dseg-icon" />${T.dice12}
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>${T.fromLevel}</label>
+            <select id="w-from">
+              ${Array.from({length:10},(_,i)=>`<option value="${i+1}"${i===0?" selected":""}>+${i}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="w-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>${T.toLevel}</label>
+            <select id="w-to">
+              ${Array.from({length:10},(_,i)=>`<option value="${i+2}"${i===9?" selected":""}>+${i+1}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Modus</label>
+            <select id="w-mode">
+              <option value="compare">${T.compare}</option>
+              <option value="sProtect">${T.sProtect}</option>
+              <option value="sProtectLow">${T.sProtectLow}</option>
+            </select>
+          </div>
         </div>
+        <div class="section-label">${T.materials}</div>
+        <div class="mat-grid" id="w-matGrid"></div>
+        <button class="btn-calc" id="w-calcBtn">
+          <img src="${ICONS.penya}" />${T.calculate}
+        </button>
       </div>
-      
-      <div class="section-label">${upgradeTexts.materials}</div>
-      <div class="materials-grid" id="materialsGrid"></div>
-      
-      <button class="btn-calculate" id="calculateBtn">
-        <img src="${ICONS.penya}" alt="Calculate" />
-        ${upgradeTexts.calculate}
-      </button>
-    </div>
 
-    <div class="card hidden" id="resultsCard">
-      <div class="card-title" id="resultsTitle">Ergebnisse</div>
-      <div id="singleResults"></div>
-      <div id="comparisonResults" class="hidden">
-        <div class="comparison-grid">
-          <div class="comparison-card" id="sProtectCard">
-            <div class="comparison-header">
-              <img src="${ICONS.sprotect}" alt="SProtect" />
-              <span class="comparison-title">${upgradeTexts.sProtect}</span>
+      <div id="w-results" class="hidden">
+        <!-- Comparison view -->
+        <div class="card hidden" id="w-cmpSection">
+          <div class="card-title" id="w-cmpTitle"></div>
+          <div class="cmp-grid">
+            <div class="cmp-card" id="w-spCard">
+              <div class="cmp-head"><img src="${ICONS.sprotect}" /><span class="cmp-title">${T.sProtect}</span></div>
+              <div id="w-spSummary"></div>
             </div>
-            <div id="sProtectSummary"></div>
+            <div class="cmp-card" id="w-splCard">
+              <div class="cmp-head"><img src="${ICONS.lowsprotect}" /><span class="cmp-title">${T.sProtectLow}</span></div>
+              <div id="w-splSummary"></div>
+            </div>
+            <div class="cmp-card" id="w-mixCard">
+              <div class="cmp-head"><img src="${ICONS.lowsprotect}" /><span style="font-size:9px;opacity:.5">→</span><img src="${ICONS.sprotect}" /><span class="cmp-title">Mix</span></div>
+              <div id="w-mixSummary"></div>
+            </div>
           </div>
-          <div class="comparison-card" id="sProtectLowCard">
-            <div class="comparison-header">
-              <img src="${ICONS.lowsprotect}" alt="Low SProtect" />
-              <span class="comparison-title">${upgradeTexts.sProtectLow}</span>
+          <div class="cmp-footer" id="w-cheaperText"></div>
+        </div>
+        <!-- Single-system detail table -->
+        <div class="card hidden" id="w-singleSection">
+          <div class="card-title" id="w-singleTitle"></div>
+          <table>
+            <thead><tr>
+              <th>${T.level}</th>
+              <th class="r">${T.chance}</th>
+              <th class="r">${T.attempts}</th>
+              <th class="ic"><img src="${ICONS.minerals}" title="${T.mineral}" /></th>
+              <th class="ic"><img src="${ICONS.erons}" title="${T.eron}" /></th>
+              <th class="ic"><img src="${ICONS.penya}" title="${T.penya}" /></th>
+            </tr></thead>
+            <tbody id="w-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ Schmuck ════════════════════════════════════════════════════════ -->
+    <section id="panel-jewelry" class="panel">
+      <h2>Schmuck Upgrade</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Power Dice</label>
+            <div class="dice-seg" id="j-dice" data-val="d8">
+              <button type="button" class="dseg-btn active" data-val="d8">
+                <img src="${ICONS.d8}" class="dseg-icon" />Power Dice 8
+              </button>
+              <button type="button" class="dseg-btn" data-val="d10">
+                <img src="${ICONS.d10}" class="dseg-icon" />Power Dice 10
+              </button>
             </div>
-            <div id="sProtectLowSummary"></div>
+          </div>
+          <div class="form-group">
+            <label>Von Level</label>
+            <select id="j-from"></select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="j-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Bis Level</label>
+            <select id="j-to"></select>
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.penya}" /> Preis / Würfel</label>
+            <input type="text" inputmode="decimal" id="j-price" value="500,000" />
           </div>
         </div>
-        <div style="margin-top: 12px; font-size: 12px; color: rgba(var(--ar), 0.6); text-align: center;" id="cheaperText"></div>
+        <button class="btn-calc" id="j-calcBtn"><img src="${ICONS.penya}" />Berechnen</button>
       </div>
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th>${upgradeTexts.level}</th>
-            <th class="number">${upgradeTexts.chance}</th>
-            <th class="number">${upgradeTexts.attempts}</th>
-            <th class="img-header"><img src="${ICONS.minerals}" alt="Minerals" title="${upgradeTexts.mineral}" /></th>
-            <th class="img-header"><img src="${ICONS.erons}" alt="Erons" title="${upgradeTexts.eron}" /></th>
-            <th class="img-header"><img src="${ICONS.penya}" alt="Penya" title="${upgradeTexts.penya}" /></th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-  </div>
+      <div class="card hidden" id="j-results">
+        <table>
+          <thead><tr>
+            <th>Level</th><th class="r">Chance</th><th class="r">Ø Versuche</th>
+            <th class="r">Ø Penya/Versuch</th><th class="r">Ø Gesamt</th>
+          </tr></thead>
+          <tbody id="j-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ Rüstungs-Piercing ══════════════════════════════════════════════ -->
+    <section id="panel-armorPiercing" class="panel">
+      <h2>Rüstungs-Sockel</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Power Dice</label>
+            <div class="dice-seg" id="ap-dice" data-val="d8">
+              <button type="button" class="dseg-btn active" data-val="d8">
+                <img src="${ICONS.d8}" class="dseg-icon" />Power Dice 8
+              </button>
+              <button type="button" class="dseg-btn" data-val="d10">
+                <img src="${ICONS.d10}" class="dseg-icon" />Power Dice 10
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Von Level</label>
+            <select id="ap-from"></select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="ap-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Bis Level</label>
+            <select id="ap-to"></select>
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.penya}" /> Preis / Würfel</label>
+            <input type="text" inputmode="decimal" id="ap-price" value="500,000" />
+          </div>
+        </div>
+        <button class="btn-calc" id="ap-calcBtn"><img src="${ICONS.penya}" />Berechnen</button>
+      </div>
+      <div class="card hidden" id="ap-results">
+        <table>
+          <thead><tr>
+            <th>Level</th><th class="r">Chance</th><th class="r">Ø Versuche</th>
+            <th class="r">Ø Penya/Versuch</th><th class="r">Ø Gesamt</th>
+          </tr></thead>
+          <tbody id="ap-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ Waffe / Schild Piercing ════════════════════════════════════════ -->
+    <section id="panel-weaponPiercing" class="panel">
+      <h2>Waffe/Schild Sockel</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Power Dice</label>
+            <div class="dice-seg" id="wp-dice" data-val="d8">
+              <button type="button" class="dseg-btn active" data-val="d8">
+                <img src="${ICONS.d8}" class="dseg-icon" />Power Dice 8
+              </button>
+              <button type="button" class="dseg-btn" data-val="d10">
+                <img src="${ICONS.d10}" class="dseg-icon" />Power Dice 10
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Waffen-Typ</label>
+            <div class="dice-seg" id="wp-type" data-val="1h">
+              <button type="button" class="dseg-btn active" data-val="1h">
+                <img src="${ICONS.weaswowooden}" class="dseg-icon" /><img src="${ICONS.armshibuckle}" class="dseg-icon" style="width:14px;" /> 5 Slots
+              </button>
+              <button type="button" class="dseg-btn" data-val="2h">
+                <img src="${ICONS.weastaego}" class="dseg-icon" /> 10 Slots
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Von Level</label>
+            <select id="wp-from"></select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="wp-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Bis Level</label>
+            <select id="wp-to"></select>
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.penya}" /> Preis / Würfel</label>
+            <input type="text" inputmode="decimal" id="wp-price" value="500,000" />
+          </div>
+        </div>
+        <button class="btn-calc" id="wp-calcBtn"><img src="${ICONS.penya}" />Berechnen</button>
+      </div>
+      <div class="card hidden" id="wp-results">
+        <table>
+          <thead><tr>
+            <th>Level</th><th class="r">Chance</th><th class="r">Ø Versuche</th>
+            <th class="r">Ø Penya/Versuch</th><th class="r">Ø Gesamt</th>
+          </tr></thead>
+          <tbody id="wp-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ Ultimate Waffe ═══════════════════════════════════════════════════════ -->
+    <section id="panel-ultimateWeapon" class="panel">
+      <h2>Ultimate Waffe</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Von Level</label>
+            <select id="ultw-from"></select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="ultw-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Bis Level</label>
+            <select id="ultw-to"></select>
+          </div>
+        </div>
+        <div class="section-label">Preise</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><img src="${ICONS.sunstone}" /> Sunstone Preis</label>
+            <input type="text" inputmode="decimal" id="ultw-sunstone" value="0" />
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.xprotect}" /> XProtect Preis</label>
+            <input type="text" inputmode="decimal" id="ultw-xprotect" value="0" />
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.minerals}" /> Mineral Preis</label>
+            <input type="text" inputmode="decimal" id="ultw-mineral" value="1,000" />
+          </div>
+        </div>
+        <button class="btn-calc" id="ultw-calcBtn"><img src="${ICONS.penya}" />Berechnen</button>
+        <p class="note">* Sunstone + Mineral + XProtect pro Versuch</p>
+      </div>
+      <div class="card hidden" id="ultw-results">
+        <table>
+          <thead><tr>
+            <th>Level</th>
+            <th class="r">Chance</th>
+            <th class="r">Ø Versuche</th>
+            <th class="r">Ø Mineral</th>
+            <th class="r">Ø Penya/Versuch</th>
+            <th class="r">Ø Gesamt</th>
+          </tr></thead>
+          <tbody id="ultw-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══ Ultimate Schmuck ═══════════════════════════════════════════════════════ -->
+    <section id="panel-ultimateJewelry" class="panel">
+      <h2>Ultimate Schmuck</h2>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Von Level</label>
+            <select id="ultj-from"></select>
+          </div>
+          <div class="form-group" style="min-width:110px;max-width:140px;">
+            <label title="Bereits fehlgeschlagene Versuche beim Startlevel (Pity-Zähler)">Bereits Versuche ✦</label>
+            <input type="number" id="ultj-alreadyDone" min="0" max="9999" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>Bis Level</label>
+            <select id="ultj-to"></select>
+          </div>
+        </div>
+        <div class="section-label">Preise</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><img src="${ICONS.sunstone}" /> Sunstone Preis</label>
+            <input type="text" inputmode="decimal" id="ultj-sunstone" value="0" />
+          </div>
+          <div class="form-group">
+            <label><img src="${ICONS.xprotect}" /> XProtect Preis</label>
+            <input type="text" inputmode="decimal" id="ultj-xprotect" value="0" />
+          </div>
+        </div>
+        <button class="btn-calc" id="ultj-calcBtn"><img src="${ICONS.penya}" />Berechnen</button>
+        <p class="note">* Sunstone + XProtect pro Versuch</p>
+      </div>
+      <div class="card hidden" id="ultj-results">
+        <table>
+          <thead><tr>
+            <th>Level</th>
+            <th class="r">Chance</th>
+            <th class="r">Ø Versuche</th>
+            <th class="r">Ø Penya/Versuch</th>
+            <th class="r">Ø Gesamt</th>
+          </tr></thead>
+          <tbody id="ultj-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
 
   <script>
-    const intlLocale = '${intlLocale}';
-    const fmt = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 });
-    const fmtDecimal = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 2 });
-    const GAME_DATA = ${JSON.stringify(GAME_DATA)};
-    const STR = ${JSON.stringify({
-        total: upgradeTexts.total,
-        totalCost: upgradeTexts.totalCost,
-        cheaper: upgradeTexts.cheaper,
-        sProtect: upgradeTexts.sProtect,
-        sProtectLow: upgradeTexts.sProtectLow,
-        owned: upgradeTexts.owned
-    })};
+    const GD    = ${JSON.stringify(GD)};
+    const STR   = ${JSON.stringify(STR)};
     const ICONS = ${JSON.stringify(ICONS)};
-    const DEFAULT_SETTINGS = ${JSON.stringify(DEFAULT_SETTINGS)};
-    
-    const MATERIALS = [
-      { key: 'mineral', icon: ICONS.minerals },
-      { key: 'eron', icon: ICONS.erons },
-      { key: 'sProtect', icon: ICONS.sprotect },
-      { key: 'sProtectLow', icon: ICONS.lowsprotect },
-      { key: 'dice4', icon: ICONS.powerdice4 },
-      { key: 'dice6', icon: ICONS.powerdice6 },
-      { key: 'dice12', icon: ICONS.powerdice12 }
-    ];
+    const DWS   = ${JSON.stringify(DEFAULT_WS)};
+    const IL    = '${intlLocale}';
 
-    let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    // === Shared utilities ===
+    const fmt    = new Intl.NumberFormat(IL, { maximumFractionDigits: 0 });
+    const fmtDec = new Intl.NumberFormat(IL, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function parseNum(s) { return Number(String(s).replace(/[^0-9.,]/g,'').replace(',','.')) || 0; }
+
+    // Pity-system expected attempts (SProtect formula).
+    // alreadyDone: failed attempts already done at this level (pity counter).
+    // Returns expected *additional* attempts to succeed.
+    function calcEA(p, alreadyDone) {
+      alreadyDone = alreadyDone || 0;
+      if (p >= 1) return 1;
+      const max = Math.ceil(1 / p);
+      if (alreadyDone >= max) return 1; // next attempt is guaranteed
+      let e = 0, prod = 1;
+      for (let k = alreadyDone + 1; k <= max; k++) {
+        const sp = Math.min(k * p, 1);
+        e += (k - alreadyDone) * prod * sp;
+        if (k < max) prod *= (1 - sp);
+      }
+      return e;
+    }
+
+    // === Tab system ===
+    const TABS = ['weapon','jewelry','armorPiercing','weaponPiercing','ultimateWeapon','ultimateJewelry'];
+    function switchTab(id) {
+      TABS.forEach(t => {
+        document.getElementById('nav-' + t).classList.toggle('active', t === id);
+        document.getElementById('panel-' + t).classList.toggle('active', t === id);
+      });
+      const panel = document.getElementById('panel-' + id);
+      const h2    = panel.querySelector('h2');
+      h2.insertAdjacentElement('afterend', document.getElementById('bonus-bar'));
+    }
+    TABS.forEach(t => document.getElementById('nav-' + t).addEventListener('click', () => switchTab(t)));
+
+    // === Dice Segmented Control ===
+    function diceSegVal(id) { return document.getElementById(id).dataset.val; }
+    function diceSegSet(id, val) {
+      const wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.dataset.val = val;
+      wrap.querySelectorAll('.dseg-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+    }
+    function diceSegInit(id, onChange) {
+      const wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.querySelectorAll('.dseg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          diceSegSet(id, btn.dataset.val);
+          if (onChange) onChange(btn.dataset.val);
+        });
+      });
+    }
+
+    // ================================================================
+    // BONUS STATE  (FWC + Event — global, applies to all tabs)
+    // ================================================================
+    let bonusState = JSON.parse(JSON.stringify(DWS.bonus));
+
+    function bonusTotal() {
+      return (bonusState.fwcActive ? bonusState.fwcValue / 100 : 0)
+           + (bonusState.eventActive ? bonusState.eventValue / 100 : 0);
+    }
+
+    function applyBonus(probs) {
+      const b = bonusTotal();
+      if (b === 0) return probs;
+      return probs.map(p => Math.min(p + b, 1.0));
+    }
+
+    function bonusUpdateUI() {
+      const fwcOn   = bonusState.fwcActive;
+      const evtOn   = bonusState.eventActive;
+      const total   = bonusTotal();
+      document.getElementById('bonus-fwcLabel').classList.toggle('on', fwcOn);
+      document.getElementById('bonus-eventLabel').classList.toggle('on', evtOn);
+      const fwcBadge = document.getElementById('bonus-fwcBadge');
+      fwcBadge.textContent = '+' + bonusState.fwcValue + '%';
+      fwcBadge.style.opacity = fwcOn ? '1' : '0.35';
+      const evtBadge = document.getElementById('bonus-eventBadge');
+      evtBadge.textContent = '+' + (bonusState.eventValue || 0) + '%';
+      evtBadge.style.opacity = evtOn ? '1' : '0.35';
+      const totBdg = document.getElementById('bonus-totalBadge');
+      totBdg.textContent = '+' + (total * 100).toFixed(1).replace(/\\.0$/,'') + '%';
+      totBdg.classList.toggle('zero', total === 0);
+    }
+
+    function bonusSave() {
+      bonusState.fwcActive   = document.getElementById('bonus-fwcOn').checked;
+      bonusState.fwcValue    = parseFloat(document.getElementById('bonus-fwcPct').value)   || 0;
+      bonusState.eventActive = document.getElementById('bonus-eventOn').checked;
+      bonusState.eventValue  = parseFloat(document.getElementById('bonus-eventPct').value)  || 0;
+      bonusUpdateUI();
+    }
+
+    function bonusLoadUI() {
+      document.getElementById('bonus-fwcOn').checked    = bonusState.fwcActive;
+      document.getElementById('bonus-fwcPct').value     = bonusState.fwcValue;
+      document.getElementById('bonus-eventOn').checked  = bonusState.eventActive;
+      document.getElementById('bonus-eventPct').value   = bonusState.eventValue;
+      bonusUpdateUI();
+    }
+
+    // Bonus UI interactions
+    document.getElementById('bonus-fwcOn').addEventListener('change', bonusSave);
+    document.getElementById('bonus-eventOn').addEventListener('change', bonusSave);
+    document.getElementById('bonus-eventPct').addEventListener('input', bonusSave);
+    document.getElementById('bonus-fwcCfgBtn').addEventListener('click', () => {
+      const row = document.getElementById('bonus-fwcCfgRow');
+      const nowHidden = row.classList.toggle('hidden');
+      if (!nowHidden) document.getElementById('bonus-fwcPct').focus();
+    });
+    document.getElementById('bonus-fwcPct').addEventListener('input', bonusSave);
+    document.getElementById('bonus-fwcPct').addEventListener('blur', bonusSave);
+
+    // ================================================================
+    // WEAPON / ARMOR TAB
+    // ================================================================
+    let ws  = JSON.parse(JSON.stringify(DWS));
     const api = window.opener?.api;
 
-    class UpgradeCalculator {
-      constructor() {
-        this.levelCosts = new Map();
-      }
-      setLevelCosts(costs) {
-        this.levelCosts.clear();
-        costs.forEach(c => this.levelCosts.set(c.level, { level: c.level, mineral: c.mineral, eron: c.mineral, penya: c.penya }));
-      }
-      getCost(level) {
-        const cost = this.levelCosts.get(level);
-        if (!cost) throw new Error('Keine Kosten für Level ' + level);
-        return cost;
-      }
-      calculateExpectedAttemptsSProtect(baseProb) {
-        if (baseProb <= 0 || baseProb > 1) return 1;
-        if (baseProb >= 1) return 1;
-        const maxAttempt = Math.ceil(1 / baseProb);
-        let expectedAttempts = 0;
-        let product = 1.0;
-        for (let k = 1; k <= maxAttempt; k++) {
-          const successProb = Math.min(k * baseProb, 1.0);
-          expectedAttempts += k * product * successProb;
-          if (k < maxAttempt) product *= (1 - successProb);
-        }
-        return expectedAttempts;
-      }
-      calculateSProtect(startLevel, endLevel, levelProbs) {
-        const levelResults = [];
-        let totalCosts = { mineral: 0, eron: 0, penya: 0, protects: 0 };
-        let totalAttempts = 0;
-        for (let i = 0; i < levelProbs.length; i++) {
-          const level = startLevel + i;
-          const baseProb = levelProbs[i];
-          const cost = this.getCost(level);
-          const expectedAttempts = this.calculateExpectedAttemptsSProtect(baseProb);
-          const levelCost = {
-            expectedAttempts,
-            costs: {
-              mineral: expectedAttempts * cost.mineral,
-              eron: expectedAttempts * cost.eron,
-              penya: expectedAttempts * cost.penya,
-              protects: expectedAttempts
-            }
-          };
-          levelResults.push(levelCost);
-          totalAttempts += expectedAttempts;
-          totalCosts.mineral += levelCost.costs.mineral;
-          totalCosts.eron += levelCost.costs.eron;
-          totalCosts.penya += levelCost.costs.penya;
-          totalCosts.protects += levelCost.costs.protects;
-        }
-        return { system: 'sProtect', fromLevel: startLevel, toLevel: endLevel, levelResults, total: { expectedAttempts: totalAttempts, costs: totalCosts } };
-      }
-      calculateExpectedCostsWithDowngradeFixed(targetLevel, startLevel, allProbs, memo) {
-        if (targetLevel === startLevel) {
-          const probIndex = targetLevel - startLevel;
-          const prob = allProbs[probIndex];
-          const cost = this.getCost(targetLevel);
-          const expectedAttempts = 1 / prob;
-          return {
-            expectedAttempts,
-            costs: {
-              mineral: expectedAttempts * cost.mineral,
-              eron: expectedAttempts * cost.eron,
-              penya: expectedAttempts * cost.penya,
-              protects: expectedAttempts
-            }
-          };
-        }
-        if (memo.has(targetLevel)) return memo.get(targetLevel);
-        const probIndex = targetLevel - startLevel;
-        const p = allProbs[probIndex];
-        const cost = this.getCost(targetLevel);
-        const prevLevelCosts = this.calculateExpectedCostsWithDowngradeFixed(targetLevel - 1, startLevel, allProbs, memo);
-        const expectedAttempts = (1 + (1 - p) * (prevLevelCosts.expectedAttempts + 1)) / p;
-        const levelCost = {
-          expectedAttempts,
-          costs: {
-            mineral: (cost.mineral + (1 - p) * (cost.mineral + prevLevelCosts.costs.mineral)) / p,
-            eron: (cost.eron + (1 - p) * (cost.eron + prevLevelCosts.costs.eron)) / p,
-            penya: (cost.penya + (1 - p) * (cost.penya + prevLevelCosts.costs.penya)) / p,
-            protects: expectedAttempts
-          }
-        };
-        memo.set(targetLevel, levelCost);
-        return levelCost;
-      }
-      calculateSProtectLow(startLevel, endLevel, levelProbs) {
-        const levelResults = [];
-        let totalCosts = { mineral: 0, eron: 0, penya: 0, protects: 0 };
-        let totalAttempts = 0;
-        const memo = new Map();
-        for (let i = 0; i < levelProbs.length; i++) {
-          const level = startLevel + i;
-          const levelCost = this.calculateExpectedCostsWithDowngradeFixed(level, startLevel, levelProbs, memo);
-          levelResults.push(levelCost);
-          totalAttempts += levelCost.expectedAttempts;
-          totalCosts.mineral += levelCost.costs.mineral;
-          totalCosts.eron += levelCost.costs.eron;
-          totalCosts.penya += levelCost.costs.penya;
-          totalCosts.protects += levelCost.costs.protects;
-        }
-        return { system: 'sProtectLow', fromLevel: startLevel, toLevel: endLevel, levelResults, total: { expectedAttempts: totalAttempts, costs: totalCosts } };
-      }
-    }
+    const W_MATS = [
+      { key:'mineral',     icon:ICONS.minerals    },
+      { key:'eron',        icon:ICONS.erons       },
+      { key:'sProtect',    icon:ICONS.sprotect    },
+      { key:'sProtectLow', icon:ICONS.lowsprotect },
+      { key:'dice6',       icon:ICONS.d6          },
+      { key:'dice12',      icon:ICONS.d12         },
+    ];
 
-    const calculator = new UpgradeCalculator();
-
-    function parseLocalizedNumber(val) {
-      const cleaned = val.replace(/\\./g, '').replace(',', '.');
-      return Number(cleaned);
-    }
-
-    function formatNumber(num) {
-      return fmt.format(Math.round(num));
-    }
-
-    function formatDecimal(num) {
-      return fmtDecimal.format(num);
-    }
-
-    function formatPercent(prob) {
-      return (prob * 100).toFixed(2) + '%';
-    }
-
-    function getProbs(diceType, fromLevel, toLevel) {
-      const probs = diceType === 'dice12' ? GAME_DATA.dice12 : GAME_DATA.dice4_6;
-      return probs.slice(fromLevel - 1, toLevel - 1);
-    }
-
-    function getCosts(fromLevel, toLevel) {
-      return GAME_DATA.costs.filter(c => c.level >= fromLevel && c.level < toLevel);
-    }
-
-    function calcTotalPenya(result, owned) {
-      let total = result.total.costs.penya;
-      if (!owned.mineral) total += result.total.costs.mineral * settings.prices.mineral;
-      if (!owned.eron) total += result.total.costs.eron * settings.prices.eron;
-      return total;
-    }
-
-    function calcTotalPenyaWithProtect(result, protectType, owned) {
-      let total = calcTotalPenya(result, owned);
-      if (protectType === 'sProtect' && !owned.sProtect) {
-        total += result.total.costs.protects * settings.prices.sProtect;
-      } else if (protectType === 'sProtectLow' && !owned.sProtectLow) {
-        total += result.total.costs.protects * settings.prices.sProtectLow;
-      }
-      if (!owned.dice4) total += result.total.costs.protects * settings.prices.dice4;
-      if (!owned.dice6) total += result.total.costs.protects * settings.prices.dice6;
-      return total;
-    }
-
-    function renderMaterialsGrid() {
-      const grid = document.getElementById('materialsGrid');
+    function wRenderMaterials() {
+      const grid = document.getElementById('w-matGrid');
       grid.innerHTML = '';
-      MATERIALS.forEach(m => {
+      W_MATS.forEach(m => {
         const row = document.createElement('div');
-        row.className = 'material-row' + (settings.owned[m.key] ? ' disabled' : '');
-        row.innerHTML = 
-          '<img class="material-icon" src="' + m.icon + '" alt="" />' +
-          '<div class="material-price"><input type="text" inputmode="decimal" id="price_' + m.key + '" value="' + fmt.format(settings.prices[m.key]) + '" /></div>' +
-          '<label class="material-check"><input type="checkbox" id="owned_' + m.key + '"' + (settings.owned[m.key] ? ' checked' : '') + ' />' + STR.owned + '</label>';
+        row.className = 'mat-row';
+        row.innerHTML =
+          '<img class="mat-icon" src="' + m.icon + '" />' +
+          '<div class="mat-price"><input type="text" inputmode="decimal" id="wmp_' + m.key + '" value="' + fmt.format(ws.prices[m.key]) + '" /></div>' +
+          '<label class="mat-check"><input type="checkbox" id="wmo_' + m.key + '"' + (ws.owned[m.key] ? ' checked' : '') + ' />' + STR.owned + '</label>';
         grid.appendChild(row);
-        
-        const priceInput = row.querySelector('#price_' + m.key);
-        priceInput.addEventListener('input', () => {
-          settings.prices[m.key] = parseLocalizedNumber(priceInput.value) || 0;
-          saveSettings();
+        document.getElementById('wmp_' + m.key).addEventListener('input', e => {
+          ws.prices[m.key] = parseNum(e.target.value) || 0; wSave();
         });
-        priceInput.addEventListener('blur', () => {
-          priceInput.value = fmt.format(settings.prices[m.key]);
+        document.getElementById('wmp_' + m.key).addEventListener('blur', e => {
+          e.target.value = fmt.format(ws.prices[m.key]);
         });
-        
-        const ownedCheck = row.querySelector('#owned_' + m.key);
-        ownedCheck.addEventListener('change', () => {
-          settings.owned[m.key] = ownedCheck.checked;
-          row.className = 'material-row' + (settings.owned[m.key] ? ' disabled' : '');
-          saveSettings();
+        document.getElementById('wmo_' + m.key).addEventListener('change', e => {
+          ws.owned[m.key] = e.target.checked; wSave();
         });
       });
     }
 
-    function renderTable(result, probs, protectType) {
-      const tbody = document.getElementById('resultsBody');
+    function wTotalPenya(res, protectType, dt) {
+      let t = res.total.penya;
+      if (!ws.owned.mineral)     t += res.total.mineral  * ws.prices.mineral;
+      if (!ws.owned.eron)        t += res.total.eron     * ws.prices.eron;
+      if (protectType === 'sProtect'    && !ws.owned.sProtect)    t += res.total.protects * ws.prices.sProtect;
+      if (protectType === 'sProtectLow' && !ws.owned.sProtectLow) t += res.total.protects * ws.prices.sProtectLow;
+      const dKey = (dt || 'dice4_6') === 'dice12' ? 'dice12' : 'dice6';
+      if (!ws.owned[dKey]) t += res.total.protects * (ws.prices[dKey] || 0);
+      return t;
+    }
+
+    // SProtect (pity accumulator)
+    // alreadyDone: failed attempts already done at the start level (pity counter offset)
+    function wCalcSP(from, to, probs, costFn, alreadyDone) {
+      alreadyDone = alreadyDone || 0;
+      const results = [];
+      let totEa = 0, totMin = 0, totEron = 0, totPenya = 0, totProt = 0;
+      for (let i = 0; i < to - from; i++) {
+        const c  = costFn(from + i);
+        const ea = calcEA(probs[i], i === 0 ? alreadyDone : 0);
+        const r  = { ea, mineral: ea*c.m, eron: ea*c.m, penya: ea*c.p, protects: ea };
+        results.push(r);
+        totEa += ea; totMin += r.mineral; totEron += r.eron; totPenya += r.penya; totProt += ea;
+      }
+      return { results, total: { ea:totEa, mineral:totMin, eron:totEron, penya:totPenya, protects:totProt } };
+    }
+
+    // SProtectLow (Markov chain with downgrade, recursive + memo)
+    function wCalcSPLow(from, to, probs, costFn) {
+      const memo = new Map();
+      function get(tgt) {
+        if (memo.has(tgt)) return memo.get(tgt);
+        const pi = tgt - from, p = probs[pi], c = costFn(tgt);
+        if (tgt === from) {
+          const ea = 1 / p;
+          const r  = { ea, mineral: ea*c.m, eron: ea*c.m, penya: ea*c.p, protects: ea };
+          memo.set(tgt, r); return r;
+        }
+        const prev = get(tgt - 1);
+        const ea   = (1 + (1-p) * (prev.ea + 1)) / p;
+        const r    = {
+          ea,
+          mineral:  (c.m + (1-p)*(c.m + prev.mineral))  / p,
+          eron:     (c.m + (1-p)*(c.m + prev.eron))      / p,
+          penya:    (c.p + (1-p)*(c.p + prev.penya))     / p,
+          protects: ea,
+        };
+        memo.set(tgt, r); return r;
+      }
+      const results = [];
+      let totEa = 0, totMin = 0, totEron = 0, totPenya = 0, totProt = 0;
+      for (let i = 0; i < to - from; i++) {
+        const r = get(from + i);
+        results.push(r);
+        totEa += r.ea; totMin += r.mineral; totEron += r.eron; totPenya += r.penya; totProt += r.protects;
+      }
+      return { results, total: { ea:totEa, mineral:totMin, eron:totEron, penya:totPenya, protects:totProt } };
+    }
+
+    // Mix: optimal switch from SPLow → SProtect
+    function wCalcMix(from, to, probs, costFn, dt) {
+      if (to - from <= 1) return null;
+      let bestPenya = Infinity, bestSw = from + 1;
+      for (let sw = from + 1; sw < to; sw++) {
+        const splR = wCalcSPLow(from, sw,  probs.slice(0, sw - from), costFn);
+        const spR  = wCalcSP(sw, to,        probs.slice(sw - from),   costFn);
+        const t = wTotalPenya(splR, 'sProtectLow', dt) + wTotalPenya(spR, 'sProtect', dt);
+        if (t < bestPenya) { bestPenya = t; bestSw = sw; }
+      }
+      const splPart = wCalcSPLow(from, bestSw, probs.slice(0, bestSw - from), costFn);
+      const spPart  = wCalcSP(bestSw, to,      probs.slice(bestSw - from),    costFn);
+      return { switchAt: bestSw, totalPenya: bestPenya, splPart, spPart };
+    }
+
+    function wRenderTable(res, probs, from, protectType, dt, alreadyDone) {
+      alreadyDone = alreadyDone || 0;
+      const tbody = document.getElementById('w-tbody');
       tbody.innerHTML = '';
-      
-      result.levelResults.forEach((r, i) => {
-        const level = result.fromLevel + i;
-        const prob = probs[i];
-        let levelPenya = r.costs.penya;
-        if (!settings.owned.mineral) levelPenya += r.costs.mineral * settings.prices.mineral;
-        if (!settings.owned.eron) levelPenya += r.costs.eron * settings.prices.eron;
-        if (protectType === 'sProtect' && !settings.owned.sProtect) levelPenya += r.expectedAttempts * settings.prices.sProtect;
-        if (protectType === 'sProtectLow' && !settings.owned.sProtectLow) levelPenya += r.expectedAttempts * settings.prices.sProtectLow;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = '<td class="level-cell">+' + (level - 1) + ' &rarr; +' + level + '</td>' +
-          '<td class="number">' + formatPercent(prob) + '</td>' +
-          '<td class="number">' + formatDecimal(r.expectedAttempts) + '</td>' +
-          '<td class="number">' + formatNumber(r.costs.mineral) + '</td>' +
-          '<td class="number">' + formatNumber(r.costs.eron) + '</td>' +
-          '<td class="number">' + formatNumber(levelPenya) + '</td>';
-        tbody.appendChild(row);
+      res.results.forEach((r, i) => {
+        const lvl = from + i;
+        let lp = r.penya;
+        if (!ws.owned.mineral)     lp += r.mineral * ws.prices.mineral;
+        if (!ws.owned.eron)        lp += r.eron    * ws.prices.eron;
+        if (protectType === 'sProtect'    && !ws.owned.sProtect)    lp += r.ea * ws.prices.sProtect;
+        if (protectType === 'sProtectLow' && !ws.owned.sProtectLow) lp += r.ea * ws.prices.sProtectLow;
+        const dKey = (dt || 'dice4_6') === 'dice12' ? 'dice12' : 'dice6';
+        if (!ws.owned[dKey]) lp += r.ea * (ws.prices[dKey] || 0);
+        const ad = (i === 0 && protectType === 'sProtect') ? alreadyDone : 0;
+        const adHtml = ad > 0 ? \` <span class="already-done" title="Bereits \${ad} Versuche gemacht">ab V.\${ad+1}</span>\` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`<td class="lvc">+\${lvl-1} → +\${lvl}\${adHtml}</td>
+          <td class="r">\${(probs[i]*100).toFixed(2)}%</td>
+          <td class="r">\${fmtDec.format(r.ea)}</td>
+          <td class="r">\${fmt.format(r.mineral)}</td>
+          <td class="r">\${fmt.format(r.eron)}</td>
+          <td class="r">\${fmt.format(lp)}</td>\`;
+        tbody.appendChild(tr);
       });
-      
-      let totalPenya = calcTotalPenyaWithProtect(result, protectType, settings.owned);
-      
-      const totalRow = document.createElement('tr');
-      totalRow.className = 'total-row';
-      totalRow.innerHTML = '<td>' + STR.total + '</td>' +
-        '<td class="number">-</td>' +
-        '<td class="number">' + formatDecimal(result.total.expectedAttempts) + '</td>' +
-        '<td class="number">' + formatNumber(result.total.costs.mineral) + '</td>' +
-        '<td class="number">' + formatNumber(result.total.costs.eron) + '</td>' +
-        '<td class="number">' + formatNumber(totalPenya) + '</td>';
-      tbody.appendChild(totalRow);
+      const totalPenya = wTotalPenya(res, protectType, dt);
+      const tot = document.createElement('tr');
+      tot.className = 'total-row';
+      tot.innerHTML = \`<td>\${STR.total}</td><td class="r">-</td>
+        <td class="r">\${fmtDec.format(res.total.ea)}</td>
+        <td class="r">\${fmt.format(res.total.mineral)}</td>
+        <td class="r">\${fmt.format(res.total.eron)}</td>
+        <td class="r">\${fmt.format(totalPenya)}</td>\`;
+      tbody.appendChild(tot);
     }
 
-    async function loadSettings() {
+    async function wLoad() {
       if (api?.upgradeCalcLoadSettings) {
         try {
-          const saved = await api.upgradeCalcLoadSettings();
-          if (saved) {
-            settings = { ...DEFAULT_SETTINGS, ...saved };
-            settings.prices = { ...DEFAULT_SETTINGS.prices, ...saved.prices };
-            settings.owned = { ...DEFAULT_SETTINGS.owned, ...saved.owned };
+          const s = await api.upgradeCalcLoadSettings();
+          if (s) {
+            ws.prices     = { ...DWS.prices, ...s.prices };
+            ws.owned      = { ...DWS.owned,  ...s.owned  };
+            ws.diceType   = s.diceType   || DWS.diceType;
+            ws.systemMode = s.systemMode || DWS.systemMode;
+            if (s.bonus) bonusState = { ...DWS.bonus, ...s.bonus };
           }
-        } catch (e) { console.error('Failed to load settings:', e); }
+        } catch(e) {}
       }
-      document.getElementById('diceType').value = settings.diceType;
-      document.getElementById('systemMode').value = settings.systemMode;
-      renderMaterialsGrid();
+      diceSegSet('w-diceType', ws.diceType);
+      document.getElementById('w-mode').value = ws.systemMode;
+      bonusLoadUI();
+      wRenderMaterials();
     }
 
-    async function saveSettings() {
-      settings.diceType = document.getElementById('diceType').value;
-      settings.systemMode = document.getElementById('systemMode').value;
-      if (api?.upgradeCalcSaveSettings) {
-        try {
-          await api.upgradeCalcSaveSettings(settings);
-        } catch (e) { console.error('Failed to save settings:', e); }
-      }
+    function wSave() {
+      ws.diceType   = diceSegVal('w-diceType');
+      ws.systemMode = document.getElementById('w-mode').value;
+      ws.bonus      = { ...bonusState };
+      if (api?.upgradeCalcSaveSettings) { try { api.upgradeCalcSaveSettings(ws); } catch(e) {} }
     }
 
-    function calculate() {
-      const diceType = document.getElementById('diceType').value;
-      const fromLevel = parseInt(document.getElementById('fromLevel').value);
-      const toLevel = parseInt(document.getElementById('toLevel').value);
-      const mode = document.getElementById('systemMode').value;
+    function wCalculate() {
+      const dt          = diceSegVal('w-diceType');
+      const from        = parseInt(document.getElementById('w-from').value);
+      const to          = parseInt(document.getElementById('w-to').value);
+      const mode        = document.getElementById('w-mode').value;
+      const alreadyDone = Math.max(0, parseInt(document.getElementById('w-alreadyDone').value) || 0);
+      if (from >= to) { alert('Start-Level muss kleiner als Ziel-Level sein'); return; }
+      wSave();
 
-      if (fromLevel >= toLevel) {
-        alert('Start-Level muss kleiner als Ziel-Level sein');
-        return;
-      }
+      const probs  = applyBonus((dt === 'dice12' ? GD.weapon.dice12 : GD.weapon.dice4_6).slice(from - 1, to - 1));
+      const costMap = new Map(GD.weapon.costs.map(c => [c.l, c]));
+      const costFn  = lvl => costMap.get(lvl) || { m:0, p:0 };
 
-      saveSettings();
-
-      const probs = getProbs(diceType, fromLevel, toLevel);
-      const costs = getCosts(fromLevel, toLevel);
-      calculator.setLevelCosts(costs);
-
-      const resultsCard = document.getElementById('resultsCard');
-      const singleResults = document.getElementById('singleResults');
-      const comparisonResults = document.getElementById('comparisonResults');
-      const resultsTitle = document.getElementById('resultsTitle');
-
-      resultsCard.classList.remove('hidden');
+      const wRes = document.getElementById('w-results');
+      wRes.classList.remove('hidden');
 
       if (mode === 'compare') {
-        singleResults.classList.add('hidden');
-        comparisonResults.classList.remove('hidden');
-        resultsTitle.textContent = STR.totalCost;
+        document.getElementById('w-singleSection').classList.add('hidden');
+        const cmpSec = document.getElementById('w-cmpSection');
+        cmpSec.classList.remove('hidden');
+        document.getElementById('w-cmpTitle').textContent = STR.totalCost;
 
-        const sProtectResult = calculator.calculateSProtect(fromLevel, toLevel, probs);
-        const sProtectLowResult = calculator.calculateSProtectLow(fromLevel, toLevel, probs);
+        const spRes  = wCalcSP(from, to, probs, costFn, alreadyDone);
+        const splRes = wCalcSPLow(from, to, probs, costFn);
+        const spPenya  = wTotalPenya(spRes,  'sProtect',    dt);
+        const splPenya = wTotalPenya(splRes, 'sProtectLow', dt);
+        const mixRes   = wCalcMix(from, to, probs, costFn, dt);
 
-        const sProtectTotalPenya = calcTotalPenyaWithProtect(sProtectResult, 'sProtect', settings.owned);
-        const sProtectLowTotalPenya = calcTotalPenyaWithProtect(sProtectLowResult, 'sProtectLow', settings.owned);
+        const spCard  = document.getElementById('w-spCard');
+        const splCard = document.getElementById('w-splCard');
+        const mixCard = document.getElementById('w-mixCard');
+        [spCard, splCard, mixCard].forEach(c => c.classList.remove('cheaper'));
 
-        const sProtectCard = document.getElementById('sProtectCard');
-        const sProtectLowCard = document.getElementById('sProtectLowCard');
-        sProtectCard.classList.remove('cheaper');
-        sProtectLowCard.classList.remove('cheaper');
+        const mixPenya = mixRes ? mixRes.totalPenya : Infinity;
+        const minPenya = Math.min(spPenya, splPenya, mixPenya);
+        if (spPenya  === minPenya) spCard.classList.add('cheaper');
+        if (splPenya === minPenya) splCard.classList.add('cheaper');
+        if (mixRes && mixPenya === minPenya) mixCard.classList.add('cheaper');
 
-        let cheaperText = '';
-        if (sProtectTotalPenya < sProtectLowTotalPenya) {
-          sProtectCard.classList.add('cheaper');
-          const diff = sProtectLowTotalPenya - sProtectTotalPenya;
-          cheaperText = '<span class="cheaper-badge">' + STR.sProtect + ' cheaper</span> Save ' + formatNumber(diff) + ' Penya';
-        } else if (sProtectLowTotalPenya < sProtectTotalPenya) {
-          sProtectLowCard.classList.add('cheaper');
-          const diff = sProtectTotalPenya - sProtectLowTotalPenya;
-          cheaperText = '<span class="cheaper-badge">' + STR.sProtectLow + ' cheaper</span> Save ' + formatNumber(diff) + ' Penya';
+        const costs3 = [spPenya, splPenya, ...(mixRes ? [mixPenya] : [])].filter(x => isFinite(x));
+        const second = [...costs3].sort((a,b)=>a-b)[1] ?? minPenya;
+        const cheapestLabel = spPenya === minPenya ? STR.sProtect : splPenya === minPenya ? STR.sProtectLow : 'Mix';
+        const savings = second - minPenya;
+        const cheaperHtml = '<span class="cheaper-badge">' + cheapestLabel + ' günstiger</span>' +
+          (savings > 0 ? ' — Ersparnis: ' + fmt.format(savings) + ' Penya' : '');
+
+        document.getElementById('w-spSummary').innerHTML =
+          '<div class="cmp-value"><img src="' + ICONS.penya + '" />' + fmt.format(spPenya) + '</div>' +
+          '<div class="cmp-details">' +
+            '<span class="cmp-detail"><img src="' + ICONS.minerals + '" />' + fmt.format(spRes.total.mineral) + '</span>' +
+            '<span class="cmp-detail"><img src="' + ICONS.erons + '" />' + fmt.format(spRes.total.eron) + '</span>' +
+            '<span class="cmp-detail">' + fmtDec.format(spRes.total.ea) + ' Vers.</span>' +
+          '</div>';
+        document.getElementById('w-splSummary').innerHTML =
+          '<div class="cmp-value"><img src="' + ICONS.penya + '" />' + fmt.format(splPenya) + '</div>' +
+          '<div class="cmp-details">' +
+            '<span class="cmp-detail"><img src="' + ICONS.minerals + '" />' + fmt.format(splRes.total.mineral) + '</span>' +
+            '<span class="cmp-detail"><img src="' + ICONS.erons + '" />' + fmt.format(splRes.total.eron) + '</span>' +
+            '<span class="cmp-detail">' + fmtDec.format(splRes.total.ea) + ' Vers.</span>' +
+          '</div>';
+
+        if (mixRes) {
+          const splCost = wTotalPenya(mixRes.splPart, 'sProtectLow', dt);
+          const spCost  = wTotalPenya(mixRes.spPart,  'sProtect',    dt);
+          document.getElementById('w-mixSummary').innerHTML =
+            '<div class="cmp-value"><img src="' + ICONS.penya + '" />' + fmt.format(mixPenya) + '</div>' +
+            '<div class="cmp-details">' +
+              '<span style="width:100%;font-size:10px;color:rgba(var(--ar),.6)">SPLow bis +' + (mixRes.switchAt-1) + ', dann SProtect</span>' +
+              '<span class="cmp-detail"><img src="' + ICONS.lowsprotect + '" />SPLow: ' + fmt.format(splCost) + '</span>' +
+              '<span class="cmp-detail"><img src="' + ICONS.sprotect + '" />SProtect: ' + fmt.format(spCost) + '</span>' +
+            '</div>';
+          mixCard.style.display = '';
         } else {
-          cheaperText = 'Both systems cost the same';
+          mixCard.style.display = 'none';
         }
-
-        document.getElementById('sProtectSummary').innerHTML =
-          '<div class="comparison-value"><img src="' + ICONS.penya + '" alt="Penya" />' + formatNumber(sProtectTotalPenya) + '</div>' +
-          '<div class="comparison-details">' +
-            '<span class="comparison-detail"><img src="' + ICONS.minerals + '" />' + formatNumber(sProtectResult.total.costs.mineral) + '</span>' +
-            '<span class="comparison-detail"><img src="' + ICONS.erons + '" />' + formatNumber(sProtectResult.total.costs.eron) + '</span>' +
-            '<span class="comparison-detail">' + formatDecimal(sProtectResult.total.expectedAttempts) + ' tries</span>' +
-          '</div>';
-
-        document.getElementById('sProtectLowSummary').innerHTML =
-          '<div class="comparison-value"><img src="' + ICONS.penya + '" alt="Penya" />' + formatNumber(sProtectLowTotalPenya) + '</div>' +
-          '<div class="comparison-details">' +
-            '<span class="comparison-detail"><img src="' + ICONS.minerals + '" />' + formatNumber(sProtectLowResult.total.costs.mineral) + '</span>' +
-            '<span class="comparison-detail"><img src="' + ICONS.erons + '" />' + formatNumber(sProtectLowResult.total.costs.eron) + '</span>' +
-            '<span class="comparison-detail">' + formatDecimal(sProtectLowResult.total.expectedAttempts) + ' tries</span>' +
-          '</div>';
-
-        document.getElementById('cheaperText').innerHTML = cheaperText;
-        document.getElementById('resultsTable').classList.add('hidden');
+        document.getElementById('w-cheaperText').innerHTML = cheaperHtml;
 
       } else {
-        singleResults.classList.remove('hidden');
-        comparisonResults.classList.add('hidden');
-        document.getElementById('resultsTable').classList.remove('hidden');
-
-        let result, protectType, title, icon;
-        if (mode === 'sProtect') {
-          result = calculator.calculateSProtect(fromLevel, toLevel, probs);
-          protectType = 'sProtect';
-          title = STR.sProtect;
-          icon = ICONS.sprotect;
-        } else {
-          result = calculator.calculateSProtectLow(fromLevel, toLevel, probs);
-          protectType = 'sProtectLow';
-          title = STR.sProtectLow;
-          icon = ICONS.lowsprotect;
-        }
-
-        resultsTitle.innerHTML = '<img src="' + icon + '" alt="" style="width:20px;height:20px;margin-right:8px;" />' + title;
-        renderTable(result, probs, protectType);
+        document.getElementById('w-cmpSection').classList.add('hidden');
+        const sinSec = document.getElementById('w-singleSection');
+        sinSec.classList.remove('hidden');
+        const isSP       = mode === 'sProtect';
+        const res        = isSP ? wCalcSP(from, to, probs, costFn, alreadyDone) : wCalcSPLow(from, to, probs, costFn);
+        const protectType = isSP ? 'sProtect' : 'sProtectLow';
+        const icon        = isSP ? ICONS.sprotect : ICONS.lowsprotect;
+        const label       = isSP ? STR.sProtect   : STR.sProtectLow;
+        document.getElementById('w-singleTitle').innerHTML =
+          '<img src="' + icon + '" style="width:14px;height:14px;margin-right:5px;vertical-align:middle" />' + label;
+        wRenderTable(res, probs, from, protectType, dt, alreadyDone);
       }
     }
 
-    document.getElementById('calculateBtn').addEventListener('click', calculate);
-    document.querySelectorAll('select').forEach(el => {
-      el.addEventListener('change', saveSettings);
-      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') calculate(); });
-    });
-
-    document.getElementById('fromLevel').addEventListener('change', function() {
+    document.getElementById('w-calcBtn').addEventListener('click', wCalculate);
+    document.getElementById('w-from').addEventListener('change', function() {
       const from = parseInt(this.value);
-      const toSelect = document.getElementById('toLevel');
-      const to = parseInt(toSelect.value);
-      if (from >= to) toSelect.value = Math.min(from + 1, 11);
+      const toSel = document.getElementById('w-to');
+      if (from >= parseInt(toSel.value)) toSel.value = Math.min(from + 1, 11);
+      wSave();
     });
-
-    document.getElementById('toLevel').addEventListener('change', function() {
+    document.getElementById('w-to').addEventListener('change', function() {
       const to = parseInt(this.value);
-      const fromSelect = document.getElementById('fromLevel');
-      const from = parseInt(fromSelect.value);
-      if (from >= to) fromSelect.value = Math.max(to - 1, 1);
+      const fromSel = document.getElementById('w-from');
+      if (parseInt(fromSel.value) >= to) fromSel.value = Math.max(to - 1, 1);
+      wSave();
     });
-
-    document.getElementById('diceType').addEventListener('change', function() {
-      const label = this.previousElementSibling;
-      if (this.value === 'dice12') {
-        label.innerHTML = '<img src="' + ICONS.powerdice12 + '" style="width:16px;height:16px;" />' + label.textContent.trim();
-      } else {
-        label.innerHTML = '<div class="dice-icons"><img src="' + ICONS.powerdice4 + '" /><img src="' + ICONS.powerdice6 + '" /></div>' + label.textContent.trim();
+    // Power Dice 12 can only be applied from +5 → +6 onwards (from >= 6)
+    diceSegInit('w-diceType', val => {
+      if (val === 'dice12') {
+        const fromSel = document.getElementById('w-from');
+        if (parseInt(fromSel.value) < 6) fromSel.value = 6;
+        const toSel = document.getElementById('w-to');
+        if (parseInt(toSel.value) <= 6) toSel.value = 7;
       }
+      wSave();
+    });
+    document.getElementById('w-mode').addEventListener('change', wSave);
+
+    // ================================================================
+    // PITY TABS — shared renderer (Jewelry, Armor Piercing, Weapon Piercing)
+    // ================================================================
+    function pitySetupLevels(fromId, toId, max) {
+      const fromSel = document.getElementById(fromId);
+      const toSel   = document.getElementById(toId);
+      const oldFrom = parseInt(fromSel.value) || 1;
+      const oldTo   = parseInt(toSel.value)   || max;
+      fromSel.innerHTML = Array.from({length: max}, (_, i) =>
+        \`<option value="\${i+1}"\${i+1===oldFrom?' selected':''}>+\${i}</option>\`
+      ).join('');
+      toSel.innerHTML = Array.from({length: max}, (_, i) =>
+        \`<option value="\${i+2}"\${i+2===Math.min(oldTo,max+1)?' selected':''}>+\${i+1}</option>\`
+      ).join('');
+    }
+
+    function pityRender(tbodyId, resultsId, probs, penyaArr, from, to, dicePrice, alreadyDone) {
+      alreadyDone = alreadyDone || 0;
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = '';
+      let total = 0;
+      for (let lvl = from; lvl < to; lvl++) {
+        const p           = probs[lvl - 1];
+        const ad          = lvl === from ? alreadyDone : 0;
+        const ea          = calcEA(p, ad);
+        const base        = (penyaArr[lvl - 1] || 0) + dicePrice;
+        const avg         = ea * base;
+        total += avg;
+        const adHtml = ad > 0 ? \` <span class="already-done" title="Bereits \${ad} Versuche gemacht">ab V.\${ad+1}</span>\` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`<td class="lvc">+\${lvl-1} → +\${lvl}\${adHtml}</td>
+          <td class="r">\${(p*100).toFixed(4)}%</td>
+          <td class="r">\${fmtDec.format(ea)}</td>
+          <td class="r">\${fmt.format(base)}</td>
+          <td class="r">\${fmt.format(Math.round(avg))}</td>\`;
+        tbody.appendChild(tr);
+      }
+      const tot = document.createElement('tr');
+      tot.className = 'total-row';
+      tot.innerHTML = \`<td colspan="4">GESAMT</td><td class="r">\${fmt.format(Math.round(total))}</td>\`;
+      tbody.appendChild(tot);
+      document.getElementById(resultsId).classList.remove('hidden');
+    }
+
+    // Jewelry
+    diceSegInit('j-dice');
+    pitySetupLevels('j-from', 'j-to', GD.jewelry.max);
+    document.getElementById('j-calcBtn').addEventListener('click', () => {
+      const probs = applyBonus(GD.jewelry[diceSegVal('j-dice')]);
+      const from  = parseInt(document.getElementById('j-from').value);
+      const to    = parseInt(document.getElementById('j-to').value);
+      const dp    = parseNum(document.getElementById('j-price').value);
+      const ad    = Math.max(0, parseInt(document.getElementById('j-alreadyDone').value) || 0);
+      if (from >= to) return;
+      pityRender('j-tbody', 'j-results', probs, GD.jewelry.penya, from, to, dp, ad);
     });
 
-    loadSettings().then(calculate);
+    // Armor Piercing
+    diceSegInit('ap-dice');
+    pitySetupLevels('ap-from', 'ap-to', GD.armorPiercing.max);
+    document.getElementById('ap-calcBtn').addEventListener('click', () => {
+      const probs = applyBonus(GD.armorPiercing[diceSegVal('ap-dice')]);
+      const from  = parseInt(document.getElementById('ap-from').value);
+      const to    = parseInt(document.getElementById('ap-to').value);
+      const dp    = parseNum(document.getElementById('ap-price').value);
+      const ad    = Math.max(0, parseInt(document.getElementById('ap-alreadyDone').value) || 0);
+      if (from >= to) return;
+      pityRender('ap-tbody', 'ap-results', probs, GD.armorPiercing.penya, from, to, dp, ad);
+    });
+
+    // Weapon / Shield Piercing
+    diceSegInit('wp-dice');
+    diceSegInit('wp-type', wpUpdate);
+    function wpUpdate() {
+      const is2h = diceSegVal('wp-type') === '2h';
+      pitySetupLevels('wp-from', 'wp-to', is2h ? GD.weaponPiercing.max2h : GD.weaponPiercing.max1h);
+    }
+    wpUpdate();
+    document.getElementById('wp-calcBtn').addEventListener('click', () => {
+      const dt    = diceSegVal('wp-dice');
+      const is2h  = diceSegVal('wp-type') === '2h';
+      const from  = parseInt(document.getElementById('wp-from').value);
+      const to    = parseInt(document.getElementById('wp-to').value);
+      const dp    = parseNum(document.getElementById('wp-price').value);
+      const ad    = Math.max(0, parseInt(document.getElementById('wp-alreadyDone').value) || 0);
+      if (from >= to) return;
+      pityRender('wp-tbody', 'wp-results',
+        applyBonus(GD.weaponPiercing[dt]),
+        is2h ? GD.weaponPiercing.p2h : GD.weaponPiercing.p1h,
+        from, to, dp, ad);
+    });
+
+    // ================================================================
+    // ULTIMATE Waffe
+    // ================================================================
+    function ultwSetupLevels() {
+      const fromSel = document.getElementById('ultw-from');
+      const toSel   = document.getElementById('ultw-to');
+      fromSel.innerHTML = Array.from({length:10}, (_, i) => \`<option value="\${i+1}">+\${i}</option>\`).join('');
+      toSel.innerHTML = Array.from({length:10}, (_, i) => \`<option value="\${i+2}"\${i+1===9?' selected':''}>+\${i+1}</option>\`).join('');
+    }
+    ultwSetupLevels();
+    document.getElementById('ultw-calcBtn').addEventListener('click', () => {
+      const probs    = applyBonus(GD.ultimate.wProbs);
+      const penya    = GD.ultimate.wPenya;
+      const minArr   = GD.ultimate.wMin;
+      const from     = parseInt(document.getElementById('ultw-from').value);
+      const to       = parseInt(document.getElementById('ultw-to').value);
+      const sunP     = parseNum(document.getElementById('ultw-sunstone').value);
+      const xpP      = parseNum(document.getElementById('ultw-xprotect').value);
+      const minP     = parseNum(document.getElementById('ultw-mineral').value);
+      const ad       = Math.max(0, parseInt(document.getElementById('ultw-alreadyDone').value) || 0);
+      if (from >= to) return;
+
+      const tbody = document.getElementById('ultw-tbody');
+      tbody.innerHTML = '';
+      let totalPenya = 0;
+
+      for (let lvl = from; lvl < to; lvl++) {
+        const p          = probs[lvl - 1];
+        const ea         = calcEA(p, lvl === from ? ad : 0);
+        const minCost    = minArr[lvl-1] * minP;
+        const perAttempt = penya[lvl-1] + sunP + xpP;
+        const avgTotal   = ea * perAttempt + ea * minCost;
+        totalPenya += avgTotal;
+        const adHtml = (lvl === from && ad > 0) ? \` <span class="already-done" title="Bereits \${ad} Versuche gemacht">ab V.\${ad+1}</span>\` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`<td class="lvc">+\${lvl-1} → +\${lvl}\${adHtml}</td>
+          <td class="r">\${(p*100).toFixed(4)}%</td>
+          <td class="r">\${fmtDec.format(ea)}</td>
+          <td class="r">\${fmt.format(Math.round(ea*(minArr[lvl-1]||0)))}</td>
+          <td class="r">\${fmt.format(perAttempt)}</td>
+          <td class="r">\${fmt.format(Math.round(avgTotal))}</td>\`;
+        tbody.appendChild(tr);
+      }
+      const tot = document.createElement('tr');
+      tot.className = 'total-row';
+      tot.innerHTML = \`<td colspan="4">GESAMT</td><td class="r">\${fmt.format(Math.round(totalPenya))}</td>\`;
+      tbody.appendChild(tot);
+      document.getElementById('ultw-results').classList.remove('hidden');
+    });
+
+    // ================================================================
+    // ULTIMATE Schmuck
+    // ================================================================
+    function ultjSetupLevels() {
+      const fromSel = document.getElementById('ultj-from');
+      const toSel   = document.getElementById('ultj-to');
+      fromSel.innerHTML = Array.from({length:10}, (_, i) => \`<option value="\${i+1}">+\${i}</option>\`).join('');
+      toSel.innerHTML = Array.from({length:10}, (_, i) => \`<option value="\${i+2}"\${i+1===9?' selected':''}>+\${i+1}</option>\`).join('');
+    }
+    ultjSetupLevels();
+    document.getElementById('ultj-calcBtn').addEventListener('click', () => {
+      const probs    = applyBonus(GD.ultimate.jProbs);
+      const penya    = GD.ultimate.jPenya;
+      const from     = parseInt(document.getElementById('ultj-from').value);
+      const to       = parseInt(document.getElementById('ultj-to').value);
+      const sunP     = parseNum(document.getElementById('ultj-sunstone').value);
+      const xpP      = parseNum(document.getElementById('ultj-xprotect').value);
+      const ad       = Math.max(0, parseInt(document.getElementById('ultj-alreadyDone').value) || 0);
+      if (from >= to) return;
+
+      const tbody = document.getElementById('ultj-tbody');
+      tbody.innerHTML = '';
+      let totalPenya = 0;
+
+      for (let lvl = from; lvl < to; lvl++) {
+        const p          = probs[lvl - 1];
+        const ea         = calcEA(p, lvl === from ? ad : 0);
+        const perAttempt = penya[lvl-1] + sunP + xpP;
+        const avgTotal   = ea * perAttempt;
+        totalPenya += avgTotal;
+        const adHtml = (lvl === from && ad > 0) ? \` <span class="already-done" title="Bereits \${ad} Versuche gemacht">ab V.\${ad+1}</span>\` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`<td class="lvc">+\${lvl-1} → +\${lvl}\${adHtml}</td>
+          <td class="r">\${(p*100).toFixed(4)}%</td>
+          <td class="r">\${fmtDec.format(ea)}</td>
+          <td class="r">\${fmt.format(perAttempt)}</td>
+          <td class="r">\${fmt.format(Math.round(avgTotal))}</td>\`;
+        tbody.appendChild(tr);
+      }
+      const tot = document.createElement('tr');
+      tot.className = 'total-row';
+      tot.innerHTML = \`<td colspan="3">GESAMT</td><td class="r">\${fmt.format(Math.round(totalPenya))}</td>\`;
+      tbody.appendChild(tot);
+      document.getElementById('ultj-results').classList.remove('hidden');
+    });
+
+    // === Init ===
+    switchTab('weapon');
+    wLoad().then(wCalculate);
   </script>
-</body>
-</html>`;
+</body></html>`;
 }

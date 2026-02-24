@@ -36,8 +36,8 @@ describe("Profile IPC handlers", () => {
         const safeHandle = createSafeHandle(handlers);
         registerProfileHandlers(
             safeHandle,
-            { profiles },
-            logErr,
+            { profiles } as any,
+            logErr as any,
         );
     });
 

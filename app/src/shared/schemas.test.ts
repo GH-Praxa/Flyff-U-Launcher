@@ -244,7 +244,7 @@ describe('Schemas', () => {
                 name: 'My Layout',
                 createdAt: '2024-01-01T00:00:00Z',
                 updatedAt: '2024-01-01T00:00:00Z',
-                tabs: [],
+                tabs: [] as string[],
             };
             expect(TabLayoutSchema.safeParse(layout).success).toBe(false);
         });
@@ -445,7 +445,7 @@ describe('Schemas', () => {
         it('should return failure with errors on invalid input', () => {
             const result = validate(IdSchema, '');
             expect(result.success).toBe(false);
-            if (!result.success) {
+            if (result.success === false) {
                 expect(result.errors.length).toBeGreaterThan(0);
             }
         });
@@ -453,8 +453,8 @@ describe('Schemas', () => {
         it('should include path in error messages', () => {
             const result = validate(BoundsSchema, { x: 0, y: 0, width: -1, height: 100 });
             expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.errors.some(e => e.includes('width'))).toBe(true);
+            if (result.success === false) {
+                expect(result.errors.some((e: string) => e.includes('width'))).toBe(true);
             }
         });
     });

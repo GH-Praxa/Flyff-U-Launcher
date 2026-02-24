@@ -79,8 +79,9 @@ describe("Layout IPC handlers", () => {
         const safeHandle = createSafeHandle(handlers);
         registerLayoutHandlers(
             safeHandle,
-            { tabLayouts, sessionWindow, sessionTabs, showToast },
-            logErr,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { tabLayouts, sessionWindow, sessionTabs, showToast } as any,
+            logErr as any,
         );
     });
 

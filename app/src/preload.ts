@@ -3,6 +3,11 @@ import type { ProfilePatch, TabLayoutInput, TabLayout, RoiData, ThemeInput, Clie
 import type { FeatureFlags } from "./shared/featureFlags";
 import type { PluginStateInfo, PluginManifest } from "./shared/pluginApi";
 
+// Retrieve the CSP nonce synchronously so the renderer can attach it to
+// any <style> elements it creates before the CSP header would block them.
+const _cspNonce: string = ipcRenderer.sendSync("csp:nonce");
+contextBridge.exposeInMainWorld("__cspNonce", _cspNonce);
+
 /**
  * Unwraps an IpcResult response.
  * If ok is true, returns the data; otherwise throws an error.
@@ -15,7 +20,7 @@ async function unwrapIpc<T>(promise: Promise<IpcResult<T>>): Promise<T> {
         if (result.ok) {
             return result.data;
         }
-        throw new Error(result.error || "IPC call failed");
+        throw new Error((result as { ok: false; error: string }).error || "IPC call failed");
     }
     // Fallback for non-wrapped responses (legacy handlers)
     return result as T;
@@ -83,7 +88,6 @@ contextBridge.exposeInMainWorld("api", {
     sessionTabsReset: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:reset")),
     sessionTabsShowLayoutMenu: (coords: { x: number; y: number }) =>
         unwrapIpc(ipcRenderer.invoke("sessionTabs:showLayoutMenu", coords)),
-    sessionTabsGetOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getOpenProfiles")),
     sessionWindowClose: () => unwrapIpc(ipcRenderer.invoke("sessionWindow:close")),
     overlaysHideForDialog: () => ipcRenderer.invoke("overlays:hideForDialog"),
     overlaysShowAfterDialog: () => ipcRenderer.invoke("overlays:showAfterDialog"),
@@ -118,6 +122,7 @@ contextBridge.exposeInMainWorld("api", {
     },
     fetchNewsPage: (path?: string) => unwrapIpc(ipcRenderer.invoke("news:fetch", path)),
     fetchNewsArticle: (url: string) => unwrapIpc(ipcRenderer.invoke("news:fetchArticle", url)),
+    fetchAnnouncements: () => unwrapIpc(ipcRenderer.invoke("announcements:fetch")),
     roiOpen: (profileId: string) => unwrapIpc(ipcRenderer.invoke("roi:open", profileId)),
     roiLoad: (profileId: string) => unwrapIpc(ipcRenderer.invoke("roi:load", profileId)),
     roiSave: (profileId: string, rois: RoiData) => unwrapIpc(ipcRenderer.invoke("roi:save", profileId, rois)),
@@ -289,6 +294,8 @@ const allowedInvoke = new Set<string>([
     "logs:get",
     "logs:clear",
     "logs:save",
+    "logs:sendToDiscord",
+    "clientSettings:get",
 ]);
 const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new"]);
 contextBridge.exposeInMainWorld("ipc", {
@@ -305,7 +312,7 @@ contextBridge.exposeInMainWorld("ipc", {
     },
     on: (channel: string, listener: (...args: unknown[]) => void) => {
         if (!allowedOn.has(channel))
-            return () => undefined;
+            return (): void => undefined;
         const wrapped = (_e: IpcRendererEvent, ...args: unknown[]) => listener(...args);
         ipcRenderer.on(channel, wrapped);
         return () => ipcRenderer.removeListener(channel, wrapped);

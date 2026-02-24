@@ -18,6 +18,21 @@ export const URLS = {
     GITHUB_REPO: "https://github.com/GH-Praxa/Flyff-U-Launcher/releases",
     /** Package.json for version check */
     GITHUB_PACKAGE: "https://raw.githubusercontent.com/Sparx94/Flyff-U-Launcher/1.0/app/package.json",
+    /** Live announcements JSON (edit on GitHub, no app update required) */
+    GITHUB_ANNOUNCEMENTS: "https://raw.githubusercontent.com/GH-Praxa/Flyff-U-Launcher/main/announcements.json",
+} as const;
+
+// ============================================================================
+// Telemetry
+// ============================================================================
+
+export const TELEMETRY = {
+    /** Discord webhook for startup telemetry — injected at build time via TELEMETRY_WEBHOOK_URL (vite define) */
+    STARTUP_WEBHOOK_URL: "",
+    /** Startup IDs that are blocked from sending telemetry */
+    BLOCKED_STARTUP_IDS: new Set([
+        "2661e10c258e06ef029597651d8221f5",
+    ]),
 } as const;
 
 // ============================================================================

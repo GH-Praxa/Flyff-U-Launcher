@@ -31,32 +31,34 @@ export function regenerateNonce(): string {
  * Content Security Policy for the launcher UI.
  *
  * Security notes:
- * - 'unsafe-inline' for styles is required because:
- *   1. Dynamic theme colors are applied via element.style.setProperty()
- *   2. Canvas animations set inline dimensions
- *   3. Some UI components require runtime style calculations
+ * - style-src uses a nonce (injected into <style> elements via the preload).
+ *   element.style.setProperty() from JavaScript is NOT governed by style-src
+ *   and works regardless of 'unsafe-inline'.
+ *
+ * - style-src-attr 'unsafe-inline' is required for inline style="" attributes
+ *   in hardcoded HTML template strings (tools-html.ts etc.). These are static
+ *   strings, not user input, so injection risk is minimal.
  *
  * - Mitigations in place:
  *   1. All content is local (file://) - no remote injection vector
  *   2. Context isolation is enabled - renderer can't access Node.js
  *   3. No user-generated content is rendered as HTML
  *   4. All external URLs are explicitly whitelisted
- *
- * - Future improvement: Migrate to CSS Custom Properties exclusively
- *   and use a build-time CSS-in-JS solution with hashed styles.
  */
 function buildCSP(nonce?: string): string {
     const stylePolicy = nonce
-        ? `'self' 'nonce-${nonce}'`
-        : "'self' 'unsafe-inline'";
+        ? `'self' 'nonce-${nonce}' https://fonts.googleapis.com`
+        : "'self' 'unsafe-inline' https://fonts.googleapis.com";
 
     return [
         "default-src 'self' blob: data:",
         // Allow unsafe-inline for plugin UI iframes (sandboxed, low risk)
         "script-src 'self' 'unsafe-inline'",
         `style-src ${stylePolicy}`,
+        // Allow inline style attributes for hardcoded HTML template strings
+        "style-src-attr 'unsafe-inline'",
         "img-src 'self' data: https: blob: file:",
-        "font-src 'self' data:",
+        "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' https://universe.flyff.com https://*.flyff.com https://raw.githubusercontent.com",
         "frame-src 'self' file: blob: data:",
         "object-src 'none'",
@@ -65,8 +67,10 @@ function buildCSP(nonce?: string): string {
     ].join("; ");
 }
 
-// Default CSP with unsafe-inline (for compatibility)
-const LAUNCHER_CSP = buildCSP();
+// In dev mode Vite's HMR client injects <style> elements without a nonce.
+// Allow 'unsafe-inline' for styles only in dev (non-packaged) builds so that
+// Vite CSS hot-reloading works. The strict nonce policy is kept for production.
+const LAUNCHER_CSP = app.isPackaged ? buildCSP(getCSPNonce()) : buildCSP();
 
 /**
  * Applies Content Security Policy to a session.
@@ -120,14 +124,31 @@ export function hardenWebviews(win: BrowserWindow) {
         delete (webPreferences as Record<string, unknown>).preloadURL;
     });
 }
+const ALLOWED_GAME_DOMAINS = [
+    "universe.flyff.com",
+    "accounts.google.com",
+    "www.google.com",
+];
+
+function isAllowedUrl(url: string): boolean {
+    if (url === "about:blank") return true;
+    try {
+        const parsed = new URL(url);
+        return ALLOWED_GAME_DOMAINS.includes(parsed.hostname);
+    } catch {
+        return false;
+    }
+}
+
 export function hardenGameContents(wc: WebContents) {
-    wc.setWindowOpenHandler(() => ({ action: "deny" }));
+    wc.setWindowOpenHandler(({ url }) => {
+        if (isAllowedUrl(url)) {
+            return { action: "allow" };
+        }
+        return { action: "deny" };
+    });
     wc.on("will-navigate", (e, url) => {
-        const allowed =
-            url.startsWith("https://universe.flyff.com/") ||
-            url.startsWith("https://accounts.google.com/") ||
-            url === "about:blank";
-        if (!allowed) {
+        if (!isAllowedUrl(url)) {
             e.preventDefault();
         }
     });

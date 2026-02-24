@@ -23,6 +23,12 @@ const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     persistGameUiPositions: false,
     tabLayoutDisplay: "compact",
     fcoinRate: 200_000_000,
+    gameFont: null,
+    launcherFontSize: null,
+    sendTelemetry: false,
+    logsWebhook: process.env.LOGS_WEBHOOK_URL ?? "",  // Set via LOGS_WEBHOOK_URL GitHub Secret at build time
+    showAnnouncements: true,
+    collapsibleOpenProfiles: true,
 };
 
 function clampDelaySeconds(input: unknown): number {
@@ -116,6 +122,27 @@ function normalize(raw: unknown): NormalizedSettingsResult {
             hotkeys,
             launcherWidth: normalizedSize.width,
             launcherHeight: normalizedSize.height,
+            gameFont: typeof obj.gameFont === "string" ? obj.gameFont.slice(0, 256) : null,
+            launcherFontSize:
+                typeof obj.launcherFontSize === "number" && obj.launcherFontSize >= 75 && obj.launcherFontSize <= 150
+                    ? obj.launcherFontSize
+                    : null,
+            sendTelemetry:
+                typeof obj.sendTelemetry === "boolean"
+                    ? obj.sendTelemetry
+                    : DEFAULT_CLIENT_SETTINGS.sendTelemetry,
+            logsWebhook:
+                typeof obj.logsWebhook === "string" && obj.logsWebhook.length > 0
+                    ? obj.logsWebhook
+                    : DEFAULT_CLIENT_SETTINGS.logsWebhook,
+            showAnnouncements:
+                typeof obj.showAnnouncements === "boolean"
+                    ? obj.showAnnouncements
+                    : DEFAULT_CLIENT_SETTINGS.showAnnouncements,
+            collapsibleOpenProfiles:
+                typeof obj.collapsibleOpenProfiles === "boolean"
+                    ? obj.collapsibleOpenProfiles
+                    : DEFAULT_CLIENT_SETTINGS.collapsibleOpenProfiles,
         },
     };
 }
@@ -180,8 +207,6 @@ export function createClientSettingsStore() {
             }
             if (patch.hotkeys !== undefined) {
                 next.hotkeys = mergeHotkeySettings(next.hotkeys ?? DEFAULT_HOTKEYS, patch.hotkeys, DEFAULT_HOTKEYS);
-                // Debug aid: helps verify that hotkey patches are applied correctly during development.
-                console.log("[ClientSettings] patch hotkeys ->", JSON.stringify(next.hotkeys));
             }
             if (typeof patch.fcoinRate === "number" && patch.fcoinRate > 0) {
                 next.fcoinRate = patch.fcoinRate;
@@ -191,6 +216,26 @@ export function createClientSettingsStore() {
             }
             if (patch.launcherHeight !== undefined) {
                 next.launcherHeight = clampLauncherHeight(patch.launcherHeight, next.launcherHeight);
+            }
+            if (patch.gameFont !== undefined) {
+                next.gameFont = typeof patch.gameFont === "string" ? patch.gameFont.slice(0, 256) : null;
+            }
+            if (patch.launcherFontSize !== undefined) {
+                const s = patch.launcherFontSize;
+                next.launcherFontSize =
+                    typeof s === "number" && s >= 75 && s <= 150 ? Math.round(s) : null;
+            }
+            if (typeof patch.sendTelemetry === "boolean") {
+                next.sendTelemetry = patch.sendTelemetry;
+            }
+            if (typeof patch.logsWebhook === "string") {
+                next.logsWebhook = patch.logsWebhook.length > 0 ? patch.logsWebhook : undefined;
+            }
+            if (typeof patch.showAnnouncements === "boolean") {
+                next.showAnnouncements = patch.showAnnouncements;
+            }
+            if (typeof patch.collapsibleOpenProfiles === "boolean") {
+                next.collapsibleOpenProfiles = patch.collapsibleOpenProfiles;
             }
             await writeSettings(next);
             // Re-read to ensure we return the exact persisted state (normalizes any FS or serialization quirks)

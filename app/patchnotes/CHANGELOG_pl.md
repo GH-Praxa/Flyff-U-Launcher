@@ -2,6 +2,19 @@
 
 ---
 
+## 🆕 Version 3.1.0
+
+### ✨ Nowe funkcje
+
+**Ogłoszenia launchera**
+- Nowa sekcja w prawym panelu wyświetla wiadomości od dewelopera bez aktualizacji aplikacji
+- Typy: 🐛 Błąd, ℹ Info, ✨ Funkcja, ⚠ Ostrzeżenie — każdy z osobnym kolorem
+- W pełni zlokalizowane: wiadomości można tłumaczyć na wszystkie 8 obsługiwanych języków
+- Można wyłączyć w Ustawienia → Ustawienia klienta → „Pokaż ogłoszenia launchera"
+- Otwarte profile w prawym panelu można teraz zwijać
+
+---
+
 ## 🐛 Version 3.0.5
 
 ### 🐛 Poprawki błędów

@@ -25,7 +25,7 @@ export function suppressError<T>(
     promise: Promise<T>,
     logMessage?: string
 ): Promise<T | undefined> {
-    return promise.catch((err) => {
+    return promise.catch((err: unknown): T | undefined => {
         if (logMessage) {
             console.warn(logMessage, err);
         }
@@ -45,7 +45,7 @@ export function safeCallback<T extends (...args: unknown[]) => unknown>(
         try {
             const result = fn(...args);
             if (result instanceof Promise) {
-                return result.catch((err) => {
+                return result.catch((err: unknown): T | undefined => {
                     console.error(context ? `[${context}]` : "[safeCallback]", err);
                     return undefined;
                 });

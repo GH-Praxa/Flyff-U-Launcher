@@ -4,8 +4,9 @@
 
 html, body{
   width: 100%;
-  height: 100%;
+  height: 100vh;
   margin: 0;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
@@ -13,7 +14,7 @@ html, body{
 
 #app{
   width: 100%;
-  height: 100%;
+  height: 100vh;
 }
 
 

@@ -110,6 +110,8 @@ const layoutStore = createFileStore<TabLayout>({
     getPath: () => path.join(app.getPath("userData"), "user", "ui", "tab-layouts.json"),
     normalize: normalizeLayout,
 });
+export type TabLayoutsStore = ReturnType<typeof createTabLayoutsStore>;
+
 export function createTabLayoutsStore() {
     return {
         async list(): Promise<TabLayout[]> {

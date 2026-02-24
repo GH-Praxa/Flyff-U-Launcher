@@ -1,0 +1,43 @@
+{
+  "id": "questguide",
+  "name": "Quest Guide",
+  "version": "2.0.0",
+  "minLauncherVersion": "1.2.0",
+  "author": "Praxa",
+  "description": "Quest-Guide mit Chain-Visualisierung und Fortschritts-Tracking. Benötigt API-Fetch: Quest, NPC, Monster, Item",
+  "main": "main.js",
+  "requires": ["storage", "profiles"],
+  "permissions": [
+    "ipc:register",
+    "storage:read",
+    "storage:write",
+    "settings:ui",
+    "window:create"
+  ],
+  "ipcChannels": [
+    "quest:list",
+    "quest:detail",
+    "quest:chain",
+    "quest:search",
+    "quest:regions",
+    "quest:progress:get",
+    "quest:progress:set",
+    "quest:progress:reset",
+    "quest:settings:get",
+    "quest:settings:set",
+    "quest:ocr:level",
+    "quest:level:update",
+    "quest:map:open"
+  ],
+  "settingsUI": {
+    "entry": "ui_settings.html",
+    "width": 420,
+    "height": 340
+  },
+  "ui": {
+    "sidepanelTab": {
+      "label": "Quest Guide",
+      "entry": "ui_sidepanel.html"
+    }
+  }
+}

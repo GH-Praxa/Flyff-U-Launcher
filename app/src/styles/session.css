@@ -620,6 +620,14 @@
   opacity: 0.85;
 }
 
+/* ── Mini-Grid: data attributes drive --mg-rows / --mg-cols ── */
+#app.sessionRoot .miniGrid[data-rows="1"] { --mg-rows: 1; }
+#app.sessionRoot .miniGrid[data-rows="2"] { --mg-rows: 2; }
+#app.sessionRoot .miniGrid[data-cols="1"] { --mg-cols: 1; }
+#app.sessionRoot .miniGrid[data-cols="2"] { --mg-cols: 2; }
+#app.sessionRoot .miniGrid[data-cols="3"] { --mg-cols: 3; }
+#app.sessionRoot .miniGrid[data-cols="4"] { --mg-cols: 4; }
+
 /* ── Mini-Grid mode ── */
 #app.sessionRoot .tabBtn.layoutTab.layoutMode-mini-grid{
   padding: 4px 28px 4px 6px;
