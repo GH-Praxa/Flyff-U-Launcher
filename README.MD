@@ -7,7 +7,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.4-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.5.3-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-Februar_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -74,6 +74,7 @@ Frei belegbare Tastenkombinationen (2–3 Tasten) für:
 - Fertige Themes: Toffee, Zimt, Flyff Gold, Synthwave, Steel Ruby, Holz u.v.m.
 - Aktive Tabfarbe per Palette, Gradient oder Farbcode anpassen
 - Animierte Akzente für Tabs und Panels
+- Overlay-Schriftart und Launcher-Textgröße (75–150 %) anpassbar
 - **8 Sprachen**: Deutsch, English, Polski, Francais, Русский, Türkce, 中文, 日本語
 
 ### Integrierte Tools
@@ -85,19 +86,20 @@ Frei belegbare Tastenkombinationen (2–3 Tasten) für:
 <td align="center"><img src="app/docs/assets/screenshots/tools/premium_shopping_list/premium_shopping_list_2.png" width="300" alt="Premium Shopping List" /><br/><sub>Premium-Einkaufsliste</sub></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><strong>Upgrade-Kosten-Rechner</strong></td>
+<td align="center" colspan="2"><strong>Upgrade-Rechner</strong></td>
 </tr>
 <tr>
-<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_2.png" width="300" alt="Upgrade-Kosten-Rechner — Kostenaufstellung" /><br/><sub>Kostenaufstellung pro Stufe</sub></td>
-<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_3.png" width="300" alt="Upgrade-Kosten-Rechner — Systemvergleich" /><br/><sub>Vergleich S-Protect vs. Low S-Protect</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_2.png" width="300" alt="Upgrade-Rechner — Kostenaufstellung" /><br/><sub>Kostenaufstellung pro Stufe</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_3.png" width="300" alt="Upgrade-Rechner — Systemvergleich" /><br/><sub>Vergleich S-Protect vs. Low S-Protect</sub></td>
 </tr>
 </table>
 </div>
 
-- **Upgrade-Kosten-Rechner**: Erwartete Kosten für Item-Upgrades (+0 bis +10) berechnen — Materialbedarf, Versuchsanzahl und Vergleich Low S-Protect vs. S-Protect
+- **Upgrade-Rechner**: Upgrade-Kosten für Waffen, Schmuck, Rüstungen und Piercings berechnen — Materialbedarf, Versuchsanzahl und Vergleich Low S-Protect vs. S-Protect; alle Rechner in einem Fenster mit Sidebar-Navigation
 - **FCoins-Rechner**: FCoins zu Penya umrechnen mit einstellbarem Wechselkurs
 - **Premium-Einkaufsliste**: Items und Preise verwalten, Gesamtkosten in FCoins berechnen
-- **Logs**: Live-Fehlerprotokoll (Warn/Error) im Sidepanel mit Lösch- und Speicherfunktion
+- **Logs**: Live-Fehlerprotokoll (Warn/Error) — eigenes Fenster über das Log-Icon in der Tab-Leiste, mit Lösch- und Speicherfunktion
+- **Ankündigungen**: Entwickler-Nachrichten live im rechten Panel — kein App-Update nötig, deaktivierbar unter Einstellungen
 - **Schnellzugriffe**: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord
 
 ---
@@ -111,6 +113,7 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 | **Killfeed** | EXP-Tracker mit Kill-Erkennung, Monster-Statistiken und detaillierter History (CSV) pro Profil. Derzeit nur im 1on1-Modus unterstützt — bei Charakterwechsel kann es zu Verwechslungen kommen. |
 | **Giant Tracker** | Kill-Statistiken für Giants, Violets und Bosse — mit Drop-Tracking, Loot-Pool-Vorschau und Time-to-Kill (TTK) |
 | **CD-Timer** | Timer für Buffs und Power-Ups — Icons warnen bei Ablauf |
+| **Quest Guide** | Quest-Übersicht mit Chain-Visualisierung, Fortschritts-Tracking und interaktiver Karte. Benötigt API-Fetches: Quest, NPC, Monster, Item |
 | **API-Fetch** | Flyff-Universe-API-Daten herunterladen — native Sidepanel-Oberfläche (kein separates Fenster) |
 
 ### Killfeed
@@ -237,7 +240,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.4-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.5.3-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-February_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -300,6 +303,7 @@ Freely assignable key combinations (2–3 keys) for:
 - Built-in themes: Toffee, Cinnamon, Flyff Gold, Synthwave, Steel Ruby, Wood, and more
 - Customize active tab color via palette, gradient, or color code
 - Animated accents for tabs and panels
+- Overlay font and launcher text size (75–150 %) customizable
 - **8 languages**: Deutsch, English, Polski, Francais, Русский, Türkce, 中文, 日本語
 
 ### Built-in Tools
@@ -311,19 +315,20 @@ Freely assignable key combinations (2–3 keys) for:
 <td align="center"><img src="app/docs/assets/screenshots/tools/premium_shopping_list/premium_shopping_list_2.png" width="300" alt="Premium Shopping List" /><br/><sub>Premium Shopping List</sub></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><strong>Upgrade Cost Calculator</strong></td>
+<td align="center" colspan="2"><strong>Upgrade Calculator</strong></td>
 </tr>
 <tr>
-<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_2.png" width="300" alt="Upgrade Cost Calculator — Cost breakdown" /><br/><sub>Cost breakdown per level</sub></td>
-<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_3.png" width="300" alt="Upgrade Cost Calculator — System comparison" /><br/><sub>S-Protect vs. Low S-Protect comparison</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_2.png" width="300" alt="Upgrade Calculator — Cost breakdown" /><br/><sub>Cost breakdown per level</sub></td>
+<td align="center"><img src="app/docs/assets/screenshots/tools/upgrade_cost_calc/upgrade_cost_calc_3.png" width="300" alt="Upgrade Calculator — System comparison" /><br/><sub>S-Protect vs. Low S-Protect comparison</sub></td>
 </tr>
 </table>
 </div>
 
-- **Upgrade Cost Calculator**: Calculate expected costs for item upgrades (+0 to +10) — material requirements, number of attempts, and Low S-Protect vs. S-Protect comparison
+- **Upgrade Calculator**: Calculate upgrade costs for weapons, jewelry, armor, and piercings — material requirements, number of attempts, and Low S-Protect vs. S-Protect comparison; all calculators in one window with sidebar navigation
 - **FCoins Calculator**: Convert FCoins to Penya with adjustable exchange rate
 - **Premium Shopping List**: Manage items and prices, calculate total cost in FCoins
-- **Logs**: Live error log (Warn/Error) in the side panel with delete and save actions
+- **Logs**: Live error log (Warn/Error) — separate window via the log icon in the tab bar, with delete and save actions
+- **Announcements**: Live developer messages in the right panel — no app update required, can be disabled in settings
 - **Quick Links**: Flyff Universe, Flyffipedia, Flyffulator, Skillulator, Discord
 
 ---
@@ -337,6 +342,7 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 | **Killfeed** | EXP tracker with kill detection, monster statistics, and detailed per-profile history (CSV). Currently only supported in 1on1 mode — character switches may cause misattribution. |
 | **Giant Tracker** | Kill statistics for Giants, Violets, and Bosses — with drop tracking, loot pool preview, and time-to-kill (TTK) |
 | **CD-Timer** | Timers for buffs and power-ups — icons warn on expiry |
+| **Quest Guide** | Quest overview with chain visualization, progress tracking, and interactive map. Requires API-Fetch: Quest, NPC, Monster, Item |
 | **API-Fetch** | Download Flyff Universe API data — native side panel interface (no separate window) |
 
 ### Killfeed

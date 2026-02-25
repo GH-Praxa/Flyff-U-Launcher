@@ -60,6 +60,26 @@
 - ROI-Kalibrator jetzt vollständig lokalisiert
 
 ---
+## 🐛 Version 3.0.5.3
+
+### ⚙️ Verbesserungen
+- OCR: Stroke Dilation für leichte Schriftarten in der Level-Erkennung eingeführt — verbesserte Erkennungsgenauigkeit bei dünnen Schriften
+
+---
+## 🐛 Version 3.0.5.2
+
+### ✨ Verbesserungen
+- Ankündigungen jetzt im Markdown-Format (statt JSON)
+- Live-Einstellungen im rechten Panel
+- Dynamische Höhe des rechten Panels
+
+---
+## 🐛 Version 3.0.5.1
+
+### ✨ Verbesserungen
+- Logs aus dem Sidepanel in ein eigenes Fenster verschoben — zugänglich über ein Log-Icon in der Tab-Leiste
+
+---
 ## 🐛 Version 3.0.5
 
 ### 🐛 Fehlerbehebungen

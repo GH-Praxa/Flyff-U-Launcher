@@ -341,6 +341,36 @@ Die TTK misst automatisch die Kampfdauer gegen ein Bossmonster — vom ersten Tr
 
 :::
 
+:::accordion[Quest Guide]
+- Zeigt verfügbare Quests gefiltert nach Level, Region und Typ — mit Chain-Visualisierung und Fortschritts-Tracking pro Profil.
+- Benötigte API-Fetches: **Quest**, **NPC**, **Monster**, **Item**
+
+**Einrichtung:**
+1. Stelle sicher, dass das Plugin **Quest Guide** aktiviert ist.
+2. Lade die benötigten API-Daten über API-Fetch herunter (Quest, NPC, Monster, Item).
+3. Wähle im Sidepanel den Reiter **Quest Guide**.
+
+**Filter & Suche:**
+- **Suchfeld** — filtert nach Quest-Name, NPC oder Item
+- **Level-Modus:**
+  - *OCR ±* — zeigt Quests passend zum aktuell per OCR erkannten Level (mit einstellbarer Toleranz)
+  - *Manuell* — Level und Toleranz manuell eingeben
+  - *Min–Max* — festes Level-Fenster festlegen
+- **Region** — schränkt die Anzeige auf eine bestimmte Spielregion ein
+- **Typ-Filter** — Alle / Chain / Daily / Repeat / Category
+
+**Fortschritts-Tracking:**
+- Quests als erledigt markieren — Fortschritt wird pro Profil gespeichert
+- Checkbox „Erledigte anzeigen" ein-/ausblenden
+- Reset-Button setzt den Fortschritt zurück
+
+**Statistik-Leiste:**
+Zeigt die Anzahl Gesamt-, Verfügbarer und Erledigter Quests auf einen Blick.
+
+**Quest Map:**
+- Öffnet eine interaktive Karte mit Quest-Standorten über den Karten-Button im Sidepanel.
+:::
+
 ## Tools
 
 Tools lassen sich entweder per Hotkey oder in der Tab-Leiste über das Menü (Stern) öffnen.
@@ -371,14 +401,24 @@ Tools lassen sich entweder per Hotkey oder in der Tab-Leiste über das Menü (St
 
 :::
 
-:::accordion[Upgrade-Kosten-Rechner]
+:::accordion[Upgrade-Rechner]
 
-- Berechnet die erwarteten Kosten für Item-Upgrades von +0 bis +10 
-  inklusive Materialbedarf, Versuchsanzahl und Vergleich zwischen Low SProtect und SProtect.
+Alle Upgrade-Typen in einem Fenster mit Sidebar-Navigation. Berechnet erwartete Kosten, Materialmengen und Versuchsanzahl.
 
 ![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_1.png)
 
-**Einstellungen:**
+**Sidebar-Sektionen:**
+
+| Sektion | Würfel | Schutz |
+|---------|--------|--------|
+| **Waffe / Rüstung / Schild** | Powerdice 4/6 oder 12 | S-Protect / Low S-Protect |
+| **Schmuck** | Dice 8 | A-Protect |
+| **Rüstungs-Piercing** | Dice 8 | G-Protect |
+| **Waffen-/Schild-Piercing** | Dice 8 | G-Protect |
+| **Ultimate Waffe** | – | Ultimate Orb + XProtect |
+| **Ultimate Schmuck** | – | Ultimate Orb + XProtect |
+
+**Einstellungen (Waffe / Rüstung):**
 
 - **Würfel-Typ:** Powerdice 4/6 (Standard) oder Powerdice 12 (höhere Erfolgschance)
 - **Von-Level / Nach-Level:** Upgrade-Bereich festlegen (z.B. +3 → +7)
@@ -389,14 +429,7 @@ Tools lassen sich entweder per Hotkey oder in der Tab-Leiste über das Menü (St
 
 **Materialpreise:**
 
-Unter „Materialien" lassen sich die aktuellen Marktpreise für folgende Items festlegen:
-- Mineral
-- Eron
-- S-Protect
-- Low S-Protect
-- Powerdice 4, 6, 12
-
-Mit der Checkbox „Vorhanden" werden Materialien von der Kostenberechnung ausgenommen.
+Unter „Materialien" lassen sich die aktuellen Marktpreise eintragen. Mit der Checkbox „Vorhanden" werden Materialien von der Kostenberechnung ausgenommen.
 
 ![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_2.png)
 
@@ -404,20 +437,20 @@ Mit der Checkbox „Vorhanden" werden Materialien von der Kostenberechnung ausge
 
 Nach Klick auf „Berechnen" erscheint eine detaillierte Tabelle pro Upgrade-Stufe:
 
-| Spalte | Bedeutung                   |
-|--------|-----------------------------|
-| Level | Ziel-Upgrade-Stufe          |
-| Chance | Erfolgschance in Prozent    |
-| Versuche | Erwartete Anzahl Versuche   |
-| Mineral | Benötigte Mineral           |
-| Eron | Benötigte Eron              |
-| Penya | Penya-Kosten                |
-| Protects | Benötigte SProtect          |
+| Spalte | Bedeutung |
+|--------|-----------|
+| Level | Ziel-Upgrade-Stufe |
+| Chance | Erfolgschance in Prozent |
+| Versuche | Erwartete Anzahl Versuche |
+| Mineral | Benötigte Mineral |
+| Eron | Benötigte Eron |
+| Penya | Penya-Kosten |
+| Protects | Benötigte Schutz-Scrolls |
 | Gesamtkosten | Summe aller Kosten in Penya |
 
 ![Beschreibung](tools/upgrade_cost_calc/upgrade_cost_calc_3.png)
 
-Im Vergleichsmodus werden beide Schutz-Systeme (SProtect vs. Low SProtect nebeneinander dargestellt. Die günstigere Option wird grün hervorgehoben.
+Im Vergleichsmodus werden beide Schutz-Systeme nebeneinander dargestellt — die günstigere Option wird grün hervorgehoben.
 
 **Speicherung:** Preise und Einstellungen werden automatisch gespeichert (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
