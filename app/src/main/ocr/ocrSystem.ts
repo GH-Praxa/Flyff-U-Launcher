@@ -68,6 +68,29 @@ export interface OcrSystemDeps {
     hasPluginHandler: (channel: string) => boolean;
     invokePluginHandler: (channel: string, ...args: unknown[]) => Promise<unknown>;
     safeHandle: (channel: string, handler: (...args: unknown[]) => Promise<unknown>) => void;
+    /** Returns the currently active game font family name (e.g. "Roboto Light"). */
+    getGameFont?: () => string | null;
+}
+
+// ─── Font weight inference ───────────────────────────────────────────
+/**
+ * Infers a numeric CSS font-weight (100–900) from a font family name.
+ * Returns 400 (Regular) when no weight keyword is detected.
+ * More specific variants (ExtraLight, ExtraBold) are tested before their
+ * shorter siblings (Light, Bold) to avoid false matches.
+ */
+export function inferFontWeight(fontFamily: string | null | undefined): number {
+    if (!fontFamily) return 400;
+    const lower = fontFamily.toLowerCase();
+    if (/\b(extralight|extra.?light|ultralight|ultra.?light)\b/.test(lower)) return 200;
+    if (/\b(extrabold|extra.?bold|ultrabold|ultra.?bold)\b/.test(lower)) return 800;
+    if (/\b(semibold|semi.?bold|demibold|demi.?bold)\b/.test(lower)) return 600;
+    if (/\b(thin|hairline)\b/.test(lower)) return 100;
+    if (/\blight\b/.test(lower)) return 300;
+    if (/\bmedium\b/.test(lower)) return 500;
+    if (/\bbold\b/.test(lower)) return 700;
+    if (/\b(black|heavy)\b/.test(lower)) return 900;
+    return 400;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -691,7 +714,8 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             const kind = KEY_TO_OCR_KIND[key];
             const worker = await ensureOcrWorker(kind);
             const tBeforeOcr = Date.now();
-            const response = await worker.recognizePng(png, { kind });
+            const fontWeight = key === "lvl" ? inferFontWeight(deps.getGameFont?.()) : undefined;
+            const response = await worker.recognizePng(png, { kind, fontWeight });
             const tAfterOcr = Date.now();
             const durTotal = tAfterOcr - tStart;
             if (durTotal > 500) {

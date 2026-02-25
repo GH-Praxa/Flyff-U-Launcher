@@ -117,7 +117,7 @@ export class NativeOcrWorker {
         return this.running;
     }
 
-    async recognizePng(png: Buffer, opts?: { kind?: OcrKind }): Promise<OcrResponse> {
+    async recognizePng(png: Buffer, opts?: { kind?: OcrKind; fontWeight?: number }): Promise<OcrResponse> {
         if (!this.running || !this.tess) {
             throw new Error("Native OCR worker not started");
         }
@@ -133,7 +133,7 @@ export class NativeOcrWorker {
 
         try {
             const bgr = await decodePng(png);
-            const result = await this.process(bgr, kind);
+            const result = await this.process(bgr, kind, opts?.fontWeight);
             result.id = id;
             return result;
         } catch (err) {
@@ -151,7 +151,7 @@ export class NativeOcrWorker {
     // Main dispatch (= Python process())
     // -----------------------------------------------------------------------
 
-    private async process(bgr: RawImage, kind: string): Promise<OcrResponse> {
+    private async process(bgr: RawImage, kind: string, fontWeight?: number): Promise<OcrResponse> {
         kind = (kind || "exp").toLowerCase();
 
         if (kind === "exp" || kind === "digits") {
@@ -169,7 +169,7 @@ export class NativeOcrWorker {
         }
 
         if (kind === "lvl") {
-            const [val, raw] = await this.ocrLvl(bgr);
+            const [val, raw] = await this.ocrLvl(bgr, fontWeight);
             if (val === null) return { id: 0, ok: true, raw, value: null, unit: null };
             return { id: 0, ok: true, raw, value: String(val), unit: null };
         }
@@ -481,7 +481,7 @@ export class NativeOcrWorker {
     // OCR Level (= Python ocr_lvl)
     // -----------------------------------------------------------------------
 
-    private async ocrLvl(bgr: RawImage): Promise<[number | null, string]> {
+    private async ocrLvl(bgr: RawImage, fontWeight?: number): Promise<[number | null, string]> {
         let { width: w, height: h } = bgr;
 
         // Upscale small ROIs
@@ -496,9 +496,14 @@ export class NativeOcrWorker {
         const whitelist = "0123456789";
         let fallbackRaw = "";
 
+        // Light/Thin fonts produce thin strokes that break up after thresholding.
+        // Dilate the binary mask before OCR to thicken strokes back to readable width.
+        const lightFont = typeof fontWeight === "number" && fontWeight < 400;
+
         const tryImg = async (img: RawImage, name: string): Promise<[number | null, string]> => {
             await saveDebug(`lvl_${name}`, img);
-            const raw = await this.ocrLine(img, whitelist, 1.0);
+            const processImg = lightFont ? dilate(img, 2, 2, 1) : img;
+            const raw = await this.ocrLine(processImg, whitelist, 1.0);
             if (raw && !fallbackRaw) fallbackRaw = raw;
             if (!raw) return [null, raw];
             const val = parseLevel(raw);

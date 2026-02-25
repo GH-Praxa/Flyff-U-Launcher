@@ -170,6 +170,7 @@ app.whenReady().then(async () => {
     let overlayClickThrough = false;
     let clientLocale: Locale = DEFAULT_LOCALE;
     let overlayHotkeys = normalizeHotkeySettings(DEFAULT_HOTKEYS, DEFAULT_HOTKEYS);
+    let currentGameFont: string | null = null;
     try {
         const clientSettingsSnap = await services.clientSettings.get();
         overlayClickThrough = !!clientSettingsSnap.overlayButtonPassthrough;
@@ -182,6 +183,7 @@ app.whenReady().then(async () => {
         });
         services.sessionTabs.setActiveGridBorderEnabled?.(clientSettingsSnap.gridActiveBorder ?? false);
         services.sessionTabs.setGameFont?.(clientSettingsSnap.gameFont ?? null);
+        currentGameFont = clientSettingsSnap.gameFont ?? null;
         const uiPosEnabled = clientSettingsSnap.persistGameUiPositions ?? false;
         services.sessionTabs.setUiPositionPersistenceEnabled?.(uiPosEnabled);
     } catch (err) {
@@ -297,6 +299,7 @@ app.whenReady().then(async () => {
         hasPluginHandler,
         invokePluginHandler,
         safeHandle,
+        getGameFont: () => currentGameFont,
     });
 
     // =========================================================================
@@ -335,6 +338,7 @@ app.whenReady().then(async () => {
         });
         services.sessionTabs.setActiveGridBorderEnabled?.(settings.gridActiveBorder ?? false);
         services.sessionTabs.setGameFont?.(settings.gameFont ?? null);
+        currentGameFont = settings.gameFont ?? null;
         services.sessionTabs.setUiPositionPersistenceEnabled?.(settings.persistGameUiPositions ?? false);
         // Also propagate to all multi-window tab managers
         for (const entry of services.sessionRegistry.list()) {
