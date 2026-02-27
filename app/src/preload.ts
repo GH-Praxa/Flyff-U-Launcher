@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld("api", {
     profilesDelete: (profileId: string) => unwrapIpc(ipcRenderer.invoke("profiles:delete", profileId)),
     profilesClone: (profileId: string, newName: string) => unwrapIpc(ipcRenderer.invoke("profiles:clone", profileId, newName)),
     profilesReorder: (orderedIds: string[]) => unwrapIpc(ipcRenderer.invoke("profiles:reorder", orderedIds)),
+    profilesExport: (profileId: string) => unwrapIpc<string | null>(ipcRenderer.invoke("profiles:export", profileId)),
+    profilesImport: () => unwrapIpc<import("./shared/schemas").Profile | null>(ipcRenderer.invoke("profiles:import")),
     profilesGetOverlayTargetId: () => unwrapIpc(ipcRenderer.invoke("profiles:getOverlayTargetId")),
     profilesGetOverlaySupportTargetId: () => unwrapIpc(ipcRenderer.invoke("profiles:getOverlaySupportTargetId")),
     profilesSetOverlayTarget: (profileId: string | null, iconKey?: string) => unwrapIpc(ipcRenderer.invoke("profiles:setOverlayTarget", profileId, iconKey)),

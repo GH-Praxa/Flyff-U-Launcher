@@ -134,6 +134,8 @@ declare global {
             profilesDelete: (id: string) => Promise<Profile[]>;
             profilesClone: (sourceId: string, newName: string) => Promise<Profile[]>;
             profilesReorder: (orderedIds: string[]) => Promise<Profile[]>;
+            profilesExport: (profileId: string) => Promise<string | null>;
+            profilesImport: () => Promise<Profile | null>;
             profilesSetOverlayTarget: (profileId: string | null, iconKey?: string) => Promise<Profile[]>;
             openTab: (profileId: string) => Promise<boolean>;
             openWindow: (profileId: string) => Promise<boolean>;

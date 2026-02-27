@@ -332,9 +332,13 @@ export async function renderLauncher(root: HTMLElement) {
     jobSelect.className = "select filterSelect";
     jobSelect.title = t("filter.jobHint");
     renderJobOptions(jobSelect);
-    const btnRefreshLayouts = el("button", "btn", t("layout.refresh"));
+    const btnRefreshLayouts = el("button", "btn iconBtn", "↻");
     btnRefreshLayouts.title = t("layout.refreshHint");
-    filterBar.append(searchInput, jobSelect, btnCreate, btnRefreshLayouts);
+    const btnExport = el("button", "btn iconBtn", "⬆") as HTMLButtonElement;
+    btnExport.title = t("profile.export.hint");
+    const btnImport = el("button", "btn iconBtn", "⬇") as HTMLButtonElement;
+    btnImport.title = t("profile.import.hint");
+    filterBar.append(searchInput, jobSelect, btnCreate, btnRefreshLayouts, btnExport, btnImport);
 
     async function renderLayoutChips(target: HTMLElement) {
 
@@ -1064,6 +1068,48 @@ export async function renderLauncher(root: HTMLElement) {
     btnRefreshLayouts.onclick = () => {
         reload().catch(console.error);
     };
+
+    btnExport.onclick = async () => {
+        const profiles = await window.api.profilesList().catch((): never[] => []);
+        if (profiles.length === 0) return;
+        const overlay = el("div", "modalOverlay");
+        const modal = el("div", "modal");
+        const header = el("div", "modalHeader", t("profile.export.select"));
+        const body = el("div", "modalBody scrollable");
+        const list = el("div", "pickerList");
+        body.append(list);
+        modal.append(header, body);
+        overlay.append(modal);
+        document.body.append(overlay);
+        const close = () => overlay.remove();
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+        for (const p of profiles) {
+            const item = el("button", "pickerItem", p.name) as HTMLButtonElement;
+            item.onclick = async () => {
+                close();
+                try {
+                    const filePath = await window.api.profilesExport(p.id);
+                    if (filePath) showToast(t("profile.export.success"), "success");
+                } catch (err) {
+                    showToast(String(err), "error");
+                }
+            };
+            list.append(item);
+        }
+    };
+
+    btnImport.onclick = async () => {
+        try {
+            const newProfile = await window.api.profilesImport();
+            if (newProfile) {
+                showToast(t("profile.import.success"), "success");
+                await reload();
+            }
+        } catch (err) {
+            showToast(String(err), "error");
+        }
+    };
+
     // Listen for layout changes from other windows (e.g., session window saving a layout)
     window.api.onLayoutsChanged?.(() => {
         reload().catch(console.error);

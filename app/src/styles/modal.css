@@ -99,6 +99,28 @@
   gap: 8px;
 }
 
+.modalBody.scrollable{
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.modalBody.scrollable::-webkit-scrollbar{
+  width: 10px;
+}
+.modalBody.scrollable::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+}
+.modalBody.scrollable::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.35), rgba(var(--accent-rgb),0.18));
+  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-rgb),0.45);
+}
+.modalBody.scrollable::-webkit-scrollbar-thumb:hover{
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.45), rgba(var(--accent-rgb),0.28));
+}
+
 .layoutTypeList .pickerItem{
   text-align: center;
 }

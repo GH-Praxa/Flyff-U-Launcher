@@ -424,6 +424,7 @@ app.whenReady().then(async () => {
         createTabWindow: services.createTabWindow,
         clientSettings: services.clientSettings,
         onClientSettingsChanged,
+        flyffUrl: URLS.FLYFF_PLAY,
         roiOpen: services.roiController.open,
         roiLoad: async (profileId) => {
             const rois = await services.roiStore.get(profileId);

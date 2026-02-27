@@ -15,6 +15,7 @@ import { registerPatchnotesHandlers } from "./handlers/patchnotes";
 import { registerDocumentationHandlers } from "./handlers/documentation";
 import { registerShoppingListHandlers } from "./handlers/shoppingList";
 import { registerUpgradeCalcHandlers } from "./handlers/upgradeCalc";
+import { registerProfileTransferHandlers } from "./handlers/profiles-transfer";
 import type { ClientSettingsStore } from "../clientSettings/store";
 import type { ClientSettings } from "../../shared/schemas";
 import { logErr } from "../../shared/logger";
@@ -50,6 +51,8 @@ export type RegisterMainIpcOptions = {
     onClientSettingsChanged?: (settings: ClientSettings) => void;
     /** Send toast to launcher window */
     showToast?: (message: string, tone?: "info" | "success" | "error") => void;
+    /** Game URL used for localStorage read/write during profile transfer */
+    flyffUrl: string;
 };
 
 /**
@@ -113,6 +116,11 @@ export function registerMainIpc(opts: RegisterMainIpcOptions): void {
 registerShoppingListHandlers(safeHandle);
 
     registerUpgradeCalcHandlers(safeHandle);
+
+    registerProfileTransferHandlers(safeHandle, opts.profiles, {
+        getViewByProfile: opts.sessionTabs.getViewByProfile ?? (() => null),
+        flyffUrl: opts.flyffUrl,
+    });
 }
 
 // Re-export types that may be needed externally
