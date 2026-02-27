@@ -13,6 +13,7 @@ type Profile = {
     launchMode: "tabs" | "window";
     overlayTarget?: boolean;
     overlayIconKey?: string;
+    characters?: string[];
 };
 type GridCell = {
     id: string;

@@ -49,6 +49,9 @@ const settingsCache = { data: null };
 let unsubscribeOcr = null;
 let lastOcrLevel = null; // most recently detected player level per profile
 
+let unsubscribeKillfeedQuest = null;
+let questExpTable = null; // Map<level, Map<roundedExp, questId[]>>
+
 // Quest-chain graph: questId -> { prev: [ids], next: [ids] }
 let chainGraph = null;
 
@@ -132,6 +135,26 @@ async function loadQuests() {
     log(`Loaded ${map.size} quests`);
     questsCache.data = map;
     return map;
+}
+
+async function buildQuestExpTable() {
+    const quests = await loadQuests();
+    const table = new Map(); // level -> Map<expKey, questId[]>
+    for (const [id, quest] of quests) {
+        const expArray = quest.endReceiveExperience;
+        if (!expArray || expArray.length === 0) continue;
+        for (let i = 0; i < expArray.length; i++) {
+            const exp = expArray[i];
+            if (!exp || exp <= 0) continue;
+            const lvl = i + 1;
+            const key = Math.round(exp * 10000) / 10000; // 4 Dezimalstellen
+            if (!table.has(lvl)) table.set(lvl, new Map());
+            const lvlMap = table.get(lvl);
+            if (!lvlMap.has(key)) lvlMap.set(key, []);
+            lvlMap.get(key).push(id);
+        }
+    }
+    return table;
 }
 
 async function loadNpcs() {
@@ -864,6 +887,44 @@ async function quickSearch(query, limit = 10, lang = 'en') {
     return results;
 }
 
+// ─── Quest Completion Detection ─────────────────────────────────────────────
+
+async function handlePossibleQuestCompletion({ profileId, level, deltaExp }) {
+    if (!level || !deltaExp) return;
+    if (!questExpTable) questExpTable = await buildQuestExpTable();
+
+    const lvlMap = questExpTable.get(level);
+    if (!lvlMap) return;
+
+    // Exakter Match ± OCR-Rundungstoleranz (4. Dezimalstelle)
+    const TOLERANCE = 0.00015;
+    const matchedIds = [];
+    for (const [expKey, ids] of lvlMap) {
+        if (Math.abs(expKey - deltaExp) <= TOLERANCE) matchedIds.push(...ids);
+    }
+    if (matchedIds.length === 0) return;
+
+    // Nicht abgeschlossene Quests filtern
+    const progress = await getProfileProgress(profileId);
+    const available = matchedIds.filter(id => !progress[String(id)]);
+    if (available.length === 0) return;
+
+    // Namen holen für die UI
+    const quests = await loadQuests();
+    const lang = (await loadSettings()).language || 'en';
+    const candidates = available.map(id => {
+        const q = quests.get(id);
+        return { id, name: q ? getLocalizedName(q, lang) : String(id) };
+    });
+
+    ctx.ipc.broadcast('quest:possible-completion', {
+        profileId,
+        candidates,
+        deltaExp,
+        level,
+    });
+}
+
 // ─── Cache Clear ────────────────────────────────────────────────────────────
 
 function clearCache() {
@@ -1210,6 +1271,7 @@ module.exports = {
                 lastOcrLevel = lvl;
                 ctx.ipc.broadcast('quest:level:update', { profileId, level: lvl });
             });
+            unsubscribeKillfeedQuest = ctx.eventBus.on('quest:possible-completion', handlePossibleQuestCompletion);
             log('Quest Guide started - OCR level tracking active');
         } else {
             log('Quest Guide started - no eventBus available, OCR level tracking disabled');
@@ -1221,6 +1283,11 @@ module.exports = {
             unsubscribeOcr();
             unsubscribeOcr = null;
         }
+        if (unsubscribeKillfeedQuest) {
+            unsubscribeKillfeedQuest();
+            unsubscribeKillfeedQuest = null;
+        }
+        questExpTable = null;
         lastOcrLevel = null;
         mapWindowData.clear();
         try {

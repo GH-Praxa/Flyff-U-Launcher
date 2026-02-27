@@ -25,6 +25,8 @@ export type Profile = {
 
     overlaySupportIconKey?: string;
 
+    characters?: string[];
+
 };
 
 // ── Query String ─────────────────────────────────────────────────────

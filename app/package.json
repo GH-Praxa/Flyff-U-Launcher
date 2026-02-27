@@ -1,7 +1,7 @@
 {
   "name": "Flyff-U-Launcher",
   "productName": "Flyff-U-Launcher",
-  "version": "3.0.5.4",
+  "version": "3.0.5.5",
   "description": "My Electron application description",
   "repository": {
     "type": "git",
@@ -42,7 +42,7 @@
     "@typescript-eslint/parser": "^8.19.1",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
-    "electron": "39.2.7",
+    "electron": "40.6.1",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "happy-dom": "^20.0.11",

@@ -750,13 +750,113 @@
 
 
 .modeWrap{
-  display:flex;
-  align-items:center;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  grid-column: 1 / -1;
+}
+
+.charRow{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.charBadgesWrap{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.charBadge{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.07);
+  padding: 2px 4px 2px 7px;
+}
+
+.charBadgeDel{
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 1px;
+  flex-shrink: 0;
+}
+
+.charBadgeDel:hover{
+  color: rgba(255,255,255,0.9);
+}
+
+.charInlineInput{
+  width: 110px;
+  min-width: 0;
+  font-size: 12px;
+  padding: 3px 7px;
+  min-height: 0;
+  height: 24px;
+}
+
+.charBadges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 
 .card.dragging { opacity: 0.6; }
+.card.editing { border-color: rgba(var(--accent-rgb),0.55); background: rgba(var(--accent-rgb),0.06); }
+
+.btnNoChars{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,200,0,0.5);
+  background: rgba(255,200,0,0.12);
+  color: rgba(255,200,0,0.8);
+  font-size: 10px;
+  font-weight: bold;
+  cursor: default;
+  flex-shrink: 0;
+}
+.btnNoChars:hover{
+  border-color: rgba(255,200,0,0.9);
+  background: rgba(255,200,0,0.22);
+  color: rgba(255,200,0,1);
+}
+.btnModeHint{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.45);
+  font-size: 9px;
+  font-weight: bold;
+  cursor: default;
+  flex-shrink: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.btnModeHint:hover{
+  border-color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.9);
+}
+
 .card.dropBefore { box-shadow: 0 -2px 0 0 rgba(var(--accent-rgb),1) inset; }
 .card.dropAfter  { box-shadow: 0  2px 0 0 rgba(var(--accent-rgb),1) inset; }
 

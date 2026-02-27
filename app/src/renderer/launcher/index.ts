@@ -613,7 +613,9 @@ export async function renderLauncher(root: HTMLElement) {
     const createName = document.createElement("input");
     createName.className = "input";
     createName.placeholder = t("create.namePlaceholder");
-    createGrid.append(createName);
+    const createNameHint = el("button", "btnModeHint", "?");
+    createNameHint.title = t("profile.nameHint");
+    createGrid.append(createName, createNameHint);
     const createActions = el("div", "manageActions");
     const btnAdd = el("button", "btn primary", t("create.add"));
     const btnCancel = el("button", "btn", t("create.cancel"));
@@ -874,16 +876,27 @@ export async function renderLauncher(root: HTMLElement) {
             if (jobBadge)
                 leftInfo.append(jobBadge);
             leftInfo.append(el("span", "badge subtle", p.launchMode === "tabs" ? t("profile.mode.tabs") : t("profile.mode.window")));
+            if (p.characters && p.characters.length > 0) {
+                const charBadges = el("span", "charBadges");
+                p.characters.forEach(c => charBadges.append(el("span", "badge charBadge", c)));
+                leftInfo.append(charBadges);
+            }
             btnDel.onclick = async () => {
                 await window.api.profilesDelete(p.id);
                 await reload();
             };
+            if (!p.characters || p.characters.length === 0) {
+                const btnNoChars = el("button", "btnNoChars", "?");
+                btnNoChars.title = t("profile.characters.missing");
+                actions.append(btnNoChars);
+            }
             actions.append(btnManage, btnPlay);
             row.append(leftInfo, actions);
             const manage = el("div", "manage hidden");
             const nameInput = document.createElement("input");
             nameInput.className = "input";
             nameInput.value = p.name;
+            nameInput.title = t("profile.nameHint");
             const jobSelect = document.createElement("select");
             jobSelect.className = "select";
             renderJobOptions(jobSelect, p.job ?? "");
@@ -892,8 +905,9 @@ export async function renderLauncher(root: HTMLElement) {
             const modeCheck = document.createElement("input");
             modeCheck.type = "checkbox";
             modeCheck.checked = p.launchMode === "tabs";
-            modeLabel.append(modeCheck, el("span", "", t("profile.mode.useTabs")));
-            modeWrap.append(modeLabel);
+            const modeHintBtn = el("button", "btnModeHint", "?");
+            modeHintBtn.title = t("profile.mode.useTabsHint");
+            modeLabel.append(modeCheck, el("span", "", t("profile.mode.useTabs")), modeHintBtn);
             const currentMode = (): "tabs" | "window" => (modeCheck.checked ? "tabs" : "window");
             btnPlay.onclick = async () => {
                 await window.api.profilesUpdate({
@@ -926,6 +940,7 @@ export async function renderLauncher(root: HTMLElement) {
                     name: nameInput.value.trim() || p.name,
                     job: jobSelect.value,
                     launchMode: modeCheck.checked ? "tabs" : "window",
+                    characters: localChars.length > 0 ? localChars : undefined,
                 });
                 await reload();
             };
@@ -945,14 +960,51 @@ export async function renderLauncher(root: HTMLElement) {
             btnClose.onclick = () => {
                 clonePanel.classList.add("hidden");
                 manage.classList.add("hidden");
+                card.classList.remove("editing");
             };
+            // Character badges inline in modeWrap
+            const localChars: string[] = [...(p.characters ?? [])];
+            const charBadgesWrap = el("div", "charBadgesWrap");
+            const charInput = document.createElement("input");
+            charInput.className = "input charInlineInput";
+            charInput.placeholder = t("profile.characters.placeholder");
+            charInput.title = t("profile.characters.inputHint");
+            charInput.maxLength = 64;
+            const renderCharBadges = () => {
+                charBadgesWrap.innerHTML = "";
+                localChars.forEach((name, idx) => {
+                    const badge = el("span", "badge charBadge");
+                    badge.append(document.createTextNode(name));
+                    const btnX = el("button", "charBadgeDel", "×");
+                    btnX.title = t("profile.characters.remove");
+                    btnX.onclick = () => { localChars.splice(idx, 1); renderCharBadges(); };
+                    badge.append(btnX);
+                    charBadgesWrap.append(badge);
+                });
+            };
+            renderCharBadges();
+            const doAddChar = () => {
+                const val = charInput.value.trim();
+                if (!val || localChars.includes(val)) return;
+                localChars.push(val);
+                charInput.value = "";
+                renderCharBadges();
+            };
+            charInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doAddChar(); });
+            charInput.addEventListener("blur", () => doAddChar());
+            const charRow = el("div", "charRow");
+            charRow.append(charBadgesWrap, charInput);
+            modeWrap.append(charRow, modeLabel);
             const grid = el("div", "manageGrid");
             grid.append(nameInput, jobSelect, modeWrap);
             const actionBar = el("div", "manageActions");
             const actionSpacer = el("div", "spacer");
             actionBar.append(btnSave, btnClone, actionSpacer, btnDel, btnClose);
             manage.append(grid, actionBar, clonePanel);
-            btnManage.onclick = () => manage.classList.toggle("hidden");
+            btnManage.onclick = () => {
+                const opening = manage.classList.toggle("hidden");
+                card.classList.toggle("editing", !opening);
+            };
             card.addEventListener("dragover", (e) => {
                 e.preventDefault();
                 if (!draggingId || draggingId === p.id)

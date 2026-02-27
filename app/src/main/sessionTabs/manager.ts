@@ -60,6 +60,10 @@ export function createSessionTabsManager(opts: {
         if (patchedFontCspSessions.has(partition)) return;
         patchedFontCspSessions.add(partition);
         sess.webRequest.onHeadersReceived((details, callback) => {
+            if (!details.responseHeaders) {
+                callback({ responseHeaders: details.responseHeaders });
+                return;
+            }
             const headers: Record<string, string[]> = { ...(details.responseHeaders as Record<string, string[]>) };
             const cspKey = Object.keys(headers).find(k => k.toLowerCase() === "content-security-policy");
             if (cspKey) {

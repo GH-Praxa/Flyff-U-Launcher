@@ -75,7 +75,9 @@
             resetProgress: 'Reset Progress',
             resetConfirm: 'Reset all quest progress for this profile?',
             resetDone: 'Progress reset',
-            savedFeedback: 'Saved'
+            savedFeedback: 'Saved',
+            questSuggestionTitle: 'Quest submitted?',
+            questSuggestionDismiss: '✕'
         },
         de: {
             title: 'Quest Guide',
@@ -133,7 +135,9 @@
             resetProgress: 'Fortschritt zurücksetzen',
             resetConfirm: 'Gesamten Questfortschritt für dieses Profil zurücksetzen?',
             resetDone: 'Fortschritt zurückgesetzt',
-            savedFeedback: 'Gespeichert'
+            savedFeedback: 'Gespeichert',
+            questSuggestionTitle: 'Quest abgegeben?',
+            questSuggestionDismiss: '✕'
         },
         fr: {
             title: 'Guide de quêtes',
@@ -191,7 +195,9 @@
             resetProgress: 'Réinitialiser la progression',
             resetConfirm: 'Réinitialiser toute la progression des quêtes pour ce profil ?',
             resetDone: 'Progression réinitialisée',
-            savedFeedback: 'Sauvegardé'
+            savedFeedback: 'Sauvegardé',
+            questSuggestionTitle: 'Quête remise ?',
+            questSuggestionDismiss: '✕'
         },
         pl: {
             title: 'Przewodnik po questach',
@@ -249,7 +255,9 @@
             resetProgress: 'Resetuj postęp',
             resetConfirm: 'Zresetować cały postęp questów dla tego profilu?',
             resetDone: 'Postęp zresetowany',
-            savedFeedback: 'Zapisano'
+            savedFeedback: 'Zapisano',
+            questSuggestionTitle: 'Quest oddany?',
+            questSuggestionDismiss: '✕'
         },
         ru: {
             title: 'Гайд по квестам',
@@ -307,7 +315,9 @@
             resetProgress: 'Сбросить прогресс',
             resetConfirm: 'Сбросить весь прогресс квестов для этого профиля?',
             resetDone: 'Прогресс сброшен',
-            savedFeedback: 'Сохранено'
+            savedFeedback: 'Сохранено',
+            questSuggestionTitle: 'Квест сдан?',
+            questSuggestionDismiss: '✕'
         },
         tr: {
             title: 'Görev Rehberi',
@@ -365,7 +375,9 @@
             resetProgress: 'İlerlemeyi sıfırla',
             resetConfirm: 'Bu profil için tüm görev ilerlemesi sıfırlansın mı?',
             resetDone: 'İlerleme sıfırlandı',
-            savedFeedback: 'Kaydedildi'
+            savedFeedback: 'Kaydedildi',
+            questSuggestionTitle: 'Görev teslim edildi mi?',
+            questSuggestionDismiss: '✕'
         },
         cn: {
             title: '任务指南',
@@ -423,7 +435,9 @@
             resetProgress: '重置进度',
             resetConfirm: '重置此配置文件的所有任务进度？',
             resetDone: '进度已重置',
-            savedFeedback: '已保存'
+            savedFeedback: '已保存',
+            questSuggestionTitle: '任务已提交?',
+            questSuggestionDismiss: '✕'
         },
         jp: {
             title: 'クエストガイド',
@@ -481,7 +495,9 @@
             resetProgress: '進捗をリセット',
             resetConfirm: 'このプロファイルのすべてのクエスト進捗をリセットしますか？',
             resetDone: '進捗がリセットされました',
-            savedFeedback: '保存済み'
+            savedFeedback: '保存済み',
+            questSuggestionTitle: 'クエスト提出しましたか?',
+            questSuggestionDismiss: '✕'
         }
     };
 
@@ -565,6 +581,7 @@
     function init() {
         try {
             el.headerTitle = document.getElementById('headerTitle');
+            var suggestionEl = document.getElementById('questSuggestion');
             el.searchInput = document.getElementById('searchInput');
             el.ocrLevelDisplay = document.getElementById('ocrLevelDisplay');
             el.ocrIndicator = document.getElementById('ocrIndicator');
@@ -625,6 +642,7 @@
 
             bindEvents();
             bindOcrEvents();
+            bindIpcEvents();
             loadSettingsAndRegions();
         } catch (err) {
             console.error('[QuestGuide] Init error:', err);
@@ -816,6 +834,45 @@
             // Clear the detail cache when the active profile changes
             state.detailCache = {};
             loadQuests();
+        });
+    }
+
+    function showQuestSuggestion(data) {
+        if (!suggestionEl || !data || !data.candidates || data.candidates.length === 0) return;
+        var title = L.questSuggestionTitle || 'Quest abgegeben?';
+        var html = '<div class="quest-suggestion-title">' + esc(title) + '</div>';
+        html += '<div class="quest-suggestion-btns">';
+        data.candidates.forEach(function(c) {
+            html += '<button class="quest-suggestion-btn" data-quest-id="' + c.id + '">'
+                  + esc(c.name) + '</button>';
+        });
+        html += '<button class="quest-suggestion-dismiss" id="dismissSuggestion">'
+              + esc(L.questSuggestionDismiss || '✕') + '</button>';
+        html += '</div>';
+        suggestionEl.innerHTML = html;
+        suggestionEl.classList.remove('hidden');
+
+        // Confirm click
+        suggestionEl.querySelectorAll('.quest-suggestion-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var qId = parseInt(btn.dataset.questId);
+                toggleComplete(qId, true);
+                suggestionEl.classList.add('hidden');
+            });
+        });
+        // Dismiss click
+        var dismissBtn = document.getElementById('dismissSuggestion');
+        if (dismissBtn) dismissBtn.addEventListener('click', function() {
+            suggestionEl.classList.add('hidden');
+        });
+    }
+
+    function bindIpcEvents() {
+        var ipcObj = window.plugin && window.plugin.ipc;
+        if (!ipcObj || typeof ipcObj.on !== 'function') return;
+        ipcObj.on('quest:possible-completion', function(data) {
+            if (!state.profileId || (data.profileId && data.profileId !== state.profileId)) return;
+            showQuestSuggestion(data);
         });
     }
 

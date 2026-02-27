@@ -246,6 +246,8 @@ const messagesEn = {
   "profile.mode.tabs": "Tabs",
   "profile.mode.window": "Window",
   "profile.mode.useTabs": "Use in tabs",
+  "profile.mode.useTabsHint": "Enabled: profile can be opened alongside others as a tab in one window.\nDisabled: profile opens in its own separate window.",
+  "profile.nameHint": "Name displayed in the launcher list, tab bar and window title.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Select Window",
@@ -273,6 +275,13 @@ const messagesEn = {
   "profile.copySuffix": "Copy",
   "profile.close": "Close",
   "profile.back": "Back",
+
+  "profile.characters.label": "Characters",
+  "profile.characters.placeholder": "Character name",
+  "profile.characters.add": "Add",
+  "profile.characters.remove": "Remove",
+  "profile.characters.missing": "No character names set – open ⚙ to add them.\nCharacter name is required by some plugins.",
+  "profile.characters.inputHint": "Enter a character name and confirm with Enter or by clicking elsewhere.",
 
   "job.choose": "Select job",
 
@@ -722,6 +731,8 @@ const messagesDe: typeof messagesEn = {
   "profile.mode.tabs": "Tabs",
   "profile.mode.window": "Fenster",
   "profile.mode.useTabs": "In Tabs verwenden",
+  "profile.mode.useTabsHint": "Aktiviert: Profil lässt sich mit mehreren Tabs in einem Fenster öffnen.\nDeaktiviert: Profil öffnet in einem eigenen Fenster.",
+  "profile.nameHint": "Name der in der Launcher-Liste, Registerkarte und Fenstertitel angezeigt wird.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Fenster auswählen",
@@ -749,6 +760,13 @@ const messagesDe: typeof messagesEn = {
   "profile.copySuffix": "Kopie",
   "profile.close": "Schließen",
   "profile.back": "Zurück",
+
+  "profile.characters.label": "Charaktere",
+  "profile.characters.placeholder": "Charname",
+  "profile.characters.add": "Hinzufügen",
+  "profile.characters.remove": "Entfernen",
+  "profile.characters.missing": "Keine Charnamen hinterlegt – über ⚙ hinzufügen.\nCharname wird für einige Plugins benötigt.",
+  "profile.characters.inputHint": "Charnamen eingeben und mit Enter oder Klick woanders bestätigen.",
 
   "job.choose": "Beruf wählen",
 
@@ -1197,6 +1215,8 @@ const messagesPl: typeof messagesEn = {
   "profile.mode.tabs": "Karty",
   "profile.mode.window": "Okno",
 "profile.mode.useTabs": "Używaj w kartach",
+  "profile.mode.useTabsHint": "Włączone: profil można otworzyć razem z innymi jako karta w jednym oknie.\nWyłączone: profil otwiera się we własnym oknie.",
+  "profile.nameHint": "Nazwa wyświetlana na liście launchera, pasku kart i tytule okna.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Wybierz okno",
@@ -1224,6 +1244,13 @@ const messagesPl: typeof messagesEn = {
   "profile.copySuffix": "Kopia",
   "profile.close": "Zamknij",
   "profile.back": "Wróć",
+
+  "profile.characters.label": "Postacie",
+  "profile.characters.placeholder": "Nazwa postaci",
+  "profile.characters.add": "Dodaj",
+  "profile.characters.remove": "Usuń",
+  "profile.characters.missing": "Brak nazw postaci – dodaj je przez ⚙.\nNazwa postaci jest wymagana przez niektóre wtyczki.",
+  "profile.characters.inputHint": "Wpisz nazwę postaci i potwierdź Enterem lub klikając poza polem.",
 
   "job.choose": "Wybierz klasę",
 
@@ -1674,6 +1701,8 @@ const messagesFr: typeof messagesEn = {
   "profile.mode.tabs": "Onglets",
   "profile.mode.window": "Fenêtre",
 "profile.mode.useTabs": "Utiliser en onglets",
+  "profile.mode.useTabsHint": "Activé : le profil peut être ouvert avec d'autres en tant qu'onglet dans une fenêtre.\nDésactivé : le profil s'ouvre dans sa propre fenêtre.",
+  "profile.nameHint": "Nom affiché dans la liste du launcher, la barre d'onglets et le titre de la fenêtre.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Sélectionner la fenêtre",
@@ -1701,6 +1730,13 @@ const messagesFr: typeof messagesEn = {
   "profile.copySuffix": "Copie",
   "profile.close": "Fermer",
   "profile.back": "Retour",
+
+  "profile.characters.label": "Personnages",
+  "profile.characters.placeholder": "Nom du personnage",
+  "profile.characters.add": "Ajouter",
+  "profile.characters.remove": "Supprimer",
+  "profile.characters.missing": "Aucun personnage renseigné – ajoutez-en via ⚙.\nLe nom du personnage est requis par certains plugins.",
+  "profile.characters.inputHint": "Entrez un nom de personnage et confirmez avec Entrée ou en cliquant ailleurs.",
 
   "job.choose": "Choisir une classe",
 
@@ -2149,6 +2185,8 @@ const messagesRu: typeof messagesEn = {
   "profile.mode.tabs": "Вкладки",
   "profile.mode.window": "Окно",
 "profile.mode.useTabs": "Использовать во вкладках",
+  "profile.mode.useTabsHint": "Включено: профиль можно открыть вместе с другими в виде вкладки в одном окне.\nВыключено: профиль открывается в отдельном окне.",
+  "profile.nameHint": "Имя, отображаемое в списке лаунчера, панели вкладок и заголовке окна.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Выбрать окно",
@@ -2176,6 +2214,13 @@ const messagesRu: typeof messagesEn = {
   "profile.copySuffix": "Копия",
   "profile.close": "Закрыть",
   "profile.back": "Назад",
+
+  "profile.characters.label": "Персонажи",
+  "profile.characters.placeholder": "Имя персонажа",
+  "profile.characters.add": "Добавить",
+  "profile.characters.remove": "Удалить",
+  "profile.characters.missing": "Имена персонажей не указаны – добавьте через ⚙.\nИмя персонажа требуется некоторым плагинам.",
+  "profile.characters.inputHint": "Введите имя персонажа и подтвердите нажатием Enter или кликом вне поля.",
 
   "job.choose": "Выберите класс",
 
@@ -2626,6 +2671,8 @@ const messagesTr: typeof messagesEn = {
   "profile.mode.tabs": "Sekmeler",
   "profile.mode.window": "Pencere",
 "profile.mode.useTabs": "Sekmelerde kullan",
+  "profile.mode.useTabsHint": "Etkin: profil, diğerleriyle birlikte tek bir pencerede sekme olarak açılabilir.\nDevre dışı: profil kendi penceresinde açılır.",
+  "profile.nameHint": "Launcher listesinde, sekme çubuğunda ve pencere başlığında gösterilen ad.",
 
   // Multi-window management
   "multiwindow.selectWindow": "Pencere seç",
@@ -2653,6 +2700,13 @@ const messagesTr: typeof messagesEn = {
   "profile.copySuffix": "Kopya",
   "profile.close": "Kapat",
   "profile.back": "Geri",
+
+  "profile.characters.label": "Karakterler",
+  "profile.characters.placeholder": "Karakter adı",
+  "profile.characters.add": "Ekle",
+  "profile.characters.remove": "Kaldır",
+  "profile.characters.missing": "Karakter adı girilmemiş – ⚙ üzerinden ekleyin.\nKarakter adı bazı eklentiler için gereklidir.",
+  "profile.characters.inputHint": "Karakter adını girin ve Enter tuşuna basarak veya başka bir yere tıklayarak onaylayın.",
 
   "job.choose": "Sınıf seç",
 
@@ -3103,6 +3157,8 @@ const messagesCn: typeof messagesEn = {
   "profile.mode.tabs": "标签页",
   "profile.mode.window": "窗口",
 "profile.mode.useTabs": "使用标签页",
+  "profile.mode.useTabsHint": "启用：可将配置文件与其他配置文件一起作为标签页在同一窗口中打开。\n禁用：配置文件在独立窗口中打开。",
+  "profile.nameHint": "显示在启动器列表、标签栏和窗口标题中的名称。",
 
   // Multi-window management
   "multiwindow.selectWindow": "选择窗口",
@@ -3130,6 +3186,13 @@ const messagesCn: typeof messagesEn = {
   "profile.copySuffix": "副本",
   "profile.close": "关闭",
   "profile.back": "返回",
+
+  "profile.characters.label": "角色",
+  "profile.characters.placeholder": "角色名称",
+  "profile.characters.add": "添加",
+  "profile.characters.remove": "删除",
+  "profile.characters.missing": "未设置角色名称 – 请通过 ⚙ 添加。\n角色名称是某些插件所必需的。",
+  "profile.characters.inputHint": "输入角色名称，按 Enter 或点击其他地方确认。",
 
   "job.choose": "选择职业",
 
@@ -3580,6 +3643,8 @@ const messagesJp: typeof messagesEn = {
   "profile.mode.tabs": "タブ",
   "profile.mode.window": "ウィンドウ",
 "profile.mode.useTabs": "タブで使う",
+  "profile.mode.useTabsHint": "有効：他のプロフィールと一緒に1つのウィンドウのタブとして開けます。\n無効：プロフィールは独自のウィンドウで開きます。",
+  "profile.nameHint": "ランチャーリスト、タブバー、ウィンドウタイトルに表示される名前。",
 
   // Multi-window management
   "multiwindow.selectWindow": "ウィンドウ選択",
@@ -3607,6 +3672,13 @@ const messagesJp: typeof messagesEn = {
   "profile.copySuffix": "コピー",
   "profile.close": "閉じる",
   "profile.back": "戻る",
+
+  "profile.characters.label": "キャラクター",
+  "profile.characters.placeholder": "キャラクター名",
+  "profile.characters.add": "追加",
+  "profile.characters.remove": "削除",
+  "profile.characters.missing": "キャラクター名未設定 – ⚙ から追加してください。\nキャラクター名は一部のプラグインで必要です。",
+  "profile.characters.inputHint": "キャラクター名を入力し、Enter キーを押すか他の場所をクリックして確定してください。",
 
   "job.choose": "職業を選択",
 

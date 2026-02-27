@@ -37,6 +37,7 @@
       charLoadError: "Could not load character name",
       charSaveError: "Save failed",
       badgeVisibility: "Badge visibility",
+      badgeHint: "Toggle which badges are shown in the overlay. Click a button to show or hide it.",
       monsters: "Monster tracking",
       monstersEmpty: "No monsters yet",
       sessionNoData: "No data",
@@ -106,6 +107,7 @@
       charLoadError: "Charaktername konnte nicht geladen werden",
       charSaveError: "Speichern fehlgeschlagen",
       badgeVisibility: "Badge-Sichtbarkeit",
+      badgeHint: "Wähle welche Badges im Overlay angezeigt werden. Klicke einen Button um ihn ein- oder auszublenden.",
       monsters: "Monster-Tracking",
       monstersEmpty: "Noch keine Monster",
       sessionNoData: "Keine Daten",
@@ -175,6 +177,7 @@
       charLoadError: "Nie udało się wczytać nazwy postaci",
       charSaveError: "Nie udało się zapisać",
       badgeVisibility: "Widoczność odznak",
+      badgeHint: "Wybierz które odznaki są wyświetlane w nakładce. Kliknij przycisk aby włączyć lub wyłączyć odznakę.",
       monsters: "Śledzenie potworów",
       monstersEmpty: "Brak potworów",
       sessionNoData: "Brak danych",
@@ -230,6 +233,7 @@
       charLoadError: "Impossible de charger le nom du personnage",
       charSaveError: "Échec de l'enregistrement",
       badgeVisibility: "Visibilité des badges",
+      badgeHint: "Choisissez quels badges sont affichés dans l'overlay. Cliquez un bouton pour l'afficher ou le masquer.",
       monsters: "Suivi des monstres",
       monstersEmpty: "Aucun monstre",
       sessionNoData: "Aucune donnée",
@@ -285,6 +289,7 @@
       charLoadError: "Не удалось загрузить имя персонажа",
       charSaveError: "Ошибка сохранения",
       badgeVisibility: "Видимость бейджей",
+      badgeHint: "Выберите, какие бейджи отображаются в оверлее. Нажмите кнопку, чтобы показать или скрыть бейдж.",
       monsters: "Отслеживание монстров",
       monstersEmpty: "Монстров пока нет",
       sessionNoData: "Нет данных",
@@ -340,6 +345,7 @@
       charLoadError: "Karakter adı yüklenemedi",
       charSaveError: "Kaydetme başarısız",
       badgeVisibility: "Rozet görünürlüğü",
+      badgeHint: "Hangi rozetlerin görüntüleneceğini seçin. Bir rozeti göstermek veya gizlemek için butona tıklayın.",
       monsters: "Canavar takibi",
       monstersEmpty: "Henüz canavar yok",
       sessionNoData: "Veri yok",
@@ -395,6 +401,7 @@
       charLoadError: "无法加载角色名",
       charSaveError: "保存失败",
       badgeVisibility: "徽章可见性",
+      badgeHint: "选择在覆盖层中显示哪些徽章。点击按钮来显示或隐藏徽章。",
       monsters: "怪物追踪",
       monstersEmpty: "暂无怪物",
       sessionNoData: "无数据",
@@ -450,6 +457,7 @@
       charLoadError: "キャラ名を読み込めませんでした",
       charSaveError: "保存に失敗しました",
       badgeVisibility: "バッジ表示",
+      badgeHint: "オーバーレイに表示するバッジを選択してください。ボタンをクリックしてバッジを表示・非表示にします。",
       monsters: "モンスター追跡",
       monstersEmpty: "モンスターがまだありません",
       sessionNoData: "データなし",
@@ -694,6 +702,8 @@
     const sections = document.querySelectorAll(".scroll-section .section-title");
     if (sections[1]) sections[1].textContent = STR.badgeVisibility;
     if (sections[2]) sections[2].textContent = STR.monsters;
+    const badgeHintEl = document.getElementById('badgeHint');
+    if (badgeHintEl) badgeHintEl.textContent = STR.badgeHint || '';
 
     if (killHistoryCloseBtn) {
       killHistoryCloseBtn.setAttribute('aria-label', tHistory('close'));
@@ -760,18 +770,20 @@
   }
 
   /**
-   * Render badge visibility list
+   * Render badge visibility list (ON/OFF toggle buttons)
    */
   function renderBadgeList() {
     const visibility = currentLayout?.visibility || {};
     const allVisible = BADGE_KEYS.every(k => visibility[k] !== false);
     const anyVisible = BADGE_KEYS.some(k => visibility[k] !== false);
 
+    const allBtnClass = (allVisible || anyVisible) ? 'on' : 'off';
+    const allBtnLabel = allVisible ? STR.badgeOn : anyVisible ? STR.badgeMixed : STR.badgeOff;
+
     let html = `
-      <div class="badge-item">
-        <input type="checkbox" id="vis-all" data-key="__all__" ${allVisible ? 'checked' : ''}>
-        <label for="vis-all">${STR.badgesAll}</label>
-        <span class="badge-value">${allVisible ? STR.badgeOn : anyVisible ? STR.badgeMixed : STR.badgeOff}</span>
+      <div class="badge-item badge-all-row">
+        <label>${STR.badgesAll}</label>
+        <button id="vis-all" class="badge-toggle-btn ${allBtnClass}" data-key="__all__">${allBtnLabel}</button>
       </div>
     `;
 
@@ -781,9 +793,9 @@
 
       return `
         <div class="badge-item">
-          <input type="checkbox" id="vis-${key}" data-key="${key}" ${isVisible ? 'checked' : ''}>
-          <label for="vis-${key}">${BADGE_LABELS[key]}</label>
-          <span class="badge-value">${value}</span>
+          <label>${BADGE_LABELS[key]}</label>
+          <span class="badge-value" id="val-${key}">${value}</span>
+          <button id="vis-${key}" class="badge-toggle-btn ${isVisible ? 'on' : 'off'}" data-key="${key}">${isVisible ? STR.badgeOn : STR.badgeOff}</button>
         </div>
       `;
     }).join('');
@@ -791,62 +803,50 @@
     badgeListEl.innerHTML = html;
 
     // Add event listeners
-    badgeListEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-      checkbox.addEventListener('change', (e) => {
-        const key = e.target.dataset.key;
-        const visible = e.target.checked;
+    badgeListEl.querySelectorAll('.badge-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const key = e.currentTarget.dataset.key;
         if (key === '__all__') {
-          setAllVisibility(visible);
+          const currentlyAllOn = BADGE_KEYS.every(k => (currentLayout?.visibility || {})[k] !== false);
+          setAllVisibility(!currentlyAllOn);
         } else {
-          setVisibility(key, visible);
+          const isVisible = (currentLayout?.visibility || {})[key] !== false;
+          setVisibility(key, !isVisible);
         }
       });
     });
-
-    // Set indeterminate state
-    const allCb = document.getElementById('vis-all');
-    if (allCb) {
-      allCb.indeterminate = !allVisible && anyVisible;
-    }
   }
 
   /**
    * Incrementally update only badge value texts (no DOM rebuild)
    */
   function updateBadgeListValues() {
-    const visibility = currentLayout?.visibility || {};
     BADGE_KEYS.forEach(key => {
-      const cb = document.getElementById(`vis-${key}`);
-      if (cb) {
-        const valueEl = cb.closest('.badge-item')?.querySelector('.badge-value');
-        if (valueEl) valueEl.textContent = formatValue(key, currentStats);
-      }
+      const valEl = document.getElementById(`val-${key}`);
+      if (valEl) valEl.textContent = formatValue(key, currentStats);
     });
-    // Update "All" row status text
-    const allVisible = BADGE_KEYS.every(k => visibility[k] !== false);
-    const anyVisible = BADGE_KEYS.some(k => visibility[k] !== false);
-    const allEl = document.getElementById('vis-all');
-    if (allEl) {
-      const valueEl = allEl.closest('.badge-item')?.querySelector('.badge-value');
-      if (valueEl) valueEl.textContent = allVisible ? STR.badgeOn : anyVisible ? STR.badgeMixed : STR.badgeOff;
-    }
   }
 
   /**
-   * Sync checkbox checked states without rebuilding DOM
+   * Sync toggle button ON/OFF states without rebuilding DOM
    */
   function syncBadgeCheckboxes() {
     const visibility = currentLayout?.visibility || {};
     BADGE_KEYS.forEach(key => {
-      const cb = document.getElementById(`vis-${key}`);
-      if (cb) cb.checked = visibility[key] !== false;
+      const btn = document.getElementById(`vis-${key}`);
+      if (btn) {
+        const isVisible = visibility[key] !== false;
+        btn.className = `badge-toggle-btn ${isVisible ? 'on' : 'off'}`;
+        btn.textContent = isVisible ? STR.badgeOn : STR.badgeOff;
+      }
     });
     const allVisible = BADGE_KEYS.every(k => visibility[k] !== false);
     const anyVisible = BADGE_KEYS.some(k => visibility[k] !== false);
-    const allCb = document.getElementById('vis-all');
-    if (allCb) {
-      allCb.checked = allVisible;
-      allCb.indeterminate = !allVisible && anyVisible;
+    const allBtn = document.getElementById('vis-all');
+    if (allBtn) {
+      const btnClass = (allVisible || anyVisible) ? 'on' : 'off';
+      allBtn.className = `badge-toggle-btn ${btnClass}`;
+      allBtn.textContent = allVisible ? STR.badgeOn : anyVisible ? STR.badgeMixed : STR.badgeOff;
     }
   }
 
@@ -861,6 +861,14 @@
     const debugInfo = `<div style="font-size:10px;color:#888;padding:2px 4px;">P: ${currentProfileId || 'none'} | M: ${totalMonsters} | ${_debugLastRaw || 'no-poll'}</div>`;
 
     const ranks = ['normal', 'giant', 'violet', 'boss', 'unknown'];
+
+    const RANK_ICONS = {
+      normal:  '⬜',
+      giant:   '⭐',
+      violet:  '🟣',
+      boss:    '💀',
+      unknown: '❓',
+    };
 
     const trackerBtnHtml = `<button class="giant-tracker-btn" onclick="openGiantTracker()">Giant Tracker</button>`;
 
@@ -882,6 +890,7 @@
         <div class="accordion" data-rank="${rank}">
           <div class="accordion-header ${isOpen ? 'open' : ''}" onclick="toggleAccordion('${rank}')">
             <span class="title">
+              <span class="rank-icon">${RANK_ICONS[rank] || '•'}</span>
               <span class="rank-${rank}">${MONSTER_RANKS[rank]}</span>
               <span class="count">${count}</span>
             </span>

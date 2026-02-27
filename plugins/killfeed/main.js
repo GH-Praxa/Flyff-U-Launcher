@@ -105,6 +105,8 @@ const STATE_KEY_PREFIX = 'state:';
 // Track last time an enemy HP bar was seen per profile
 const enemyHpSeenAt = new Map();
 
+const npcHpBarLastSeenAt = new Map(); // profileId -> timestamp
+
 // TTK (Time to Kill) tracking per profile
 const ttkTrackers = new Map(); // profileId -> TTK state object
 const TTK_GRACE_MS = 10000;    // 10s grace period (pause tolerance)
@@ -2329,6 +2331,14 @@ async function _handleOcrUpdateInner(payload) {
     });
   }
 
+  // NPC HP-Bar-Detection: HP sichtbar + kein Monster + HP voll → NPC-Interaktion
+  if (!resolvedMonsterName && typeof enemyHp === 'string' && enemyHp.trim()) {
+    const _parsedNpcHp = parseEnemyHp(enemyHp);
+    if (_parsedNpcHp && _parsedNpcHp.current === _parsedNpcHp.max) {
+      npcHpBarLastSeenAt.set(profileId, tickTime);
+    }
+  }
+
   // Update TTK tracker with parsed HP data (giants/violets only)
   updateTtkTracker(profileId, parsedHp, resolvedMonsterName, resolvedMonsterMeta?.rank, tickTime);
 
@@ -2430,6 +2440,24 @@ async function _handleOcrUpdateInner(payload) {
       profileId,
       ...killEvent
     });
+  }
+
+  // Quest-Abgabe-Erkennung: EXP-Zuwachs ohne Kill + NPC-HP-Bar im Zeitfenster
+  if (!killEvent && _prevExp !== null && effectiveLvl > 0) {
+    const _questDelta = expValue - _prevExp;
+    if (_questDelta > config.epsilon) {
+      const _npcTs = npcHpBarLastSeenAt.get(profileId);
+      if (_npcTs && (tickTime - _npcTs) <= 10000) {
+        debugLog('ocr', `[Quest] Possible completion: lvl=${effectiveLvl} delta=${_questDelta.toFixed(6)}`);
+        ctx.eventBus.emit('quest:possible-completion', {
+          profileId,
+          level: effectiveLvl,
+          deltaExp: _questDelta,
+          timestamp: tickTime,
+        });
+        npcHpBarLastSeenAt.delete(profileId); // Duplikate verhindern
+      }
+    }
   }
 
   // Persist state in background (non-blocking for the OCR pipeline)

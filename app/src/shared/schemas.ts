@@ -99,6 +99,7 @@ export const ProfileSchema = z.object({
     overlaySettings: OverlaySettingsSchema.optional(),
     overlayHud: OverlayHudLayoutSchema.optional(),
     features: ProfileFeaturesSchema.optional(),
+    characters: z.array(z.string().min(1).max(64)).optional(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
