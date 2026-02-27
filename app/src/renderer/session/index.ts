@@ -847,8 +847,8 @@ export async function renderSession(root: HTMLElement) {
     splitSlider.max = String(Math.round(maxSplitRatio * 100));
     splitSlider.value = String(Math.round(defaultSplitRatio * 100));
     splitSlider.step = "1";
-    splitSlider.title = "Fensteraufteilung anpassen";
-    splitSlider.ariaLabel = "Fensteraufteilung anpassen";
+    splitSlider.title = t("session.splitSlider");
+    splitSlider.ariaLabel = t("session.splitSlider");
     const splitSliderValue = el("span", "splitSliderValue", "50 / 50");
     splitControls.append(splitSlider, splitSliderValue);
     const btnTabHeight = el("button", "tabBtn iconBtn", `${tabHeightPx}↕`) as HTMLButtonElement;

@@ -64,6 +64,7 @@ export async function showWindowSelectorForProfile(profileId: string): Promise<v
             });
             // "New Window" option - layout selector BEFORE creating window
             const newWindowItem = el("button", "pickerItem primary", `+ ${t("multiwindow.newWindow")}`) as HTMLButtonElement;
+            newWindowItem.title = t("multiwindow.newWindowHint");
             newWindowItem.onclick = async () => {
                 overlay.remove();
                 // Show layout selector first, THEN create window with layout
@@ -114,6 +115,7 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
         });
         for (const layoutType of layoutOptions) {
             const item = el("button", "pickerItem", layoutDisplayNames[layoutType]) as HTMLButtonElement;
+            item.title = t("layout.typeHint");
             item.onclick = async () => {
                 overlay.remove();
                 // Show grid configuration modal to select profiles for cells
@@ -207,6 +209,7 @@ export async function showGridConfigModal(initialProfileId: string, layoutType: 
             for (let pos = 0; pos < maxCells; pos++) {
                 const current = cells.find(c => c.position === pos);
                 const cellBtn = el("button", "gridCellBtn") as HTMLButtonElement;
+                cellBtn.title = t("layout.cellHint");
                 const numSpan = el("span", "cellNum", String(pos + 1));
                 const nameSpan = el("span", "cellName",
                     current ? (tabProfiles.find(p => p.id === current.id)?.name || current.id) : t("layout.emptyCell") || "Leer"

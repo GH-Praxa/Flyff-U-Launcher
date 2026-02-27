@@ -327,10 +327,13 @@ export async function renderLauncher(root: HTMLElement) {
     const searchInput = document.createElement("input");
     searchInput.className = "input searchInput";
     searchInput.placeholder = t("filter.searchPlaceholder");
+    searchInput.title = t("filter.searchHint");
     const jobSelect = document.createElement("select");
     jobSelect.className = "select filterSelect";
+    jobSelect.title = t("filter.jobHint");
     renderJobOptions(jobSelect);
     const btnRefreshLayouts = el("button", "btn", t("layout.refresh"));
+    btnRefreshLayouts.title = t("layout.refreshHint");
     filterBar.append(searchInput, jobSelect, btnCreate, btnRefreshLayouts);
 
     async function renderLayoutChips(target: HTMLElement) {

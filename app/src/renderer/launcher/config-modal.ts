@@ -188,6 +188,7 @@ export function openConfigModal(
     tabDisplayPreview.decoding = "async";
     const tabDisplayControl = el("div", "tabDisplayControl");
     tabDisplaySelect.className = "select";
+    tabDisplaySelect.title = t("config.client.tabLayoutDisplay.hint" as TranslationKey);
     const tabDisplayOptions: Array<{ value: ClientSettings["tabLayoutDisplay"]; label: TranslationKey }> = [
         { value: "compact", label: "config.client.tabLayoutDisplay.compact" as TranslationKey },
         { value: "grouped", label: "config.client.tabLayoutDisplay.grouped" as TranslationKey },
@@ -367,6 +368,7 @@ export function openConfigModal(
     launcherWidthInput.step = "10";
     launcherWidthInput.className = "slider";
     launcherWidthInput.style.width = "220px";
+    launcherWidthInput.title = t("config.client.launcherWidthHint" as TranslationKey);
     const launcherWidthValue = el("div", "sliderValue badge", "");
     const launcherWidthDecBtn = createNudgeButton("-10", () => {
         const current = Number.isFinite(launcherWidthInput.valueAsNumber)
@@ -399,6 +401,7 @@ export function openConfigModal(
     launcherHeightInput.step = "10";
     launcherHeightInput.className = "slider";
     launcherHeightInput.style.width = "220px";
+    launcherHeightInput.title = t("config.client.launcherHeightHint" as TranslationKey);
     const launcherHeightValue = el("div", "sliderValue badge", "");
     const launcherHeightDecBtn = createNudgeButton("-10", () => {
         const current = Number.isFinite(launcherHeightInput.valueAsNumber)
