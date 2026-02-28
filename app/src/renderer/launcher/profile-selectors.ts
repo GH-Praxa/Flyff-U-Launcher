@@ -16,20 +16,145 @@ interface Profile {
     // Layout selector for launching a profile
 
 
-export const layoutOptions: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8"];
+export const layoutOptions: LayoutType[] = [
+    "single", "split-2", "col-2",
+    "row-3", "col-3", "row-4", "col-4",
+    "grid-4", "grid-5", "grid-6", "grid-7", "grid-8",
+    "main-r2", "main-r3", "main-b2", "main-b3",
+];
 
 export const layoutDisplayNames: Record<LayoutType, string> = {
+    "single":  "1×1",
+    "split-2": "1×2",
+    "col-2":   "2×1",
+    "row-3":   "1×3",
+    "col-3":   "3×1",
+    "row-4":   "1×4",
+    "col-4":   "4×1",
+    "grid-4":  "2×2",
+    "grid-5":  "3+2",
+    "grid-6":  "2×3",
+    "grid-7":  "4+3",
+    "grid-8":  "2×4",
+    "main-r2": "1+2 →",
+    "main-r3": "1+3 →",
+    "main-b2": "1+2 ↓",
+    "main-b3": "1+3 ↓",
+};
 
-    "single": "1x1",
-    "split-2": "1x2",
-    "row-3": "1x3",
-    "row-4": "1x4",
-    "grid-4": "2x2",
-    "grid-5": "3+2",
-    "grid-6": "2x3",
-    "grid-7": "4+3",
-    "grid-8": "2x4",
-
+export const layoutTooltips: Record<LayoutType, string> = {
+    "single": [
+        "+------+",
+        "|  1   |",
+        "+------+",
+    ].join("\n"),
+    "split-2": [
+        "+---+---+",
+        "| 1 | 2 |",
+        "+---+---+",
+    ].join("\n"),
+    "col-2": [
+        "+-------+",
+        "|   1   |",
+        "+-------+",
+        "|   2   |",
+        "+-------+",
+    ].join("\n"),
+    "row-3": [
+        "+--+--+--+",
+        "|1 |2 |3 |",
+        "+--+--+--+",
+    ].join("\n"),
+    "col-3": [
+        "+------+",
+        "|  1   |",
+        "+------+",
+        "|  2   |",
+        "+------+",
+        "|  3   |",
+        "+------+",
+    ].join("\n"),
+    "row-4": [
+        "+-+-+-+-+",
+        "|1|2|3|4|",
+        "+-+-+-+-+",
+    ].join("\n"),
+    "col-4": [
+        "+------+",
+        "|  1   |",
+        "+------+",
+        "|  2   |",
+        "+------+",
+        "|  3   |",
+        "+------+",
+        "|  4   |",
+        "+------+",
+    ].join("\n"),
+    "grid-4": [
+        "+---+---+",
+        "| 1 | 2 |",
+        "+---+---+",
+        "| 3 | 4 |",
+        "+---+---+",
+    ].join("\n"),
+    "grid-5": [
+        "+--+--+--+",
+        "|1 |2 |3 |",
+        "+--+--+--+",
+        "|4 |5 |   ",
+        "+--+--+   ",
+    ].join("\n"),
+    "grid-6": [
+        "+--+--+--+",
+        "|1 |2 |3 |",
+        "+--+--+--+",
+        "|4 |5 |6 |",
+        "+--+--+--+",
+    ].join("\n"),
+    "grid-7": [
+        "+-+-+-+-+",
+        "|1|2|3|4|",
+        "+-+-+-+-+",
+        "|5|6|7|  ",
+        "+-+-+-+  ",
+    ].join("\n"),
+    "grid-8": [
+        "+-+-+-+-+",
+        "|1|2|3|4|",
+        "+-+-+-+-+",
+        "|5|6|7|8|",
+        "+-+-+-+-+",
+    ].join("\n"),
+    "main-r2": [
+        "+----+---+",
+        "|    | 2 |",
+        "|  1 +---+",
+        "|    | 3 |",
+        "+----+---+",
+    ].join("\n"),
+    "main-r3": [
+        "+---+--+",
+        "|   |2 |",
+        "| 1 +--+",
+        "|   |3 |",
+        "|   +--+",
+        "|   |4 |",
+        "+---+--+",
+    ].join("\n"),
+    "main-b2": [
+        "+---------+",
+        "|    1    |",
+        "+----+----+",
+        "| 2  | 3  |",
+        "+----+----+",
+    ].join("\n"),
+    "main-b3": [
+        "+----------+",
+        "|    1     |",
+        "+---+---+--+",
+        "| 2 | 3 |4 |",
+        "+---+---+--+",
+    ].join("\n"),
 };
 
 /**
@@ -101,8 +226,14 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
         const modal = el("div", "modal");
         const header = el("div", "modalHeader", t("layout.select"));
         const body = el("div", "modalBody");
+        const hint = el("div", "modalHint", t("layout.hoverHint"));
+        const selectorRow = el("div", "layoutSelectorRow");
         const list = el("div", "pickerList layoutTypeList");
-        body.append(list);
+        const previewPane = el("div", "layoutPreviewPane");
+        const previewArt = el("pre", "layoutPreviewArt") as HTMLPreElement;
+        previewPane.append(previewArt);
+        selectorRow.append(list, previewPane);
+        body.append(hint, selectorRow);
         modal.append(header, body);
         overlay.append(modal);
         document.body.append(overlay);
@@ -115,7 +246,9 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
         });
         for (const layoutType of layoutOptions) {
             const item = el("button", "pickerItem", layoutDisplayNames[layoutType]) as HTMLButtonElement;
-            item.title = t("layout.typeHint");
+            item.addEventListener("mouseenter", () => {
+                previewArt.textContent = layoutTooltips[layoutType];
+            });
             item.onclick = async () => {
                 overlay.remove();
                 // Show grid configuration modal to select profiles for cells

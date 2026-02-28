@@ -36,42 +36,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
     // Keep overlay above the host surface so badges/ROIs stay visible
     win.setAlwaysOnTop(true, "screen-saver");
 
-    // Track move state to hide overlay during drag (prevents flicker)
-    let moveTimeout: NodeJS.Timeout | null = null;
     let currentParent: BrowserWindow = parent;
-    let lastParentBounds = currentParent.getBounds();
-
-    const onParentMove = () => {
-        if (win.isDestroyed()) return;
-        win.setOpacity(0);
-        if (moveTimeout) clearTimeout(moveTimeout);
-        moveTimeout = setTimeout(() => {
-            if (win.isDestroyed()) return;
-            win.setOpacity(1);
-        }, 150);
-    };
-
-    currentParent.on("move", onParentMove);
-
-    // Fallback-Polling für Wayland/Umgebungen, in denen 'move' nicht während des
-    // Ziehens feuert (Wayland kennt die Fensterposition nicht in Echtzeit).
-    const movePollInterval = setInterval(() => {
-        if (win.isDestroyed()) {
-            clearInterval(movePollInterval);
-            return;
-        }
-        if (currentParent.isDestroyed()) return;
-        const bounds = currentParent.getBounds();
-        if (bounds.x !== lastParentBounds.x || bounds.y !== lastParentBounds.y) {
-            lastParentBounds = { ...bounds };
-            onParentMove();
-        }
-    }, 50);
-
-    win.on("closed", () => {
-        clearInterval(movePollInterval);
-        if (moveTimeout) clearTimeout(moveTimeout);
-    });
 
     // Visibility is managed entirely by the sync loop in overlays.ts.
     // This avoids conflicts from stale parent references after setParentWindow.
@@ -79,10 +44,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
     const handle = win as OverlayWindowHandle;
     handle.updateParent = (newParent: BrowserWindow) => {
         if (newParent === currentParent) return;
-        currentParent.removeListener("move", onParentMove);
         currentParent = newParent;
-        lastParentBounds = currentParent.getBounds();
-        currentParent.on("move", onParentMove);
         win.setParentWindow(newParent);
     };
     win.webContents.on("console-message", (_event, level, message) => {

@@ -34,6 +34,10 @@ export function createSidePanelButtonController(opts: {
     let onParentResize: (() => void) | null = null;
     let clickThrough = !!opts.clickThrough;
     let paused = false;
+    // Cache last profileId sent to button to avoid redundant executeJavaScript calls.
+    let lastSentProfileId: string | undefined = undefined;
+    // Cache last button bounds to avoid redundant setBounds calls every 500 ms.
+    let lastButtonBounds: { x: number; y: number } | null = null;
 
     /** Resolve parent window + tabs for a profile. Updates currentParent/currentTabs. */
     function resolveHost(profileId: string): BrowserWindow | null {
@@ -58,6 +62,10 @@ export function createSidePanelButtonController(opts: {
         if (!win || win.isDestroyed())
             return;
         const pid = profileId ?? "";
+        // Skip executeJavaScript if the profileId has not changed since the last call.
+        if (pid === lastSentProfileId)
+            return;
+        lastSentProfileId = pid;
         try {
             void win.webContents.executeJavaScript(`window.__setProfileId && window.__setProfileId(${JSON.stringify(pid)});`);
         }
@@ -217,8 +225,15 @@ export function createSidePanelButtonController(opts: {
         const wnd = ensureWindow(parent);
         if (!wnd) return;
         try {
-            wnd.setBounds({ x, y, width: size.width, height: size.height });
-            wnd.showInactive();
+            // Only call setBounds + showInactive when position actually changed.
+            // Calling them unconditionally every 500 ms can cause compositing
+            // overhead that manifests as periodic micro-stutters in the game.
+            const posChanged = !lastButtonBounds || lastButtonBounds.x !== x || lastButtonBounds.y !== y;
+            if (posChanged || !wnd.isVisible()) {
+                lastButtonBounds = { x, y };
+                wnd.setBounds({ x, y, width: size.width, height: size.height });
+                wnd.showInactive();
+            }
             updateButtonProfileId(profileId);
         } catch (err) {
             logErr(err, "SidePanelButton");
@@ -250,8 +265,8 @@ export function createSidePanelButtonController(opts: {
     }
 
     async function start(): Promise<void> {
-        posCache = await loadPositions();
         if (followTimer) return;
+        posCache = await loadPositions();
         await tick();
         followTimer = setInterval(() => {
             void tick();

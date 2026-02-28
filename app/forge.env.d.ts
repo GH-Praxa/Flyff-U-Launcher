@@ -20,7 +20,9 @@ type GridCell = {
     position: number;
 };
 type MultiViewLayout = {
-    type: "single" | "split-2" | "row-3" | "row-4" | "grid-4" | "grid-5" | "grid-6" | "grid-7" | "grid-8";
+    type: "single" | "split-2" | "col-2" | "row-3" | "col-3" | "row-4" | "col-4"
+        | "grid-4" | "grid-5" | "grid-6" | "grid-7" | "grid-8"
+        | "main-r2" | "main-r3" | "main-b2" | "main-b3";
     cells: GridCell[];
     ratio?: number;
     activePosition?: number;

@@ -400,6 +400,60 @@ export function createSessionTabsManager(opts: {
         }
         return result;
     }
+    function computeMainColsBounds(
+        bounds: ViewBounds,
+        cells: GridCell[],
+        ratio: number,
+        gap: number
+    ): Array<{ id: string; bounds: ViewBounds; position: number }> {
+        const mainCell = cells.find(c => c.position === 0);
+        const secCells = cells.filter(c => c.position > 0).sort((a, b) => a.position - b.position);
+        const mainWidth = Math.max(1, Math.floor((bounds.width - gap) * clampSplitRatio(ratio)));
+        const secWidth = Math.max(1, bounds.width - gap - mainWidth);
+        const n = secCells.length;
+        const secHeight = n > 0 ? Math.floor((bounds.height - gap * (n - 1)) / n) : 0;
+        const result: Array<{ id: string; bounds: ViewBounds; position: number }> = [];
+        if (mainCell) result.push({
+            id: mainCell.id, position: mainCell.position,
+            bounds: { x: bounds.x, y: bounds.y, width: mainWidth, height: bounds.height },
+        });
+        secCells.forEach((cell, i) => result.push({
+            id: cell.id, position: cell.position,
+            bounds: {
+                x: bounds.x + mainWidth + gap,
+                y: bounds.y + i * (secHeight + gap),
+                width: secWidth, height: secHeight,
+            },
+        }));
+        return result;
+    }
+    function computeMainRowsBounds(
+        bounds: ViewBounds,
+        cells: GridCell[],
+        ratio: number,
+        gap: number
+    ): Array<{ id: string; bounds: ViewBounds; position: number }> {
+        const mainCell = cells.find(c => c.position === 0);
+        const secCells = cells.filter(c => c.position > 0).sort((a, b) => a.position - b.position);
+        const mainHeight = Math.max(1, Math.floor((bounds.height - gap) * clampSplitRatio(ratio)));
+        const secHeight = Math.max(1, bounds.height - gap - mainHeight);
+        const n = secCells.length;
+        const secWidth = n > 0 ? Math.floor((bounds.width - gap * (n - 1)) / n) : 0;
+        const result: Array<{ id: string; bounds: ViewBounds; position: number }> = [];
+        if (mainCell) result.push({
+            id: mainCell.id, position: mainCell.position,
+            bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: mainHeight },
+        });
+        secCells.forEach((cell, i) => result.push({
+            id: cell.id, position: cell.position,
+            bounds: {
+                x: bounds.x + i * (secWidth + gap),
+                y: bounds.y + mainHeight + gap,
+                width: secWidth, height: secHeight,
+            },
+        }));
+        return result;
+    }
     function computeGridLayoutBounds(
         bounds: ViewBounds,
         layout: MultiViewLayout,
@@ -460,6 +514,15 @@ export function createSessionTabsManager(opts: {
             const ratio = clampSplitRatio(effectiveLayout.ratio ?? sessionSplitRatio);
             sessionSplitRatio = ratio;
             return computeSplit2Bounds(sessionBounds, orderedCells, ratio, gridGap);
+        }
+        const config2 = GRID_CONFIGS[effectiveLayout.type];
+        if ("variant" in config2) {
+            const ratio = clampSplitRatio(effectiveLayout.ratio ?? sessionSplitRatio);
+            sessionSplitRatio = ratio;
+            if (config2.variant === "main-cols")
+                return computeMainColsBounds(sessionBounds, orderedCells, ratio, gridGap);
+            if (config2.variant === "main-rows")
+                return computeMainRowsBounds(sessionBounds, orderedCells, ratio, gridGap);
         }
         return computeGridLayoutBounds(sessionBounds, { ...effectiveLayout, cells: orderedCells }, gridGap);
     }
@@ -1222,8 +1285,10 @@ export function createSessionTabsManager(opts: {
     function setSplitRatio(ratio: number) {
         const next = clampSplitRatio(ratio);
         sessionSplitRatio = next;
-        if (sessionLayout && sessionLayout.type === "split-2") {
-            sessionLayout = { ...sessionLayout, ratio: next };
+        if (sessionLayout) {
+            const cfg = GRID_CONFIGS[sessionLayout.type];
+            if (sessionLayout.type === "split-2" || "variant" in cfg)
+                sessionLayout = { ...sessionLayout, ratio: next };
         }
         applyActiveBrowserView();
         startHoverActivation();

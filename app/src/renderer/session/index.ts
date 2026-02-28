@@ -27,6 +27,7 @@ import {
     setSequentialGridLoad,
 } from "../settings";
 import { type Profile, qs, el, clear, createJobIcon, showToast, withTimeout, fetchTabLayouts } from "../dom-utils";
+import { layoutTooltips } from "../launcher/profile-selectors";
 import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUnifiedUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
 import { setRootVar } from "../cssVarsManager";
 import { applyStoredTabActiveColor } from "../theme";
@@ -189,6 +190,12 @@ export async function renderSession(root: HTMLElement) {
     // Layout types need to be defined before Tab type
 
     type LayoutType = keyof typeof GRID_CONFIGS;
+
+    function isResizableLayout(type: LayoutType): boolean {
+        if (type === "split-2") return true;
+        const cfg = GRID_CONFIGS[type];
+        return "variant" in cfg;
+    }
 
     type GridCell = { id: string; position: number };
 
@@ -778,7 +785,7 @@ export async function renderSession(root: HTMLElement) {
         const activePosition = next.activePosition !== undefined && cells.some((c) => c.position === next.activePosition)
             ? next.activePosition
             : cells[0].position;
-        const ratio = next.type === "split-2" ? clampSplitRatio(next.ratio ?? currentSplitRatio) : undefined;
+        const ratio = isResizableLayout(next.type) ? clampSplitRatio(next.ratio ?? currentSplitRatio) : undefined;
         return { type: next.type, cells, ratio, activePosition };
     }
 
@@ -1160,15 +1167,22 @@ export async function renderSession(root: HTMLElement) {
     }
 
     const layoutLabels: Record<LayoutType, string> = {
-        "single": "1x1",
+        "single":  "1x1",
         "split-2": "1x2",
-        "row-3": "1x3",
-        "row-4": "1x4",
-        "grid-4": "2x2",
-        "grid-5": "3+2",
-        "grid-6": "2x3",
-        "grid-7": "4+3",
-        "grid-8": "2x4",
+        "col-2":   "2x1",
+        "row-3":   "1x3",
+        "col-3":   "3x1",
+        "row-4":   "1x4",
+        "col-4":   "4x1",
+        "grid-4":  "2x2",
+        "grid-5":  "3+2",
+        "grid-6":  "2x3",
+        "grid-7":  "4+3",
+        "grid-8":  "2x4",
+        "main-r2": "1+2 \u2192",
+        "main-r3": "1+3 \u2192",
+        "main-b2": "1+2 \u2193",
+        "main-b3": "1+3 \u2193",
     };
     // Helper function to update window title based on current tabs
 
@@ -1287,7 +1301,7 @@ export async function renderSession(root: HTMLElement) {
 
     function syncSplitSlider() {
 
-        if (!layoutState || layoutState.type !== "split-2") {
+        if (!layoutState || !isResizableLayout(layoutState.type)) {
             splitControls.style.display = "none";
             splitSlider.disabled = true;
             return;
@@ -1297,12 +1311,13 @@ export async function renderSession(root: HTMLElement) {
         const ratio = clampSplitRatio(layoutState.ratio ?? currentSplitRatio);
         currentSplitRatio = ratio;
         const pct = Math.round(ratio * 100);
-        const pctRight = Math.max(0, 100 - pct);
+        const pctOther = Math.max(0, 100 - pct);
         splitSlider.value = String(pct);
-        splitSliderValue.textContent = `${pct}% / ${pctRight}%`;
+        const isVertical = layoutState.type.startsWith("main-b");
+        splitSliderValue.textContent = isVertical ? `${pct}% ↕ ${pctOther}%` : `${pct}% ↔ ${pctOther}%`;
     }
     splitSlider.addEventListener("input", () => {
-        if (!layoutState || layoutState.type !== "split-2")
+        if (!layoutState || !isResizableLayout(layoutState.type))
             return;
         const pct = Number(splitSlider.value);
         if (!Number.isFinite(pct))
@@ -2967,14 +2982,23 @@ export async function renderSession(root: HTMLElement) {
         const modal = el("div", "modal");
         const header = el("div", "modalHeader", t("layout.select"));
         const body = el("div", "modalBody");
+        const hint = el("div", "modalHint", t("layout.hoverHint"));
+        const selectorRow = el("div", "layoutSelectorRow");
         const list = el("div", "pickerList layoutTypeList");
-        body.append(list);
+        const previewPane = el("div", "layoutPreviewPane");
+        const previewArt = el("pre", "layoutPreviewArt") as HTMLPreElement;
+        previewPane.append(previewArt);
+        selectorRow.append(list, previewPane);
+        body.append(hint, selectorRow);
         modal.append(header, body);
         overlay.append(modal);
         document.body.append(overlay);
         const options: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8"];
         options.forEach((opt) => {
             const item = el("button", "pickerItem", layoutLabels[opt]) as HTMLButtonElement;
+            item.addEventListener("mouseenter", () => {
+                previewArt.textContent = layoutTooltips[opt];
+            });
             item.onclick = async () => {
                 overlay.remove();
                 const activeTab = getActiveTab();

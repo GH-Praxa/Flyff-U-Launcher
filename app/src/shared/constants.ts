@@ -107,13 +107,21 @@ export const LAYOUT = {
 export const GRID_CONFIGS = {
     "single": { rows: 1, cols: 1, maxViews: 1 },
     "split-2": { rows: 1, cols: 2, maxViews: 2 },
-    "row-3": { rows: 1, cols: 3, maxViews: 3 },
-    "row-4": { rows: 1, cols: 4, maxViews: 4 },
-    "grid-4": { rows: 2, cols: 2, maxViews: 4 },
-    "grid-5": { rows: 2, cols: 3, maxViews: 5 },
-    "grid-6": { rows: 2, cols: 3, maxViews: 6 },
-    "grid-7": { rows: 2, cols: 4, maxViews: 7 },
-    "grid-8": { rows: 2, cols: 4, maxViews: 8 },
+    "col-2":   { rows: 2, cols: 1, maxViews: 2 },
+    "row-3":   { rows: 1, cols: 3, maxViews: 3 },
+    "col-3":   { rows: 3, cols: 1, maxViews: 3 },
+    "row-4":   { rows: 1, cols: 4, maxViews: 4 },
+    "col-4":   { rows: 4, cols: 1, maxViews: 4 },
+    "grid-4":  { rows: 2, cols: 2, maxViews: 4 },
+    "grid-5":  { rows: 2, cols: 3, maxViews: 5 },
+    "grid-6":  { rows: 2, cols: 3, maxViews: 6 },
+    "grid-7":  { rows: 2, cols: 4, maxViews: 7 },
+    "grid-8":  { rows: 2, cols: 4, maxViews: 8 },
+    // Asymmetrische Layouts: rows*cols >= maxViews für korrekte Positionsvalidierung
+    "main-r2": { rows: 1, cols: 3, maxViews: 3, variant: "main-cols" as const },
+    "main-r3": { rows: 1, cols: 4, maxViews: 4, variant: "main-cols" as const },
+    "main-b2": { rows: 3, cols: 1, maxViews: 3, variant: "main-rows" as const },
+    "main-b3": { rows: 4, cols: 1, maxViews: 4, variant: "main-rows" as const },
 } as const;
 
 // ============================================================================

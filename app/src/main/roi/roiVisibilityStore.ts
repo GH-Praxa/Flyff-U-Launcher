@@ -34,10 +34,17 @@ async function writeDb(db: RoiVisDb) {
 }
 
 export function createRoiVisibilityStore() {
+    // In-memory cache per profileId – eliminates disk reads on every 200 ms
+    // overlay refresh cycle. Invalidated on write.
+    const cache = new Map<string, RoiVisibility>();
+
     return {
         async get(profileId: string): Promise<RoiVisibility> {
+            if (cache.has(profileId)) return cache.get(profileId)!;
             const db = await readDb();
-            return db[profileId] ?? {};
+            const result = db[profileId] ?? {};
+            cache.set(profileId, result);
+            return result;
         },
         async set(profileId: string, vis: RoiVisibility): Promise<RoiVisibility> {
             const db = await readDb();
@@ -45,6 +52,7 @@ export function createRoiVisibilityStore() {
             const next: RoiVisibility = { ...current, ...vis };
             db[profileId] = next;
             await writeDb(db);
+            cache.set(profileId, next);
             return next;
         },
     };

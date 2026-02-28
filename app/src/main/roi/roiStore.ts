@@ -83,18 +83,26 @@ async function writeDb(db: RoiDb) {
     await fs.writeFile(roisPath(), JSON.stringify(db, null, 2), "utf-8");
 }
 export function createRoiStore() {
+    // In-memory cache per profileId – eliminates disk reads on every 200 ms
+    // overlay refresh cycle. Invalidated on write/remove.
+    const cache = new Map<string, HudRois | null>();
+
     return {
         async get(profileId: string): Promise<HudRois | null> {
+            if (cache.has(profileId)) return cache.get(profileId) ?? null;
             const db = await readDb();
             const raw = db[profileId];
-            if (!raw)
+            if (!raw) {
+                cache.set(profileId, null);
                 return null;
+            }
             const migrated = normalizeOptional(migrateRois(raw));
             const changed = JSON.stringify(migrated) !== JSON.stringify(raw);
             if (changed) {
                 db[profileId] = migrated;
                 await writeDb(db);
             }
+            cache.set(profileId, migrated);
             return migrated;
         },
         async set(profileId: string, rois: HudRois): Promise<void> {
@@ -104,12 +112,14 @@ export function createRoiStore() {
             debugLog("ocr", "[ROI STORE] migrated:", JSON.stringify(migrated));
             db[profileId] = migrated;
             await writeDb(db);
+            cache.set(profileId, migrated);
             debugLog("ocr", "[ROI STORE] writeDb completed");
         },
         async remove(profileId: string): Promise<void> {
             const db = await readDb();
             delete db[profileId];
             await writeDb(db);
+            cache.delete(profileId);
         },
         async listAll(): Promise<RoiDb> {
             return readDb();

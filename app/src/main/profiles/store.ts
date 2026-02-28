@@ -139,6 +139,13 @@ const profileStore = createFileStore<Profile>({
     normalize: normalizeProfile,
 });
 export function createProfilesStore() {
+    // In-memory cache for the hot 50 ms sync loops.
+    // undefined = not yet loaded; null = no target set; string = profile id.
+    // Invalidated whenever the overlay target is explicitly changed or a profile
+    // is deleted (which might remove the current target).
+    let overlayTargetIdCache: string | null | undefined = undefined;
+    let overlaySupportTargetIdCache: string | null | undefined = undefined;
+
     return {
         async list(): Promise<Profile[]> {
             return profileStore.read();
@@ -162,6 +169,9 @@ export function createProfilesStore() {
             ]);
         },
         async update(patch: Partial<Profile> & { id: string }): Promise<Profile[]> {
+            // Generic patch may touch overlayTarget flags – invalidate caches.
+            if (patch.overlayTarget !== undefined) overlayTargetIdCache = undefined;
+            if (patch.overlaySupportTarget !== undefined) overlaySupportTargetIdCache = undefined;
             return profileStore.update((ps) =>
                 ps.map((p) => {
                     if (p.id !== patch.id)
@@ -186,6 +196,9 @@ export function createProfilesStore() {
             );
         },
         async delete(profileId: string): Promise<Profile[]> {
+            // Deleted profile might have been the overlay target.
+            if (overlayTargetIdCache === profileId) overlayTargetIdCache = undefined;
+            if (overlaySupportTargetIdCache === profileId) overlaySupportTargetIdCache = undefined;
             return profileStore.update((ps) => ps.filter((p) => p.id !== profileId));
         },
         async clone(profileId: string, newName: string): Promise<Profile[]> {
@@ -218,11 +231,13 @@ export function createProfilesStore() {
             });
         },
         async getOverlayTargetId(): Promise<string | null> {
+            if (overlayTargetIdCache !== undefined) return overlayTargetIdCache;
             const ps = await profileStore.read();
-            return ps.find((p) => p.overlayTarget)?.id ?? null;
+            overlayTargetIdCache = ps.find((p) => p.overlayTarget)?.id ?? null;
+            return overlayTargetIdCache;
         },
         async setOverlayTarget(profileId: string | null, iconKey?: string): Promise<Profile[]> {
-            return profileStore.update((ps) =>
+            const result = await profileStore.update((ps) =>
                 ps.map((p) => {
                     if (!profileId)
                         return { ...p, overlayTarget: false };
@@ -236,13 +251,19 @@ export function createProfilesStore() {
                     };
                 })
             );
+            overlayTargetIdCache = profileId;
+            // If this profile was the support target it no longer is.
+            if (profileId && overlaySupportTargetIdCache === profileId) overlaySupportTargetIdCache = null;
+            return result;
         },
         async getOverlaySupportTargetId(): Promise<string | null> {
+            if (overlaySupportTargetIdCache !== undefined) return overlaySupportTargetIdCache;
             const ps = await profileStore.read();
-            return ps.find((p) => p.overlaySupportTarget)?.id ?? null;
+            overlaySupportTargetIdCache = ps.find((p) => p.overlaySupportTarget)?.id ?? null;
+            return overlaySupportTargetIdCache;
         },
         async setOverlaySupportTarget(profileId: string | null, iconKey?: string): Promise<Profile[]> {
-            return profileStore.update((ps) =>
+            const result = await profileStore.update((ps) =>
                 ps.map((p) => {
                     if (!profileId)
                         return { ...p, overlaySupportTarget: false };
@@ -256,6 +277,10 @@ export function createProfilesStore() {
                     };
                 })
             );
+            overlaySupportTargetIdCache = profileId;
+            // If this profile was the main overlay target it no longer is.
+            if (profileId && overlayTargetIdCache === profileId) overlayTargetIdCache = null;
+            return result;
         },
         async getOverlaySettings(profileId: string): Promise<OverlaySettings> {
             const p = await profileStore.findById(profileId);

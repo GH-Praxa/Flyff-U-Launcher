@@ -10,19 +10,25 @@ export type OcrTimerRow = {
     profileId: string;
 } & OcrTimerSettings;
 
-// Default polling intervals in milliseconds (non-zero to keep OCR running out of the box)
+// Default polling intervals in milliseconds.
+// These are intentionally conservative to avoid excessive GPU readbacks
+// (capturePage forces a full GPU flush and causes micro-stutters when called
+// too frequently). Users can lower them in the side panel settings.
 const DEFAULT_TIMERS: OcrTimerSettings = {
-    lvl: 200,
-    exp: 200,
-    charname: 300,
-    lauftext: 400,
-    rmExp: 250,
-    enemyName: 300,
-    enemyHp: 200,
+    lvl: 5000,
+    exp: 2000,
+    charname: 5000,
+    lauftext: 3000,
+    rmExp: 2000,
+    enemyName: 2000,
+    enemyHp: 2000,
 };
 
 const MAX_TIMER_MS = 5000;
-const MIN_TIMER_MS = 50;
+// 500 ms lower bound: values below this (e.g. legacy 200 ms defaults stored in
+// user data) are automatically clamped up on the next read, preventing the
+// too-frequent capturePage() calls that cause GPU stalls and game freezes.
+const MIN_TIMER_MS = 500;
 
 function sanitizeTimerValue(value: unknown): number {
     const n = Number(value);

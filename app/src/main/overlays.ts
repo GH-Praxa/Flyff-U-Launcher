@@ -76,6 +76,18 @@ export function createOverlaysManager(deps: OverlaysDeps) {
         roiSupportOverlayParent: null,
     };
 
+    // Bounds caches – setBounds is skipped when nothing changed to avoid
+    // brief focus/GPU interruptions that can freeze the game (same pattern
+    // as sidePanel.ts).
+    let roiOverlayLastBounds: { x: number; y: number; width: number; height: number } | null = null;
+    let roiSupportOverlayLastBounds: { x: number; y: number; width: number; height: number } | null = null;
+
+    // Profile ID caches for scheduleTimersForProfile – only call when the
+    // profile actually changes, not every 50 ms tick. Sending 40 Worker
+    // postMessage()s per second with the same payload is wasteful.
+    let lastScheduledProfileId: string | null = null;
+    let lastScheduledSupportProfileId: string | null = null;
+
     const captureAndHide = (target: OverlayVisibilitySnapshot) => {
         target.roiOverlay = !!(state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed() && state.roiOverlayWindow.isVisible());
         if (target.roiOverlay) {
@@ -210,14 +222,14 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             const profileId = await deps.getOverlayTargetId();
             debugLog("roiOverlaySync", "[ROI Overlay Sync] profileId:", profileId);
             if (state.overlaysHiddenByHotkey || state.overlaysHiddenByDialog) {
-                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed()) {
+                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed() && state.roiOverlayWindow.isVisible()) {
                     state.roiOverlayWindow.hide();
                 }
                 return;
             }
             if (!profileId) {
                 debugLog("roiOverlaySync", "[ROI Overlay Sync] No overlay target set - hiding overlay");
-                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed()) {
+                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed() && state.roiOverlayWindow.isVisible()) {
                     state.roiOverlayWindow.hide();
                 }
                 return;
@@ -227,25 +239,29 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             debugLog("roiOverlaySync", "[ROI Overlay Sync] host:", host ? { parentId: host.parent.id, bounds: host.bounds } : null);
             if (!host || host.bounds.width <= 0 || host.bounds.height <= 0) {
                 debugLog("roiOverlaySync", "[ROI Overlay Sync] No valid host - hiding overlay");
-                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed()) {
+                if (state.roiOverlayWindow && !state.roiOverlayWindow.isDestroyed() && state.roiOverlayWindow.isVisible()) {
                     state.roiOverlayWindow.hide();
                 }
                 return;
             }
 
             if (!state.roiOverlayWindow || state.roiOverlayWindow.isDestroyed()) {
+                roiOverlayLastBounds = null;
                 state.roiOverlayWindow = createOverlayWindow(host.parent, { preloadPath: deps.preloadPath, locale: deps.getLocale() });
                 state.roiOverlayWindow.on("closed", () => {
                     state.roiOverlayWindow = null;
                     state.roiOverlayParent = null;
                 });
             } else if (!state.roiOverlayParent || state.roiOverlayParent.id !== host.parent.id) {
+                roiOverlayLastBounds = null;
                 state.roiOverlayWindow.updateParent(host.parent);
             }
 
             state.roiOverlayParent = host.parent;
-            deps.scheduleTimersForProfile(profileId);
-            state.roiOverlayWindow.setBounds(host.bounds);
+            if (profileId !== lastScheduledProfileId) {
+                lastScheduledProfileId = profileId;
+                deps.scheduleTimersForProfile(profileId);
+            }
             const focusedWindow = BrowserWindow.getFocusedWindow();
             const sidePanelWindow = deps.getSidePanelWindow();
             // Show overlay when the host, side panel, or any child/related window is focused.
@@ -257,9 +273,17 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 || focusedWindow.getParentWindow()?.id === host.parent.id
             );
             if (hostFocused) {
-                state.roiOverlayWindow.show();
+                // Skip setBounds if nothing changed – calling it unconditionally
+                // can cause brief focus interruptions that freeze the game.
+                const nb = host.bounds;
+                const lb = roiOverlayLastBounds;
+                if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
+                    roiOverlayLastBounds = { ...nb };
+                    state.roiOverlayWindow.setBounds(nb);
+                }
+                if (!state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.show();
             } else {
-                state.roiOverlayWindow.hide();
+                if (state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.hide();
             }
         } catch (err) {
             logErr(err, "ROI Overlay Sync");
@@ -268,7 +292,7 @@ export function createOverlaysManager(deps: OverlaysDeps) {
 
     const ensureRoiOverlay = () => {
         if (state.roiOverlaySyncInterval) return state.roiOverlayWindow;
-        state.roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), 50);
+        state.roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), 100);
         void syncRoiOverlay();
         return state.roiOverlayWindow;
     };
@@ -278,13 +302,13 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             const profileId = await deps.getOverlaySupportTargetId();
             debugLog("roiOverlaySync", "[ROI Support Overlay Sync] profileId:", profileId);
             if (state.overlaysHiddenByHotkey || state.overlaysHiddenByDialog) {
-                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed()) {
+                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed() && state.roiSupportOverlayWindow.isVisible()) {
                     state.roiSupportOverlayWindow.hide();
                 }
                 return;
             }
             if (!profileId) {
-                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed()) {
+                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed() && state.roiSupportOverlayWindow.isVisible()) {
                     state.roiSupportOverlayWindow.hide();
                 }
                 return;
@@ -293,25 +317,29 @@ export function createOverlaysManager(deps: OverlaysDeps) {
             const host = resolveOverlayHost(profileId);
             debugLog("roiOverlaySync", "[ROI Support Overlay Sync] host:", host ? { parentId: host.parent.id, bounds: host.bounds } : null);
             if (!host || host.bounds.width <= 0 || host.bounds.height <= 0) {
-                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed()) {
+                if (state.roiSupportOverlayWindow && !state.roiSupportOverlayWindow.isDestroyed() && state.roiSupportOverlayWindow.isVisible()) {
                     state.roiSupportOverlayWindow.hide();
                 }
                 return;
             }
 
             if (!state.roiSupportOverlayWindow || state.roiSupportOverlayWindow.isDestroyed()) {
+                roiSupportOverlayLastBounds = null;
                 state.roiSupportOverlayWindow = createOverlayWindow(host.parent, { preloadPath: deps.preloadPath, role: "support", locale: deps.getLocale() });
                 state.roiSupportOverlayWindow.on("closed", () => {
                     state.roiSupportOverlayWindow = null;
                     state.roiSupportOverlayParent = null;
                 });
             } else if (!state.roiSupportOverlayParent || state.roiSupportOverlayParent.id !== host.parent.id) {
+                roiSupportOverlayLastBounds = null;
                 state.roiSupportOverlayWindow.updateParent(host.parent);
             }
 
             state.roiSupportOverlayParent = host.parent;
-            deps.scheduleTimersForProfile(profileId);
-            state.roiSupportOverlayWindow.setBounds(host.bounds);
+            if (profileId !== lastScheduledSupportProfileId) {
+                lastScheduledSupportProfileId = profileId;
+                deps.scheduleTimersForProfile(profileId);
+            }
             const focusedWindow = BrowserWindow.getFocusedWindow();
             const sidePanelWindow = deps.getSidePanelWindow();
             const hostFocused = focusedWindow && (
@@ -320,9 +348,15 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 || focusedWindow.getParentWindow()?.id === host.parent.id
             );
             if (hostFocused) {
-                state.roiSupportOverlayWindow.show();
+                const nb = host.bounds;
+                const lb = roiSupportOverlayLastBounds;
+                if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
+                    roiSupportOverlayLastBounds = { ...nb };
+                    state.roiSupportOverlayWindow.setBounds(nb);
+                }
+                if (!state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.show();
             } else {
-                state.roiSupportOverlayWindow.hide();
+                if (state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.hide();
             }
         } catch (err) {
             logErr(err, "ROI Support Overlay Sync");
@@ -331,7 +365,7 @@ export function createOverlaysManager(deps: OverlaysDeps) {
 
     const ensureRoiSupportOverlay = () => {
         if (state.roiSupportOverlaySyncInterval) return state.roiSupportOverlayWindow;
-        state.roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), 50);
+        state.roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), 100);
         void syncRoiSupportOverlay();
         return state.roiSupportOverlayWindow;
     };

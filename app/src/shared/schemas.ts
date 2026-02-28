@@ -173,13 +173,20 @@ export type ClientSettingsPatch = z.infer<typeof ClientSettingsPatchSchema>;
 export const LayoutTypeSchema = z.enum([
     "single",   // 1x1 - 1 View (Einzelfenster)
     "split-2",  // 1x2 - 2 Views nebeneinander
+    "col-2",    // 2x1 - 2 Views übereinander
     "row-3",    // 1x3 - 3 Views nebeneinander
+    "col-3",    // 3x1 - 3 Views übereinander
     "row-4",    // 1x4 - 4 Views nebeneinander
+    "col-4",    // 4x1 - 4 Views übereinander
     "grid-4",   // 2x2 - 4 Views
     "grid-5",   // 3+2 - 5 Views (3 oben, 2 unten)
     "grid-6",   // 2x3 - 6 Views
     "grid-7",   // 4+3 - 7 Views (4 oben, 3 unten)
     "grid-8",   // 2x4 - 8 Views
+    "main-r2",  // Haupt links (ratio%) + 2 rechts übereinander
+    "main-r3",  // Haupt links (ratio%) + 3 rechts übereinander
+    "main-b2",  // Haupt oben (ratio%) + 2 unten nebeneinander
+    "main-b3",  // Haupt oben (ratio%) + 3 unten nebeneinander
 ]);
 export type LayoutType = z.infer<typeof LayoutTypeSchema>;
 

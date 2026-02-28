@@ -318,6 +318,51 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     // ── ROI pixel-hash cache (skip Tesseract when frame unchanged) ──
     const roiFrameCache = new Map<string, { hash: number; value: string }>();
 
+    // ── Shared full-frame capture cache ──────────────────────────
+    // All ROI keys for the same profile share ONE capturePage() call per
+    // FULL_FRAME_TTL_MS window. This prevents concurrent GPU readbacks which
+    // can corrupt the WebGL command buffer on Linux and freeze the game.
+    // 2000 ms keeps GPU readbacks to at most 1 every 2 seconds regardless of
+    // the OCR-timer settings persisted in user data, including legacy 200 ms
+    // values that pre-date the conservative default timer update.
+    const FULL_FRAME_TTL_MS = 2000;
+    type FrameCacheEntry = { image: NativeImage; capturedAt: number; promise: Promise<NativeImage> | null };
+    const fullFrameCache = new Map<string, FrameCacheEntry>();
+
+    async function grabSharedFrame(
+        fProfileId: string,
+        fCtx: { width: number; height: number; grab: (rect: { x: number; y: number; width: number; height: number }) => Promise<NativeImage> },
+        roi: { x: number; y: number; width: number; height: number },
+    ): Promise<NativeImage> {
+        const now = Date.now();
+        const cached = fullFrameCache.get(fProfileId);
+        // Another key's capture is in-flight – wait and share the result.
+        if (cached?.promise) {
+            const frame = await cached.promise;
+            return frame.crop(roi);
+        }
+        // Reuse a recently captured frame (within TTL).
+        if (cached && now - cached.capturedAt < FULL_FRAME_TTL_MS && cached.image) {
+            return cached.image.crop(roi);
+        }
+        // Capture full frame once; all concurrent key scans will share it.
+        const fullRect = { x: 0, y: 0, width: fCtx.width, height: fCtx.height };
+        const promise = fCtx.grab(fullRect);
+        const entry: FrameCacheEntry = { image: null!, capturedAt: now, promise };
+        fullFrameCache.set(fProfileId, entry);
+        let frame: NativeImage;
+        try {
+            frame = await promise;
+        } catch (err) {
+            fullFrameCache.delete(fProfileId);
+            throw err;
+        }
+        entry.image = frame;
+        entry.capturedAt = Date.now();
+        entry.promise = null;
+        return frame.crop(roi);
+    }
+
     /** Fast 32-bit rolling hash over sampled bytes of a PNG buffer. */
     function pngHash(buf: Buffer): number {
         let h = 0x811c9dc5;
@@ -647,7 +692,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
             let screenshot;
             try {
-                screenshot = await captureCtx.grab({ x, y, width, height });
+                screenshot = await grabSharedFrame(profileId, captureCtx, { x, y, width, height });
             } catch (err) {
                 logErr(err, `OCR grab primary ${key}`);
                 if (captureCtx.win && !captureCtx.win.isDestroyed()) {
