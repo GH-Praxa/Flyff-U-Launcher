@@ -28,7 +28,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
             preload: opts?.preloadPath,
             nodeIntegration: false,
             contextIsolation: true,
-            backgroundThrottling: false,
+            backgroundThrottling: true,
         },
     });
     // Always click-through to the game (no cursor changes)
@@ -392,7 +392,7 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
   }
 
   window.addEventListener("resize", renderRois);
-  const refreshInterval = setInterval(refreshRois, 200);
+  const refreshInterval = setInterval(refreshRois, 2000);
 
   // Clean up interval when window is closed
   window.addEventListener("beforeunload", () => {

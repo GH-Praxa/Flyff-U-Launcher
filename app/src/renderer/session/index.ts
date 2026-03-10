@@ -185,8 +185,16 @@ export async function renderSession(root: HTMLElement) {
             setLayoutDelaySeconds(settings.layoutDelaySeconds);
             setToastDurationSeconds(settings.toastDurationSeconds);
             setSequentialGridLoad(settings.seqGridLoad ?? false);
+            if (settings.showRamUsage) startRamPolling(); else stopRamPolling();
         })
             .catch((err) => logErr(err, "renderer"));
+    // Listen for live settings changes (e.g. RAM toggle from config modal)
+    window.ipc?.on?.("clientSettings:changed", (settings: unknown) => {
+        const s = settings as Record<string, unknown> | null;
+        if (s && typeof s === "object" && "showRamUsage" in s) {
+            if (s.showRamUsage) startRamPolling(); else stopRamPolling();
+        }
+    });
     // Layout types need to be defined before Tab type
 
     type LayoutType = keyof typeof GRID_CONFIGS;
@@ -1130,6 +1138,16 @@ export async function renderSession(root: HTMLElement) {
             toolsList.append(item);
         }
     }
+    // ── Side Panel Toggle Button ──
+    const btnSidePanel = el("button", "tabBtn iconBtn") as HTMLButtonElement;
+    btnSidePanel.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1L15 6h-6l-.4 3a7.2 7.2 0 0 0-1.7 1L4.5 9 2.5 12.5l2 1.5a7.8 7.8 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7.2 7.2 0 0 0 1.7 1L9 22h6l.4-3a7.2 7.2 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>`;
+    btnSidePanel.title = t("config.client.hotkeys.sidePanelToggle" as TranslationKey);
+    btnSidePanel.draggable = false;
+    btnSidePanel.setAttribute("aria-label", "Side Panel");
+    btnSidePanel.onclick = () => {
+        window.ipc.send("sidepanel:toggle", {});
+    };
+
     const btnLogs = el("button", "tabBtn iconBtn") as HTMLButtonElement;
     btnLogs.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="4.5" y1="5.5" x2="11.5" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="8" x2="11.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="10.5" x2="8.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
     btnLogs.title = "Logs";
@@ -1143,7 +1161,95 @@ export async function renderSession(root: HTMLElement) {
         }
     };
 
-    tabsBar.append(tabsSpacer, tabsProgress, splitControls, btnTabHeight, btnLogs, btnHotkeys, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
+    // ── RAM Usage Indicator ──
+    const ramBtn = el("button", "tabBtn ramBtn") as HTMLButtonElement;
+    ramBtn.draggable = false;
+    ramBtn.style.display = "none";
+    const ramLabel = el("span", "ramLabel", "");
+    ramBtn.append(ramLabel);
+    let ramPollTimer: ReturnType<typeof setInterval> | null = null;
+
+    async function updateRamDisplay() {
+        try {
+            const info: { totalMB: number } = await (window as any).api.memorySystem();
+            ramLabel.textContent = `${info.totalMB} MB`;
+            ramBtn.title = `${t("config.client.showRamUsage" as TranslationKey)}: ${info.totalMB} MB`;
+        } catch { /* ignore */ }
+    }
+
+    function startRamPolling() {
+        if (ramPollTimer) return;
+        ramBtn.style.display = "";
+        void updateRamDisplay();
+        ramPollTimer = setInterval(() => void updateRamDisplay(), 5000);
+    }
+
+    function stopRamPolling() {
+        if (ramPollTimer) {
+            clearInterval(ramPollTimer);
+            ramPollTimer = null;
+        }
+        ramBtn.style.display = "none";
+    }
+
+    ramBtn.addEventListener("click", async () => {
+        try {
+            await hideSessionViews();
+            const info: { totalMB: number; rows: Array<{ profileName: string; memoryMB: number }> } = await (window as any).api.memoryDetails();
+            const overlay = el("div", "modalOverlay");
+            const modal = el("div", "modal ramModal");
+            const header = el("div", "modalHeader");
+            const title = el("div", "modalHeaderTitle", t("ram.modal.title" as TranslationKey));
+            const closeBtn = document.createElement("button");
+            closeBtn.type = "button";
+            closeBtn.className = "modalCloseBtn";
+            closeBtn.textContent = "\u00D7";
+            header.append(title, closeBtn);
+
+            const body = el("div", "modalBody");
+            body.style.padding = "16px";
+            body.style.maxHeight = "400px";
+            body.style.overflowY = "auto";
+
+            if (info.rows.length) {
+                const table = document.createElement("table");
+                table.className = "ramTable";
+                const thead = document.createElement("thead");
+                thead.innerHTML = `<tr><th>${t("ram.modal.process" as TranslationKey)}</th><th>${t("ram.modal.memory" as TranslationKey)}</th></tr>`;
+                table.append(thead);
+                const tbody = document.createElement("tbody");
+                for (const row of info.rows) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${row.profileName}</td><td>${row.memoryMB} MB</td>`;
+                    tbody.append(tr);
+                }
+                table.append(tbody);
+
+                const tfoot = document.createElement("tfoot");
+                const totalTr = document.createElement("tr");
+                totalTr.innerHTML = `<td><strong>${t("ram.modal.total" as TranslationKey)}</strong></td><td><strong>${info.totalMB} MB</strong></td>`;
+                tfoot.append(totalTr);
+                table.append(tfoot);
+
+                body.append(table);
+            }
+
+            modal.append(header, body);
+            overlay.append(modal);
+            const close = async () => {
+                overlay.remove();
+                await showSessionViews();
+            };
+            closeBtn.addEventListener("click", () => void close());
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) void close(); });
+            document.body.append(overlay);
+        } catch (err) {
+            showToast(String(err), "error");
+            await showSessionViews();
+        }
+    });
+
+    tabsBar.append(tabsSpacer, tabsProgress, splitControls, ramBtn, btnSidePanel, btnTabHeight, btnLogs, btnHotkeys, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
     document.body.append(toolsMenu, hotkeysMenu);
 
     function isOpen(profileId: string) {

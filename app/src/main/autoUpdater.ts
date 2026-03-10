@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog } from "electron";
+import { BrowserWindow, dialog, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
 import { logWarn, logErr } from "../shared/logger";
 import type { Locale } from "../shared/schemas";
@@ -6,6 +6,7 @@ import { translations, type TranslationKey } from "../i18n/translations";
 
 export interface AutoUpdaterDeps {
     getLocale: () => Locale;
+    checkOnStart: boolean;
 }
 
 export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
@@ -35,7 +36,10 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.disableDifferentialDownload = true; // our artifacts do not ship blockmaps
 
+    let isManualCheck = false;
+
     autoUpdater.on("update-available", async (info) => {
+        isManualCheck = false;
         const result = await dialog.showMessageBox({
             type: "info",
             title: t("update.available.title"),
@@ -58,6 +62,17 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
                     if (win) win.setProgressBar(-1);
                     dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
                 });
+        }
+    });
+
+    autoUpdater.on("update-not-available", () => {
+        if (isManualCheck) {
+            isManualCheck = false;
+            dialog.showMessageBox({
+                type: "info",
+                title: t("update.notAvailable.title" as TranslationKey),
+                message: t("update.notAvailable.message" as TranslationKey),
+            });
         }
     });
 
@@ -85,16 +100,32 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
         logErr(err, "AutoUpdater error event");
         const win = BrowserWindow.getAllWindows()[0];
         if (win) win.setProgressBar(-1);
-        dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
+        if (isManualCheck) {
+            isManualCheck = false;
+            dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
+        }
     });
 
-    // Check for updates on startup
-    autoUpdater.checkForUpdates()
-        .then((result) => {
-            logWarn(`Update check result: ${JSON.stringify(result?.updateInfo?.version ?? "no update")}`, "AutoUpdater");
-        })
-        .catch((err) => {
-            logErr(err, "AutoUpdater checkForUpdates");
-            dialog.showErrorBox("Update Check Failed", `Could not check for updates:\n\n${String(err)}`);
-        });
+    // IPC handler for manual update check from renderer
+    ipcMain.handle("app:checkForUpdates", async () => {
+        isManualCheck = true;
+        try {
+            const result = await autoUpdater.checkForUpdates();
+            return { ok: true, version: result?.updateInfo?.version ?? null };
+        } catch (err) {
+            isManualCheck = false;
+            return { ok: false, error: String(err) };
+        }
+    });
+
+    // Check for updates on startup (if enabled)
+    if (deps.checkOnStart) {
+        autoUpdater.checkForUpdates()
+            .then((result) => {
+                logWarn(`Update check result: ${JSON.stringify(result?.updateInfo?.version ?? "no update")}`, "AutoUpdater");
+            })
+            .catch((err) => {
+                logErr(err, "AutoUpdater checkForUpdates");
+            });
+    }
 }

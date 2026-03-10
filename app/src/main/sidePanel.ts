@@ -3,6 +3,8 @@ import { createSidePanelWindow } from "./windows/sidePanelWindow";
 import { logErr } from "../shared/logger";
 import type { Locale } from "../shared/schemas";
 
+const SIDEPANEL_SYNC_MS = 500;
+
 type TabsLike = { isActive(id: string): boolean; getBounds(id: string): { x: number; y: number; width: number; height: number } };
 
 export interface SidePanelDeps {
@@ -197,7 +199,7 @@ export function createSidePanelManager(deps: SidePanelDeps) {
             panel.show();
             panel.focus();
             if (!state.syncInterval) {
-                state.syncInterval = setInterval(() => syncBounds(), 500);
+                state.syncInterval = setInterval(() => syncBounds(), SIDEPANEL_SYNC_MS);
             }
         } else {
             hideWindow();

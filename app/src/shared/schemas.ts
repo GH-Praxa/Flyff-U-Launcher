@@ -160,6 +160,10 @@ export const ClientSettingsSchema = z.object({
     showAnnouncements: z.boolean(),
     /** Allow the open profiles section to be collapsed. Default: true. */
     collapsibleOpenProfiles: z.boolean(),
+    /** Show a live RAM usage indicator in the tab bar. Default: false. */
+    showRamUsage: z.boolean(),
+    /** Check for updates automatically on app startup. Default: true. */
+    checkForUpdatesOnStart: z.boolean(),
 });
 export type ClientSettings = z.infer<typeof ClientSettingsSchema>;
 export const ClientSettingsPatchSchema = ClientSettingsSchema.partial();

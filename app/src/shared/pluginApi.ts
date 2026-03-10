@@ -323,6 +323,7 @@ export interface ProfileData {
     overlaySettings?: OverlaySettings;
     overlayHud?: OverlayHudBounds;
     features?: Record<string, { enabled?: boolean }>;
+    characters?: string[];
 }
 
 export interface OverlaySettings {

@@ -333,13 +333,14 @@ export class NativeOcrWorker {
                 }
             } catch { /* ignore */ }
 
-            // Well-formed percent within 5% of fill → trust it
+            // Well-formed percent within 8% of fill → trust OCR
             if (/^\d{1,3}\.\d{1,6}%?$/.test((raw || "").trim())) {
-                if (Math.abs(val - target) <= 5.0) return [val, raw];
+                if (Math.abs(val - target) <= 8.0) return [val, raw];
             }
 
-            // Far off from fill → snap
-            if (target >= 5 && target <= 99.5 && Math.abs(val - target) > 12) {
+            // Far off from fill → snap (only for very large deviations;
+            // fillRatio is an estimate and can itself be inaccurate)
+            if (target >= 5 && target <= 99.5 && Math.abs(val - target) > 25) {
                 return [Math.round(target * 10000) / 10000, raw];
             }
 
@@ -359,7 +360,7 @@ export class NativeOcrWorker {
             swap = trySwap("9", "8");
             if (swap) [val, raw] = swap;
 
-            if (target >= 25 && val + 8 < target) {
+            if (target >= 25 && val + 18 < target) {
                 return [Math.round(target * 10000) / 10000, raw];
             }
 

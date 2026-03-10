@@ -7,7 +7,7 @@
  * NOTE: This file must NOT import Electron modules — it runs outside
  * the main process context.
  */
-import { parentPort } from "worker_threads";
+import { parentPort, workerData } from "worker_threads";
 
 if (!parentPort) {
     throw new Error("OCR timer scheduler requires parentPort");
@@ -31,7 +31,7 @@ type Entry = {
     lastAck: number;
 };
 
-const MAX_CONCURRENCY = 3;
+const MAX_CONCURRENCY = workerData?.platform === "linux" ? 1 : 3;
 const STALL_MULTIPLIER = 3;  // allow 3x interval before considering a tick stuck
 const STALL_MIN_MS = 2000;   // minimum watchdog threshold
 const WATCHDOG_MS = 1000;    // how often the watchdog scans

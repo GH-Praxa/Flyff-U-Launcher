@@ -295,6 +295,19 @@
     return Math.min(1.6, Math.max(0.6, n));
   }
 
+  function applyPosition() {
+    if (!badgeGrid) return;
+    const x = Number(currentLayout?.x) || 0;
+    const y = Number(currentLayout?.y) || 0;
+    const w = window.innerWidth || 1;
+    const h = window.innerHeight || 1;
+    const rect = badgeGrid.getBoundingClientRect();
+    const left = Math.max(0, Math.min(x * w, w - (rect.width || 10)));
+    const top = Math.max(0, Math.min(y * h, h - (rect.height || 10)));
+    badgeGrid.style.left = `${left}px`;
+    badgeGrid.style.top = `${top}px`;
+  }
+
   function applyScale() {
     const scale = clampScale(currentLayout?.scale ?? 1);
     currentScale = scale;
@@ -409,6 +422,7 @@
     setupDragHandlers();
 
     scheduleWidthSync();
+    applyPosition();
   }
 
   /**
@@ -432,6 +446,7 @@
     const visibility = currentLayout?.visibility || {};
     const overlayVisible = currentLayout?.overlayVisible !== false;
     applyScale();
+    applyPosition();
 
     // Apply global overlay visibility to the entire container
     if (overlayVisible) {
@@ -693,6 +708,9 @@
     bind,
     requestState
   };
+
+  // Re-apply position on window resize
+  window.addEventListener('resize', () => { applyPosition(); });
 
   // Initialize on load
   window.addEventListener('load', init);

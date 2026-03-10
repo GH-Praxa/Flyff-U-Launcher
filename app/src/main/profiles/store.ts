@@ -42,6 +42,7 @@ export type Profile = {
     overlaySettings?: OverlaySettings;
     overlayHud?: OverlayHudLayout;
     features?: ProfileFeatures;
+    characters?: string[];
 };
 function defaultOverlaySettings(): OverlaySettings {
     return {
@@ -131,6 +132,9 @@ function normalizeProfile(v: unknown): Profile | null {
         overlaySettings: normalizeOverlaySettings(p.overlaySettings),
         overlayHud: normalizeHudLayout(p.overlayHud),
         features: normalizeFeatures(p.features),
+        characters: Array.isArray(p.characters)
+            ? p.characters.filter((c): c is string => typeof c === "string" && c.length > 0).slice(0, 64)
+            : undefined,
     };
 }
 
@@ -233,7 +237,9 @@ export function createProfilesStore() {
         async getOverlayTargetId(): Promise<string | null> {
             if (overlayTargetIdCache !== undefined) return overlayTargetIdCache;
             const ps = await profileStore.read();
-            overlayTargetIdCache = ps.find((p) => p.overlayTarget)?.id ?? null;
+            const targets = ps.filter((p) => p.overlayTarget).map((p) => p.id);
+            overlayTargetIdCache = targets[0] ?? null;
+            // Diagnostic removed — overlay target ID is cached after first read
             return overlayTargetIdCache;
         },
         async setOverlayTarget(profileId: string | null, iconKey?: string): Promise<Profile[]> {

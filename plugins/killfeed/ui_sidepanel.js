@@ -29,6 +29,11 @@
       rows: "Rows",
       scale: "Overlay size",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Position, size and rows of the badge overlay.",
+      overlayPos: "Position",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Character",
       charName: "Character name",
       charPlaceholder: "Enter character name",
@@ -99,6 +104,11 @@
       rows: "Zeilen",
       scale: "Overlay-Größe",
       scaleHint: "0,6x - 1,6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Position, Größe und Reihen des Badge-Overlays.",
+      overlayPos: "Position",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Charakter",
       charName: "Charaktername",
       charPlaceholder: "Charaktername eingeben",
@@ -169,6 +179,11 @@
       rows: "Wiersze",
       scale: "Rozmiar overlay",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Pozycja, rozmiar i wiersze nakładki.",
+      overlayPos: "Pozycja",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Postać",
       charName: "Nazwa postaci",
       charPlaceholder: "Wpisz nazwę postaci",
@@ -225,6 +240,11 @@
       rows: "Lignes",
       scale: "Taille de l'overlay",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Position, taille et lignes de l'overlay.",
+      overlayPos: "Position",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Personnage",
       charName: "Nom du personnage",
       charPlaceholder: "Saisir le nom",
@@ -281,6 +301,11 @@
       rows: "Ряды",
       scale: "Размер оверлея",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Позиция, размер и ряды оверлея.",
+      overlayPos: "Позиция",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Персонаж",
       charName: "Имя персонажа",
       charPlaceholder: "Введите имя персонажа",
@@ -337,6 +362,11 @@
       rows: "Satır",
       scale: "Overlay boyutu",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "Overlay konumu, boyutu ve satırları.",
+      overlayPos: "Konum",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "Karakter",
       charName: "Karakter adı",
       charPlaceholder: "Karakter adını gir",
@@ -393,6 +423,11 @@
       rows: "行数",
       scale: "覆盖层大小",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "Overlay",
+      overlayHint: "覆盖层的位置、大小和行数。",
+      overlayPos: "位置",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "角色",
       charName: "角色名",
       charPlaceholder: "输入角色名",
@@ -449,6 +484,11 @@
       rows: "行数",
       scale: "オーバーレイサイズ",
       scaleHint: "0.6x - 1.6x",
+      overlayLabel: "オーバーレイ",
+      overlayHint: "オーバーレイの位置、サイズ、行数。",
+      overlayPos: "位置",
+      posX: "X (%)",
+      posY: "Y (%)",
       character: "キャラクター",
       charName: "キャラクター名",
       charPlaceholder: "キャラ名を入力",
@@ -569,7 +609,12 @@
   const sessionInfoEl = document.getElementById('sessionInfo');
   const scaleInput = document.getElementById('scaleInput');
   const scaleValue = document.getElementById('scaleValue');
-  const charNameInput = document.getElementById('charNameInput');
+  const posXInput = document.getElementById('posXInput');
+  const posYInput = document.getElementById('posYInput');
+  const posXVal = document.getElementById('posXVal');
+  const posYVal = document.getElementById('posYVal');
+  const stepButtons = Array.from(document.querySelectorAll('.step-btn'));
+  const charNameSelect = document.getElementById('charNameSelect');
   const charNameStatus = document.getElementById('charNameStatus');
   const killHistoryModal = document.getElementById('killHistoryModal');
   const killHistoryTitle = document.getElementById('killHistoryTitle');
@@ -582,7 +627,7 @@
   let currentProfileId = null;
   let currentStats = null;
   let currentLayout = null;
-  let charNameDebounce = null;
+  let charNameDebounce = null; // kept for compat, unused with select
   let pollSuppressedUntil = 0;
   const accordionUserState = new Map(); // rank -> boolean (user-toggled open/closed)
   let canonicalRefreshInFlight = false;
@@ -667,10 +712,15 @@
     if (data?.layout) {
       currentLayout = data.layout;
     }
-    if (typeof data?.charName === 'string' && charNameInput) {
-      charNameInput.value = data.charName;
-      const statusText = data.charName ? STR.charSaved : STR.charNotSaved;
-      setCharStatus(statusText, data.charName ? 'ok' : 'info');
+    if (charNameSelect) {
+      if (Array.isArray(data?.characters)) {
+        populateCharSelect(data.characters, data?.charName || '');
+      }
+      if (typeof data?.charName === 'string') {
+        charNameSelect.value = data.charName;
+        const statusText = data.charName ? STR.charSaved : STR.charNotSaved;
+        setCharStatus(statusText, data.charName ? 'ok' : 'info');
+      }
     }
   }
 
@@ -685,23 +735,28 @@
     const profilePlaceholder = profileSelector?.querySelector("option[value='']");
     if (profilePlaceholder) profilePlaceholder.textContent = STR.selectProfile;
 
-    const rowsLabel = document.querySelector("label[for='rowsInput']");
-    if (rowsLabel) rowsLabel.textContent = STR.rows;
-    const scaleLabel = document.querySelector(".scale-label");
-    if (scaleLabel) scaleLabel.textContent = STR.scale;
-    const scaleHint = document.querySelector(".scale-hint");
-    if (scaleHint) scaleHint.textContent = STR.scaleHint;
+    // Overlay settings card
+    const overlayLabel = document.getElementById('overlaySettingsLabel');
+    if (overlayLabel) overlayLabel.textContent = STR.overlayLabel || 'Overlay';
+    const overlayHint = document.getElementById('overlaySettingsHint');
+    if (overlayHint) overlayHint.textContent = STR.overlayHint || '';
+    const posXLabel = posXInput?.parentElement?.querySelector('span');
+    if (posXLabel) posXLabel.textContent = STR.posX || 'X (%)';
+    const posYLabel = posYInput?.parentElement?.querySelector('span');
+    if (posYLabel) posYLabel.textContent = STR.posY || 'Y (%)';
+    const scaleLabelEl = document.getElementById('scaleLabel');
+    if (scaleLabelEl) scaleLabelEl.textContent = STR.scale || 'Scale';
+    const rowsLabelEl = document.getElementById('rowsLabel');
+    if (rowsLabelEl) rowsLabelEl.textContent = STR.rows || 'Rows';
 
-    const charSectionTitle = document.querySelector(".scroll-section .section-title");
-    if (charSectionTitle) charSectionTitle.textContent = STR.character;
-    const charNameLabel = document.querySelector("label[for='charNameInput']");
-    if (charNameLabel) charNameLabel.textContent = STR.charName;
-    if (charNameInput) charNameInput.placeholder = STR.charPlaceholder;
+    // Character card
+    const charNameLabelEl = document.getElementById('charNameLabel');
+    if (charNameLabelEl) charNameLabelEl.textContent = STR.charName || STR.character;
     if (charNameStatus) charNameStatus.textContent = STR.charNotSaved;
 
     const sections = document.querySelectorAll(".scroll-section .section-title");
-    if (sections[1]) sections[1].textContent = STR.badgeVisibility;
-    if (sections[2]) sections[2].textContent = STR.monsters;
+    if (sections[0]) sections[0].textContent = STR.badgeVisibility;
+    if (sections[1]) sections[1].textContent = STR.monsters;
     const badgeHintEl = document.getElementById('badgeHint');
     if (badgeHintEl) badgeHintEl.textContent = STR.badgeHint || '';
 
@@ -1162,14 +1217,32 @@
     }
   }
 
+  function populateCharSelect(characters, selected) {
+    if (!charNameSelect) return;
+    const prev = charNameSelect.value;
+    charNameSelect.innerHTML = '';
+    const emptyOpt = document.createElement('option');
+    emptyOpt.value = '';
+    emptyOpt.textContent = '—';
+    charNameSelect.appendChild(emptyOpt);
+    for (const name of characters) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      charNameSelect.appendChild(opt);
+    }
+    charNameSelect.value = selected || prev || '';
+  }
+
   async function loadCharName() {
     if (!currentProfileId) return;
     try {
       const result = unwrap(await ipcInvoke('char:get', currentProfileId));
-      if (charNameInput && typeof result?.charName === 'string') {
-        charNameInput.value = result.charName;
-        const statusText = result.charName ? STR.charSaved : STR.charNotSaved;
-        setCharStatus(statusText, result.charName ? 'ok' : 'info');
+      if (charNameSelect) {
+        const chars = Array.isArray(result?.characters) ? result.characters : [];
+        populateCharSelect(chars, result?.charName || '');
+        const statusText = result?.charName ? STR.charSaved : STR.charNotSaved;
+        setCharStatus(statusText, result?.charName ? 'ok' : 'info');
       }
     } catch (err) {
       setCharStatus(STR.charLoadError, 'error');
@@ -1178,7 +1251,7 @@
 
   async function saveCharName() {
     if (!currentProfileId) return;
-    const value = (charNameInput?.value || '').trim();
+    const value = (charNameSelect?.value || '').trim();
     try {
       const result = unwrap(await ipcInvoke('char:set', currentProfileId, value));
       const statusText = result?.charName ? STR.charSaved : STR.charNotSaved;
@@ -1261,13 +1334,45 @@
   /**
    * Update scale slider from layout
    */
+  function clampPercent(val) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(100, Math.max(0, Math.round(n)));
+  }
+
   function updateScaleInput() {
     const scale = clampScale(currentLayout?.scale ?? 1);
-    if (scaleInput) {
-      scaleInput.value = String(scale);
-    }
-    if (scaleValue) {
-      scaleValue.textContent = scale.toFixed(2) + 'x';
+    if (scaleInput) scaleInput.value = String(scale);
+    if (scaleValue) scaleValue.textContent = scale.toFixed(2);
+  }
+
+  function updatePositionInputs() {
+    const x = clampPercent((Number(currentLayout?.x) || 0) * 100);
+    const y = clampPercent((Number(currentLayout?.y) || 0) * 100);
+    if (posXInput) posXInput.value = String(x);
+    if (posYInput) posYInput.value = String(y);
+    if (posXVal) posXVal.textContent = String(x);
+    if (posYVal) posYVal.textContent = String(y);
+  }
+
+  async function setPositionFromInput() {
+    if (!currentProfileId) return;
+    const xPct = clampPercent(posXInput?.value);
+    const yPct = clampPercent(posYInput?.value);
+    if (posXInput) posXInput.value = String(xPct);
+    if (posYInput) posYInput.value = String(yPct);
+    if (posXVal) posXVal.textContent = String(xPct);
+    if (posYVal) posYVal.textContent = String(yPct);
+    const x = xPct / 100;
+    const y = yPct / 100;
+    try {
+      unwrap(await ipcInvoke('layout:set', currentProfileId, { x, y }));
+      if (currentLayout) {
+        currentLayout.x = x;
+        currentLayout.y = y;
+      }
+    } catch (err) {
+      console.error('Failed to set position:', err);
     }
   }
 
@@ -1345,6 +1450,7 @@
       render();
       updateRowsInput();
       updateScaleInput();
+      updatePositionInputs();
     } catch (err) {
       console.error('Failed to request state:', err);
     }
@@ -1387,6 +1493,7 @@
     updateToggleButton();
     updateRowsInput();
     updateScaleInput();
+    updatePositionInputs();
   }
 
   /**
@@ -1421,6 +1528,7 @@
 
     currentLayout = payload.layout;
     updateScaleInput();
+    updatePositionInputs();
     render();
   }
 
@@ -1451,7 +1559,7 @@
     } catch (err) {
       console.error('Failed to set scale:', err);
     } finally {
-      if (scaleValue) scaleValue.textContent = scale.toFixed(2) + 'x';
+      if (scaleValue) scaleValue.textContent = scale.toFixed(2);
     }
   }
 
@@ -1469,19 +1577,50 @@
     if (scaleInput) {
       scaleInput.addEventListener('input', () => {
         const scale = clampScale(scaleInput.value);
-        if (scaleValue) scaleValue.textContent = scale.toFixed(2) + 'x';
+        if (scaleValue) scaleValue.textContent = scale.toFixed(2);
       });
       scaleInput.addEventListener('change', setScaleFromInput);
     }
-    if (charNameInput) {
-      const scheduleSave = () => {
-        if (charNameDebounce) clearTimeout(charNameDebounce);
-        charNameDebounce = setTimeout(() => {
-          void saveCharName();
-        }, 300);
-      };
-      charNameInput.addEventListener('input', scheduleSave);
-      charNameInput.addEventListener('change', scheduleSave);
+    if (posXInput) {
+      posXInput.addEventListener('input', () => {
+        if (posXVal) posXVal.textContent = String(clampPercent(posXInput.value));
+      });
+      posXInput.addEventListener('change', setPositionFromInput);
+    }
+    if (posYInput) {
+      posYInput.addEventListener('input', () => {
+        if (posYVal) posYVal.textContent = String(clampPercent(posYInput.value));
+      });
+      posYInput.addEventListener('change', setPositionFromInput);
+    }
+    // Step buttons (+/- for sliders)
+    stepButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const dir = Number(btn.dataset.dir) || 0;
+        if (!targetId || !dir) return;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        if (targetId === 'scaleInput') {
+          const current = clampScale(input.value);
+          const next = clampScale(current + dir * 0.05);
+          input.value = String(next);
+          if (scaleValue) scaleValue.textContent = next.toFixed(2);
+          void setScaleFromInput();
+        } else {
+          const current = clampPercent(input.value);
+          const next = clampPercent(current + dir);
+          input.value = String(next);
+          if (targetId === 'posXInput' && posXVal) posXVal.textContent = String(next);
+          if (targetId === 'posYInput' && posYVal) posYVal.textContent = String(next);
+          void setPositionFromInput();
+        }
+      });
+    });
+    if (charNameSelect) {
+      charNameSelect.addEventListener('change', () => {
+        void saveCharName();
+      });
     }
 
     if (killHistoryCloseBtn) {

@@ -5,6 +5,25 @@
 
 ### ✨ Neue Funktionen
 
+**Neue Layout-Typen**
+- Vertikale Layouts hinzugefügt: 2x1, 3x1, 4x1 (Views übereinander)
+- Asymmetrische Layouts: Hauptfenster + 2–3 Nebenfenster rechts (`main-r2`, `main-r3`) oder unten (`main-b2`, `main-b3`)
+- Aufteilung der asymmetrischen Layouts per Slider einstellbar (min 20% / max 80%)
+
+**Layout-Picker mit ASCII-Vorschau**
+- Beim Hovern über ein Layout wird eine ASCII-Diagramm-Vorschau angezeigt
+- Alle 16 Layout-Typen haben eigene ASCII-Darstellungen
+
+**Profil-Export/Import**
+- Profile als `.flyffprofile`-Datei exportieren und importieren
+- Enthält Profil-Metadaten, Electron-Session-Cookies und localStorage-Daten
+- Ermöglicht Backup, Transfer zwischen Rechnern oder Teilen mit Mitspielern
+
+**Charakternamen pro Profil**
+- Charakternamen direkt im Profil hinterlegen und verwalten
+- Anzeige als farbige Badges in der Profilliste und im Bearbeitungsdialog
+- Plugins (z.B. Killfeed) nutzen die Profil-Charnamen per Combobox-Auswahl — kein manuelles Eintippen mehr nötig
+
 **Launcher-Ankündigungen**
 - Neuer Bereich im rechten Panel zeigt Live-Nachrichten vom Entwickler ohne App-Update
 - Typen: 🐛 Bug, ℹ Info, ✨ Feature, ⚠ Warnung — jeweils farblich hervorgehoben
@@ -15,13 +34,12 @@
 **Schriftart- & Schriftgröße-Einstellung**
 - Neue Einstellung "Overlay- & UI-Schriftart" in den Client-Einstellungen
 - 9 vorinstallierte Google Fonts: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel
-- Benutzerdefinierte Schriftarten möglich
 - Schriftart wird in Launcher-Overlays und DOM-basierte UI-Elemente injiziert
 - Canvas 2D Font-Interceptor für Phaser-basierte Spiele
 - Neue Einstellung "Schriftgröße des Launchers": Textgröße im Launcher-Fenster skalierbar (75–150%)
 
 **Fehlerbericht-Funktion**
-- Neues Log-Panel im Side Panel: Logs anzeigen, speichern und löschen
+- Log-Fenster: Logs anzeigen, speichern und löschen — zugänglich über ein Log-Icon in der Tab-Leiste
 - Fehlerbericht direkt an Discord senden — mit optionaler Beschreibung und Discord-Tag
 - 60-Sekunden-Cooldown zum Schutz vor versehentlichem Mehrfachsenden
 
@@ -30,13 +48,27 @@
 - Eigener Tab im Side Panel sowie eigene Einstellungen-UI
 - Unterstützt API-Abfragen für Quest, NPC, Monster und Item
 
+**Kill Timer Plugin**
+- Neues Plugin: Kill-Timer mit HP%-Schwellenwert-Alert für 1on1-Farming
+- Misst Time-to-Kill pro Gegner mit konfigurierbarem Overlay
+- Eigener Tab im Sidepanel und transparentes In-Game-Overlay
+
 **Unified Upgrade-Rechner**
 - Upgrade-Rechner zu einem einheitlichen Fenster mit Sidebar-Navigation zusammengeführt
 - Kombiniert: Waffen-Upgrade, Schmuck-Upgrade, Rüstungs-Piercing, Waffen-Piercing und Ultimate-Upgrades
 
-**Telemetrie (opt-in)**
-- Neue Client-Einstellung: Anonyme Startstatistiken senden (Version + zufällige ID)
-- Opt-in, keine persönlichen Daten, jederzeit deaktivierbar
+**UI-Tooltips & Hilfe-Icons**
+- Alle wichtigen Bedienelemente im Launcher haben jetzt Tooltips (in allen 8 Sprachen)
+- Neue Hilfe-Icons (?) für komplexe Funktionen: Profilname, Tab-/Fenstermodus, Charakternamen
+- Hinweise für Launcher-Breite/Höhe, Filter, Layout-Auswahl und Grid-Zellen
+
+**Telemetrie**
+- Anonyme Startstatistiken senden (Version, Betriebssystem, zufällige ID)
+- Standardmäßig aktiviert, keine persönlichen Daten, jederzeit deaktivierbar
+
+**Update-Prüfung**
+- Neue Einstellung: Beim Start automatisch nach Updates suchen (an/aus)
+- Manueller „Jetzt prüfen"-Button in den Einstellungen
 
 **ROI-Kalibrierung**
 - Lokalisierte Strings für den ROI-Kalibrator (alle Sprachen)
@@ -44,10 +76,44 @@
 
 ### 🚀 Performance
 
-**OCR-Optimierung**
-- ROI Pixel-Hash-Cache eingeführt
-- OCR wird übersprungen wenn sich der Frame nicht geändert hat
-- Reduziert CPU-Last bei statischen Spielinhalten
+**OCR GPU-Stall-Fixes**
+- `webContents.capturePage()` durch plattform-sichere `safeCaptureWindow()` ersetzt — nutzt `xwd` auf Linux (kein GPU-Kontakt), `capturePage()` auf Win/Mac
+- Kein `capturePage()`-Fallback mehr auf Linux — bei xwd-Fehler wird der Scan übersprungen statt das Spiel einzufrieren
+- In-Memory-Caches für Profile, ROI-Store und ROI-Visibility-Store gegen häufige DB-Reads
+- ROI Pixel-Hash-Cache: OCR wird übersprungen wenn sich der Frame nicht geändert hat — reduziert CPU-Last bei statischen Spielinhalten
+
+**OCR Frame-Cache-Bugfixes (Freeze-Fix)**
+- Leere OCR-Ergebnisse werden jetzt korrekt gecacht — verhindert endlose Tesseract-Wiederholungen auf unveränderten Pixeln
+- enemyName-Pfad speichert Ergebnisse jetzt im Frame-Cache (fehlte komplett)
+- Globales Tesseract-Concurrency-Limit (max. 1 gleichzeitig) — verhindert CPU-Aushungerung des GPU-Prozesses
+
+**OCR-Verbesserungen**
+- Stroke Dilation für leichte Schriftarten in der Level-Erkennung — verbesserte Erkennungsgenauigkeit bei dünnen Schriften
+
+**Overlay-Optimierung**
+- Overlay-Polling optimiert: unnötige Opacity-Wechsel entfernt, Intervalle reduziert
+- Linux: Show/Hide-Zyklen für transparente Overlays vermieden — jeder Aufruf geht durch den GPU-Compositor
+
+### ⚙️ Verbesserungen
+
+- **Einstellungen komplett überarbeitet**: Neues Sidebar-Layout mit kategorisierten Unterseiten, Toggle-Switches und Slider-Cards statt alter Checkbox/Tab-Struktur
+- **Update-Prüfung konfigurierbar**: Neue Einstellung „Beim Start nach Updates suchen" (an/aus) mit manuellem „Jetzt prüfen"-Button
+- **RAM-Anzeige**: Neue Einstellung „RAM-Nutzung anzeigen" mit Speicherdetails pro Profil
+- **Killfeed-Overlay positionierbar**: Overlay per Drag verschieben, Position wird gespeichert (x/y im Layout)
+- **Killfeed-Charakterauswahl**: Charakternamen werden per Combobox aus dem Profil gewählt statt manuell eingetippt
+- Ankündigungen im Markdown-Format (statt JSON)
+- Live-Einstellungen im rechten Panel mit dynamischer Höhe
+- Quest-Erkennung: Profilfilterung korrigiert
+- Einstellung „Spiel-UI-Positionen merken" entfernt
+- Fehlerberichte senden nicht mehr an die Telemetrie-Einstellung gekoppelt
+- Side-Panel-Button von Overlay in die Session-Tab-Leiste verschoben
+- Client-Einstellungsänderungen werden an alle Session-Fenster übertragen
+
+### 🐛 Fehlerbehebungen
+
+- RAM-Anzeige auf Linux zeigt jetzt korrekte Werte (Fallback auf `/proc/[pid]/statm` statt `workingSetSize`)
+- Charakternamen in Profilen werden jetzt korrekt gespeichert
+- GLib/GTK-Assertion-Warnungen auf Linux unterdrückt (harmlose Chromium-interne Meldungen)
 
 ### 📦 Linux-Support
 
@@ -56,28 +122,8 @@
 
 ### 🌐 Übersetzungen
 
-- Neue Übersetzungen für Schriftart- und Schriftgröße-Einstellungen in allen Sprachen
-- ROI-Kalibrator jetzt vollständig lokalisiert
-
----
-## 🐛 Version 3.0.5.3
-
-### ⚙️ Verbesserungen
-- OCR: Stroke Dilation für leichte Schriftarten in der Level-Erkennung eingeführt — verbesserte Erkennungsgenauigkeit bei dünnen Schriften
-
----
-## 🐛 Version 3.0.5.2
-
-### ✨ Verbesserungen
-- Ankündigungen jetzt im Markdown-Format (statt JSON)
-- Live-Einstellungen im rechten Panel
-- Dynamische Höhe des rechten Panels
-
----
-## 🐛 Version 3.0.5.1
-
-### ✨ Verbesserungen
-- Logs aus dem Sidepanel in ein eigenes Fenster verschoben — zugänglich über ein Log-Icon in der Tab-Leiste
+- Neue Übersetzungen für alle neuen Funktionen in allen 8 Sprachen
+- ROI-Kalibrator vollständig lokalisiert
 
 ---
 ## 🐛 Version 3.0.5

@@ -114,7 +114,9 @@ function getDefaultLayout() {
     visibility: getDefaultBadgeVisibility(),
     overlayVisible: true,
     rows: 2,
-    scale: 1
+    scale: 1,
+    x: 0,
+    y: 0
   };
 }
 

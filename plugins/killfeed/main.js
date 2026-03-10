@@ -354,9 +354,29 @@ async function getProfileName(profileId) {
   }
 }
 
+async function getProfileCharacters(profileId) {
+  try {
+    const profile = await ctx.services.profiles.get(profileId);
+    return Array.isArray(profile?.characters) ? profile.characters : [];
+  } catch {
+    return [];
+  }
+}
+
 async function getCharacterName(profileId) {
   try {
     const saved = await ctx.services.storage.read(STORAGE_KEYS.charName(profileId));
+    if (typeof saved === 'string' && saved) {
+      // Validate that the saved name still exists in the profile's characters
+      const chars = await getProfileCharacters(profileId);
+      if (chars.length === 0 || chars.includes(saved)) return saved;
+    }
+    // Fallback: first character from profile, if any
+    const chars = await getProfileCharacters(profileId);
+    if (chars.length > 0) {
+      await setCharacterName(profileId, chars[0]);
+      return chars[0];
+    }
     return typeof saved === 'string' ? saved : '';
   } catch {
     return '';
@@ -2546,7 +2566,8 @@ async function init(context) {
   ctx.ipc.handle('char:get', async (_event, profileId) => {
     const pid = typeof profileId === 'string' && profileId ? profileId : 'default';
     const value = await getCharacterName(pid);
-    return { success: true, charName: value };
+    const characters = await getProfileCharacters(pid);
+    return { success: true, charName: value, characters };
   });
 
   ctx.ipc.handle('char:set', async (_event, profileId, name) => {
@@ -2760,6 +2781,13 @@ async function init(context) {
     }
     if (layoutObj.scale !== undefined) {
       layoutMgr.setScale(layoutObj.scale);
+    }
+    if (layoutObj.x !== undefined || layoutObj.y !== undefined) {
+      const pos = layoutMgr.getPosition();
+      layoutMgr.setPosition(
+        layoutObj.x !== undefined ? layoutObj.x : pos.x,
+        layoutObj.y !== undefined ? layoutObj.y : pos.y
+      );
     }
 
     ctx.ipc.broadcast('layout:update', {

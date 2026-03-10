@@ -16,6 +16,7 @@ import { registerDocumentationHandlers } from "./handlers/documentation";
 import { registerShoppingListHandlers } from "./handlers/shoppingList";
 import { registerUpgradeCalcHandlers } from "./handlers/upgradeCalc";
 import { registerProfileTransferHandlers } from "./handlers/profiles-transfer";
+import { registerMemoryHandlers } from "./handlers/memory";
 import type { ClientSettingsStore } from "../clientSettings/store";
 import type { ClientSettings } from "../../shared/schemas";
 import { logErr } from "../../shared/logger";
@@ -120,6 +121,28 @@ registerShoppingListHandlers(safeHandle);
     registerProfileTransferHandlers(safeHandle, opts.profiles, {
         getViewByProfile: opts.sessionTabs.getViewByProfile ?? (() => null),
         flyffUrl: opts.flyffUrl,
+    });
+
+    registerMemoryHandlers(safeHandle, {
+        listProfiles: opts.profiles.list,
+        getTabsSources: () => {
+            const sources: Array<{ getLoadedProfileIds: () => string[]; getViewByProfile: (id: string) => Electron.BrowserView | null }> = [];
+            // Legacy singleton
+            if (opts.sessionTabs.getLoadedProfileIds().length > 0) {
+                sources.push({
+                    getLoadedProfileIds: opts.sessionTabs.getLoadedProfileIds,
+                    getViewByProfile: opts.sessionTabs.getViewByProfile ?? (() => null),
+                });
+            }
+            // Multi-window registry entries
+            for (const entry of opts.sessionRegistry.list()) {
+                sources.push({
+                    getLoadedProfileIds: entry.tabsManager.getLoadedProfileIds,
+                    getViewByProfile: entry.tabsManager.getViewByProfile ?? (() => null),
+                });
+            }
+            return sources;
+        },
     });
 }
 

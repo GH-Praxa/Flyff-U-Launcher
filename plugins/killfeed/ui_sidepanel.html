@@ -18,28 +18,48 @@
 
     <!-- Content -->
     <div class="panel-content">
-      <div class="layout-controls">
-        <div class="rows-control">
-          <label for="rowsInput">Reihen</label>
-          <input id="rowsInput" type="number" min="1" max="6" step="1" value="2" />
+      <!-- Overlay Settings Card -->
+      <div class="overlay-settings">
+        <div class="overlay-text">
+          <div class="label" id="overlaySettingsLabel">Overlay</div>
+          <div class="muted" id="overlaySettingsHint">Position, size and rows of the badge overlay.</div>
         </div>
-        <div class="layout-scale">
-          <div class="scale-label">Overlay-Größe</div>
-          <div class="scale-row">
+        <div class="overlay-actions">
+          <label class="pos slider">
+            <span>X (%)</span>
+            <button type="button" class="step-btn" data-target="posXInput" data-dir="-1">-</button>
+            <input id="posXInput" type="range" min="0" max="100" step="1" value="0" />
+            <button type="button" class="step-btn" data-target="posXInput" data-dir="1">+</button>
+            <span id="posXVal" class="value">0</span>
+          </label>
+          <label class="pos slider">
+            <span>Y (%)</span>
+            <button type="button" class="step-btn" data-target="posYInput" data-dir="-1">-</button>
+            <input id="posYInput" type="range" min="0" max="100" step="1" value="0" />
+            <button type="button" class="step-btn" data-target="posYInput" data-dir="1">+</button>
+            <span id="posYVal" class="value">0</span>
+          </label>
+          <label class="pos slider">
+            <span id="scaleLabel">Scale</span>
+            <button type="button" class="step-btn" data-target="scaleInput" data-dir="-1">-</button>
             <input id="scaleInput" type="range" min="0.6" max="1.6" step="0.05" value="1" />
-            <span id="scaleValue" class="scale-value">1.00x</span>
-          </div>
-          <div class="scale-hint">0.6x – 1.6x</div>
+            <button type="button" class="step-btn" data-target="scaleInput" data-dir="1">+</button>
+            <span id="scaleValue" class="value">1.00</span>
+          </label>
+          <label class="cols">
+            <span id="rowsLabel">Rows</span>
+            <input id="rowsInput" type="number" min="1" max="6" step="1" value="2" />
+          </label>
         </div>
       </div>
 
-      <div class="scroll-section">
-        <div class="section-title">Charakter</div>
-        <div class="char-card">
-          <label for="charNameInput">Charaktername</label>
-          <input id="charNameInput" type="text" class="char-input" maxlength="64" placeholder="Charname eingeben" />
-          <div id="charNameStatus" class="char-status">Noch nicht gespeichert</div>
-        </div>
+      <!-- Character Card -->
+      <div class="char-card">
+        <label for="charNameSelect" id="charNameLabel">Character</label>
+        <select id="charNameSelect" class="char-select">
+          <option value="">—</option>
+        </select>
+        <div id="charNameStatus" class="char-status">Not saved yet</div>
       </div>
 
       <!-- Badge Visibility Section -->

@@ -307,12 +307,13 @@
 }
 
 .configBody{
-  gap: 16px;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  padding: 14px 16px 26px 16px;
-  padding-right: 12px;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(var(--accent-rgb),0.02));
 }
 
@@ -384,6 +385,8 @@
   min-width: 0;
   flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
 }
 
 .configPaneCard{
@@ -632,6 +635,14 @@
   background: transparent;
   cursor: pointer;
   padding: 0;
+}
+
+.tabColorPaneWrapper{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .tabColorSection{
@@ -959,4 +970,514 @@
   width: 100%;
   border: none;
   background: var(--bg);
+}
+
+/* ========= New Settings UI (Sidebar + Cards) ========= */
+
+.configModal .modalHeader{
+  padding: 14px 18px;
+  background: rgba(var(--accent-rgb),0.04);
+}
+
+.configModal .modalHeaderTitle{
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Sidebar Navigation */
+.settingsSidebar{
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--stroke);
+  background: rgba(0,0,0,0.15);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.sidebarCategory{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius2, 10px);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted);
+  transition: 0.15s ease;
+  border: 1px solid transparent;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebarCategory:hover{
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.sidebarCategory.active{
+  background: rgba(var(--accent-rgb),0.12);
+  color: var(--text);
+  border-color: rgba(var(--accent-rgb),0.35);
+}
+
+.sidebarCategory .sidebarIcon{
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Sidebar group headers */
+.sidebarGroupHeader{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-top: 8px;
+  user-select: none;
+}
+
+.sidebarGroupHeader:first-child{
+  margin-top: 0;
+}
+
+.sidebarGroupHeader .sidebarIcon{
+  font-size: 13px;
+  width: 18px;
+  text-align: center;
+}
+
+.sidebarGroupLabel{
+  flex: 1;
+}
+
+/* Sub-items (indented) */
+.sidebarCategory.sidebarSub{
+  padding-left: 36px;
+  font-size: 12px;
+}
+
+/* Separator */
+.sidebarSep{
+  height: 1px;
+  background: var(--stroke);
+  margin: 8px 12px;
+}
+
+.sidebarCategory .sidebarBadge{
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(var(--accent-rgb),0.2);
+  color: var(--text);
+}
+
+/* Settings Content Area */
+.settingsContent{
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(var(--accent-rgb),0.02));
+}
+
+/* Section */
+.settingsSection{
+  margin-bottom: 20px;
+}
+
+.sectionHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settingsSection .sectionTitle{
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionToggle{
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.sectionHeader.collapsed .sectionToggle{
+  transform: rotate(-90deg);
+}
+
+.sectionContent{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionContent.hidden{
+  display: none;
+}
+
+/* Settings Cards Grid */
+.settingsGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.settingCard{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: var(--radius2, 10px);
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+  transition: 0.15s ease;
+}
+
+.settingCard:hover{
+  border-color: rgba(var(--accent-rgb),0.35);
+  background: rgba(255,255,255,0.05);
+}
+
+.settingInfo{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settingLabel{
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.settingHint{
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* Toggle Switch */
+.toggleSwitch{
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggleSwitch input{
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggleSlider{
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  transition: 0.2s ease;
+  border: 1px solid var(--stroke);
+}
+
+.toggleSlider:before{
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--text);
+  border-radius: 50%;
+  transition: 0.2s ease;
+  opacity: 0.7;
+}
+
+.toggleSwitch input:checked + .toggleSlider{
+  background: rgba(var(--accent-rgb),0.35);
+  border-color: rgba(var(--accent-rgb),0.6);
+}
+
+.toggleSwitch input:checked + .toggleSlider:before{
+  transform: translateX(18px);
+  background: var(--text);
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(var(--accent-rgb),0.5);
+}
+
+/* Slider Setting Card */
+.settingCard.sliderCard{
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.sliderHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sliderValueBadge{
+  font-weight: 700;
+  font-size: 13px;
+  background: rgba(var(--accent-rgb),0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.settingCard .slider{
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+}
+
+.settingCard .slider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.8), rgba(var(--accent-rgb),1));
+  cursor: pointer;
+  border: 2px solid var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.settingCard .slider::-moz-range-thumb{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.8), rgba(var(--accent-rgb),1));
+  cursor: pointer;
+  border: 2px solid var(--text);
+}
+
+/* Select in settings card */
+.settingSelect{
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(0,0,0,0.3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.settingSelect:focus{
+  outline: none;
+  border-color: rgba(var(--accent-rgb),0.6);
+}
+
+/* Hotkey Cards */
+.hotkeyGrid{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hotkeyCard{
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--radius2, 10px);
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.02);
+  gap: 12px;
+}
+
+.hotkeyCard .hotkeyInfo{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.hotkeyCard .hotkeyLabel{
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.hotkeyCard .hotkeyHint{
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.hotkeyCard .hotkeyBadge{
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(var(--accent-rgb),0.12);
+  border: 1px dashed rgba(var(--accent-rgb),0.5);
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.hotkeyCard .hotkeyBadge.empty{
+  color: var(--muted);
+  border-style: dotted;
+}
+
+.hotkeyCard .hotkeyActions{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Layout Preview Row */
+.layoutPreviewRow{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.layoutOption{
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius2, 10px);
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.layoutOption:hover{
+  border-color: rgba(var(--accent-rgb),0.4);
+}
+
+.layoutOption.active{
+  border-color: rgba(var(--accent-rgb),0.7);
+  background: rgba(var(--accent-rgb),0.1);
+}
+
+.layoutOption .layoutOptionImg{
+  flex: 1 1 0;
+  min-width: 0;
+  object-fit: fill;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.layoutOption.active .layoutOptionImg{
+  opacity: 1;
+}
+
+.layoutOptionIcon{
+  font-size: 18px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.layoutOptionLabel{
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Font Preview in new UI */
+.settingCard .fontPreviewText{
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.2);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* LLM Config Section */
+.llmConfig{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius2, 10px);
+  border: 1px dashed rgba(var(--accent-rgb),0.3);
+  background: rgba(0,0,0,0.15);
+}
+
+.llmRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.llmLabel{
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.llmInput{
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: rgba(0,0,0,0.3);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.llmInput:focus{
+  outline: none;
+  border-color: rgba(var(--accent-rgb),0.6);
+}
+
+@media (max-width: 700px){
+  .settingsSidebar{
+    width: 56px;
+    padding: 8px 4px;
+  }
+  .sidebarCategory span:not(.sidebarIcon){
+    display: none;
+  }
+  .sidebarCategory{
+    justify-content: center;
+    padding: 10px;
+  }
+  .settingsGrid{
+    grid-template-columns: 1fr;
+  }
 }

@@ -1215,14 +1215,10 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     discordBtn.onmouseleave = () => { discordBtn.style.borderColor = "var(--stroke)"; };
     let discordCooldownTimer = null;
 
-    // Enable Discord button only when telemetry (Discord communication) is permitted
-    invokeMain("clientSettings:get").then((s) => {
-      if (s?.sendTelemetry) {
-        discordBtn.disabled = false;
-        discordBtn.style.opacity = "";
-        discordBtn.style.cursor = "pointer";
-      }
-    }).catch(() => { /* ignore */ });
+    // Enable Discord button — log reporting is independent of telemetry
+    discordBtn.disabled = false;
+    discordBtn.style.opacity = "";
+    discordBtn.style.cursor = "pointer";
 
     btnGroup.appendChild(clearBtn);
     btnGroup.appendChild(saveBtn);
@@ -1868,7 +1864,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         }
       };
 
-      const STALE_THRESHOLD_MS = 1500;
+      const STALE_THRESHOLD_MS = 8000;
       let ocrInterval = null;
 
       const refreshOcr = async () => {

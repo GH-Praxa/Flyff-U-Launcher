@@ -6,6 +6,7 @@
  */
 
 import { app } from "electron";
+import os from "os";
 import path from "path";
 import fs from "fs";
 import fsp from "fs/promises";
@@ -54,6 +55,26 @@ async function getOrCreateStartupId(): Promise<string> {
     return generated;
 }
 
+async function getOsDisplayName(): Promise<string> {
+    try {
+        if (process.platform === "linux") {
+            const release = await fsp.readFile("/etc/os-release", "utf-8");
+            const pretty = release.match(/^PRETTY_NAME="?(.+?)"?\s*$/m);
+            if (pretty?.[1]) return pretty[1];
+        }
+        if (process.platform === "darwin") {
+            const ver = execFileSync("sw_vers", ["-productVersion"], { timeout: 3000, encoding: "utf-8" }).trim();
+            return `macOS ${ver}`;
+        }
+        if (process.platform === "win32") {
+            return `Windows ${os.release()}`;
+        }
+    } catch {
+        // Fallback below
+    }
+    return `${process.platform}`;
+}
+
 export async function postLauncherStartupToDiscord(): Promise<void> {
     // process.env.TELEMETRY_WEBHOOK_URL is replaced at build time by vite define (main-process only)
     const webhookUrl = process.env.TELEMETRY_WEBHOOK_URL || TELEMETRY.STARTUP_WEBHOOK_URL;
@@ -67,8 +88,9 @@ export async function postLauncherStartupToDiscord(): Promise<void> {
         return;
     }
 
+    const osInfo = await getOsDisplayName();
     const payload = {
-        content: `Startup ID: ${startupId} - v${app.getVersion()}`,
+        content: `Startup ID: ${startupId} - v${app.getVersion()} - ${osInfo} ${process.arch}`,
         allowed_mentions: { parse: [] as string[] },
     };
 

@@ -4,7 +4,7 @@
  * Extracted from main.ts; all the OCR logic that previously lived inside app.whenReady().
  */
 
-import { app, BrowserWindow, ipcMain, type NativeImage } from "electron";
+import { app, BrowserWindow, ipcMain, nativeImage, type NativeImage } from "electron";
 import path from "path";
 import fsp from "fs/promises";
 import { logWarn, logErr } from "../../shared/logger";
@@ -27,6 +27,7 @@ import {
     type ManualLevelOverrideRow,
 } from "./manualLevelStore";
 import { createMonsterLookup } from "./monsterLookup";
+import { safeCaptureWindow } from "../capture/safeCapture";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type SessionTabsLike = {
@@ -286,6 +287,13 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     const ocrWorkerPromises = new Map<OcrKind, Promise<NativeOcrWorker>>();
     const ocrWorkerBackoff = new Map<OcrKind, number>();
 
+    // ── Global Tesseract concurrency limit ──────────────────────
+    // Each Tesseract subprocess uses 100% of a CPU core for 700-1200ms.
+    // Multiple concurrent processes starve the GPU process of CPU → game freeze.
+    // Limit to 1 concurrent Tesseract call globally.
+    let globalOcrRunning = 0;
+    const MAX_GLOBAL_OCR = 1;
+
     async function ensureOcrWorker(kind: OcrKind): Promise<NativeOcrWorker> {
         const until = ocrWorkerBackoff.get(kind) ?? 0;
         if (Date.now() < until) throw new Error("ocr_worker_backoff");
@@ -317,51 +325,6 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
     // ── ROI pixel-hash cache (skip Tesseract when frame unchanged) ──
     const roiFrameCache = new Map<string, { hash: number; value: string }>();
-
-    // ── Shared full-frame capture cache ──────────────────────────
-    // All ROI keys for the same profile share ONE capturePage() call per
-    // FULL_FRAME_TTL_MS window. This prevents concurrent GPU readbacks which
-    // can corrupt the WebGL command buffer on Linux and freeze the game.
-    // 2000 ms keeps GPU readbacks to at most 1 every 2 seconds regardless of
-    // the OCR-timer settings persisted in user data, including legacy 200 ms
-    // values that pre-date the conservative default timer update.
-    const FULL_FRAME_TTL_MS = 2000;
-    type FrameCacheEntry = { image: NativeImage; capturedAt: number; promise: Promise<NativeImage> | null };
-    const fullFrameCache = new Map<string, FrameCacheEntry>();
-
-    async function grabSharedFrame(
-        fProfileId: string,
-        fCtx: { width: number; height: number; grab: (rect: { x: number; y: number; width: number; height: number }) => Promise<NativeImage> },
-        roi: { x: number; y: number; width: number; height: number },
-    ): Promise<NativeImage> {
-        const now = Date.now();
-        const cached = fullFrameCache.get(fProfileId);
-        // Another key's capture is in-flight – wait and share the result.
-        if (cached?.promise) {
-            const frame = await cached.promise;
-            return frame.crop(roi);
-        }
-        // Reuse a recently captured frame (within TTL).
-        if (cached && now - cached.capturedAt < FULL_FRAME_TTL_MS && cached.image) {
-            return cached.image.crop(roi);
-        }
-        // Capture full frame once; all concurrent key scans will share it.
-        const fullRect = { x: 0, y: 0, width: fCtx.width, height: fCtx.height };
-        const promise = fCtx.grab(fullRect);
-        const entry: FrameCacheEntry = { image: null!, capturedAt: now, promise };
-        fullFrameCache.set(fProfileId, entry);
-        let frame: NativeImage;
-        try {
-            frame = await promise;
-        } catch (err) {
-            fullFrameCache.delete(fProfileId);
-            throw err;
-        }
-        entry.image = frame;
-        entry.capturedAt = Date.now();
-        entry.promise = null;
-        return frame.crop(roi);
-    }
 
     /** Fast 32-bit rolling hash over sampled bytes of a PNG buffer. */
     function pngHash(buf: Buffer): number {
@@ -510,6 +473,14 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     };
 
     // ── Capture context builder ─────────────────────────────────
+
+    /** Capture a region of a BrowserWindow using the platform-safe strategy
+     *  (xwd → desktopCapturer → empty on Linux, capturePage on Win/Mac). */
+    const grabSafe = (
+        win: BrowserWindow,
+        rect: { x: number; y: number; width: number; height: number },
+    ): Promise<NativeImage> => safeCaptureWindow(win, rect);
+
     const tryBuildFromView = (
         view: NonNullable<ReturnType<SessionTabsLike["getViewByProfile"]>>,
         hostWin: BrowserWindow,
@@ -526,9 +497,13 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             height: Math.min(viewBounds.height, liveBounds.height),
             offsetX: viewBounds.x,
             offsetY: viewBounds.y,
-            grab: (rect: { x: number; y: number; width: number; height: number }) => view.webContents.capturePage(rect),
+            grab: (rect: { x: number; y: number; width: number; height: number }) =>
+                grabSafe(hostWin, { x: viewBounds.x + rect.x, y: viewBounds.y + rect.y, width: rect.width, height: rect.height }),
         };
     };
+
+    // Throttled buildCaptureCtx diagnostics
+    let buildCtxDiagAt = 0;
 
     const buildCaptureCtx = (profileId: string) => {
         // 1. Try legacy singleton session tabs
@@ -564,7 +539,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 height: content.height,
                 offsetX: 0,
                 offsetY: 0,
-                grab: (rect: { x: number; y: number; width: number; height: number }) => inst.webContents.capturePage(rect),
+                grab: (rect: { x: number; y: number; width: number; height: number }) => grabSafe(inst, rect),
             };
         }
         return null;
@@ -614,13 +589,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             screenshot = await captureCtx.grab({ x, y, width, height });
         } catch (err) {
             logErr(err, `ROI debug grab ${key}`);
-            if (captureCtx.win && !captureCtx.win.isDestroyed()) {
-                screenshot = await captureCtx.win.webContents.capturePage({
-                    x: Math.max(0, Math.round((captureCtx.offsetX ?? 0) + x)),
-                    y: Math.max(0, Math.round((captureCtx.offsetY ?? 0) + y)),
-                    width, height,
-                });
-            } else throw err;
+            throw err;
         }
 
         const png = screenshot.toPNG();
@@ -669,15 +638,38 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     };
 
     // ── Core scan ───────────────────────────────────────────────
+    // Diagnostic: log every scan attempt for the first 60s, then throttle
+    const diagLastLog = new Map<string, number>();
+    const diagStartTime = Date.now();
+    const diagShouldLog = (tag: string): boolean => {
+        const now = Date.now();
+        if (now - (diagLastLog.get(tag) ?? 0) > 10_000) {
+            diagLastLog.set(tag, now);
+            return true;
+        }
+        return false;
+    };
+
     const scanRoiKey = async (profileId: string, key: OcrTimerKey): Promise<string | null> => {
         try {
             const tStart = Date.now();
             const rois = await services.roiStore.get(profileId);
             const roi = rois?.[key];
-            if (!roi || roi.w <= 0 || roi.h <= 0) return "";
+            if (!roi || roi.w <= 0 || roi.h <= 0) {
+                if (diagShouldLog(key)) {
+                    const allKeys = rois ? Object.keys(rois) : [];
+                    console.log(`[OCR DIAG] key=${key} → no ROI set. Available ROIs: [${allKeys.join(",")}]`);
+                }
+                return "";
+            }
 
             const captureCtx = buildCaptureCtx(profileId);
-            if (!captureCtx || captureCtx.width <= 0 || captureCtx.height <= 0) return null;
+            if (!captureCtx || captureCtx.width <= 0 || captureCtx.height <= 0) {
+                if (diagShouldLog(key)) {
+                    console.log(`[OCR DIAG] key=${key} → no capture context. profileId=${profileId}, captureCtx=${captureCtx ? `w=${captureCtx.width} h=${captureCtx.height}` : "null"}`);
+                }
+                return null;
+            }
 
             const x = Math.round(roi.x * captureCtx.width);
             const y = Math.round(roi.y * captureCtx.height);
@@ -692,21 +684,18 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
             let screenshot;
             try {
-                screenshot = await grabSharedFrame(profileId, captureCtx, { x, y, width, height });
+                screenshot = await captureCtx.grab({ x, y, width, height });
             } catch (err) {
-                logErr(err, `OCR grab primary ${key}`);
-                if (captureCtx.win && !captureCtx.win.isDestroyed()) {
-                    try {
-                        screenshot = await captureCtx.win.webContents.capturePage({
-                            x: Math.max(0, Math.round((captureCtx.offsetX ?? 0) + x)),
-                            y: Math.max(0, Math.round((captureCtx.offsetY ?? 0) + y)),
-                            width, height,
-                        });
-                    } catch (err2) {
-                        logErr(err2, `OCR grab fallback ${key}`);
-                        return null;
-                    }
-                } else return null;
+                logErr(err, `OCR grab ${key}`);
+                return null;
+            }
+
+            const screenshotSize = screenshot.isEmpty() ? { width: 0, height: 0 } : screenshot.getSize();
+            if (screenshotSize.width <= 0 || screenshotSize.height <= 0) {
+                if (diagShouldLog(key)) {
+                    console.log(`[OCR DIAG] key=${key} → empty capture. roi={x:${roi.x.toFixed(3)},y:${roi.y.toFixed(3)},w:${roi.w.toFixed(3)},h:${roi.h.toFixed(3)}} ctx=${captureCtx.width}x${captureCtx.height} crop=${x},${y},${width}x${height}`);
+                }
+                return "";
             }
 
             if (!isExpLike && isImageNearlyUniform(screenshot)) return "";
@@ -718,9 +707,16 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 const holdHp = typeof prevHpValue === "string" && prevHpValue.includes("/") ? prevHpValue : "HP erkannt";
                 const hpPng = screenshot.toPNG();
                 try {
+                    if (globalOcrRunning >= MAX_GLOBAL_OCR) return holdHp;
                     const hpKind = KEY_TO_OCR_KIND[key];
                     const hpWorker = await ensureOcrWorker(hpKind);
-                    const hpResp = await hpWorker.recognizePng(hpPng, { kind: hpKind });
+                    globalOcrRunning++;
+                    let hpResp;
+                    try {
+                        hpResp = await hpWorker.recognizePng(hpPng, { kind: hpKind });
+                    } finally {
+                        globalOcrRunning--;
+                    }
                     const hpRaw = typeof hpResp.raw === "string" ? hpResp.raw.trim() : "";
                     const slashMatch = hpRaw.match(/(\d[\d.,]*)\s*[\/|]\s*(\d[\d.,]*)/);
                     if (slashMatch) {
@@ -748,21 +744,43 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 } catch { /* ignore */ }
             }
 
-            // Fast path: if pixel content unchanged, reuse last OCR result
+            // Fast path: if pixel content unchanged, reuse last OCR result.
+            // IMPORTANT: cache hits include empty strings — re-running Tesseract
+            // on identical pixels gives the same result, so skipping it saves CPU.
+            // Without this, enemyName scans with no target ("")  re-run Tesseract
+            // every cycle (700-1200ms × many/sec) → CPU starvation of GPU process → freeze.
             const frameCacheKey = `${profileId}:${key}`;
             const frameHash = pngHash(png);
             const frameCached = roiFrameCache.get(frameCacheKey);
-            if (frameCached && frameCached.hash === frameHash && frameCached.value !== "") {
+            if (frameCached && frameCached.hash === frameHash) {
                 return frameCached.value;
             }
 
             const kind = KEY_TO_OCR_KIND[key];
             const worker = await ensureOcrWorker(kind);
+
+            // Global concurrency gate: skip if too many Tesseract processes running
+            if (globalOcrRunning >= MAX_GLOBAL_OCR) {
+                return frameCached?.value ?? "";
+            }
+
+            globalOcrRunning++;
             const tBeforeOcr = Date.now();
-            const fontWeight = key === "lvl" ? inferFontWeight(deps.getGameFont?.()) : undefined;
-            const response = await worker.recognizePng(png, { kind, fontWeight });
+            let response;
+            try {
+                const fontWeight = key === "lvl" ? inferFontWeight(deps.getGameFont?.()) : undefined;
+                response = await worker.recognizePng(png, { kind, fontWeight });
+            } finally {
+                globalOcrRunning--;
+            }
             const tAfterOcr = Date.now();
             const durTotal = tAfterOcr - tStart;
+
+            // Diagnostic log (throttled per key)
+            if (diagShouldLog(`result:${key}`)) {
+                console.log(`[OCR DIAG] key=${key} img=${screenshotSize.width}x${screenshotSize.height} ok=${response.ok} raw="${(response.raw ?? "").slice(0, 40)}" val="${(response.value ?? "").slice(0, 20)}" ${durTotal}ms`);
+            }
+
             if (durTotal > 500) {
                 logWarn(`OCR slow (${key}) grab=${tGrab - tStart}ms ocr=${tAfterOcr - tBeforeOcr}ms total=${durTotal}ms`, "OCR");
             }
@@ -774,6 +792,13 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 const cachedMaxHp = prevMeta?.maxHp ?? null;
                 const prevElement = prevMeta?.element ?? null;
 
+                // Helper: cache the result before returning so the frame cache
+                // can skip Tesseract on identical pixels next cycle.
+                const cacheAndReturn = (val: string): string => {
+                    roiFrameCache.set(frameCacheKey, { hash: frameHash, value: val });
+                    return val;
+                };
+
                 // Determine if same monster (element matches or no element detected)
                 const sameMonster = !elementHint || !prevElement || prevElement === elementHint;
                 let holdValue = sameMonster
@@ -782,7 +807,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 if (!sameMonster && prevMeta) prevMeta.maxHp = null;
 
                 // No element AND no HP = no monster targeted
-                if (!elementHint && !cachedMaxHp) return "";
+                if (!elementHint && !cachedMaxHp) return cacheAndReturn("");
 
                 // Refine held value when maxHp can narrow it down
                 if (holdValue && holdValue.includes(",") && cachedMaxHp) {
@@ -800,7 +825,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                     } catch { /* no result */ }
                 }
 
-                if (!response.ok) return holdValue;
+                if (!response.ok) return cacheAndReturn(holdValue);
 
                 // OCR succeeded – try to parse level
                 const raw = typeof response.raw === "string" ? response.raw.trim() : "";
@@ -828,13 +853,13 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                 // Resolve: HP is primary, level+element secondary
                 try {
                     const name = await monsterLookup.lookupMonster(lvlNum, elementHint, cachedMaxHp);
-                    if (name) return name;
+                    if (name) return cacheAndReturn(name);
                 } catch { /* fallback */ }
 
                 // No match – return holdValue or level-element fallback
-                if (holdValue) return holdValue;
-                if (lvlNum !== null) return `Lv${lvlNum}-${elementHint || "unknown"}`;
-                return "";
+                if (holdValue) return cacheAndReturn(holdValue);
+                if (lvlNum !== null) return cacheAndReturn(`Lv${lvlNum}-${elementHint || "unknown"}`);
+                return cacheAndReturn("");
             }
 
             if (!response.ok) {
@@ -863,7 +888,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             }
 
             const finalVal = raw || fallback || "";
-            if (finalVal) roiFrameCache.set(frameCacheKey, { hash: frameHash, value: finalVal });
+            roiFrameCache.set(frameCacheKey, { hash: frameHash, value: finalVal });
             return finalVal;
         } catch (err) {
             logErr(err, `OCR scan ${key}`);
@@ -1094,13 +1119,21 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         }
     });
 
+    // Throttle on-demand refreshes: only trigger runImmediateOcr at most once
+    // every 3 seconds per profile.  The side panel polls ocr:getLatest every
+    // ~250 ms — without throttling this fires immediate scans on EVERY poll
+    // when data is stale, blocking the IPC channel for seconds.
+    const lastImmediateOcr = new Map<string, number>();
+
     safeHandle("ocr:getLatest", async (_e: unknown, arg: unknown) => {
         const profileId = typeof arg === "string" ? arg : null;
         if (!profileId) return null;
         const cached = getEffectiveOcrSnapshot(profileId);
         const now = Date.now();
-        const isStale = !cached || (now - (cached.updatedAt || 0) > 1200);
-        if (isStale) {
+        const isStale = !cached || (now - (cached.updatedAt || 0) > 6000);
+        const lastImmediate = lastImmediateOcr.get(profileId) ?? 0;
+        if (isStale && (now - lastImmediate > 3000)) {
+            lastImmediateOcr.set(profileId, now);
             try { await runImmediateOcr(profileId); } catch (err) { logErr(err, "OCR on-demand refresh"); }
         }
         const next = getEffectiveOcrSnapshot(profileId);

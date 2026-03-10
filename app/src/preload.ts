@@ -95,6 +95,7 @@ contextBridge.exposeInMainWorld("api", {
     overlaysShowAfterDialog: () => ipcRenderer.invoke("overlays:showAfterDialog"),
     appQuit: () => unwrapIpc(ipcRenderer.invoke("app:quit")),
     appGetVersion: () => unwrapIpc<string>(ipcRenderer.invoke("app:getVersion")),
+    appCheckForUpdates: () => ipcRenderer.invoke("app:checkForUpdates"),
     tabLayoutsList: () => unwrapIpc(ipcRenderer.invoke("tabLayouts:list")),
     tabLayoutsGet: (id: string) => unwrapIpc(ipcRenderer.invoke("tabLayouts:get", id)),
     tabLayoutsSave: (input: TabLayoutInput) => unwrapIpc(ipcRenderer.invoke("tabLayouts:save", input)),
@@ -136,6 +137,8 @@ contextBridge.exposeInMainWorld("api", {
     themeCurrent: () => unwrapIpc(ipcRenderer.invoke("theme:current")),
     tabActiveColorLoad: () => unwrapIpc(ipcRenderer.invoke("tabActiveColor:load")),
     tabActiveColorSave: (color: string | null) => unwrapIpc(ipcRenderer.invoke("tabActiveColor:save", color)),
+    memorySystem: () => unwrapIpc<{ totalMB: number }>(ipcRenderer.invoke("memory:system")),
+    memoryDetails: () => unwrapIpc<{ totalMB: number; rows: Array<{ profileName: string; memoryMB: number }> }>(ipcRenderer.invoke("memory:details")),
     clientSettingsGet: () => unwrapIpc<ClientSettings>(ipcRenderer.invoke("clientSettings:get")),
     clientSettingsPatch: (patch: ClientSettingsPatch) => unwrapIpc<ClientSettings>(ipcRenderer.invoke("clientSettings:patch", patch)),
     hotkeysPause: () => ipcRenderer.invoke("hotkeys:pause"),
@@ -249,6 +252,7 @@ const allowedInvoke = new Set<string>([
     "roi:visibility:set",
     "roi:debug:save",
     "app:getVersion",
+    "app:checkForUpdates",
     "profiles:getOverlayTargetId",
     "profiles:getOverlaySupportTargetId",
     "themes:list",
@@ -301,8 +305,10 @@ const allowedInvoke = new Set<string>([
     "logs:sendToDiscord",
     "logs:openWindow",
     "clientSettings:get",
+    "memory:system",
+    "memory:details",
 ]);
-const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new"]);
+const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new", "clientSettings:changed"]);
 contextBridge.exposeInMainWorld("ipc", {
     send: (channel: string, payload?: unknown) => {
         if (!allowedSend.has(channel))

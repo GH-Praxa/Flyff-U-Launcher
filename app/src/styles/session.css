@@ -742,3 +742,60 @@
   inset: 0;
   overflow: hidden;
 }
+
+/* ── RAM Usage Indicator ── */
+.ramBtn{
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.ramBtn:hover{
+  opacity: 1;
+  color: var(--text);
+}
+.ramLabel{
+  font-family: 'Consolas', 'Monaco', monospace;
+  white-space: nowrap;
+}
+
+/* ── RAM Details Modal ── */
+.ramModal{
+  max-width: 560px;
+  width: 90vw;
+}
+.ramSysRow{
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+.ramTable{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ramTable th{
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--stroke);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ramTable td{
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ramTable tr:hover td{
+  background: rgba(var(--accent-rgb), 0.06);
+}

@@ -25,10 +25,12 @@ const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     fcoinRate: 200_000_000,
     gameFont: null,
     launcherFontSize: null,
-    sendTelemetry: false,
+    sendTelemetry: true,
     logsWebhook: process.env.LOGS_WEBHOOK_URL ?? "",  // Set via LOGS_WEBHOOK_URL GitHub Secret at build time
     showAnnouncements: true,
     collapsibleOpenProfiles: true,
+    showRamUsage: false,
+    checkForUpdatesOnStart: true,
 };
 
 function clampDelaySeconds(input: unknown): number {
@@ -143,6 +145,14 @@ function normalize(raw: unknown): NormalizedSettingsResult {
                 typeof obj.collapsibleOpenProfiles === "boolean"
                     ? obj.collapsibleOpenProfiles
                     : DEFAULT_CLIENT_SETTINGS.collapsibleOpenProfiles,
+            showRamUsage:
+                typeof obj.showRamUsage === "boolean"
+                    ? obj.showRamUsage
+                    : DEFAULT_CLIENT_SETTINGS.showRamUsage,
+            checkForUpdatesOnStart:
+                typeof obj.checkForUpdatesOnStart === "boolean"
+                    ? obj.checkForUpdatesOnStart
+                    : DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart,
         },
     };
 }
@@ -236,6 +246,12 @@ export function createClientSettingsStore() {
             }
             if (typeof patch.collapsibleOpenProfiles === "boolean") {
                 next.collapsibleOpenProfiles = patch.collapsibleOpenProfiles;
+            }
+            if (typeof patch.showRamUsage === "boolean") {
+                next.showRamUsage = patch.showRamUsage;
+            }
+            if (typeof patch.checkForUpdatesOnStart === "boolean") {
+                next.checkForUpdatesOnStart = patch.checkForUpdatesOnStart;
             }
             await writeSettings(next);
             // Re-read to ensure we return the exact persisted state (normalizes any FS or serialization quirks)

@@ -226,6 +226,20 @@ function createLayoutManager(onSave) {
     return layout.order.filter(key => layout.visibility[key] === false);
   }
 
+  /**
+   * Set overlay grid position (normalized 0-1)
+   */
+  function setPosition(x, y) {
+    const clamp01 = (v) => { const n = Number(v); return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0; };
+    layout.x = clamp01(x);
+    layout.y = clamp01(y);
+    saveCallback(layout);
+  }
+
+  function getPosition() {
+    return { x: Number(layout.x) || 0, y: Number(layout.y) || 0 };
+  }
+
   return {
     setSaveCallback,
     getLayout,
@@ -250,7 +264,9 @@ function createLayoutManager(onSave) {
     getVisibleBadges,
     getHiddenBadges,
     setScale,
-    getScale
+    getScale,
+    setPosition,
+    getPosition
   };
 }
 

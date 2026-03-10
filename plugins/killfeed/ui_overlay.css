@@ -35,6 +35,7 @@ body {
 
 /* Badge grid */
 .badge-grid {
+  position: absolute;
   display: grid;
   gap: 6px;
   pointer-events: auto;

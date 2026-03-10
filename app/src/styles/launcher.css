@@ -482,7 +482,11 @@
 .clientPane{
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 16px 20px !important;
 }
 
 .clientSection{

@@ -324,13 +324,8 @@ export function openLogsWindow(opts: { preloadPath: string; locale?: Locale }): 
     cooldownTimer = setInterval(tick, 500);
   }
 
-  // Enable discord button if telemetry is allowed
-  (async () => {
-    try {
-      const s = await window.api.clientSettingsGet();
-      if (s?.sendTelemetry) discordBtn.disabled = false;
-    } catch(e) { /* ignore */ }
-  })();
+  // Log reporting is independent of telemetry — always enabled
+  discordBtn.disabled = false;
 
   // ── Discord dialog ───────────────────────────────────────────────────────────
   const overlay = document.getElementById('dialogOverlay');

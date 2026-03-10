@@ -73,6 +73,10 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
 
     collapsibleOpenProfiles: true,
 
+    showRamUsage: false,
+
+    checkForUpdatesOnStart: true,
+
 };
 
 // ── Clamping Helpers ─────────────────────────────────────────────────
@@ -408,6 +412,10 @@ export async function loadClientSettings(): Promise<ClientSettings> {
             showAnnouncements: typeof settings.showAnnouncements === "boolean" ? settings.showAnnouncements : true,
 
             collapsibleOpenProfiles: typeof settings.collapsibleOpenProfiles === "boolean" ? settings.collapsibleOpenProfiles : true,
+
+            showRamUsage: typeof settings.showRamUsage === "boolean" ? settings.showRamUsage : false,
+
+            checkForUpdatesOnStart: typeof settings.checkForUpdatesOnStart === "boolean" ? settings.checkForUpdatesOnStart : true,
 
         };
 

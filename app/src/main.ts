@@ -31,6 +31,20 @@ if (process.platform === "win32") {
     app.commandLine.appendSwitch("disable-direct-composition");
 }
 
+// Suppress noisy GLib/GTK g_object_ref/unref assertions from Chromium on Linux.
+// These are harmless Chromium-internal warnings triggered by GTK theme interactions.
+if (process.platform === "linux") {
+    app.commandLine.appendSwitch("log-level", "3");
+    // Suppress GLib critical/warning messages (g_object_ref/unref assertions)
+    process.env.G_DEBUG = "none";
+    process.env.G_MESSAGES_DEBUG = "";
+
+    // Electron 40 / Chromium 130 Ozone: the shared GPU process composites
+    // ALL windows (game WebGL + transparent overlays).  Alpha-blending two
+    // 2560×1292 transparent overlay surfaces every frame stalls the game's
+    // WebGL rendering → periodic freeze + mouse block.
+}
+
 import { createViewLoader } from "./main/viewLoader";
 import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
@@ -72,6 +86,22 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 app.setAppUserModelId("Flyff-U-Launcher");
+
+// ─── Event-Loop lag monitor (Linux freeze diagnostics) ───────────────
+// Measures how long the Node.js event loop is blocked. If we see high lag,
+// the main process is stuck. If no lag but the app freezes anyway, the GPU
+// process is hung (transparent overlay compositor issue).
+if (process.platform === "linux") {
+    let elLastTick = Date.now();
+    setInterval(() => {
+        const now = Date.now();
+        const lag = now - elLastTick - 500;
+        if (lag > 30) {
+            console.log(`[FREEZE DIAG] Event loop blocked for ${lag + 500}ms (lag=${lag}ms)`);
+        }
+        elLastTick = now;
+    }, 500).unref();
+}
 
 // ============================================================================
 // Global State
@@ -189,18 +219,9 @@ app.whenReady().then(async () => {
     } catch (err) {
         logErr(err, "ClientSettings");
     }
-    sidePanelButton = createSidePanelButtonController({
-        sessionWindow: services.sessionWindow,
-        sessionTabs: services.sessionTabs,
-        getRegistryEntries: () => services.sessionRegistry.list().map((e) => ({
-            window: e.window,
-            tabsManager: e.tabsManager,
-        })),
-        profiles: services.profiles,
-        preloadPath,
-        clickThrough: overlayClickThrough,
-    });
-    await sidePanelButton.start();
+    // Side panel button is now rendered in the session tab bar (renderer),
+    // the overlay button controller is no longer needed.
+    sidePanelButton = null;
 
     // =========================================================================
     // Side Panel Manager
@@ -266,7 +287,16 @@ app.whenReady().then(async () => {
         },
         toggleAllOverlaysVisibility: () => overlaysMgr.toggleVisibility(),
         toggleSidePanel: (payload) => void sidePanelMgr.toggle(payload),
-        getSidePanelActiveProfileId: () => sidePanelButton?.getActiveProfileId?.() ?? undefined,
+        getSidePanelActiveProfileId: () => {
+            // Check legacy singleton first, then multi-window registry
+            const legacyId = services.sessionTabs.getActiveId?.();
+            if (legacyId) return legacyId;
+            for (const entry of services.sessionRegistry.list()) {
+                const id = entry.tabsManager.getActiveId?.();
+                if (id) return id;
+            }
+            return undefined;
+        },
         getSidePanelWindow: () => sidePanelMgr.state.window,
         getRoiOverlayWindow: () => overlaysMgr.state.roiOverlayWindow,
         getLocale: () => clientLocale,
@@ -326,7 +356,7 @@ app.whenReady().then(async () => {
     // Client Settings Change Handler
     // =========================================================================
     const onClientSettingsChanged = (settings: ClientSettings) => {
-        sidePanelButton?.setClickThrough?.(settings.overlayButtonPassthrough);
+        // sidePanelButton overlay removed — button is now in the tab bar
         if (settings.locale) {
             clientLocale = settings.locale;
         }
@@ -354,6 +384,17 @@ app.whenReady().then(async () => {
             launcherWindow.setSize(nextSize.width, nextSize.height);
         }
         hotkeysMgr.register(overlayHotkeys);
+        // Broadcast settings change to session windows
+        const sessionWin = services.sessionWindow.get?.();
+        if (sessionWin && !sessionWin.isDestroyed()) {
+            sessionWin.webContents.send("clientSettings:changed", settings);
+        }
+        for (const entry of services.sessionRegistry.list()) {
+            const win = entry.window;
+            if (win && !win.isDestroyed()) {
+                win.webContents.send("clientSettings:changed", settings);
+            }
+        }
     };
 
     // Register hotkeys
@@ -544,7 +585,7 @@ app.whenReady().then(async () => {
         });
     }
 
-    // Start overlay sync now that all plugin IPC handlers are registered
+    // Start overlay sync now that all plugin IPC handlers are registered.
     overlaysMgr.ensureRoiOverlay();
     overlaysMgr.ensureRoiSupportOverlay();
     const originalEnsure = services.sessionWindow.ensure.bind(services.sessionWindow);
@@ -581,8 +622,22 @@ app.whenReady().then(async () => {
     // Auto-Update (only in Production)
     // =========================================================================
     if (app.isPackaged) {
-        setupAutoUpdater({
-            getLocale: () => clientLocale,
+        try {
+            const updateSettings = await createClientSettingsStore().get();
+            setupAutoUpdater({
+                getLocale: () => clientLocale,
+                checkOnStart: updateSettings.checkForUpdatesOnStart ?? true,
+            });
+        } catch {
+            setupAutoUpdater({
+                getLocale: () => clientLocale,
+                checkOnStart: true,
+            });
+        }
+    } else {
+        // Dev mode: register a stub so the renderer doesn't crash
+        ipcMain.handle("app:checkForUpdates", async () => {
+            return { ok: false, error: "Update check is not available in development mode." };
         });
     }
 });

@@ -997,10 +997,12 @@ export async function renderLauncher(root: HTMLElement) {
                 charInput.value = "";
                 renderCharBadges();
             };
-            charInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doAddChar(); });
-            charInput.addEventListener("blur", () => doAddChar());
+            charInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doAddChar(); } });
+            const charAddBtn = el("button", "btn charAddBtn", t("profile.characters.add"));
+            charAddBtn.type = "button";
+            charAddBtn.onclick = () => { doAddChar(); charInput.focus(); };
             const charRow = el("div", "charRow");
-            charRow.append(charBadgesWrap, charInput);
+            charRow.append(charBadgesWrap, charInput, charAddBtn);
             modeWrap.append(charRow, modeLabel);
             const grid = el("div", "manageGrid");
             grid.append(nameInput, jobSelect, modeWrap);

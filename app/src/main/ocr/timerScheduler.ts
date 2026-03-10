@@ -29,7 +29,7 @@ export class OcrTimerScheduler {
 
     constructor(private readonly onTick: TickHandler, private readonly onError?: ErrorHandler) {
         const workerPath = path.join(__dirname, "timerSchedulerWorker.js");
-        this.worker = new Worker(workerPath);
+        this.worker = new Worker(workerPath, { workerData: { platform: process.platform } });
         this.worker.on("message", (msg: SchedulerTick | { type: string; error?: string }) => {
             if (msg && msg.type === "tick") {
                 this.onTick((msg as SchedulerTick).profileId, (msg as SchedulerTick).key);

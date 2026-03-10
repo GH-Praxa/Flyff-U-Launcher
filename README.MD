@@ -7,13 +7,13 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.5.3-green?style=flat-square)
-![Release](https://img.shields.io/badge/Release-Februar_2026-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.5.8-green?style=flat-square)
+![Release](https://img.shields.io/badge/Release-März_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 
-> **Getestet auf:** Windows 11 | Linux Mint 22.3 — macOS Build verfügbar, aber noch nicht getestet.
+> **Getestet auf:** Windows 11 | Linux Mint 22.3 | macOS Tahoe 26.2
 
 > Der Launcher hält sich an die Spielregeln. Keine Automationen oder Eingriffe in das Spielgeschehen.
 
@@ -31,11 +31,16 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 ### Multi-Profil-System
 - Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren
 - Job/Badge pro Profil (Vagrant bis Crackshooter) mit Suchfeld und Job-Filter
+- **Charakternamen** pro Profil hinterlegen — werden als farbige Badges angezeigt und von Plugins genutzt
+- **Profil-Export/Import** (`.flyffprofile`): Profile inkl. Cookies und localStorage sichern, übertragen oder teilen
 - Startmodus pro Profil: **Tabs** (im Session-Fenster) oder **Fenster** (eigene Instanz)
 - Overlay-Ziel bestimmen, welches Profil die OCR-Overlays und das Sidepanel erhält
+- Tooltips und Hilfe-Icons an allen wichtigen Bedienelementen
 
 ### Layouts & Splitscreen
-- **Grid-Layouts**: 1x1, 1x2, 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4
+- **Grid-Layouts**: 1x1, 1x2, 2x1, 1x3, 3x1, 1x4, 4x1, 2x2, 3+2, 2x3, 4+3, 2x4
+- **Asymmetrische Layouts**: Hauptfenster + 2–3 Nebenfenster (rechts oder unten), Aufteilung per Slider einstellbar
+- **ASCII-Vorschau**: Beim Hovern über ein Layout wird eine Vorschau als ASCII-Diagramm angezeigt
 - Layouts speichern/laden — per Klick mehrere Charaktere gleichzeitig starten
 - Auto-Save und optionaler Layout-Delay für sequentielles Laden
 - Multi-Window: Mehrere unabhängige Session-Fenster parallel nutzen
@@ -113,6 +118,7 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 | **Killfeed** | EXP-Tracker mit Kill-Erkennung, Monster-Statistiken und detaillierter History (CSV) pro Profil. Derzeit nur im 1on1-Modus unterstützt — bei Charakterwechsel kann es zu Verwechslungen kommen. |
 | **Giant Tracker** | Kill-Statistiken für Giants, Violets und Bosse — mit Drop-Tracking, Loot-Pool-Vorschau und Time-to-Kill (TTK) |
 | **CD-Timer** | Timer für Buffs und Power-Ups — Icons warnen bei Ablauf |
+| **Kill Timer** | Kill-Timer mit HP%-Schwellenwert-Alert für 1on1-Farming — misst Time-to-Kill pro Gegner mit konfigurierbarem Overlay |
 | **Quest Guide** | Quest-Übersicht mit Chain-Visualisierung, Fortschritts-Tracking und interaktiver Karte. Benötigt API-Fetches: Quest, NPC, Monster, Item |
 | **API-Fetch** | Flyff-Universe-API-Daten herunterladen — native Sidepanel-Oberfläche (kein separates Fenster) |
 
@@ -217,6 +223,23 @@ Profile, Layouts, Themes, Plugin-Daten und OCR-Kalibrierungen.
 
 ---
 
+## Telemetrie
+
+Der Launcher sendet beim Start eine anonyme Nachricht an den Entwickler, um aktive Nutzer zu erfassen. Dabei werden ausschließlich folgende Daten übertragen:
+
+- **Zufällige Startup-ID** (einmalig generiert, kein Bezug zu persönlichen Daten)
+- **Launcher-Version**
+- **Betriebssystem und Architektur**
+
+Beispielnachricht:
+```
+Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.0.5.8 - Linux Mint 22.3 x64
+```
+
+Die Einstellung ist standardmäßig aktiviert und kann jederzeit unter **Einstellungen → Client-Einstellungen → „Startstatistiken senden"** deaktiviert werden.
+
+---
+
 ## Hinweis
 
 Dieses Projekt ist ein unabhängiges Fan-Projekt und steht in keiner Verbindung zu Gala Lab Corp., Sniegu oder Flyff Universe. Alle Markenzeichen und eingetragenen Marken sind Eigentum ihrer jeweiligen Inhaber.
@@ -240,13 +263,13 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.5.3-green?style=flat-square)
-![Release](https://img.shields.io/badge/Release-February_2026-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.0.5.8-green?style=flat-square)
+![Release](https://img.shields.io/badge/Release-March_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 
-> **Tested on:** Windows 11 | Linux Mint 22.3 — macOS build available but not yet tested.
+> **Tested on:** Windows 11 | Linux Mint 22.3 | macOS Tahoe 26.2
 
 > The launcher follows the game rules. No automation or interference with gameplay.
 
@@ -260,11 +283,16 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 ### Multi-Profile System
 - Create, rename, clone, delete, and drag & drop sort profiles
 - Job/badge per profile (Vagrant to Crackshooter) with search and job filter
+- **Character names** per profile — displayed as colored badges and used by plugins
+- **Profile export/import** (`.flyffprofile`): Back up, transfer, or share profiles including cookies and localStorage
 - Launch mode per profile: **Tabs** (inside session window) or **Window** (separate instance)
 - Overlay target determines which profile receives OCR overlays and the side panel
+- Tooltips and help icons on all major UI controls
 
 ### Layouts & Splitscreen
-- **Grid layouts**: 1x1, 1x2, 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4
+- **Grid layouts**: 1x1, 1x2, 2x1, 1x3, 3x1, 1x4, 4x1, 2x2, 3+2, 2x3, 4+3, 2x4
+- **Asymmetric layouts**: Main window + 2–3 secondary windows (right or bottom), ratio adjustable via slider
+- **ASCII preview**: Hovering over a layout shows a visual ASCII diagram
 - Save/load layouts — launch multiple characters at once with a single click
 - Auto-save and optional layout delay for sequential loading
 - Multi-window: Use multiple independent session windows in parallel
@@ -342,6 +370,7 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 | **Killfeed** | EXP tracker with kill detection, monster statistics, and detailed per-profile history (CSV). Currently only supported in 1on1 mode — character switches may cause misattribution. |
 | **Giant Tracker** | Kill statistics for Giants, Violets, and Bosses — with drop tracking, loot pool preview, and time-to-kill (TTK) |
 | **CD-Timer** | Timers for buffs and power-ups — icons warn on expiry |
+| **Kill Timer** | Kill timer with HP% threshold alert for 1on1 farming — measures time-to-kill per enemy with configurable overlay |
 | **Quest Guide** | Quest overview with chain visualization, progress tracking, and interactive map. Requires API-Fetch: Quest, NPC, Monster, Item |
 | **API-Fetch** | Download Flyff Universe API data — native side panel interface (no separate window) |
 
@@ -443,6 +472,23 @@ The launcher updates itself automatically when a new version is available.
 | **Linux** | `~/.config/Flyff-U-Launcher/user/` |
 
 Profiles, layouts, themes, plugin data, and OCR calibrations.
+
+---
+
+## Telemetry
+
+On startup the launcher sends an anonymous message to the developer to track active users. Only the following data is transmitted:
+
+- **Random startup ID** (generated once, no relation to personal data)
+- **Launcher version**
+- **Operating system and architecture**
+
+Example message:
+```
+Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.0.5.8 - Linux Mint 22.3 x64
+```
+
+This setting is enabled by default and can be disabled at any time under **Settings → Client Settings → "Send launch statistics"**.
 
 ---
 

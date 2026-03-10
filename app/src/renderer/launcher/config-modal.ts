@@ -6,12 +6,12 @@ import { DEFAULT_HOTKEYS, formatHotkey, normalizeHotkeySettings, sanitizeHotkeyC
 import { logErr } from "../../shared/logger";
 import { GRID_CONFIGS, LAYOUT as LAYOUT_CONST } from "../../shared/constants";
 import {
+    DONATION_URL,
+    JOB_ICONS,
     tabLayoutCompact,
     tabLayoutChips1,
     tabLayoutChips2,
     tabLayoutMiniGrid,
-    DONATION_URL,
-    JOB_ICONS,
 } from "../constants";
 import {
     type ThemeColors,
@@ -41,7 +41,6 @@ import {
     clampLauncherHeightPx,
     setLayoutDelaySeconds,
     setToastDurationSeconds,
-    layoutTabDisplay,
     setLayoutTabDisplay,
     normalizeTabLayoutDisplay,
     hideSessionViews,
@@ -78,122 +77,161 @@ export function openConfigModal(
     headerClose.textContent = "\u00d7";
     headerEl.append(headerTitle, headerClose);
     const body = el("div", "modalBody configBody");
-    const tabs = el("div", "configTabs");
-    const tabStyle = el("button", "configTab", t("config.tab.style"));
-    const tabPlugins = el("button", "configTab", t("config.tab.plugins" as TranslationKey));
-    const tabClient = el("button", "configTab", t("config.tab.client" as TranslationKey));
-    const tabPatchnotes = el("button", "configTab", t("config.tab.patchnotes" as TranslationKey));
-    const tabDocs = el("button", "configTab", t("config.tab.docs" as TranslationKey));
-    const tabSupport = el("button", "configTab", t("config.tab.support" as TranslationKey));
-    tabs.append(tabStyle, tabPlugins, tabClient, tabPatchnotes, tabDocs, tabSupport);
+    // ── Global Sidebar with sub-categories ──
+    type SidebarId = "client.display" | "client.layout" | "client.behavior"
+        | "client.theme" | "client.tabcolor" | "client.font" | "client.hotkeys"
+        | "plugins" | "patchnotes" | "docs" | "support";
+    const globalSidebar = el("div", "settingsSidebar");
+    const allSidebarBtns = new Map<SidebarId, HTMLButtonElement>();
+
+    const createSidebarGroup = (groupLabel: string, groupIcon: string) => {
+        const header = el("div", "sidebarGroupHeader");
+        const iconSpan = el("span", "sidebarIcon", groupIcon);
+        const labelSpan = el("span", "sidebarGroupLabel", groupLabel);
+        header.append(iconSpan, labelSpan);
+        globalSidebar.append(header);
+    };
+    const createSidebarBtn = (id: SidebarId, icon: string, label: string, indent = false) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = indent ? "sidebarCategory sidebarSub" : "sidebarCategory";
+        const iconSpan = el("span", "sidebarIcon", icon);
+        const labelSpan = el("span", "sidebarLabel", label);
+        btn.append(iconSpan, labelSpan);
+        globalSidebar.append(btn);
+        allSidebarBtns.set(id, btn);
+    };
+
+    // Settings group (merged: client + style)
+    createSidebarGroup(t("config.tab.settings"), "\u2699\uFE0F");
+    createSidebarBtn("client.display", "\uD83D\uDDA5\uFE0F", t("config.client.cat.display" as TranslationKey), true);
+    createSidebarBtn("client.layout", "\uD83D\uDCF1", t("config.client.cat.layout" as TranslationKey), true);
+    createSidebarBtn("client.behavior", "\u26A1", t("config.client.cat.behavior" as TranslationKey), true);
+    createSidebarBtn("client.theme", "\uD83C\uDF0C", t("config.tab.theme"), true);
+    createSidebarBtn("client.tabcolor", "\uD83D\uDD8C\uFE0F", t("config.tab.style.activeTabColor"), true);
+    createSidebarBtn("client.font", "\uD83C\uDFA8", t("config.client.cat.font" as TranslationKey), true);
+    createSidebarBtn("client.hotkeys", "\u2328\uFE0F", t("config.client.cat.hotkeys" as TranslationKey), true);
+    // Separator
+    const sep = el("div", "sidebarSep");
+    globalSidebar.append(sep);
+    // Other pages
+    createSidebarBtn("plugins", "\uD83E\uDDE9", t("config.tab.plugins" as TranslationKey));
+    createSidebarBtn("patchnotes", "\uD83D\uDCCB", t("config.tab.patchnotes" as TranslationKey));
+    createSidebarBtn("docs", "\uD83D\uDCD6", t("config.tab.docs" as TranslationKey));
+    createSidebarBtn("support", "\u2764\uFE0F", t("config.tab.support" as TranslationKey));
+
     const content = el("div", "configContent");
-    // Style pane
-    const styleTabs = el("div", "configSubTabs");
-    const subTabTheme = el("button", "configSubTab", t("config.tab.theme"));
-    const subTabTabColor = el("button", "configSubTab", t("config.tab.style.activeTabColor"));
-    styleTabs.append(subTabTheme, subTabTabColor);
+    // Each client sub-category is its own pane (separate page per sidebar item)
+    const displayPane = el("div", "configPaneCard");
+    const layoutPane = el("div", "configPaneCard");
+    const behaviorPane = el("div", "configPaneCard");
     const styleContentBody = el("div", "styleContent");
-    const stylePane = el("div", "stylePane configPaneCard");
-    stylePane.append(styleTabs, styleContentBody);
+    const themePane = el("div", "stylePane configPaneCard");
+    themePane.append(styleContentBody);
+    const tabColorPane = el("div", "tabColorPaneWrapper configPaneCard");
+    tabColorPane.style.display = "none";
+    const fontPane = el("div", "configPaneCard");
+    const hotkeysPane = el("div", "configPaneCard");
     // Plugins pane
     const pluginsPane = el("div", "pluginsPane configPaneCard");
     const pluginsTitle = el("div", "pluginsTitle", t("config.plugins.title" as TranslationKey));
     const pluginsList = el("div", "pluginsList");
     const pluginsEmpty = el("div", "pluginsEmpty muted", t("config.plugins.empty" as TranslationKey));
     pluginsPane.append(pluginsTitle, pluginsList, pluginsEmpty);
-    const clientPane = el("div", "clientPane configPaneCard");
-    const clientSection = el("div", "section clientSection");
-    const clientTitle = el("div", "sectionTitle", t("config.tab.client"));
-    const clientRow = el("div", "row clientControlRow");
-    const fullscreenLabel = document.createElement("label");
-    fullscreenLabel.className = "checkbox";
-    const fullscreenCheckbox = document.createElement("input");
-    fullscreenCheckbox.type = "checkbox";
-    const fullscreenText = document.createElement("span");
-    fullscreenText.textContent = t("config.client.fullscreen");
-    fullscreenLabel.append(fullscreenCheckbox, fullscreenText);
-    clientRow.append(fullscreenLabel);
-    const delayRow = el("div", "row clientControlRow clientDelayRow");
-    const createNudgeButton = (label: string, onClick: () => void) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn";
-        btn.style.padding = "6px 10px";
-        btn.style.margin = "0 6px";
-        btn.textContent = label;
-        btn.addEventListener("click", onClick);
-        return btn;
+
+    // Helper: create toggle switch (replaces old checkboxes)
+    const createToggleSwitch = (cb: HTMLInputElement): HTMLLabelElement => {
+        const lbl = document.createElement("label");
+        lbl.className = "toggleSwitch";
+        cb.type = "checkbox";
+        const slider = el("span", "toggleSlider");
+        lbl.append(cb, slider);
+        return lbl;
     };
-    const delayLabelWrap = el("div", "rowLeft");
-    const delayLabel = el("div", "rowName", t("config.client.layoutDelay"));
-    const delayHint = el("div", "muted", "");
-    delayLabelWrap.append(delayLabel, delayHint);
-    const delayInputWrap = el("div", "rowActions");
+    // Helper: create a setting card with toggle
+    const createToggleCard = (labelText: string, hintText: string, cb: HTMLInputElement): HTMLDivElement => {
+        const card = el("div", "settingCard") as HTMLDivElement;
+        const info = el("div", "settingInfo");
+        const lbl = el("div", "settingLabel", labelText);
+        info.append(lbl);
+        if (hintText) {
+            const hint = el("div", "settingHint", hintText);
+            info.append(hint);
+        }
+        const toggle = createToggleSwitch(cb);
+        card.append(info, toggle);
+        return card;
+    };
+    // Helper: create a slider card
+    const createSliderCard = (labelText: string, hintText: string, input: HTMLInputElement, valueBadge: HTMLElement): HTMLDivElement => {
+        const card = el("div", "settingCard sliderCard") as HTMLDivElement;
+        const header = el("div", "sliderHeader");
+        const info = el("div", "settingInfo");
+        const lbl = el("div", "settingLabel", labelText);
+        info.append(lbl);
+        if (hintText) {
+            const hint = el("div", "settingHint", hintText);
+            info.append(hint);
+        }
+        valueBadge.className = "sliderValueBadge";
+        header.append(info, valueBadge);
+        input.className = "slider";
+        input.style.width = "";
+        card.append(header, input);
+        return card;
+    };
+    // Helper: collapsible section
+    const createSection = (icon: string, titleText: string, extraInfo?: string): { section: HTMLDivElement; contentEl: HTMLDivElement; header: HTMLDivElement } => {
+        const section = el("div", "settingsSection") as HTMLDivElement;
+        const header = el("div", "sectionHeader") as HTMLDivElement;
+        const title = el("div", "sectionTitle");
+        const iconSpan = el("span", "", icon);
+        const titleSpan = document.createTextNode(` ${titleText}`);
+        title.append(iconSpan, titleSpan);
+        if (extraInfo) {
+            const extra = el("span", "");
+            extra.style.fontWeight = "400";
+            extra.style.fontSize = "11px";
+            extra.style.color = "var(--muted)";
+            extra.style.marginLeft = "8px";
+            extra.textContent = extraInfo;
+            title.append(extra);
+        }
+        const toggle = el("span", "sectionToggle", "\u25BC");
+        header.append(title, toggle);
+        const contentEl = el("div", "sectionContent") as HTMLDivElement;
+        header.addEventListener("click", () => {
+            header.classList.toggle("collapsed");
+            contentEl.classList.toggle("hidden");
+        });
+        section.append(header, contentEl);
+        return { section, contentEl, header };
+    };
+
+    // ── Fullscreen toggle ──
+    const fullscreenCheckbox = document.createElement("input");
     const delayInput = document.createElement("input");
     delayInput.type = "range";
     delayInput.min = "0";
     delayInput.max = "30";
     delayInput.step = "1";
-    delayInput.className = "slider";
-    delayInput.style.width = "220px";
-    const delayValue = el("div", "sliderValue badge", "");
-    const delayDecBtn = createNudgeButton("-1", () => {
-        const current = Number.isFinite(delayInput.valueAsNumber) ? delayInput.valueAsNumber : Number(delayInput.value) || 0;
-        const next = clampLayoutDelaySeconds(current - 1);
-        delayInput.value = String(next);
-        delayInput.dispatchEvent(new Event("change"));
-    });
-    const delayIncBtn = createNudgeButton("+1", () => {
-        const current = Number.isFinite(delayInput.valueAsNumber) ? delayInput.valueAsNumber : Number(delayInput.value) || 0;
-        const next = clampLayoutDelaySeconds(current + 1);
-        delayInput.value = String(next);
-        delayInput.dispatchEvent(new Event("change"));
-    });
-    delayInputWrap.append(delayDecBtn, delayInput, delayIncBtn, delayValue);
-    delayRow.append(delayLabelWrap, delayInputWrap);
-    // New: toggle sequential loading for grid/layout tabs
-    const seqRow = el("div", "row clientControlRow clientSeqRow");
-    const seqLabelWrap = el("div", "rowLeft");
-    const seqLabel = el("div", "rowName", t("config.client.seqGridLoad"));
-    const seqHint = el("div", "muted", t("config.client.seqGridLoad.hint"));
-    seqLabelWrap.append(seqLabel, seqHint);
-    const seqInputWrap = el("div", "rowActions");
-    const seqCheckboxLabel = document.createElement("label");
-    seqCheckboxLabel.className = "checkbox";
+    const delayValue = el("div", "sliderValueBadge", "");
+    // Sequential grid loading toggle
     const seqCheckbox = document.createElement("input");
-    seqCheckbox.type = "checkbox";
-    const seqText = document.createElement("span");
-    seqText.textContent = t("config.client.seqGridLoad.label");
-    seqCheckboxLabel.append(seqCheckbox, seqText);
-    seqInputWrap.append(seqCheckboxLabel);
-    seqRow.append(seqLabelWrap, seqInputWrap);
     const seqToggle = {
         get: () => seqCheckbox.checked,
         set: (val: boolean) => {
             seqCheckbox.checked = !!val;
         },
     };
-    const tabDisplayRow = el("div", "row clientControlRow clientTabDisplayRow");
-    const tabDisplayLabelWrap = el("div", "rowLeft");
-    const tabDisplayLabel = el("div", "rowName", t("config.client.tabLayoutDisplay" as TranslationKey));
-    const tabDisplayHint = el("div", "muted", t("config.client.tabLayoutDisplay.hint" as TranslationKey));
-    tabDisplayLabelWrap.append(tabDisplayLabel, tabDisplayHint);
-    const tabDisplayActions = el("div", "rowActions tabDisplayActions");
     const tabDisplaySelect = document.createElement("select");
-    const tabDisplayPreview = document.createElement("img");
-    tabDisplayPreview.className = "tabLayoutPreview";
-    tabDisplayPreview.src = tabLayoutCompact;
-    tabDisplayPreview.alt = "Compact layout preview";
-    tabDisplayPreview.loading = "lazy";
-    tabDisplayPreview.decoding = "async";
-    const tabDisplayControl = el("div", "tabDisplayControl");
-    tabDisplaySelect.className = "select";
+    tabDisplaySelect.className = "settingSelect";
     tabDisplaySelect.title = t("config.client.tabLayoutDisplay.hint" as TranslationKey);
-    const tabDisplayOptions: Array<{ value: ClientSettings["tabLayoutDisplay"]; label: TranslationKey }> = [
-        { value: "compact", label: "config.client.tabLayoutDisplay.compact" as TranslationKey },
-        { value: "grouped", label: "config.client.tabLayoutDisplay.grouped" as TranslationKey },
-        { value: "separated", label: "config.client.tabLayoutDisplay.separated" as TranslationKey },
-        { value: "mini-grid", label: "config.client.tabLayoutDisplay.mini-grid" as TranslationKey },
+    const tabDisplayOptions: Array<{ value: ClientSettings["tabLayoutDisplay"]; label: TranslationKey; icon: string }> = [
+        { value: "compact", label: "config.client.tabLayoutDisplay.compact" as TranslationKey, icon: "\u25A2\u25A2\u25A2" },
+        { value: "grouped", label: "config.client.tabLayoutDisplay.grouped" as TranslationKey, icon: "\u25A3\u25A3 \u25A3\u25A3" },
+        { value: "separated", label: "config.client.tabLayoutDisplay.separated" as TranslationKey, icon: "\u25A2 \u25A2 \u25A2" },
+        { value: "mini-grid", label: "config.client.tabLayoutDisplay.mini-grid" as TranslationKey, icon: "\u25A6\u25A6" },
     ];
     for (const opt of tabDisplayOptions) {
         const optionEl = document.createElement("option");
@@ -201,226 +239,99 @@ export function openConfigModal(
         optionEl.textContent = t(opt.label);
         tabDisplaySelect.append(optionEl);
     }
-    tabDisplayControl.append(tabDisplaySelect);
-    const TAB_DISPLAY_PREVIEWS: Record<string, string> = {
-        "compact": tabLayoutCompact,
-        "grouped": tabLayoutChips1,
-        "separated": tabLayoutChips2,
+    // Layout option cards with image previews
+    const layoutPreviewImages: Record<string, string> = {
+        compact: tabLayoutCompact,
+        grouped: tabLayoutChips1,
+        separated: tabLayoutChips2,
         "mini-grid": tabLayoutMiniGrid,
     };
-
-    const renderTabLayoutPreview = () => {
-        tabDisplayPreview.src = TAB_DISPLAY_PREVIEWS[layoutTabDisplay] ?? tabLayoutCompact;
-        tabDisplayPreview.hidden = false;
+    const layoutPreviewRow = el("div", "layoutPreviewRow");
+    const layoutOptionEls = new Map<string, HTMLDivElement>();
+    for (const opt of tabDisplayOptions) {
+        const optDiv = el("div", "layoutOption") as HTMLDivElement;
+        const img = document.createElement("img");
+        img.className = "layoutOptionImg";
+        img.src = layoutPreviewImages[opt.value] ?? "";
+        img.alt = t(opt.label);
+        const labelDiv = el("div", "layoutOptionLabel", t(opt.label));
+        optDiv.append(img, labelDiv);
+        optDiv.addEventListener("click", () => {
+            tabDisplaySelect.value = opt.value;
+            tabDisplaySelect.dispatchEvent(new Event("change"));
+            updateLayoutOptionActive();
+        });
+        layoutPreviewRow.append(optDiv);
+        layoutOptionEls.set(opt.value, optDiv);
+    }
+    const updateLayoutOptionActive = () => {
+        for (const [val, div] of layoutOptionEls) {
+            div.classList.toggle("active", val === tabDisplaySelect.value);
+        }
     };
-    onLayoutTabDisplayChange(renderTabLayoutPreview);
-    renderTabLayoutPreview();
-    tabDisplayActions.append(tabDisplayControl, tabDisplayPreview);
-    tabDisplayRow.append(tabDisplayLabelWrap, tabDisplayActions);
-    const gridBorderRow = el("div", "row clientControlRow clientGridBorderRow");
-    const gridBorderLabelWrap = el("div", "rowLeft");
-    const gridBorderLabel = el("div", "rowName", t("config.client.gridActiveBorder" as TranslationKey));
-    const gridBorderHint = el("div", "muted", t("config.client.gridActiveBorder.hint" as TranslationKey));
-    gridBorderLabelWrap.append(gridBorderLabel, gridBorderHint);
-    const gridBorderInputWrap = el("div", "rowActions");
-    const gridBorderCheckboxLabel = document.createElement("label");
-    gridBorderCheckboxLabel.className = "checkbox";
+    onLayoutTabDisplayChange(() => updateLayoutOptionActive());
+    updateLayoutOptionActive();
     const gridBorderCheckbox = document.createElement("input");
-    gridBorderCheckbox.type = "checkbox";
-    const gridBorderText = document.createElement("span");
-    gridBorderText.textContent = t("config.client.gridActiveBorder.label" as TranslationKey);
-    gridBorderCheckboxLabel.append(gridBorderCheckbox, gridBorderText);
-    gridBorderInputWrap.append(gridBorderCheckboxLabel);
-    gridBorderRow.append(gridBorderLabelWrap, gridBorderInputWrap);
     const gridBorderToggle = {
         get: () => gridBorderCheckbox.checked,
         set: (val: boolean) => {
             gridBorderCheckbox.checked = !!val;
         },
     };
-    const autoSaveRow = el("div", "row clientControlRow clientAutoSaveRow");
-    const autoSaveLabelWrap = el("div", "rowLeft");
-    const autoSaveLabel = el("div", "rowName", t("config.client.layoutAutoSave" as TranslationKey));
-    const autoSaveHint = el("div", "muted", t("config.client.layoutAutoSave.hint" as TranslationKey));
-    autoSaveLabelWrap.append(autoSaveLabel, autoSaveHint);
-    const autoSaveInputWrap = el("div", "rowActions");
-    const autoSaveCheckboxLabel = document.createElement("label");
-    autoSaveCheckboxLabel.className = "checkbox";
     const autoSaveCheckbox = document.createElement("input");
-    autoSaveCheckbox.type = "checkbox";
-    const autoSaveText = document.createElement("span");
-    autoSaveText.textContent = t("config.client.layoutAutoSave.label" as TranslationKey);
-    autoSaveCheckboxLabel.append(autoSaveCheckbox, autoSaveText);
-    autoSaveInputWrap.append(autoSaveCheckboxLabel);
-    autoSaveRow.append(autoSaveLabelWrap, autoSaveInputWrap);
     const autoSaveToggle = {
         get: () => autoSaveCheckbox.checked,
         set: (val: boolean) => {
             autoSaveCheckbox.checked = !!val;
         },
     };
-    const uiPosRow = el("div", "row clientControlRow clientUiPosRow");
-    const uiPosLabelWrap = el("div", "rowLeft");
-    const uiPosLabel = el("div", "rowName", t("config.client.persistGameUiPositions" as TranslationKey));
-    const uiPosHint = el("div", "muted", t("config.client.persistGameUiPositions.hint" as TranslationKey));
-    uiPosLabelWrap.append(uiPosLabel, uiPosHint);
-    const uiPosInputWrap = el("div", "rowActions");
-    const uiPosCheckboxLabel = document.createElement("label");
-    uiPosCheckboxLabel.className = "checkbox";
-    const uiPosCheckbox = document.createElement("input");
-    uiPosCheckbox.type = "checkbox";
-    const uiPosText = document.createElement("span");
-    uiPosText.textContent = t("config.client.persistGameUiPositions.label" as TranslationKey);
-    uiPosCheckboxLabel.append(uiPosCheckbox, uiPosText);
-    uiPosInputWrap.append(uiPosCheckboxLabel);
-    uiPosRow.append(uiPosLabelWrap, uiPosInputWrap);
-    const uiPosToggle = {
-        get: () => uiPosCheckbox.checked,
-        set: (val: boolean) => {
-            uiPosCheckbox.checked = !!val;
-        },
-    };
-    const annRow = el("div", "row clientControlRow clientAnnRow");
-    const annLabelWrap = el("div", "rowLeft");
-    const annLabel = el("div", "rowName", t("config.client.showAnnouncements" as TranslationKey));
-    const annHint = el("div", "muted", t("config.client.showAnnouncements.hint" as TranslationKey));
-    annLabelWrap.append(annLabel, annHint);
-    const annInputWrap = el("div", "rowActions");
-    const annCheckboxLabel = document.createElement("label");
-    annCheckboxLabel.className = "checkbox";
     const annCheckbox = document.createElement("input");
-    annCheckbox.type = "checkbox";
-    const annText = document.createElement("span");
-    annText.textContent = t("config.client.showAnnouncements.label" as TranslationKey);
-    annCheckboxLabel.append(annCheckbox, annText);
-    annInputWrap.append(annCheckboxLabel);
-    annRow.append(annLabelWrap, annInputWrap);
     const annToggle = {
         get: () => annCheckbox.checked,
         set: (val: boolean) => { annCheckbox.checked = !!val; },
     };
-    const collapsibleRow = el("div", "row clientControlRow clientCollapsibleRow");
-    const collapsibleLabelWrap = el("div", "rowLeft");
-    const collapsibleLabel = el("div", "rowName", t("config.client.collapsibleOpenProfiles" as TranslationKey));
-    const collapsibleHint = el("div", "muted", t("config.client.collapsibleOpenProfiles.hint" as TranslationKey));
-    collapsibleLabelWrap.append(collapsibleLabel, collapsibleHint);
-    const collapsibleInputWrap = el("div", "rowActions");
-    const collapsibleCheckboxLabel = document.createElement("label");
-    collapsibleCheckboxLabel.className = "checkbox";
     const collapsibleCheckbox = document.createElement("input");
-    collapsibleCheckbox.type = "checkbox";
-    const collapsibleText = document.createElement("span");
-    collapsibleText.textContent = t("config.client.collapsibleOpenProfiles.label" as TranslationKey);
-    collapsibleCheckboxLabel.append(collapsibleCheckbox, collapsibleText);
-    collapsibleInputWrap.append(collapsibleCheckboxLabel);
-    collapsibleRow.append(collapsibleLabelWrap, collapsibleInputWrap);
     const collapsibleToggle = {
         get: () => collapsibleCheckbox.checked,
         set: (val: boolean) => { collapsibleCheckbox.checked = !!val; },
     };
-    const telemetryRow = el("div", "row clientControlRow clientTelemetryRow");
-    const telemetryLabelWrap = el("div", "rowLeft");
-    const telemetryLabel = el("div", "rowName", t("config.client.sendTelemetry" as TranslationKey));
-    const telemetryHint = el("div", "muted", t("config.client.sendTelemetry.hint" as TranslationKey));
-    telemetryLabelWrap.append(telemetryLabel, telemetryHint);
-    const telemetryInputWrap = el("div", "rowActions");
-    const telemetryCheckboxLabel = document.createElement("label");
-    telemetryCheckboxLabel.className = "checkbox";
     const telemetryCheckbox = document.createElement("input");
-    telemetryCheckbox.type = "checkbox";
-    const telemetryText = document.createElement("span");
-    telemetryText.textContent = t("config.client.sendTelemetry.label" as TranslationKey);
-    telemetryCheckboxLabel.append(telemetryCheckbox, telemetryText);
-    telemetryInputWrap.append(telemetryCheckboxLabel);
-    telemetryRow.append(telemetryLabelWrap, telemetryInputWrap);
     const telemetryToggle = {
         get: () => telemetryCheckbox.checked,
         set: (val: boolean) => {
             telemetryCheckbox.checked = !!val;
         },
     };
-    const toastRow = el("div", "row clientControlRow clientToastRow");
-    const toastLabelWrap = el("div", "rowLeft");
-    const toastLabel = el("div", "rowName", t("config.client.toastDuration"));
-    const toastHint = el("div", "muted", t("config.client.toastDuration.hint"));
-    toastLabelWrap.append(toastLabel, toastHint);
-    const toastInputWrap = el("div", "rowActions");
+    const ramCheckbox = document.createElement("input");
+    const ramToggle = {
+        get: () => ramCheckbox.checked,
+        set: (val: boolean) => { ramCheckbox.checked = !!val; },
+    };
+    const updateCheckbox = document.createElement("input");
+    const updateToggle = {
+        get: () => updateCheckbox.checked,
+        set: (val: boolean) => { updateCheckbox.checked = !!val; },
+    };
     const toastInput = document.createElement("input");
     toastInput.type = "range";
     toastInput.min = "1";
     toastInput.max = "60";
     toastInput.step = "1";
-    toastInput.className = "slider";
-    toastInput.style.width = "220px";
-    const toastValue = el("div", "sliderValue badge", "");
-    toastInputWrap.append(toastInput, toastValue);
-    toastRow.append(toastLabelWrap, toastInputWrap);
-    const launcherWidthRow = el("div", "row clientControlRow clientLauncherWidthRow");
-    const launcherWidthLabelWrap = el("div", "rowLeft");
-    const launcherWidthLabel = el("div", "rowName", t("config.client.launcherWidth" as TranslationKey));
-    const launcherWidthHint = el("div", "muted", "");
-    launcherWidthLabelWrap.append(launcherWidthLabel, launcherWidthHint);
-    const launcherWidthInputWrap = el("div", "rowActions");
+    const toastValue = el("div", "sliderValueBadge", "");
     const launcherWidthInput = document.createElement("input");
     launcherWidthInput.type = "range";
     launcherWidthInput.min = String(LAYOUT_CONST.LAUNCHER_MIN_WIDTH);
     launcherWidthInput.max = String(LAYOUT_CONST.LAUNCHER_MAX_WIDTH);
     launcherWidthInput.step = "10";
-    launcherWidthInput.className = "slider";
-    launcherWidthInput.style.width = "220px";
     launcherWidthInput.title = t("config.client.launcherWidthHint" as TranslationKey);
-    const launcherWidthValue = el("div", "sliderValue badge", "");
-    const launcherWidthDecBtn = createNudgeButton("-10", () => {
-        const current = Number.isFinite(launcherWidthInput.valueAsNumber)
-            ? launcherWidthInput.valueAsNumber
-            : Number(launcherWidthInput.value) || DEFAULT_CLIENT_SETTINGS.launcherWidth;
-        const next = clampLauncherWidthPx(current - 10);
-        launcherWidthInput.value = String(next);
-        launcherWidthInput.dispatchEvent(new Event("change"));
-    });
-    const launcherWidthIncBtn = createNudgeButton("+10", () => {
-        const current = Number.isFinite(launcherWidthInput.valueAsNumber)
-            ? launcherWidthInput.valueAsNumber
-            : Number(launcherWidthInput.value) || DEFAULT_CLIENT_SETTINGS.launcherWidth;
-        const next = clampLauncherWidthPx(current + 10);
-        launcherWidthInput.value = String(next);
-        launcherWidthInput.dispatchEvent(new Event("change"));
-    });
-    launcherWidthInputWrap.append(launcherWidthDecBtn, launcherWidthInput, launcherWidthIncBtn, launcherWidthValue);
-    launcherWidthRow.append(launcherWidthLabelWrap, launcherWidthInputWrap);
-    const launcherHeightRow = el("div", "row clientControlRow clientLauncherHeightRow");
-    const launcherHeightLabelWrap = el("div", "rowLeft");
-    const launcherHeightLabel = el("div", "rowName", t("config.client.launcherHeight" as TranslationKey));
-    const launcherHeightHint = el("div", "muted", "");
-    launcherHeightLabelWrap.append(launcherHeightLabel, launcherHeightHint);
-    const launcherHeightInputWrap = el("div", "rowActions");
+    const launcherWidthValue = el("div", "sliderValueBadge", "");
     const launcherHeightInput = document.createElement("input");
     launcherHeightInput.type = "range";
     launcherHeightInput.min = String(LAYOUT_CONST.LAUNCHER_MIN_HEIGHT);
     launcherHeightInput.max = String(LAYOUT_CONST.LAUNCHER_MAX_HEIGHT);
     launcherHeightInput.step = "10";
-    launcherHeightInput.className = "slider";
-    launcherHeightInput.style.width = "220px";
     launcherHeightInput.title = t("config.client.launcherHeightHint" as TranslationKey);
-    const launcherHeightValue = el("div", "sliderValue badge", "");
-    const launcherHeightDecBtn = createNudgeButton("-10", () => {
-        const current = Number.isFinite(launcherHeightInput.valueAsNumber)
-            ? launcherHeightInput.valueAsNumber
-            : Number(launcherHeightInput.value) || DEFAULT_CLIENT_SETTINGS.launcherHeight;
-        const next = clampLauncherHeightPx(current - 10);
-        launcherHeightInput.value = String(next);
-        launcherHeightInput.dispatchEvent(new Event("change"));
-    });
-    const launcherHeightIncBtn = createNudgeButton("+10", () => {
-        const current = Number.isFinite(launcherHeightInput.valueAsNumber)
-            ? launcherHeightInput.valueAsNumber
-            : Number(launcherHeightInput.value) || DEFAULT_CLIENT_SETTINGS.launcherHeight;
-        const next = clampLauncherHeightPx(current + 10);
-        launcherHeightInput.value = String(next);
-        launcherHeightInput.dispatchEvent(new Event("change"));
-    });
-    launcherHeightInputWrap.append(launcherHeightDecBtn, launcherHeightInput, launcherHeightIncBtn, launcherHeightValue);
-    launcherHeightRow.append(launcherHeightLabelWrap, launcherHeightInputWrap);
+    const launcherHeightValue = el("div", "sliderValueBadge", "");
     // ── Game Font Row ──────────────────────────────────────────────────
     // Load Google Fonts in the launcher window so the preview works
     const PREVIEW_FONTS_URL =
@@ -449,36 +360,18 @@ export function openConfigModal(
         { value: "sans-serif",   label: "sans-serif (System)" },
         { value: "serif",        label: "serif (System)" },
         { value: "monospace",    label: "Monospace (System)" },
-        { value: "__custom__",   label: t("config.client.gameFont.custom" as TranslationKey) },
     ];
-    const fontRow = el("div", "row clientControlRow clientFontRow");
-    const fontLabelWrap = el("div", "rowLeft");
-    const fontLabel = el("div", "rowName", t("config.client.gameFont" as TranslationKey));
-    const fontHint = el("div", "muted", t("config.client.gameFont.hint" as TranslationKey));
-    fontLabelWrap.append(fontLabel, fontHint);
-    const fontActions = el("div", "rowActions fontActions");
     const fontSelect = document.createElement("select");
-    fontSelect.className = "select";
+    fontSelect.className = "settingSelect";
     for (const opt of FONT_OPTIONS) {
         const o = document.createElement("option");
         o.value = opt.value ?? "__default__";
         o.textContent = opt.label;
         fontSelect.append(o);
     }
-    const fontCustomInput = document.createElement("input");
-    fontCustomInput.type = "text";
-    fontCustomInput.className = "input";
-    fontCustomInput.placeholder = t("config.client.gameFont.customPlaceholder" as TranslationKey);
-    fontCustomInput.style.display = "none";
-    fontCustomInput.style.marginTop = "6px";
-    fontCustomInput.style.width = "220px";
-    const fontPreview = el("div", "fontPreview muted");
-    fontPreview.style.marginTop = "6px";
-    fontPreview.style.fontSize = "15px";
+    const fontPreview = el("div", "fontPreviewText");
     fontPreview.style.letterSpacing = "0.02em";
     fontPreview.textContent = t("config.client.gameFont.preview" as TranslationKey);
-    fontActions.append(fontSelect, fontCustomInput, fontPreview);
-    fontRow.append(fontLabelWrap, fontActions);
 
     const applyFontPreview = (font: string | null) => {
         fontPreview.style.fontFamily = font ? `"${font}", sans-serif` : "";
@@ -486,28 +379,19 @@ export function openConfigModal(
 
     const getFontSelectValue = (): string | null => {
         if (fontSelect.value === "__default__") return null;
-        if (fontSelect.value === "__custom__") {
-            const v = fontCustomInput.value.trim();
-            return v || null;
-        }
         return fontSelect.value;
     };
 
     const syncFontSelectFromValue = (font: string | null) => {
         if (!font) {
             fontSelect.value = "__default__";
-            fontCustomInput.style.display = "none";
-            fontCustomInput.value = "";
         } else {
-            const known = FONT_OPTIONS.find((o) => o.value === font && o.value !== null && o.value !== "__custom__");
+            const known = FONT_OPTIONS.find((o) => o.value === font && o.value !== null);
             if (known) {
                 fontSelect.value = font;
-                fontCustomInput.style.display = "none";
-                fontCustomInput.value = "";
             } else {
-                fontSelect.value = "__custom__";
-                fontCustomInput.style.display = "";
-                fontCustomInput.value = font;
+                // Unknown font from old config — fall back to default
+                fontSelect.value = "__default__";
             }
         }
         applyFontPreview(font);
@@ -526,25 +410,9 @@ export function openConfigModal(
     };
 
     fontSelect.addEventListener("change", async () => {
-        const isCustom = fontSelect.value === "__custom__";
-        fontCustomInput.style.display = isCustom ? "" : "none";
-        if (!isCustom) {
-            const font = getFontSelectValue();
-            applyFontPreview(font);
-            await persistFont(font);
-        } else {
-            fontCustomInput.value = "";
-            fontCustomInput.focus();
-        }
-    });
-
-    fontCustomInput.addEventListener("input", () => {
-        const v = fontCustomInput.value.trim();
-        applyFontPreview(v || null);
-        if (fontSaveTimer) clearTimeout(fontSaveTimer);
-        fontSaveTimer = setTimeout(() => {
-            void persistFont(v || null);
-        }, 800);
+        const font = getFontSelectValue();
+        applyFontPreview(font);
+        await persistFont(font);
     });
 
     // ── Launcher Font Size Row ──────────────────────────────────────────
@@ -555,31 +423,13 @@ export function openConfigModal(
     const clampFontSize = (v: number) =>
         Math.round(Math.min(LAUNCHER_FONT_SIZE_MAX, Math.max(LAUNCHER_FONT_SIZE_MIN, v)) / LAUNCHER_FONT_SIZE_STEP) * LAUNCHER_FONT_SIZE_STEP;
 
-    const fontSizeRow = el("div", "row clientControlRow clientFontSizeRow");
-    const fontSizeLabelWrap = el("div", "rowLeft");
-    const fontSizeLabel = el("div", "rowName", t("config.client.launcherFontSize" as TranslationKey));
-    const fontSizeHint = el("div", "muted", t("config.client.launcherFontSize.hint" as TranslationKey));
-    fontSizeLabelWrap.append(fontSizeLabel, fontSizeHint);
-    const fontSizeInputWrap = el("div", "rowActions");
     const fontSizeInput = document.createElement("input");
     fontSizeInput.type = "range";
     fontSizeInput.min = String(LAUNCHER_FONT_SIZE_MIN);
     fontSizeInput.max = String(LAUNCHER_FONT_SIZE_MAX);
     fontSizeInput.step = String(LAUNCHER_FONT_SIZE_STEP);
     fontSizeInput.value = String(LAUNCHER_FONT_SIZE_DEFAULT);
-    fontSizeInput.className = "slider";
-    fontSizeInput.style.width = "220px";
-    const fontSizeValue = el("div", "sliderValue badge", "100%");
-    const fontSizeDecBtn = createNudgeButton("-5", () => {
-        const current = Number.isFinite(fontSizeInput.valueAsNumber) ? fontSizeInput.valueAsNumber : LAUNCHER_FONT_SIZE_DEFAULT;
-        fontSizeInput.value = String(clampFontSize(current - LAUNCHER_FONT_SIZE_STEP));
-        fontSizeInput.dispatchEvent(new Event("change"));
-    });
-    const fontSizeIncBtn = createNudgeButton("+5", () => {
-        const current = Number.isFinite(fontSizeInput.valueAsNumber) ? fontSizeInput.valueAsNumber : LAUNCHER_FONT_SIZE_DEFAULT;
-        fontSizeInput.value = String(clampFontSize(current + LAUNCHER_FONT_SIZE_STEP));
-        fontSizeInput.dispatchEvent(new Event("change"));
-    });
+    const fontSizeValue = el("div", "sliderValueBadge", "100%");
 
     let fontSizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
     fontSizeInput.addEventListener("change", () => {
@@ -599,28 +449,86 @@ export function openConfigModal(
         }, 600);
     });
 
-    fontSizeInputWrap.append(fontSizeDecBtn, fontSizeInput, fontSizeIncBtn, fontSizeValue);
-    fontSizeRow.append(fontSizeLabelWrap, fontSizeInputWrap);
-
-    const clientGrid = el("div", "clientGrid");
-    clientGrid.append(
-        clientRow,            // Fullscreen toggle
-        launcherWidthRow,     // Launcher width
-        launcherHeightRow,    // Launcher height
-        delayRow,             // Layout delay / next tab
-        seqRow,               // Sequential grid loading
-        tabDisplayRow,        // Layout tab display mode
-        gridBorderRow,        // Highlight active grid view
-        autoSaveRow,          // Layout auto-save
-        uiPosRow,             // Persist game UI positions
-        annRow,               // Show launcher announcements
-        collapsibleRow,       // Collapsible open profiles
-        telemetryRow,         // Send launch telemetry (opt-in)
-        toastRow,             // Toast duration
-        fontRow,              // Game font
-        fontSizeRow,          // Launcher font size
+    // ── Build cards for each pane ──
+    // Display pane content
+    const displayGrid = el("div", "settingsGrid");
+    displayGrid.append(
+        createToggleCard(t("config.client.fullscreen"), t("config.client.fullscreen.hint" as TranslationKey), fullscreenCheckbox),
+        createToggleCard(t("config.client.gridActiveBorder" as TranslationKey), t("config.client.gridActiveBorder.hint" as TranslationKey), gridBorderCheckbox),
+        createToggleCard(t("config.client.showAnnouncements" as TranslationKey), t("config.client.showAnnouncements.hint" as TranslationKey), annCheckbox),
+        createToggleCard(t("config.client.collapsibleOpenProfiles" as TranslationKey), t("config.client.collapsibleOpenProfiles.hint" as TranslationKey), collapsibleCheckbox),
+        createToggleCard(t("config.client.showRamUsage" as TranslationKey), t("config.client.showRamUsage.hint" as TranslationKey), ramCheckbox),
     );
-    clientSection.append(clientTitle, clientGrid);
+    displayPane.append(displayGrid);
+
+    // Layout pane content
+    const layoutGrid = el("div", "settingsGrid");
+    layoutGrid.append(
+        createSliderCard(t("config.client.launcherWidth" as TranslationKey), "", launcherWidthInput, launcherWidthValue),
+        createSliderCard(t("config.client.launcherHeight" as TranslationKey), "", launcherHeightInput, launcherHeightValue),
+        createSliderCard(t("config.client.layoutDelay"), t("config.client.layoutDelay.hint" as TranslationKey), delayInput, delayValue),
+        createSliderCard(t("config.client.toastDuration"), t("config.client.toastDuration.hint"), toastInput, toastValue),
+    );
+    // Tab layout mode visual selector
+    const layoutModeWrapper = el("div", "");
+    layoutModeWrapper.style.marginTop = "12px";
+    const layoutModeLabel = el("div", "settingLabel", t("config.client.tabLayoutDisplay" as TranslationKey));
+    layoutModeLabel.style.marginBottom = "8px";
+    layoutModeWrapper.append(layoutModeLabel, layoutPreviewRow);
+    layoutPane.append(layoutGrid, layoutModeWrapper);
+
+    // Behavior pane content
+    const behaviorGrid = el("div", "settingsGrid");
+    behaviorGrid.append(
+        createToggleCard(t("config.client.layoutAutoSave" as TranslationKey), t("config.client.layoutAutoSave.hint" as TranslationKey), autoSaveCheckbox),
+        createToggleCard(t("config.client.seqGridLoad"), t("config.client.seqGridLoad.hint"), seqCheckbox),
+        createToggleCard(t("config.client.sendTelemetry" as TranslationKey), t("config.client.sendTelemetry.hint" as TranslationKey), telemetryCheckbox),
+        createToggleCard(t("config.client.checkForUpdatesOnStart" as TranslationKey), t("config.client.checkForUpdatesOnStart.hint" as TranslationKey), updateCheckbox),
+    );
+
+    // Manual update check button
+    const updateBtnCard = el("div", "settingCard sliderCard") as HTMLDivElement;
+    const updateBtnInfo = el("div", "settingInfo");
+    updateBtnInfo.append(el("div", "settingLabel", t("config.client.checkForUpdatesManual" as TranslationKey)));
+    updateBtnInfo.append(el("div", "settingHint", t("config.client.checkForUpdatesManual.hint" as TranslationKey)));
+    const checkUpdateBtn = el("button", "btn primary") as HTMLButtonElement;
+    checkUpdateBtn.textContent = t("config.client.checkForUpdatesManual.button" as TranslationKey);
+    checkUpdateBtn.style.marginTop = "8px";
+    checkUpdateBtn.addEventListener("click", async () => {
+        checkUpdateBtn.disabled = true;
+        checkUpdateBtn.textContent = "...";
+        try {
+            const res = await (window.api as unknown as Record<string, () => Promise<{ ok: boolean; error?: string }>>).appCheckForUpdates();
+            if (!res.ok) {
+                showToast(res.error ?? "Unknown error", "error");
+            }
+        } catch (err) {
+            showToast(String(err), "error");
+        } finally {
+            checkUpdateBtn.disabled = false;
+            checkUpdateBtn.textContent = t("config.client.checkForUpdatesManual.button" as TranslationKey);
+        }
+    });
+    updateBtnCard.append(updateBtnInfo, checkUpdateBtn);
+    behaviorGrid.append(updateBtnCard);
+
+    behaviorPane.append(behaviorGrid);
+
+    // Font pane content
+    const fontGrid = el("div", "settingsGrid");
+    // Game font card (select + custom input + preview)
+    const fontCard = el("div", "settingCard sliderCard") as HTMLDivElement;
+    const fontCardInfo = el("div", "settingInfo");
+    fontCardInfo.append(el("div", "settingLabel", t("config.client.gameFont" as TranslationKey)));
+    fontCardInfo.append(el("div", "settingHint", t("config.client.gameFont.hint" as TranslationKey)));
+    fontCard.append(fontCardInfo, fontSelect, fontPreview);
+    // Font size card
+    const fontSizeCard = createSliderCard(
+        t("config.client.launcherFontSize" as TranslationKey),
+        t("config.client.launcherFontSize.hint" as TranslationKey),
+        fontSizeInput, fontSizeValue);
+    fontGrid.append(fontCard, fontSizeCard);
+    fontPane.append(fontGrid);
 
     const setSliderBadge = (input: HTMLInputElement, badge: HTMLElement, formatter: (v: number) => string) => {
 
@@ -644,12 +552,9 @@ export function openConfigModal(
         { key: "showFcoinConverter", label: "config.client.hotkeys.showFcoinConverter" as TranslationKey, hint: "config.client.hotkeys.showFcoinConverter.hint" as TranslationKey, defaultChord: DEFAULT_HOTKEYS.showFcoinConverter },
         { key: "showShoppingList", label: "config.client.hotkeys.showShoppingList" as TranslationKey, hint: "config.client.hotkeys.showShoppingList.hint" as TranslationKey, defaultChord: DEFAULT_HOTKEYS.showShoppingList },
     ];
-    const hotkeySection = el("div", "section clientSection hotkeySection");
-    const hotkeyTitle = el("div", "sectionTitle", t("config.client.hotkeys.title" as TranslationKey));
-    hotkeySection.append(hotkeyTitle);
-    const hotkeyRowsContainer = el("div", "hotkeyRows");
-    hotkeySection.append(hotkeyRowsContainer);
-    clientPane.append(clientSection, hotkeySection);
+    // Hotkeys pane content
+    const hotkeyRowsContainer = el("div", "hotkeyGrid");
+    hotkeysPane.append(hotkeyRowsContainer);
 
     type HotkeyRowUi = {
 
@@ -818,20 +723,20 @@ export function openConfigModal(
         }
     };
     for (const def of hotkeyDefs) {
-        const row = el("div", "row hotkeyRow");
-        const left = el("div", "rowLeft");
-        const label = el("div", "rowName", t(def.label));
-        const hint = el("div", "muted", t(def.hint));
-        left.append(label, hint);
-        const actions = el("div", "rowActions hotkeyActions");
-        const badge = el("div", "badge hotkeyBadge");
+        const card = el("div", "hotkeyCard");
+        const info = el("div", "hotkeyInfo");
+        const label = el("span", "hotkeyLabel", t(def.label));
+        const hint = el("span", "hotkeyHint", t(def.hint));
+        info.append(label, hint);
+        const badge = el("div", "hotkeyBadge");
+        const actions = el("div", "hotkeyActions");
         const recordBtn = el("button", "btn primary", t("config.client.hotkeys.record" as TranslationKey));
-        const clearBtn = el("button", "btn xBtn", "�");
+        const clearBtn = el("button", "btn xBtn", "\u00D7");
         clearBtn.title = t("config.client.hotkeys.clear" as TranslationKey);
         clearBtn.setAttribute("aria-label", t("config.client.hotkeys.clear" as TranslationKey));
-        actions.append(badge, clearBtn, recordBtn);
-        row.append(left, actions);
-        hotkeyRowsContainer.append(row);
+        actions.append(clearBtn, recordBtn);
+        card.append(info, badge, actions);
+        hotkeyRowsContainer.append(card);
         hotkeyUi[def.key] = { badge: badge as HTMLDivElement, recordBtn: recordBtn as HTMLButtonElement, clearBtn: clearBtn as HTMLButtonElement };
         recordBtn.addEventListener("click", () => {
             if (captureActive && captureTarget === def.key) {
@@ -878,8 +783,8 @@ export function openConfigModal(
     const supportThanks = el("div", "muted", t("config.support.thanks" as TranslationKey));
     supportActions.append(supportBtn, supportThanks);
     supportPane.append(supportTitle, supportText, supportActions);
-    // Tab content
-    content.append(stylePane, pluginsPane, clientPane, patchnotesPane, docsPane, supportPane);
+    // All panes go into the content area (right side)
+    content.append(displayPane, layoutPane, behaviorPane, themePane, tabColorPane, fontPane, hotkeysPane, pluginsPane, patchnotesPane, docsPane, supportPane);
 
     const refreshClientSettings = async () => {
 
@@ -899,13 +804,15 @@ export function openConfigModal(
         setSequentialGridLoad(settings.seqGridLoad ?? DEFAULT_CLIENT_SETTINGS.seqGridLoad);
         tabDisplaySelect.value = settings.tabLayoutDisplay ?? DEFAULT_CLIENT_SETTINGS.tabLayoutDisplay;
         setLayoutTabDisplay(settings.tabLayoutDisplay ?? DEFAULT_CLIENT_SETTINGS.tabLayoutDisplay);
+        updateLayoutOptionActive();
         gridBorderToggle.set(settings.gridActiveBorder ?? DEFAULT_CLIENT_SETTINGS.gridActiveBorder);
         autoSaveToggle.set(settings.autoSaveLayouts ?? DEFAULT_CLIENT_SETTINGS.autoSaveLayouts);
         setAutoSaveLayouts(settings.autoSaveLayouts ?? DEFAULT_CLIENT_SETTINGS.autoSaveLayouts);
-        uiPosToggle.set(settings.persistGameUiPositions ?? DEFAULT_CLIENT_SETTINGS.persistGameUiPositions);
         annToggle.set(settings.showAnnouncements ?? DEFAULT_CLIENT_SETTINGS.showAnnouncements);
         collapsibleToggle.set(settings.collapsibleOpenProfiles ?? DEFAULT_CLIENT_SETTINGS.collapsibleOpenProfiles);
         telemetryToggle.set(settings.sendTelemetry ?? DEFAULT_CLIENT_SETTINGS.sendTelemetry);
+        ramToggle.set(settings.showRamUsage ?? DEFAULT_CLIENT_SETTINGS.showRamUsage);
+        updateToggle.set(settings.checkForUpdatesOnStart ?? DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart);
         syncFontSelectFromValue(settings.gameFont ?? null);
         const savedFontSize = settings.launcherFontSize ?? LAUNCHER_FONT_SIZE_DEFAULT;
         fontSizeInput.value = String(clampFontSize(savedFontSize));
@@ -1019,18 +926,6 @@ export function openConfigModal(
             setAutoSaveLayouts(fallback);
         }
     });
-    uiPosCheckbox.addEventListener("change", async () => {
-        const next = !!uiPosCheckbox.checked;
-        try {
-            await patchClientSettings({ persistGameUiPositions: next });
-            showToast(t("config.client.persistGameUiPositionsSaved" as TranslationKey), "success");
-        }
-        catch (err) {
-            showToast(String(err), "error");
-            const current = await loadClientSettings();
-            uiPosToggle.set(current?.persistGameUiPositions ?? DEFAULT_CLIENT_SETTINGS.persistGameUiPositions);
-        }
-    });
     annCheckbox.addEventListener("change", async () => {
         const next = !!annCheckbox.checked;
         try {
@@ -1069,6 +964,30 @@ export function openConfigModal(
             telemetryToggle.set(current?.sendTelemetry ?? DEFAULT_CLIENT_SETTINGS.sendTelemetry);
         }
     });
+    updateCheckbox.addEventListener("change", async () => {
+        const next = !!updateCheckbox.checked;
+        try {
+            await patchClientSettings({ checkForUpdatesOnStart: next });
+            showToast(t("config.client.checkForUpdatesOnStartSaved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            updateToggle.set(current?.checkForUpdatesOnStart ?? DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart);
+        }
+    });
+    ramCheckbox.addEventListener("change", async () => {
+        const next = !!ramCheckbox.checked;
+        try {
+            await patchClientSettings({ showRamUsage: next });
+            showToast(t("config.client.showRamUsageSaved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            ramToggle.set(current?.showRamUsage ?? DEFAULT_CLIENT_SETTINGS.showRamUsage);
+        }
+    });
     launcherWidthInput.addEventListener("change", async () => {
         const next = clampLauncherWidthPx(launcherWidthInput.valueAsNumber);
         launcherWidthInput.value = String(next);
@@ -1099,7 +1018,7 @@ export function openConfigModal(
             setSliderBadge(launcherHeightInput, launcherHeightValue, (v) => `${v}px`);
         }
     });
-    body.append(tabs, content);
+    body.append(globalSidebar, content);
     // Simple markdown to HTML converter (no images/videos) used by patchnotes
 
     function markdownToHtmlBasic(md: string): string {
@@ -1327,36 +1246,49 @@ export function openConfigModal(
     }
     // Main tab switching
 
-    function selectMainTab(tab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support") {
+    // Map sidebar IDs to panes
+    const paneMap: Record<SidebarId, HTMLElement> = {
+        "client.display": displayPane,
+        "client.layout": layoutPane,
+        "client.behavior": behaviorPane,
+        "client.theme": themePane,
+        "client.tabcolor": tabColorPane,
+        "client.font": fontPane,
+        "client.hotkeys": hotkeysPane,
+        "plugins": pluginsPane,
+        "patchnotes": patchnotesPane,
+        "docs": docsPane,
+        "support": supportPane,
+    };
 
-        tabStyle.classList.toggle("active", tab === "style");
-        tabPlugins.classList.toggle("active", tab === "plugins");
-        tabClient.classList.toggle("active", tab === "client");
-        tabPatchnotes.classList.toggle("active", tab === "patchnotes");
-        tabDocs.classList.toggle("active", tab === "docs");
-        tabSupport.classList.toggle("active", tab === "support");
-        stylePane.style.display = tab === "style" ? "" : "none";
-        pluginsPane.style.display = tab === "plugins" ? "" : "none";
-        clientPane.style.display = tab === "client" ? "" : "none";
-        patchnotesPane.style.display = tab === "patchnotes" ? "" : "none";
-        docsPane.style.display = tab === "docs" ? "" : "none";
-        supportPane.style.display = tab === "support" ? "" : "none";
-        if (tab === "plugins") {
+    function selectSidebarItem(id: SidebarId) {
+
+        for (const [btnId, btn] of allSidebarBtns) {
+            btn.classList.toggle("active", btnId === id);
+        }
+        // Show only the selected pane, hide all others
+        for (const [paneId, pane] of Object.entries(paneMap)) {
+            pane.style.display = paneId === id ? "" : "none";
+        }
+
+        if (id === "client.theme") {
+            renderStyleContent("theme");
+        } else if (id === "client.tabcolor") {
+            renderStyleContent("tabcolor");
+        }
+        if (id === "plugins") {
             loadPluginsList();
         }
-        if (tab === "patchnotes") {
+        if (id === "patchnotes") {
             loadPatchnotes();
         }
-        if (tab === "docs") {
+        if (id === "docs") {
             loadDocumentation();
         }
     }
-    tabStyle.addEventListener("click", () => selectMainTab("style"));
-    tabPlugins.addEventListener("click", () => selectMainTab("plugins"));
-    tabClient.addEventListener("click", () => selectMainTab("client"));
-    tabPatchnotes.addEventListener("click", () => selectMainTab("patchnotes"));
-    tabDocs.addEventListener("click", () => selectMainTab("docs"));
-    tabSupport.addEventListener("click", () => selectMainTab("support"));
+    for (const [id, btn] of allSidebarBtns) {
+        btn.addEventListener("click", () => selectSidebarItem(id));
+    }
     // Load and render plugins list
 
     async function loadPluginsList() {
@@ -1476,8 +1408,7 @@ export function openConfigModal(
         if (state === "loading" || state === "starting" || state === "initializing") return t("config.plugins.status.working");
         return t("config.plugins.status.stopped");
     }
-    // Initialize tab state
-    selectMainTab(defaultTab);
+    // Tab state is now initialized via selectSidebarItem() below
     modal.append(headerEl, body);
     overlay.append(modal);
 
@@ -1527,7 +1458,7 @@ export function openConfigModal(
         }
         return { ...FALLBACK_THEME_COLORS };
     }
-    let activeStyleSubTab: "theme" | "tabActive" = defaultStyleTab;
+    // Style rendering is now driven by selectSidebarItem
 
     function buildThemeGrid() {
 
@@ -1563,7 +1494,7 @@ export function openConfigModal(
                 applyTheme(theme.id);
                 const colors = getThemeColors(theme.id);
                 pushThemeUpdate(theme.id, colors);
-                selectStyleSubTab("theme");
+                renderStyleContent("theme");
                 showToast(`${t("config.theme.applied")}: ${themeTitle(theme)}`, "success");
             });
             card.append(cardHeader, desc, swatches);
@@ -1722,27 +1653,27 @@ export function openConfigModal(
         return tabColorSection;
     }
 
-    function renderStyleContent() {
+    function renderStyleContent(mode: "theme" | "tabcolor") {
 
-        styleContentBody.innerHTML = "";
-        if (activeStyleSubTab === "tabActive") {
-            styleContentBody.append(buildTabColorSection());
-        }
-        else {
+        if (mode === "tabcolor") {
+            tabColorPane.innerHTML = "";
+            tabColorPane.append(buildTabColorSection());
+        } else {
+            styleContentBody.innerHTML = "";
             styleContentBody.append(buildThemeGrid());
         }
     }
 
-    function selectStyleSubTab(tab: "theme" | "tabActive") {
-
-        activeStyleSubTab = tab;
-        subTabTheme.classList.toggle("active", tab === "theme");
-        subTabTabColor.classList.toggle("active", tab === "tabActive");
-        renderStyleContent();
-    }
-    subTabTheme.addEventListener("click", () => selectStyleSubTab("theme"));
-    subTabTabColor.addEventListener("click", () => selectStyleSubTab("tabActive"));
-    selectStyleSubTab(defaultStyleTab);
+    // Map defaultStyleTab to sidebar ID
+    const initialSidebar: SidebarId = defaultStyleTab === "tabActive" ? "client.tabcolor"
+        : defaultTab === "client" ? "client.display"
+        : defaultTab === "plugins" ? "plugins"
+        : defaultTab === "patchnotes" ? "patchnotes"
+        : defaultTab === "docs" ? "docs"
+        : defaultTab === "support" ? "support"
+        : defaultTab === "style" ? "client.theme"
+        : "client.display";
+    selectSidebarItem(initialSidebar);
     document.body.append(overlay);
 
 

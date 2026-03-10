@@ -61,6 +61,12 @@ export interface OverlaysState {
     roiSupportOverlayParent: BrowserWindow | null;
 }
 
+// On Linux with Electron 40 Ozone, every show()/hide() on a transparent
+// BrowserWindow goes through the GPU compositor and can stall the game's
+// WebGL context.  We avoid unnecessary show/hide cycles on Linux.
+const IS_LINUX = process.platform === "linux";
+const OVERLAY_SYNC_MS = 500;
+
 export function createOverlaysManager(deps: OverlaysDeps) {
     const state: OverlaysState = {
         roiOverlayWindow: null,
@@ -124,7 +130,7 @@ export function createOverlaysManager(deps: OverlaysDeps) {
         if (target.sidePanel && sidePanelWindow && !sidePanelWindow.isDestroyed()) {
             sidePanelWindow.show();
             if (!deps.getSidePanelSyncInterval()) {
-                deps.setSidePanelSyncInterval(setInterval(() => deps.syncSidePanelBounds(), 500) as unknown as NodeJS.Timeout);
+                deps.setSidePanelSyncInterval(setInterval(() => deps.syncSidePanelBounds(), OVERLAY_SYNC_MS) as unknown as NodeJS.Timeout);
             }
             deps.syncSidePanelBounds();
         }
@@ -137,6 +143,10 @@ export function createOverlaysManager(deps: OverlaysDeps) {
     const showAll = () => {
         if (state.overlaysHiddenByHotkey || state.overlaysHiddenByDialog) return;
         restoreFromSnapshot(state.overlaysWereVisible);
+        // Reset the snapshot after restoring so it doesn't keep re-showing
+        // elements that the user has since manually closed (e.g. sidepanel
+        // toggle while the snapshot still had sidePanel: true).
+        state.overlaysWereVisible = createOverlaySnapshot();
     };
 
     const hideForDialog = () => {
@@ -262,28 +272,34 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 lastScheduledProfileId = profileId;
                 deps.scheduleTimersForProfile(profileId);
             }
-            const focusedWindow = BrowserWindow.getFocusedWindow();
-            const sidePanelWindow = deps.getSidePanelWindow();
-            // Show overlay when the host, side panel, or any child/related window is focused.
-            // Also show when no Electron window has focus but this is a child-window scenario
-            // (e.g. overlay button click briefly unfocuses the parent).
-            const hostFocused = focusedWindow && (
-                focusedWindow.id === host.parent.id
-                || focusedWindow === sidePanelWindow
-                || focusedWindow.getParentWindow()?.id === host.parent.id
-            );
-            if (hostFocused) {
-                // Skip setBounds if nothing changed – calling it unconditionally
-                // can cause brief focus interruptions that freeze the game.
-                const nb = host.bounds;
-                const lb = roiOverlayLastBounds;
-                if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
-                    roiOverlayLastBounds = { ...nb };
-                    state.roiOverlayWindow.setBounds(nb);
-                }
+            // Skip setBounds if nothing changed – calling it unconditionally
+            // can cause brief focus interruptions that freeze the game.
+            const nb = host.bounds;
+            const lb = roiOverlayLastBounds;
+            if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
+                roiOverlayLastBounds = { ...nb };
+                state.roiOverlayWindow.setBounds(nb);
+            }
+
+            if (IS_LINUX) {
+                // Linux: avoid show/hide cycles – every call goes through the GPU
+                // compositor and can stall the game's WebGL context.  Keep the
+                // overlay visible as long as a valid host exists; it's already
+                // alwaysOnTop + click-through + transparent so it doesn't interfere.
                 if (!state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.show();
             } else {
-                if (state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.hide();
+                const focusedWindow = BrowserWindow.getFocusedWindow();
+                const sidePanelWindow = deps.getSidePanelWindow();
+                const hostFocused = focusedWindow && (
+                    focusedWindow.id === host.parent.id
+                    || focusedWindow === sidePanelWindow
+                    || focusedWindow.getParentWindow()?.id === host.parent.id
+                );
+                if (hostFocused) {
+                    if (!state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.show();
+                } else {
+                    if (state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.hide();
+                }
             }
         } catch (err) {
             logErr(err, "ROI Overlay Sync");
@@ -292,7 +308,7 @@ export function createOverlaysManager(deps: OverlaysDeps) {
 
     const ensureRoiOverlay = () => {
         if (state.roiOverlaySyncInterval) return state.roiOverlayWindow;
-        state.roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), 100);
+        state.roiOverlaySyncInterval = setInterval(() => void syncRoiOverlay(), OVERLAY_SYNC_MS);
         void syncRoiOverlay();
         return state.roiOverlayWindow;
     };
@@ -340,23 +356,28 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 lastScheduledSupportProfileId = profileId;
                 deps.scheduleTimersForProfile(profileId);
             }
-            const focusedWindow = BrowserWindow.getFocusedWindow();
-            const sidePanelWindow = deps.getSidePanelWindow();
-            const hostFocused = focusedWindow && (
-                focusedWindow.id === host.parent.id
-                || focusedWindow === sidePanelWindow
-                || focusedWindow.getParentWindow()?.id === host.parent.id
-            );
-            if (hostFocused) {
-                const nb = host.bounds;
-                const lb = roiSupportOverlayLastBounds;
-                if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
-                    roiSupportOverlayLastBounds = { ...nb };
-                    state.roiSupportOverlayWindow.setBounds(nb);
-                }
+            const nb = host.bounds;
+            const lb = roiSupportOverlayLastBounds;
+            if (!lb || lb.x !== nb.x || lb.y !== nb.y || lb.width !== nb.width || lb.height !== nb.height) {
+                roiSupportOverlayLastBounds = { ...nb };
+                state.roiSupportOverlayWindow.setBounds(nb);
+            }
+
+            if (IS_LINUX) {
                 if (!state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.show();
             } else {
-                if (state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.hide();
+                const focusedWindow = BrowserWindow.getFocusedWindow();
+                const sidePanelWindow = deps.getSidePanelWindow();
+                const hostFocused = focusedWindow && (
+                    focusedWindow.id === host.parent.id
+                    || focusedWindow === sidePanelWindow
+                    || focusedWindow.getParentWindow()?.id === host.parent.id
+                );
+                if (hostFocused) {
+                    if (!state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.show();
+                } else {
+                    if (state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.hide();
+                }
             }
         } catch (err) {
             logErr(err, "ROI Support Overlay Sync");
@@ -365,28 +386,30 @@ export function createOverlaysManager(deps: OverlaysDeps) {
 
     const ensureRoiSupportOverlay = () => {
         if (state.roiSupportOverlaySyncInterval) return state.roiSupportOverlayWindow;
-        state.roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), 100);
+        state.roiSupportOverlaySyncInterval = setInterval(() => void syncRoiSupportOverlay(), OVERLAY_SYNC_MS);
         void syncRoiSupportOverlay();
         return state.roiSupportOverlayWindow;
     };
 
-    // Setup window focus/blur handlers
-    app.on("browser-window-blur", () => {
-        setTimeout(() => {
-            const focusedWin = BrowserWindow.getFocusedWindow();
-            if (!focusedWin) {
-                hideAll();
-            }
-        }, 100);
-    });
+    // Setup window focus/blur handlers.
+    // On Linux, skip the hide-on-blur / show-on-focus cycle for overlay
+    // windows because every show()/hide() call triggers the GPU compositor
+    // and can freeze the game's WebGL context.  The sync loops will keep
+    // overlays visible as long as a valid host exists.
+    if (!IS_LINUX) {
+        app.on("browser-window-blur", () => {
+            setTimeout(() => {
+                const focusedWin = BrowserWindow.getFocusedWindow();
+                if (!focusedWin) {
+                    hideAll();
+                }
+            }, 100);
+        });
 
-    // When ANY app window regains focus after hideAll(), restore overlays.
-    // The per-tick sync loops (50ms) will correct visibility immediately
-    // based on the actual focused host window, so this is safe even when
-    // a non-game window (e.g. launcher settings) gains focus.
-    app.on("browser-window-focus", () => {
-        showAll();
-    });
+        app.on("browser-window-focus", () => {
+            showAll();
+        });
+    }
 
     return {
         get state() { return state; },
