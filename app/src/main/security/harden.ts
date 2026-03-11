@@ -96,6 +96,11 @@ export function applyCSP(session: Session): void {
             callback({ responseHeaders: details.responseHeaders });
             return;
         }
+        // Skip CSP for temp HTML files (sidepanel, plugin windows — use inline styles/scripts, no user input)
+        if (url.startsWith("file://") && (url.includes("flyff-sidepanel.html") || url.includes("flyff-plugin-"))) {
+            callback({ responseHeaders: details.responseHeaders });
+            return;
+        }
         const isLocalContent = url.startsWith("file://") ||
                                url.startsWith("http://localhost");
 
