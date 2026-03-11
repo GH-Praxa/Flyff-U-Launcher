@@ -9,8 +9,6 @@
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
 
-- test
-
 ---
 
 ### Planned Features
