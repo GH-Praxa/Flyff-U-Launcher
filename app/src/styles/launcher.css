@@ -430,12 +430,12 @@
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,0.03);
   border-radius: var(--radius);
-  padding: 8px;
+  padding: 1px 8px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.28);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   scroll-snap-align: none;
   content-visibility: auto;
-  contain-intrinsic-size: 220px 120px;
+  contain-intrinsic-size: 220px 100px;
 }
 
 
@@ -814,6 +814,73 @@
   margin-top: 2px;
 }
 
+.nameBlock{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nameRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.charList{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.charListItem{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.charListJobIcon{
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.charListName{
+  line-height: 1.2;
+}
+
+.charEditWrap{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.charEditRow{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.charEditName{
+  font-size: 13px;
+  min-width: 80px;
+}
+
+.charJobSelect{
+  width: 140px;
+  min-width: 0;
+  font-size: 12px;
+  padding: 3px 7px;
+  min-height: 0;
+  height: 26px;
+}
+
 
 .card.dragging { opacity: 0.6; }
 .card.editing { border-color: rgba(var(--accent-rgb),0.55); background: rgba(var(--accent-rgb),0.06); }
@@ -867,8 +934,8 @@
 .layoutBar{
   display:flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
+  gap: 6px;
+  padding: 4px 6px;
 }
 
 .layoutHeader{
@@ -894,7 +961,7 @@
   display:flex;
   align-items:center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius2);
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,0.04);
@@ -909,6 +976,26 @@
 .layoutName{
   font-weight: 800;
   margin-right: 6px;
+}
+
+.layoutChipMetaWrap{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.layoutChipArt{
+  font-family: monospace;
+  font-size: 7px;
+  line-height: 1.1;
+  color: var(--muted);
+  margin: 0;
+  padding: 2px 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.06);
+  white-space: pre;
 }
 
 .layoutMeta{

@@ -191,6 +191,18 @@
         .spawn-area.aggro-low .spawn-area-fill { background: rgba(34, 197, 94, 0.2); }
         .spawn-area.aggro-low .spawn-area-border { border-color: rgba(34, 197, 94, 0.6); }
 
+        /* ── Attribution ────────────────────────────────────────────────── */
+        #attribution {
+            position: absolute;
+            bottom: 4px;
+            right: 6px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.45);
+            pointer-events: none;
+            z-index: 20;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+
         /* ── Status message ──────────────────────────────────────────────── */
         #status-msg {
             position: absolute;
@@ -224,6 +236,7 @@
             <div class="marker-dot"></div>
         </div>
         <div id="status-msg">Loading map data&hellip;</div>
+        <div id="attribution">&copy; Gala Lab Corp.</div>
     </div>
 
     <script>

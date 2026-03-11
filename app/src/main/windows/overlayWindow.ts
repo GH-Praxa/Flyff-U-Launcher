@@ -72,12 +72,13 @@ export function createOverlayWindow(parent: BrowserWindow, opts?: {
   }
   .roiBox{
     position:absolute;
+    box-sizing:border-box;
     border:2px dashed rgba(0,150,255,0.85);
     background: rgba(0,150,255,0.15);
     border-radius:4px;
     color: white;
     font: 12px Segoe UI, Arial, sans-serif;
-    padding: 2px 4px;
+    padding:0;
   }
   #pluginOverlays{
     position:fixed;

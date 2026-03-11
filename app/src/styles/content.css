@@ -21,7 +21,7 @@
 }
 
 .patchnotesContent h1{
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--text);
   margin: 0 0 16px 0;
@@ -30,21 +30,21 @@
 }
 
 .patchnotesContent h2{
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   margin: 16px 0 8px 0;
 }
 
 .patchnotesContent h3{
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--muted);
   margin: 12px 0 6px 0;
 }
 
 .patchnotesContent p{
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text);
   margin: 0 0 8px 0;
 }
@@ -55,14 +55,14 @@
 }
 
 .patchnotesContent li{
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text);
   margin: 4px 0;
 }
 
 .patchnotesContent code{
   font-family: monospace;
-  font-size: 12px;
+  font-size: 14px;
   background: rgba(255,255,255,0.08);
   padding: 2px 6px;
   border-radius: 4px;
@@ -205,7 +205,15 @@
 
 /* Documentation images */
 .docImage{
-  max-width: 100%;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius2);
+  margin: 12px 0;
+  border: 1px solid var(--stroke);
+}
+
+.docImageSmall{
+  max-width: 240px;
   height: auto;
   border-radius: var(--radius2);
   margin: 12px 0;
@@ -327,13 +335,15 @@ details.docAccordion[open] .docAccordionContent{
   font-size: 13px;
 }
 
-.docTable td{
+.docTable td,
+.docTable th{
   padding: 8px 12px;
   border: 1px solid var(--stroke);
   color: var(--text);
+  text-align: left;
 }
 
-.docTable tr:first-child td{
+.docTable th{
   background: rgba(255,255,255,0.03);
   font-weight: 600;
 }

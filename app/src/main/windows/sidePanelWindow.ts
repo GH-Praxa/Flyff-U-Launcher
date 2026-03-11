@@ -334,6 +334,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     padding: 10px 10px 8px 10px;
     border-bottom: 1px solid var(--stroke);
     background: linear-gradient(180deg, rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.16), rgba(0,0,0,0.35));
+    overflow-x: auto;
   }
 
   .tab{
@@ -345,6 +346,8 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
     cursor:pointer;
     font-size: 12px;
     transition: 120ms ease;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .tab:hover{
     border-color: rgba(var(--accent-rgb, var(--tab-active-rgb,46,204,113)),0.70);
@@ -576,7 +579,11 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
   .settingsSliderRow{ display:flex; align-items:center; gap:8px; }
   .settingsSliderRow span:first-child{ width:20px; font-size:10px; color:var(--muted); }
   .settingsSliderRow input[type="range"]{ flex:1; height:4px; accent-color:var(--accent); }
-  .settingsSliderRow span:last-child{ width:40px; font-size:10px; text-align:right; font-family:monospace; color:var(--text); }
+  .settingsSliderRow input[type="number"]{ width:56px; padding:2px 4px; border-radius:6px; border:1px solid var(--stroke); background:rgba(255,255,255,0.05); color:var(--text); font-size:10px; font-family:monospace; text-align:right; -moz-appearance:textfield; }
+  .settingsSliderRow .roiStepBtn{ width:20px; height:20px; padding:0; border:1px solid var(--stroke); border-radius:4px; background:rgba(255,255,255,0.06); color:var(--text); font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .settingsSliderRow .roiStepBtn:hover{ background:rgba(255,255,255,0.12); }
+  .settingsSliderRow input[type="number"]::-webkit-inner-spin-button,
+  .settingsSliderRow input[type="number"]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
   .settingsHint{ font-size:10px; color:var(--muted); margin-top:4px; }
   .settingsError{ font-size:10px; color:var(--danger); }
 
@@ -1571,13 +1578,44 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         slider.max = "1";
         slider.step = "0.001";
         slider.value = "0";
-        const display = document.createElement("span");
-        display.textContent = "0.000";
-        row.append(label, slider, display);
+        const numInput = document.createElement("input");
+        numInput.type = "number";
+        numInput.min = "0";
+        numInput.max = "1";
+        numInput.step = "0.001";
+        numInput.value = "0.000";
+        const btnMinus = document.createElement("button");
+        btnMinus.className = "roiStepBtn";
+        btnMinus.textContent = "\u2212";
+        btnMinus.title = "-0.001";
+        const btnPlus = document.createElement("button");
+        btnPlus.className = "roiStepBtn";
+        btnPlus.textContent = "+";
+        btnPlus.title = "+0.001";
+        row.append(label, btnMinus, slider, btnPlus, numInput);
         sliderGroup.append(row);
-        sliders[axis] = { slider, display };
+        sliders[axis] = { slider, display: numInput };
+        const stepValue = (dir) => {
+          const cur = parseFloat(slider.value) || 0;
+          const v = Math.max(0, Math.min(1, +(cur + dir * 0.001).toFixed(3)));
+          slider.value = String(v);
+          numInput.value = v.toFixed(3);
+          void applyRoiFromSliders();
+        };
+        btnMinus.addEventListener("click", () => stepValue(-1));
+        btnPlus.addEventListener("click", () => stepValue(1));
         slider.addEventListener("input", () => {
-          display.textContent = slider.valueAsNumber.toFixed(3);
+          numInput.value = slider.valueAsNumber.toFixed(3);
+        });
+        numInput.addEventListener("input", () => {
+          const v = Math.max(0, Math.min(1, parseFloat(numInput.value) || 0));
+          slider.value = String(v);
+        });
+        numInput.addEventListener("change", () => {
+          const v = Math.max(0, Math.min(1, parseFloat(numInput.value) || 0));
+          numInput.value = v.toFixed(3);
+          slider.value = String(v);
+          void applyRoiFromSliders();
         });
       });
       roiManualSection.append(roiManualTitle, sliderGroup);
@@ -1648,8 +1686,8 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         if (hasRoi) {
           sliders.x.slider.value = String(roi.x ?? 0.05);
           sliders.y.slider.value = String(roi.y ?? 0.05);
-          sliders.w.slider.value = String(roi.width ?? roi.w ?? 0.25);
-          sliders.h.slider.value = String(roi.height ?? roi.h ?? 0.08);
+          sliders.w.slider.value = String(roi.w ?? roi.width ?? 0.25);
+          sliders.h.slider.value = String(roi.h ?? roi.height ?? 0.08);
         } else {
           sliders.x.slider.value = "0.05";
           sliders.y.slider.value = "0.05";
@@ -1657,7 +1695,7 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
           sliders.h.slider.value = "0.08";
         }
         Object.values(sliders).forEach(({ slider, display }) => {
-          display.textContent = slider.valueAsNumber.toFixed(3);
+          display.value = slider.valueAsNumber.toFixed(3);
         });
 
         const vis = visForKey(key);
@@ -1786,11 +1824,15 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         const profileId = getProfileIdForKey(currentFieldKey);
         if (!profileId) return false;
 
+        const wVal = Math.max(0.001, Math.min(1, sliders.w.slider.valueAsNumber));
+        const hVal = Math.max(0.001, Math.min(1, sliders.h.slider.valueAsNumber));
         const payload = {
           x: Math.max(0, Math.min(1, sliders.x.slider.valueAsNumber)),
           y: Math.max(0, Math.min(1, sliders.y.slider.valueAsNumber)),
-          width: Math.max(0.001, Math.min(1, sliders.w.slider.valueAsNumber)),
-          height: Math.max(0.001, Math.min(1, sliders.h.slider.valueAsNumber)),
+          w: wVal,
+          h: hVal,
+          width: wVal,
+          height: hVal,
         };
 
         const rois = roisForKey(currentFieldKey) || {};
@@ -1811,8 +1853,9 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
         }
       };
 
-      Object.values(sliders).forEach(({ slider }) => {
+      Object.values(sliders).forEach(({ slider, display }) => {
         slider.addEventListener("change", () => {
+          display.value = slider.valueAsNumber.toFixed(3);
           void applyRoiFromSliders();
         });
       });

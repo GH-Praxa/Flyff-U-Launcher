@@ -314,7 +314,7 @@ export interface ProfileData {
     id: string;
     name: string;
     createdAt: string;
-    job?: string;
+    characterJobs?: Record<string, string>;
     launchMode: "tabs" | "window";
     overlayTarget?: boolean;
     overlaySupportTarget?: boolean;

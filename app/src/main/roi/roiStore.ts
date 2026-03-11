@@ -24,11 +24,11 @@ type RoiDb = Record<string, HudRois>;
 function clamp01(n: number) {
     return Math.max(0, Math.min(1, n));
 }
-function normalizeRoi(r: RoiRatio): RoiRatio {
+function normalizeRoi(r: RoiRatio & { width?: number; height?: number }): RoiRatio {
     const x = clamp01(r.x);
     const y = clamp01(r.y);
-    const w = clamp01(r.w);
-    const h = clamp01(r.h);
+    const w = clamp01(r.w ?? r.width ?? 0);
+    const h = clamp01(r.h ?? r.height ?? 0);
     return { x, y, w: Math.max(0.001, w), h: Math.max(0.001, h) };
 }
 function roisPath() {

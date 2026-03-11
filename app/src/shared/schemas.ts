@@ -90,7 +90,7 @@ export const ProfileSchema = z.object({
     id: IdSchema,
     name: NameSchema,
     createdAt: z.string(),
-    job: z.string().optional(),
+    characterJobs: z.record(z.string(), z.string()).optional(),
     launchMode: LaunchModeSchema,
     overlayTarget: z.boolean().optional(),
     overlaySupportTarget: z.boolean().optional(),
@@ -293,8 +293,10 @@ export type ThemeInput = z.infer<typeof ThemeInputSchema>;
 export const RoiRectSchema = z.object({
     x: z.number().min(0).max(1),
     y: z.number().min(0).max(1),
-    width: z.number().min(0).max(1),
-    height: z.number().min(0).max(1),
+    width: z.number().min(0).max(1).optional(),
+    height: z.number().min(0).max(1).optional(),
+    w: z.number().min(0).max(1).optional(),
+    h: z.number().min(0).max(1).optional(),
 });
 export type RoiRect = z.infer<typeof RoiRectSchema>;
 

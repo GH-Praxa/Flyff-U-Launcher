@@ -295,15 +295,17 @@ export async function renderSession(root: HTMLElement) {
     const profileNameCache = new Map<string, string>();
     const profileJobCache = new Map<string, string | null>();
 
-    function rememberProfileName(profileId: string, name?: string | null, job?: string | null): void {
+    function rememberProfileName(profileId: string, name?: string | null, characterJobs?: Record<string, string> | null, characters?: string[] | null): void {
 
         if (!profileId) return;
         const trimmed = name?.trim();
         if (trimmed) {
             profileNameCache.set(profileId, trimmed);
         }
-        if (job !== undefined) {
-            profileJobCache.set(profileId, job?.trim() || null);
+        if (characterJobs !== undefined) {
+            const firstChar = characters?.[0];
+            const job = firstChar ? (characterJobs?.[firstChar]?.trim() || null) : null;
+            profileJobCache.set(profileId, job);
         }
     }
 
@@ -328,7 +330,7 @@ export async function renderSession(root: HTMLElement) {
         try {
             const profiles = await window.api.profilesList();
             for (const p of profiles) {
-                rememberProfileName(p.id, p.name, p.job as string | null | undefined);
+                rememberProfileName(p.id, p.name, p.characterJobs, p.characters);
             }
         }
         catch (err) {
@@ -387,7 +389,7 @@ export async function renderSession(root: HTMLElement) {
         // Async refresh: fetch profiles, insert missing job icons, and update labels
         window.api.profilesList().then((profiles: Profile[]) => {
             for (const p of profiles)
-                rememberProfileName(p.id, p.name, p.job);
+                rememberProfileName(p.id, p.name, p.characterJobs, p.characters);
             for (const { chip, cellId } of missingJobs) {
                 const job = getProfileJob(cellId);
                 const icon = createJobIcon(job ?? undefined, "tabJobIcon");
@@ -538,16 +540,17 @@ export async function renderSession(root: HTMLElement) {
                 // Need to create single tab button (view already exists in main)
                 const profilesList: Profile[] = await window.api.profilesList();
                 const p = profilesList.find((x) => x.id === profileId);
-                rememberProfileName(profileId, p?.name, p?.job);
+                rememberProfileName(profileId, p?.name, p?.characterJobs, p?.characters);
                 const title = p?.name ?? profileId;
                 const tabBtn = document.createElement("button");
                 tabBtn.className = "tabBtn sessionTab";
                 tabBtn.dataset.title = title;
                 const splitGlyph = el("span", "tabGlyph", "");
                 (splitGlyph as HTMLElement).style.display = "none";
-                const jobIcon = createJobIcon(p?.job, "tabJobIcon");
+                const firstCharJob = p?.characters?.[0] ? (p.characterJobs?.[p.characters[0]] ?? null) : null;
+                const jobIcon = createJobIcon(firstCharJob, "tabJobIcon");
                 const label = el("span", "tabLabel", title);
-                if (p?.job?.trim()) tabBtn.title = p.job;
+                if (firstCharJob?.trim()) tabBtn.title = firstCharJob;
                 const closeBtn = el("span", "tabClose", "×");
                 closeBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -1195,7 +1198,7 @@ export async function renderSession(root: HTMLElement) {
     ramBtn.addEventListener("click", async () => {
         try {
             await hideSessionViews();
-            const info: { totalMB: number; rows: Array<{ profileName: string; memoryMB: number }> } = await (window as any).api.memoryDetails();
+            const info: { totalMB: number; rows: Array<{ profileName: string; memoryMB: number; category?: "profile" | "plugin" | "system"; shared?: boolean }> } = await (window as any).api.memoryDetails();
             const overlay = el("div", "modalOverlay");
             const modal = el("div", "modal ramModal");
             const header = el("div", "modalHeader");
@@ -1212,17 +1215,53 @@ export async function renderSession(root: HTMLElement) {
             body.style.overflowY = "auto";
 
             if (info.rows.length) {
+                // Group rows by category
+                const profileRows = info.rows.filter((r) => !r.category || r.category === "profile");
+                const pluginRows = info.rows.filter((r) => r.category === "plugin");
+                const systemRows = info.rows.filter((r) => r.category === "system");
+
                 const table = document.createElement("table");
                 table.className = "ramTable";
                 const thead = document.createElement("thead");
                 thead.innerHTML = `<tr><th>${t("ram.modal.process" as TranslationKey)}</th><th>${t("ram.modal.memory" as TranslationKey)}</th></tr>`;
                 table.append(thead);
                 const tbody = document.createElement("tbody");
-                for (const row of info.rows) {
+
+                // Profile rows
+                for (const row of profileRows) {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `<td>${row.profileName}</td><td>${row.memoryMB} MB</td>`;
                     tbody.append(tr);
                 }
+
+                // Plugin section
+                if (pluginRows.length) {
+                    const sectionTr = document.createElement("tr");
+                    sectionTr.className = "ramSectionHeader";
+                    sectionTr.innerHTML = `<td colspan="2">${t("ram.modal.plugins" as TranslationKey)}</td>`;
+                    tbody.append(sectionTr);
+                    for (const row of pluginRows) {
+                        const tr = document.createElement("tr");
+                        if (row.shared) tr.className = "ramSharedRow";
+                        const memLabel = row.shared ? `~${row.memoryMB} MB` : `${row.memoryMB} MB`;
+                        tr.innerHTML = `<td>${row.profileName}</td><td>${memLabel}</td>`;
+                        tbody.append(tr);
+                    }
+                }
+
+                // System section
+                if (systemRows.length) {
+                    const sectionTr = document.createElement("tr");
+                    sectionTr.className = "ramSectionHeader";
+                    sectionTr.innerHTML = `<td colspan="2">${t("ram.modal.system" as TranslationKey)}</td>`;
+                    tbody.append(sectionTr);
+                    for (const row of systemRows) {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `<td>${row.profileName}</td><td>${row.memoryMB} MB</td>`;
+                        tbody.append(tr);
+                    }
+                }
+
                 table.append(tbody);
 
                 const tfoot = document.createElement("tfoot");
@@ -1680,7 +1719,7 @@ export async function renderSession(root: HTMLElement) {
                 syncTabClasses();
                 updateLoginOverlay();
                 const profiles = await window.api.profilesList();
-                profiles.forEach((p) => rememberProfileName(p.id, p.name, p.job));
+                profiles.forEach((p) => rememberProfileName(p.id, p.name, p.characterJobs, p.characters));
                 const existingIds = new Set((profiles ?? []).map((p: Profile) => p.id));
                 const orderedRaw = layout.tabs ?? [];
                 const ordered = (() => {
@@ -2680,7 +2719,9 @@ export async function renderSession(root: HTMLElement) {
                     `;
                     item.append(statusDot);
                     // Add job icon if available
-                    const jobIcon = createJobIcon(profile?.job, "itemJobIcon");
+                    const firstChar = profile?.characters?.[0];
+                    const profileFirstJob = firstChar ? (profile?.characterJobs?.[firstChar] ?? null) : null;
+                    const jobIcon = createJobIcon(profileFirstJob, "itemJobIcon");
                     if (jobIcon) {
                         jobIcon.style.cssText = "width: 24px; height: 24px; flex-shrink: 0;";
                         item.append(jobIcon);
@@ -2788,17 +2829,19 @@ export async function renderSession(root: HTMLElement) {
         }
         const profiles: Profile[] = await window.api.profilesList();
         const p = profiles.find((x) => x.id === profileId);
-        rememberProfileName(profileId, p?.name, p?.job);
+        rememberProfileName(profileId, p?.name, p?.characterJobs, p?.characters);
         const title = p?.name ?? profileId;
         const tabBtn = document.createElement("button");
         tabBtn.className = "tabBtn sessionTab";
         tabBtn.dataset.title = title;
         const splitGlyph = el("span", "tabGlyph", "");
         (splitGlyph as HTMLElement).style.display = "none";
-        const jobIcon = createJobIcon(p?.job, "tabJobIcon");
+        const firstChar2 = p?.characters?.[0];
+        const firstJob2 = firstChar2 ? (p?.characterJobs?.[firstChar2] ?? null) : null;
+        const jobIcon = createJobIcon(firstJob2, "tabJobIcon");
         const label = el("span", "tabLabel", title);
-        if (p?.job?.trim())
-            tabBtn.title = p.job;
+        if (firstJob2?.trim())
+            tabBtn.title = firstJob2;
         const closeBtn = el("span", "tabClose", "×");
         closeBtn.onclick = (e) => {
             e.stopPropagation();
@@ -2917,7 +2960,7 @@ export async function renderSession(root: HTMLElement) {
         // Load all available profiles for cell picker
         const allProfiles: Profile[] = await window.api.profilesList();
         const tabModeProfiles = allProfiles.filter((p) => p.launchMode === "tabs");
-        tabModeProfiles.forEach((p) => rememberProfileName(p.id, p.name, p.job));
+        tabModeProfiles.forEach((p) => rememberProfileName(p.id, p.name, p.characterJobs, p.characters));
         // Get IDs of profiles already used in other tabs/layouts (excluding current layout being edited)
         const usedProfileIds = new Set<string>();
         // First, add profiles from current window's tabs

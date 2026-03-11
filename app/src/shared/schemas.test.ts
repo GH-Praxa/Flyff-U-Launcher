@@ -188,7 +188,7 @@ describe('Schemas', () => {
                 id: 'profile-2',
                 name: 'Full Profile',
                 createdAt: '2024-01-01T00:00:00Z',
-                job: 'Blade',
+                characterJobs: { 'TestChar': 'Blade' },
                 launchMode: 'window',
                 overlayTarget: true,
                 overlaySupportTarget: true,
@@ -217,7 +217,7 @@ describe('Schemas', () => {
         });
 
         it('should accept patch with id and partial fields', () => {
-            const patch = { id: 'profile-1', name: 'New Name', job: 'Knight' };
+            const patch = { id: 'profile-1', name: 'New Name', characterJobs: { 'MyChar': 'Knight' } };
             expect(ProfilePatchSchema.safeParse(patch).success).toBe(true);
         });
     });

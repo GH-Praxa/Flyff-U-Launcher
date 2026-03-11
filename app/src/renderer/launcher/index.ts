@@ -25,11 +25,11 @@ import {
     hideSessionViews,
     showSessionViews,
 } from "../settings";
-import { type Profile, el, clear, createJobIcon, createJobBadge, decorateJobSelect, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
+import { type Profile, el, clear, createJobIcon, decorateJobSelect, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
 import { openConfigModal as _openConfigModal } from "./config-modal";
 import { createNewsUI } from "./news";
 import { createAnnouncementsUI } from "./announcements";
-import { showWindowSelectorForProfile } from "./profile-selectors";
+import { showWindowSelectorForProfile, layoutTooltips } from "./profile-selectors";
 
 export let langMenuCloser: ((e: MouseEvent) => void) | null = null;
 
@@ -369,7 +369,11 @@ export async function renderLauncher(root: HTMLElement) {
         try {
             const profiles = await window.api.profilesList();
             profileNames = new Map(profiles.map((p: Profile) => [p.id, p.name]));
-            profileJobs = new Map(profiles.map((p: Profile) => [p.id, p.job?.trim() || null]));
+            profileJobs = new Map(profiles.map((p: Profile) => {
+                const firstChar = p.characters?.[0];
+                const job = firstChar ? (p.characterJobs?.[firstChar]?.trim() || null) : null;
+                return [p.id, job];
+            }));
         }
         catch (e) {
             console.warn("profilesList failed", e);
@@ -383,22 +387,7 @@ export async function renderLauncher(root: HTMLElement) {
                 const chip = el("div", "layoutChip");
                 const handle = el("span", "dragHandle", "=");
                 const name = el("span", "layoutName", layout.name);
-                const metaParts = [`${layout.tabs.length} Tabs`];
-                const shortLabel = (type: string): string => {
-                    const map: Record<string, string> = {
-                        single: "1x1", "split-2": "1x2", "row-3": "1x3", "row-4": "1x4",
-                        "grid-4": "2x2", "grid-6": "2x3", "grid-8": "2x4",
-                    };
-                    return map[type] ?? type;
-                };
-                const savedLayouts: Array<{ layout: { type: string } }> = layout.layouts ?? [];
-                if (savedLayouts.length > 0) {
-                    metaParts.push(savedLayouts.map((g) => shortLabel(g.layout.type)).join(" - "));
-                } else if (layout.split) {
-                    const typeKey = "type" in layout.split ? (layout.split as { type?: string }).type ?? "split-2" : "split-2";
-                    metaParts.push(shortLabel(typeKey));
-                }
-                const meta = el("span", "layoutMeta", metaParts.join(" | "));
+                const meta = el("span", "layoutMeta", `${layout.tabs.length} Profile`);
                 const actions = el("div", "layoutActions");
                 // --- Profiles expand button ---
                 let profilesRow: HTMLDivElement | null = null;
@@ -598,7 +587,27 @@ export async function renderLauncher(root: HTMLElement) {
                     }
                 };
                 actions.append(profilesBtn, manageBtn, openBtn);
-                chip.append(handle, name, meta, actions);
+                // Layout ASCII preview next to profile count
+                const metaWrap = el("div", "layoutChipMetaWrap");
+                metaWrap.append(meta);
+                const previewTypes: string[] = [];
+                const savedLayoutsArr: Array<{ layout: { type: string } }> = layout.layouts ?? [];
+                if (savedLayoutsArr.length > 0) {
+                    for (const g of savedLayoutsArr) previewTypes.push(g.layout.type);
+                } else if (layout.split) {
+                    const typeKey = "type" in layout.split ? (layout.split as { type?: string }).type ?? "split-2" : "split-2";
+                    previewTypes.push(typeKey);
+                }
+                for (const lt of previewTypes) {
+                    const art = (layoutTooltips as Record<string, string>)[lt];
+                    if (art) {
+                        const pre = document.createElement("pre");
+                        pre.className = "layoutChipArt";
+                        pre.textContent = art;
+                        metaWrap.append(pre);
+                    }
+                }
+                chip.append(handle, name, metaWrap, actions);
                 layoutList.append(chip);
             }
         }
@@ -754,7 +763,7 @@ export async function renderLauncher(root: HTMLElement) {
         const jobFilter = jobSelect.value;
         const filteredProfiles = profiles.filter((p) => {
             const matchesSearch = p.name.toLowerCase().includes(searchTerm);
-            const matchesJob = !jobFilter || (p.job ?? "") === jobFilter;
+            const matchesJob = !jobFilter || Object.values(p.characterJobs ?? {}).includes(jobFilter);
             return matchesSearch && matchesJob;
         });
         if (filteredProfiles.length === 0) {
@@ -878,16 +887,23 @@ export async function renderLauncher(root: HTMLElement) {
                     console.error("profilesSetOverlaySupportTarget failed:", e);
                 }
             };
-            leftInfo.append(btnTag, btnSupport, name);
-            const jobBadge = createJobBadge(p.job);
-            if (jobBadge)
-                leftInfo.append(jobBadge);
-            leftInfo.append(el("span", "badge subtle", p.launchMode === "tabs" ? t("profile.mode.tabs") : t("profile.mode.window")));
+            const nameBlock = el("div", "nameBlock");
+            const nameRow = el("div", "nameRow");
+            nameRow.append(name, el("span", "badge subtle", p.launchMode === "tabs" ? t("profile.mode.tabs") : t("profile.mode.window")));
+            nameBlock.append(nameRow);
             if (p.characters && p.characters.length > 0) {
-                const charBadges = el("span", "charBadges");
-                p.characters.forEach(c => charBadges.append(el("span", "badge charBadge", c)));
-                leftInfo.append(charBadges);
+                const charList = el("div", "charList");
+                p.characters.forEach(c => {
+                    const charItem = el("span", "charListItem");
+                    charItem.append(el("span", "charListName", c));
+                    const charJob = p.characterJobs?.[c];
+                    const icon = createJobIcon(charJob, "charListJobIcon");
+                    if (icon) charItem.append(icon);
+                    charList.append(charItem);
+                });
+                nameBlock.append(charList);
             }
+            leftInfo.append(btnTag, btnSupport, nameBlock);
             btnDel.onclick = async () => {
                 await window.api.profilesDelete(p.id);
                 await reload();
@@ -904,9 +920,6 @@ export async function renderLauncher(root: HTMLElement) {
             nameInput.className = "input";
             nameInput.value = p.name;
             nameInput.title = t("profile.nameHint");
-            const jobSelect = document.createElement("select");
-            jobSelect.className = "select";
-            renderJobOptions(jobSelect, p.job ?? "");
             const modeWrap = el("div", "modeWrap");
             const modeLabel = el("label", "checkbox");
             const modeCheck = document.createElement("input");
@@ -945,7 +958,7 @@ export async function renderLauncher(root: HTMLElement) {
                 await window.api.profilesUpdate({
                     id: p.id,
                     name: nameInput.value.trim() || p.name,
-                    job: jobSelect.value,
+                    characterJobs: Object.keys(localCharJobs).length > 0 ? localCharJobs : undefined,
                     launchMode: modeCheck.checked ? "tabs" : "window",
                     characters: localChars.length > 0 ? localChars : undefined,
                 });
@@ -969,43 +982,58 @@ export async function renderLauncher(root: HTMLElement) {
                 manage.classList.add("hidden");
                 card.classList.remove("editing");
             };
-            // Character badges inline in modeWrap
+            // Character list with per-char job selection
             const localChars: string[] = [...(p.characters ?? [])];
-            const charBadgesWrap = el("div", "charBadgesWrap");
+            const localCharJobs: Record<string, string> = { ...(p.characterJobs ?? {}) };
+            const charEditWrap = el("div", "charEditWrap");
             const charInput = document.createElement("input");
             charInput.className = "input charInlineInput";
             charInput.placeholder = t("profile.characters.placeholder");
             charInput.title = t("profile.characters.inputHint");
             charInput.maxLength = 64;
-            const renderCharBadges = () => {
-                charBadgesWrap.innerHTML = "";
+            const renderCharEdits = () => {
+                charEditWrap.innerHTML = "";
                 localChars.forEach((name, idx) => {
-                    const badge = el("span", "badge charBadge");
-                    badge.append(document.createTextNode(name));
+                    const row = el("div", "charEditRow");
+                    const charJobSelect = document.createElement("select");
+                    charJobSelect.className = "select charJobSelect";
+                    renderJobOptions(charJobSelect, localCharJobs[name] ?? "");
+                    charJobSelect.onchange = () => {
+                        if (charJobSelect.value) {
+                            localCharJobs[name] = charJobSelect.value;
+                        } else {
+                            delete localCharJobs[name];
+                        }
+                    };
+                    const nameSpan = el("span", "charEditName", name);
                     const btnX = el("button", "charBadgeDel", "×");
                     btnX.title = t("profile.characters.remove");
-                    btnX.onclick = () => { localChars.splice(idx, 1); renderCharBadges(); };
-                    badge.append(btnX);
-                    charBadgesWrap.append(badge);
+                    btnX.onclick = () => {
+                        localChars.splice(idx, 1);
+                        delete localCharJobs[name];
+                        renderCharEdits();
+                    };
+                    row.append(charJobSelect, nameSpan, btnX);
+                    charEditWrap.append(row);
                 });
             };
-            renderCharBadges();
+            renderCharEdits();
             const doAddChar = () => {
                 const val = charInput.value.trim();
                 if (!val || localChars.includes(val)) return;
                 localChars.push(val);
                 charInput.value = "";
-                renderCharBadges();
+                renderCharEdits();
             };
             charInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doAddChar(); } });
             const charAddBtn = el("button", "btn charAddBtn", t("profile.characters.add"));
             charAddBtn.type = "button";
             charAddBtn.onclick = () => { doAddChar(); charInput.focus(); };
-            const charRow = el("div", "charRow");
-            charRow.append(charBadgesWrap, charInput, charAddBtn);
-            modeWrap.append(charRow, modeLabel);
+            const charAddRow = el("div", "charRow");
+            charAddRow.append(charInput, charAddBtn);
+            modeWrap.append(charEditWrap, charAddRow, modeLabel);
             const grid = el("div", "manageGrid");
-            grid.append(nameInput, jobSelect, modeWrap);
+            grid.append(nameInput, modeWrap);
             const actionBar = el("div", "manageActions");
             const actionSpacer = el("div", "spacer");
             actionBar.append(btnSave, btnClone, actionSpacer, btnDel, btnClose);

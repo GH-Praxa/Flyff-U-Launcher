@@ -33,7 +33,7 @@ export type Profile = {
     id: string;
     name: string;
     createdAt: string;
-    job?: string;
+    characterJobs?: Record<string, string>;
     launchMode: LaunchMode;
     overlayTarget?: boolean;
     overlaySupportTarget?: boolean;
@@ -123,7 +123,24 @@ function normalizeProfile(v: unknown): Profile | null {
         id: String(p.id ?? generateId()),
         name: String(p.name ?? "Profil"),
         createdAt: String(p.createdAt ?? new Date().toISOString()),
-        job: typeof p.job === "string" ? p.job : undefined,
+        characterJobs: (() => {
+            // Migrate old single-job field to per-character jobs
+            if (p.characterJobs && typeof p.characterJobs === "object" && !Array.isArray(p.characterJobs)) {
+                const cj: Record<string, string> = {};
+                for (const [k, v] of Object.entries(p.characterJobs as Record<string, unknown>)) {
+                    if (typeof v === "string" && v) cj[k] = v;
+                }
+                return Object.keys(cj).length > 0 ? cj : undefined;
+            }
+            // Migration: old `job` field → assign to first character
+            if (typeof p.job === "string" && p.job) {
+                const chars = Array.isArray(p.characters) ? p.characters.filter((c: unknown): c is string => typeof c === "string" && c.length > 0) : [];
+                if (chars.length > 0) {
+                    return { [chars[0]]: p.job };
+                }
+            }
+            return undefined;
+        })(),
         launchMode: (p.launchMode === "window" ? "window" : "tabs") as LaunchMode,
         overlayTarget: !!p.overlayTarget,
         overlaySupportTarget: !!p.overlaySupportTarget,

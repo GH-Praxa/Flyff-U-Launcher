@@ -1,103 +1,227 @@
-﻿# 📦 Yama Notları
+# 📦 Yama Notları
 
 ---
-
-## 🆕 Version 3.1.0
+## 🆕 Sürüm 3.1.0
 
 ### ✨ Yeni Özellikler
 
+**Yeni Düzen Türleri**
+- Dikey düzenler: 2x1, 3x1, 4x1 (görünümler alt alta)
+- Asimetrik düzenler: Ana pencere + 2–3 yan pencere sağda (`main-r2`, `main-r3`) veya altta (`main-b2`, `main-b3`)
+- Asimetrik düzenlerin bölünmesi kaydırıcı ile ayarlanabilir (min %20 / maks %80)
+- ASCII önizlemeli düzen seçici: Üzerine gelindiğinde düzenin bir diyagramı gösterilir
+
+**Profil Dışa/İçe Aktarma**
+- Profiller `.flyffprofile` dosyası olarak dışa ve içe aktarılabilir
+- Profil meta verileri, Electron oturum çerezleri ve localStorage verilerini içerir
+- Bilgisayarlar arası yedekleme ve transfer imkanı sağlar
+
+**Karakter Adları & Meslekler (Karakter Başına)**
+- Karakter adları ve meslekleri profilde karakter bazında kaydedilebilir — Profil listesinde meslek ikonlu rozetler olarak gösterilir, filtrelenebilir ve eklentilerde açılır kutu ile seçilebilir
+
 **Launcher Duyuruları**
-- Sağ paneldeki yeni bölüm, uygulama güncellemesi gerektirmeden geliştirici mesajlarını gösterir
-- Türler: 🐛 Hata, ℹ Bilgi, ✨ Özellik, ⚠ Uyarı — her biri farklı renkle
-- Tam lokalizasyon: mesajlar desteklenen 8 dile çevrilebilir
-- Ayarlar → İstemci Ayarları → „Launcher duyurularını göster" altında devre dışı bırakılabilir
-- Sağ paneldeki açık profiller artık daraltılabilir
+- Sağ panelde yeni bölüm: uygulama güncellemesi gerektirmeden geliştiriciden mesajlar gösterir — ör. bilinen hatalar, güncel gelişmeler veya planlanan özellikler; Almanca ve İngilizce mevcut, ayarlardan devre dışı bırakılabilir
+- Sağ paneldeki açık profiller açılıp kapatılabilir
 
----
+**Yazı Tipi Ayarı**
+- İstemci ayarlarında yeni "Overlay ve UI yazı tipi" ayarı — mevcut yazı tipleri: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel; yazı tipi Launcher overlay'lerine ve oyun içi DOM tabanlı UI öğelerine uygulanır
 
-## 🐛 Version 3.0.5
+**Yazı Boyutu Ayarı**
+- Yeni ayar "Launcher yazı boyutu": Launcher penceresindeki metin boyutu ölçeklenebilir (%75–%150), oyun içinde geçerli değildir
+
+**Hata Günlüğü & Geliştiriciye Mesaj**
+- Günlük penceresi Sidepanel'den sekme çubuğuna taşındı — hata günlüklerini görüntüleme, kaydetme ve silme ile geliştiriciye mesaj gönderme imkanı sağlar (gösterilen hatalar birlikte gönderilir); 60 saniyelik bekleme süresi
+
+**Quest Guide Eklentisi**
+- Sidepanel'de yeni eklenti: başlangıç/bitiş NPC'si, görev ve ödülleri ile harita işaretçisi içeren görevleri gösterir — görev, NPC, canavar ve eşya verileri API-Fetch ile gereklidir
+
+**Birleşik Yükseltme Hesaplayıcı**
+- Yükseltme hesaplayıcı silah, takı, zırh delme, silah delme, Ultimate için ek hesaplamalarla genişletildi; Pity sistemi, FWC ve etkinlik bonusu ile mevcut deneme sayısı dahil
+
+**UI Araç İpuçları & Yardım Simgeleri**
+- Launcher'daki tüm önemli kontrol öğelerinde araç ipuçları bulunur (8 dilde)
+- Karmaşık özellikler için yardım simgeleri (?): Profil adı, sekme/pencere modu, karakter adları
+- Launcher genişliği/yüksekliği, filtre, düzen seçimi ve ızgara hücreleri için ipuçları
+
+**Telemetri**
+- İsteğe bağlı anonim başlangıç istatistikleri (sürüm, işletim sistemi, rastgele ID)
+- Varsayılan olarak etkin, kişisel veri yok, istediğiniz zaman devre dışı bırakılabilir
+
+**Güncelleme Kontrolü & Sürüm Geri Alma**
+- Yeni ayar: Başlangıçta otomatik güncelleme kontrolü (açık/kapalı)
+- Ayarlarda manuel "Şimdi kontrol et" butonu
+- Sürüm geri alma: Eski Launcher sürümleri (3.0.5'ten itibaren) doğrudan ayarlardan yüklenebilir
+- Tüm mevcut GitHub sürümlerini tarih ve mevcut sürüm işareti ile gösteren açılır menü
+
+### 🚀 Performans
+
+**OCR Sistemi Optimize Edildi**
+- Platform güvenli ekran yakalama yöntemi: Linux'ta `xwd` (GPU teması yok), Win/Mac'te `capturePage()` — GPU durakslamalarını ve oyun donmalarını önler
+- Linux'ta yakalama hatası durumunda oyunu dondurmak yerine tarama atlanır
+- Piksel hash önbelleği: Kare değişmediğinde OCR atlanır — sabit oyun içeriklerinde CPU yükünü azaltır
+- Boş OCR sonuçları doğru şekilde önbelleğe alınır — değişmemiş piksellerde gereksiz Tesseract tekrarları yapılmaz
+- Global Tesseract eşzamanlılık sınırı (maks. 1 aynı anda) — GPU sürecinin CPU açlığını önler
+- Sık DB okumaları yerine profiller, ROI deposu ve ROI görünürlük deposu için bellek içi önbellekler
+
+**Overlay Optimizasyonu**
+- Verimli overlay yoklaması: minimize edilmiş opaklık değişimleri ve azaltılmış aralıklar
+- Linux: Şeffaf overlay'ler için gereksiz göster/gizle döngülerinden kaçınma
+
+### ⚙️ İyileştirmeler
+
+- **Düzen kartları iyileştirildi**: Düzen kartında doğrudan düzen türünün ASCII önizlemesi; "X Sekme" yerine "X Profil" gösterimi; daha kompakt görünüm
+- **Profil kartları daha kompakt**: Azaltılmış kart yüksekliği, meslek ikonlu yatay rozetler olarak karakterler profil adının altında
+- **Ayarlar tamamen yeniden tasarlandı**: Kategorize alt sayfalar, geçiş anahtarları ve kaydırıcı kartlar ile yeni kenar çubuğu düzeni
+- **RAM Göstergesi**: "RAM kullanımını göster" ayarı ile profil, eklenti ve sistem süreci başına bellek detayları
+- **Killfeed overlay'i konumlandırılabilir**: Overlay sürükleyerek taşınabilir, konum kaydedilir (düzende x/y)
+- **Killfeed karakter seçimi**: Karakter adları profilden açılır kutu ile seçilir
+- **Side-Panel butonu** oturum sekme çubuğunda (overlay yerine)
+- **Sidepanel'de Killfeed ve tarama sekmeleri basitleştirildi**: daha düzenli görünüm ve azaltılmış karmaşıklık
 
 ### 🐛 Hata Düzeltmeleri
-- Düzeltildi: Google hesabıyla giriş sorunu
+
+- Linux'ta GLib/GTK doğrulama uyarıları bastırıldı (zararsız Chromium dahili mesajları)
+
+### 📦 Linux Desteği
+
+- Linux için Tesseract ikili dosyaları ve kütüphaneleri paketlendi
+- Linux için tessdata dil dosyaları paketlendi
+
+### 🌐 Çeviriler
+
+- Çeviriler genişletildi
 
 ---
+## 🐛 Sürüm 3.0.5
 
-## 🐛 Version 3.0.4
-
-### 🐛 Bug Fixes (macOS)
-- Fixed: "damaged and can't be opened" error — the app inside the DMG is now ad-hoc signed before the DMG is assembled.
-- Fixed: Signing order is now correct: `package → sign → make DMG`.
-- Note: macOS still shows an "unidentified developer" prompt. Right-click the app → **Open** → **Open Anyway**.
+### 🐛 Hata Düzeltmeleri
+- Düzeltildi: Google hesabıyla giriş yapma sorunu
 
 ---
+## 🐛 Sürüm 3.0.4
 
+### 🐛 Hata Düzeltmeleri (macOS)
+- Düzeltildi: "damaged and can't be opened" hatası — DMG içindeki uygulama artık DMG oluşturulmadan önce ad-hoc olarak imzalanıyor (daha önce imzalama adımı DMG tamamlandıktan sonra yapılıyordu).
+- Düzeltildi: Sıralama artık doğru: `paketleme → imzalama → DMG oluşturma`.
+- Not: macOS ilk başlatmada "Bilinmeyen Geliştirici" uyarısını göstermeye devam eder. Uygulamaya sağ tıklayın → **Aç** → **Yine de Aç** veya README'deki Terminal komutunu kullanın.
+
+---
+## 🆕 Sürüm 3.0.0
+
+### 🆕 Yeni Araç: Yükseltme Maliyet Hesaplayıcı
+- +0'dan +10'a kadar eşya yükseltmeleri için beklenen maliyetleri hesaplar,
+malzeme ihtiyacı, deneme sayısı ve Low Sprotect ile Sprotect karşılaştırması dahil.
+
+### ✨ Yeni Özellikler
+- Sidepanel'de yeni Günlükler sekmesi: canlı hata günlüğü (Uyarı/Hata) ile silme ve kaydetme işlevi.
+- API-Fetch eklentisi 3.0.0: yeni yerleşik Sidepanel arayüzü (artık ayrı Python UI penceresi yok).
+
+### 🚀 Platform & Dağıtım - Linux ve Mac Desteği
+- GitHub Actions'da Windows, macOS ve Linux için derleme/yayınlama hattı.
+- Yeni paket formatları: macOS DMG ile Linux AppImage/DEB/RPM.
+- Platforma özel Tesseract paketleme (win32, darwin, linux) ile uyarlanmış çalışma zamanı algılama/geri dönüş.
+
+### 🐛 Hata Düzeltmeleri
+- Fcoin-Penya kuru düzeltildi
+- Killfeed: Hızlı OCR güncellemelerinde yarış koşulları azaltıldı (profil bazında serileştirme), yayın güncellemeleri artık atılmıyor.
+
+### 📦 Çalışma Zamanı & Bağımlılıklar
+- Görüntü işleme için Sharp kütüphanesi pakete dahil edildi (ayrı kurulum gerekmez).
+
+### ⚙️ İyileştirmeler
+- Killfeed canavar tanıma artık canavar HP'sine öncelik veriyor (toleranslı), ardından element/seviye.
+- TTK hedef tanıma HP toleransı ile daha dayanıklı; canavar bekleme süresi 5s'den 2s'ye ayarlandı.
+- İstatistik motoru OCR seviye gürültüsü ile gerçek seviye değişimleri arasında daha iyi ayrım yapıyor.
+- ### Diğer Killfeed İyileştirmeleri Takip Edecek
+- API-Fetch platform kapsamında yeniden oluşturuldu. Hala ayarlardan açılabilir, ek olarak Sidepanel'de mevcut.
+- Ayarlar → Dokümantasyon genişletildi.
+
+### 🧹 Temizlik Çalışmaları
+- Eski API-Fetch Python dosyaları kaldırıldı (.py, .exe), JS/Sidepanel varyantı lehine.
+- Tesseract kaynakları yeni platform alt klasörlerine yeniden yapılandırıldı.
+
+:::accordion[Platforma Göre Depolama Yolları]
+Tüm kullanıcı verileri platforma bağlı olarak aşağıdaki dizinlerde bulunur:
+
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**2.5.1'den beri yeni dosyalar:**
+- `user/tools/upgrades/upgrade_cost_calc.json` — Yükseltme maliyet hesaplayıcı
+- `user/logs/errors-*.txt` — Hata günlükleri
+- `user/logs/ocr/` — OCR hata ayıklama günlükleri
+
+:::
+
+---
 ## 🆕 Sürüm 2.5.1
 
 ### 🆕 Yeni Özellik: Giant Tracker
-Killfeed eklentisindeki bağımsız pencere — **Giants**, **Violets** ve **Bosses** için kill istatistiklerini toplar ve görselleştirir.
+Killfeed eklentisi içinde bağımsız pencere — **Giant**, **Violet** ve **Boss** monster'lar için öldürme istatistiklerini kaydeder ve görselleştirir.
 
 **Filtre Sekmeleri**
-- 5 sekme: **Tümü** · **Giants** · **Violets** · **Bosses** · **Drops**
-- **Bosses** — `boss` rütbesine göre filtreler (kırmızı kart kenarlığı, özel ikon stili)
-- **Drops** — yalnızca drop kaydı olan canavarları gösterir; kart içinde loot havuzu önizlemesini (nadirliğe göre ilk 5 eşya) içerir
+- 5 sekme: **Tümü** · **Giant** · **Violet** · **Boss** · **Ganimetler**
+- **Boss** — `boss` rütbesine göre filtreler (kırmızı kart kenarlığı, özel ikon stili)
+- **Ganimetler** — yalnızca kaydedilmiş ganimetleri olan monster'ları gösterir, kartın içinde ganimet havuzu önizlemesi (nadirliğe göre ilk 5 eşya) dahil
 
-**Kill İstatistikleri**
-- Compact ve Expanded modlu kart görünümü
+**Öldürme İstatistikleri**
+- Kompakt ve genişletilmiş modlu kart görünümü
 - Zaman aralıkları: Bugün, Hafta, Ay, Yıl, Toplam
-- Canavar bilgisi: İkon, Ad, Seviye, Element, Rütbe, HP, ATK
+- Monster bilgisi: İkon, Ad, Seviye, Element, Rütbe, HP, ATK
 
-**Drop Takibi**
-- Canavarın loot havuzundan drop kaydı (nadirlik filtresiyle)
-- Canavar başına drop geçmişi: eşya adı, kill sayacı değeri, zaman damgası
-- İstatistikler: Ø kill/drop, son droptan beri kill
+**Ganimet Takibi**
+- Monster'ın ganimet havuzundan ganimetleri kaydetme (nadirlik filtresi ile)
+- Monster başına ganimet geçmişi: Eşya adı, öldürme sayacı, zaman damgası
+- İstatistikler: Ort. öldürme/ganimet, son ganimetten bu yana öldürme
 
 **Time to Kill (TTK)**
-- Giants, Violets ve Bosses için savaş süresini otomatik ölçer
-- Hedef seçimi kaldırıldığında 10 sn tolerans (buff, heal vb.) — duraklama süresi TTK'ye dahil edilmez
-- Canavar adı + maksimum HP parmak izi: hedef güvenilir şekilde yeniden tanınır
-- Gösterim: Son TTK, Ø TTK, En Hızlı
-- Kill geçmişine kalıcı kaydedilir (CSV sütunu `TTK_ms`)
+- Giant, Violet ve Boss'lara karşı savaş süresini otomatik ölçer
+- Hedefin seçimini kaldırırken (buff, iyileştirme vb.) 10s bekleme süresi — duraklama süresi TTK'ya dahil edilmez
+- Monster adı + maks HP parmak izi: Hedef güvenilir şekilde yeniden tanınır
+- Gösterim: Son TTK, Ort. TTK, En Hızlı
+- Öldürme geçmişinde kalıcı depolama (CSV sütunu `TTK_ms`)
 
 **Diğer**
-- Kill sayısına, ada veya seviyeye göre sıralama
-- Canavar adına göre filtreleme için arama alanı
+- Öldürme, ad veya seviyeye göre sıralama
+- Monster adına göre filtreleme için arama alanı
 
-### ✨ Ek İyileştirmeler
-- Killfeed: canavar algılama iyileştirildi
-- Yeni kimliklendirme ağırlığı: Canavar HP > Canavar Seviyesi > Canavar Elementi
-- Killfeed: canavar takibi artık öldürülen mobları sayıyor
-- Killfeed: geçmiş eklendi (profil bazında)
-  - Tarih başına tekil kill kayıtlarını içeren günlük dosya (`Tarih/Saat`, `Karakter`, `Seviye`, `Monster-ID`, `Rütbe`, `Canavar`, `Element`, `EXP Artışı`, `Beklenen EXP`, `TTK_ms`)
-  - `Kills`, `Toplam EXP`, `Canavar Dağılımı`, `İlk/Son Kill` içeren günlük toplu özet
-- Killfeed: yan paneldeki canavar takibi artık kill sonrası hemen güncelleniyor (sekme değiştirmek gerekmiyor)
-- Killfeed: canavar takip akordeonlarında artık her rütbe için tekil kill ListView'ını açan bir Kills düğmesi var.
-  Tekil kill kayıtları doğrudan ListView içinden silinebilir.
-  Tekil kill silindiğinde AppData geçmiş dosyaları (daily/YYYY-MM-DD.csv, history.csv) ve yan panel durumu güncellenir.
-- Killfeed: yan panel artık overlay hedef profilini stabil şekilde takip ediyor (profil ID'leri arasında atlama yok)
-- Canavar referans verileri güncellendi
-- "Yerleşim seç" iletişim penceresi tasarımı iyileştirildi
-- "Profilleri yönet (çıkış yap)" iletişim penceresi tasarımı iyileştirildi
+### ✨ Diğer İyileştirmeler
+- Killfeed: İyileştirilmiş monster tanıma
+- Yeni tanımlama ağırlıklandırması: Monster HP > Monster Seviye > Monster Element
+- Killfeed: Monster takibi artık öldürülen mob'ları sayıyor
+- Killfeed: Geçmiş eklendi (profil başına)
+  - Tarih başına günlük dosya ile tekil öldürmeler (`Tarih/Saat`, `Karakter`, `Seviye`, `Monster-ID`, `Rütbe`, `Monster`, `Element`, `EXP artışı`, `beklenen EXP`, `TTK_ms`)
+  - Toplu günlük özet: `Öldürmeler`, `toplam EXP`, `Monster dağılımı`, `ilk/son öldürme`
+- Killfeed: Sidepanel'deki monster takibi artık öldürmelerden hemen sonra güncelleniyor (sekme değiştirme gerekmiyor)
+- Killfeed: Monster takip akordeonlarında rütbe başına tekil öldürmelerin ListView'ı ile Öldürmeler butonu var.
+  Tekil öldürmeler doğrudan ListView'dan silinebilir.
+  Tekil öldürmeler silinirken AppData geçmiş dosyaları (daily/YYYY-MM-DD.csv, history.csv) ve Sidepanel durumu güncellenir.
+- Killfeed: Sidepanel artık overlay hedef profilini kararlı şekilde takip ediyor (profil kimlikleri arasında atlama yok)
+- Monster referans verileri güncellendi
+- "Düzen seç" diyalog tasarımı optimize edildi
+- "Profilleri yönet (çıkış yap)" diyalog tasarımı optimize edildi
 
 ### 🐛 Hata Düzeltmeleri
-- Overlay'ler artık kapatma iletişim penceresinin üstüne binmiyor
-- Dokümantasyondaki akordeonlar artık doğru şekilde görüntüleniyor
+- Overlay'ler artık kapatma diyaloğunu örtmüyor
+- Dokümantasyondaki akordeonlar doğru şekilde gösteriliyor
 - Sürüm 2.3.0'dan yeni AppData yapısına (`user/`) geçiş artık güvenilir şekilde çalışıyor
-- Killfeed: negatif OCR EXP sıçramaları artık OCR gürültüsü olarak filtreleniyor ve kill algılamasını bozmuyor
+- Killfeed: Negatif OCR-EXP atlamaları OCR gürültüsü olarak yakalanıyor ve artık öldürme algılamayı bozmuyor
 
-### 🧹 Temizlik
+### 🧹 Temizlik Çalışmaları
 - Renderer mimarisi modülerleştirildi (dahili yeniden yapılandırma)
-- Dahili veri klasörü `api_fetch/`, `cache/` olarak yeniden adlandırıldı
-- AppData dizin yapısı yeniden düzenlendi: veriler artık AppData\Roaming\Flyff-U-Launcher\user alt klasöründe tutuluyor
-- Otomatik geçiş: mevcut veriler ilk açılışta kesintisiz şekilde taşınıyor — ilerleme göstergesiyle birlikte
-- Statik veriler (referans verileri dahil) build içine gömülüyor, böylece release build'lerinde güvenilir şekilde kullanılabiliyor
-- Konsolun daha okunabilir olması için Killfeed/overlay debug logları azaltıldı
+- Dahili veri klasörü `api_fetch/` → `cache/` olarak yeniden adlandırıldı
+- AppData dizin yapısı yeniden düzenlendi: Veriler artık AppData\Roaming\Flyff-U-Launcher\user alt klasöründe sıralanmış
+- Otomatik geçiş: Mevcut veriler ilk başlatmada sorunsuz şekilde taşınır — ilerleme göstergesi ile
+- Statik veriler (referans verileri dahil) derlemeye dahil edildi, böylece yayın derlemelerinde güvenilir şekilde kullanılabilir
+- Killfeed/overlay hata ayıklama günlükleri azaltıldı, konsol daha okunabilir
 
 :::accordion[Yeni Depolama Yolları]
-Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bulunur:
+Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında:
 
 - `user/config/settings.json` — İstemci ayarları
 - `user/config/features.json` — Özellik bayrakları
-- `user/profiles/profiles.json` — Başlatıcı profilleri
+- `user/profiles/profiles.json` — Launcher profilleri
 - `user/profiles/rois.json` — ROI kalibrasyonları
 - `user/profiles/ocr-timers.json` — OCR zamanlayıcıları
 - `user/ui/themes.json` — Temalar
@@ -105,9 +229,9 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 - `user/ui/tab-active-color.json` — Aktif sekme rengi
 - `user/shopping/item-prices.json` — Premium alışveriş listesi fiyatları
 - `user/plugin-data/` — Eklenti ayarları
-- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Profil başına Killfeed günlük özeti
-- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Kill ve gün bazında Killfeed ayrıntılı geçmişi
-- `user/cache/` — API fetch verileri ve ikonlar
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Killfeed günlük özeti (profil başına)
+- `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Killfeed detay geçmişi (öldürme ve gün başına)
+- `user/cache/` — API-Fetch verileri & ikonlar
 - `user/logs/` — Tanılama günlükleri
 :::
 
@@ -115,15 +239,15 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 
 ## 🆕 Sürüm 2.3.0
 
-### 🐛 Düzeltmeler
+### 🐛 Hata Düzeltmeleri
 
-- OCR değerleri (yan panel) artık oyun ayrı bir çoklu pencere oturumunda çalışırken doğru algılanıyor
+- OCR değerleri (Sidepanel) artık oyun ayrı bir Multi-Window penceresinde çalışırken doğru şekilde algılanıyor
 - ROI kalibrasyonu artık yanlışlıkla yeni bir oturum açmıyor, mevcut oyun penceresini kullanıyor
-- OCR artık güvenilir şekilde dahili Tesseract'ı kullanıyor — ayrı bir kurulum artık gerekli değil
+- OCR artık güvenilir şekilde dahil edilen Tesseract'ı kullanıyor — ayrı bir kurulum artık gerekli değil
 
 ### ✨ İyileştirmeler
 
-- Dokümantasyon akordeonları artık yerel HTML5 öğelerini kullanıyor (JavaScript artık gerekli değil)
+- Dokümantasyon akordeonları artık yerel HTML5 öğeleri kullanıyor (JavaScript artık gerekli değil)
 
 ---
 
@@ -131,77 +255,77 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 
 ### ➕ Yeni Özellikler
 
-**Yerleşimler**
-- Yerleşim özelliği elden geçirildi, desteklenen oyun görünümleri:
-  - 1x1 tek pencere
-  - 1x2 bölünmüş ekran
-  - 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4 çoklu ekran
-- Oyun ekranları açılırken ilerlemeyi gösteren ilerleme çubuğu sekme çubuğuna eklendi
-- Çoklu pencere sistemi: birden fazla bağımsız oturum penceresi açılabilir
+**Düzenler**
+- Düzen işlevi yeniden tasarlandı, desteklenen oyun görünümleri:
+  - 1x1 Tek pencere
+  - 1x2 Bölünmüş ekran
+  - 1x3, 1x4, 2x2, 3+2, 2x3, 4+3, 2x4 Çoklu ekranlar
+- Sekme çubuğuna, oyun ekranlarının açılma ilerlemesini gösteren ilerleme çubuğu eklendi
+- Çoklu pencere sistemi: Birden fazla bağımsız oturum penceresi açılabilir
 
-**Kısayollar** — serbest atanabilir tuş kombinasyonları (2-3 tuş)
+**Kısayol Tuşları** — serbestçe atanabilen tuş kombinasyonları (2-3 tuş)
 - Overlay'leri gizle
-- Yan panel aç/kapat
+- Sidepanel aç/kapat
 - Sekme çubuğu aç/kapat
-- Aktif pencerenin ekran görüntüsünü `C:\Users\<USER>\Pictures\Flyff-U-Launcher\` klasörüne kaydet
+- Aktif pencerenin ekran görüntüsünü `C:\Users\<USER>\Pictures\Flyff-U-Launcher\` konumuna kaydet
 - Önceki sekme / Sonraki sekme
 - Sonraki pencere örneği
-- CD zamanlayıcısını 00:00’a sıfırla, ikonlar tık bekler
+- CD zamanlayıcıyı 00:00'a ayarla, ikonlar tıklamayı bekler
 - FCoins hesaplayıcısını aç
 - Premium alışveriş listesini aç
 
 **Yeni İstemci Ayarları**
-- Launcher genişliği / yüksekliği
-- Grid sekmelerini sırayla yükle
-- Yerleşimler için sekme gösterimi
-- Aktif grid görünümünü vurgula
-- Değişikliklerde yerleşimleri güncelle
-- Durum mesajı süresi
+- Launcher genişliği / Launcher yüksekliği
+- Izgara sekmelerini sıralı yükle
+- Düzenler için sekme gösterimi
+- Aktif ızgara görünümünü vurgula
+- Değişikliklerde düzenleri güncelle
+- Durum mesajları süresi
 - FCoins döviz kuru
-- Sekme yerleşimi görüntü modu (Kompakt, Gruplu, Ayrı, Mini-grid)
+- Sekme düzeni görüntüleme modu (Kompakt, Gruplu, Ayrı, Mini Izgara)
 
-**Menüler ve Araçlar**
-- Sekme çubuğuna yeni “Araçlar (yıldız simgesi)” menüsü eklendi.
-  Menü tarayıcı görünümünü gizler, karakterler oturumda kalır.
-  - Dahili araçlar: FCoins → Penya hesaplayıcı, Premium alışveriş listesi
-  - Harici bağlantılar: Flyff Universe ana sayfası, Flyffipedia, Flyffulator, Skillulator
-- Sekme çubuğunda yeni “Klavye” menüsü ayarlanmış kısayolları gösterir.
-  Menü tarayıcı görünümünü gizler, karakterler oturumda kalır.
+**Menüler & Araçlar**
+- Sekme çubuğuna yeni "Araçlar (yıldız simgesi)" menüsü eklendi.
+  Menü tarayıcı görünümünü gizler, karakterler giriş yapmış kalır.
+  - Dahili araçlar: FCoins-Penya hesaplayıcı, Premium alışveriş listesi
+  - Harici bağlantılar: Flyff Universe Ana Sayfa, Flyffipedia, Flyffulator, Skillulator
+- Sekme çubuğuna yeni menü (klavye) atanmış kısayol tuşlarını gösterir.
+  Menü tarayıcı görünümünü gizler, karakterler giriş yapmış kalır.
 
 **Dokümantasyon**
-- Ayarlar menüsüne çok dilli açıklamalar içeren yeni “Dokümantasyon” sekmesi eklendi:
-  - Profil oluştur, yerleşim oluştur, veri yolları ve kalıcılık, API fetch,
-    CD zamanlayıcı, killfeed, FCoins <-> Penya, Premium alışveriş listesi
-- Metin mevcut tüm dillere çevrildi. Bazı görseller henüz yok.
-  Yedek: İngilizce arayüz → Almanca arayüz.
+- Ayarlar menüsünde yeni "Dokümantasyon" sekmesi, çeşitli dillerde açıklamalar:
+  - Profil oluşturma, düzen oluşturma, veri yolları & kalıcılık, API-Fetch,
+    CD zamanlayıcı, Killfeed, FCoins <-> Penya, Premium alışveriş listesi
+- Metin tüm mevcut dillere çevrildi. Bazı görseller henüz eksik.
+  Geri dönüş: İngilizce UI → Almanca UI.
 
 **Diğer**
-- Yeni “Steel Ruby” teması eklendi
+- Yeni "Steel Ruby" teması eklendi
 - Launcher, haber akışının altında zaten açılmış profillerin listesini gösterir
-- Ayarlar → Destek bölümüne bağış özelliği eklendi
-- Çoklu sekme kapatma diyaloguna “Tekil sekmelere ayır” seçeneği eklendi
-- Halihazırda oturum açıkken bir profil açıldığında, mevcut pencereye ekleme veya yeni pencere oluşturma sorulur
+- Ayarlar → Destek'e bağış işlevi eklendi
+- MultiTabs kapatma diyaloğunda "Tekil sekmelere ayır" seçeneği bulunur
+- Halihazırda aktif bir oturum varken profil açıldığında, mevcut pencereye eklenip eklenmeyeceği veya yeni pencere oluşturulup oluşturulmayacağı sorulur
 
-### 🧹 Temizlik
+### 🧹 Temizlik Çalışmaları
 
-- Launcher penceresinin artık bir minimum boyutu var ve o sınıra kadar duyarlı
-- Varsayılan pencere boyutu 980×640’tan 1200×970’e değiştirildi
-- Ayarlar menüsüne “X” düğmesi eklendi
+- Launcher penceresi artık minimum boyuta sahip ve o boyuta kadar duyarlı
+- Launcher'ın varsayılan pencere boyutu 980×640'tan 1200×970'e değiştirildi
+- Ayarlar menüsüne "X" butonu eklendi
 - Ayarlar penceresinin boyutu ayarlandı
-- Profiller ve yerleşimler için “Yönet” menüsü değiştirildi; artık “Yeniden adlandır” ve “Sil” içeriyor
-- Yerleşim seçiminde “Profil” düğmesi eklendi; yerleşimdeki profilleri gösterir
-- Sekme çubuğunu büyütme düğmesine simge eklendi
-- Kapatma diyalogunda aktif sekme vurgulandı
+- Profiller ve düzenler için "Yönet" menüsü değiştirildi. Bunlar "Yeniden Adlandır" ve "Sil" içerir
+- Düzen seçiminde "Profiller" butonu eklendi. Düzenin içerdiği profilleri gösterir
+- Sekme çubuğunu büyütme butonu için ikon eklendi
+- Kapatma diyaloğunda aktif sekme vurgulanmış olarak gösterilir
 
-### 🐛 Düzeltmeler
+### 🐛 Hata Düzeltmeleri
 
-- Sekme değiştirirken oyunun gizlenmesine yol açan hata düzeltildi
+- Sekme değiştirirken oyunun gizlenmesine neden olan hata düzeltildi
 
 ### 🐛 Bilinen Hatalar
 
-- Yan paneldeki metin girişleri bazen doğru iletilmiyor
-- Overlay’ler “Kapat” ve “Yerleşim seç” gibi diyaloglarda görünüyor — 2.4.1’de düzeltildi ✅
-- Yan panel pencere modunda gösterilmiyor
+- Sidepanel'deki metin girişlerinin doğru şekilde iletilmemesi oluşabilir
+- Overlay'ler "Kapat" ve "Düzen seç" gibi diyalog pencerelerinde gösteriliyor     ✅ 2.4.1'de düzeltildi
+- Sidepanel pencere modunda gösterilmiyor
 
 
 ---
@@ -210,24 +334,24 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 
 ### ✨ İyileştirmeler
 
-- Overlay’ler artık harici pencereleri kaplamıyor.
-  Pencere etkin değilse otomatik gizleniyorlar.
-- Pencere taşınırken overlay’lerin titremesi düzeltildi.
-  Hareket sırasında da doğru şekilde gizleniyorlar.
-- Yerleşimdeki son sekme, bölünmüş ekran açılmadan önce yeterli yükleme süresi alıyor.
-- Çıkış diyalogundaki tüm işlemler (İptal hariç) artık tehlikeli düğme (kırmızı) olarak işaretli.
-  “İptal” kasıtlı olarak nötr bırakıldı.
+- Overlay'ler artık harici pencereleri örtmüyor.
+  Pencere etkin olmadığında otomatik olarak gizlenirler.
+- Pencere taşınırken overlay titremesi düzeltildi.
+  Burada da overlay'ler artık doğru şekilde gizleniyor.
+- Düzendeki son sekme, bölünmüş ekran etkinleştirilmeden önce yeterli yükleme süresi alıyor.
+- Kapatma diyaloğundaki tüm işlemler (İptal hariç) artık tehlike butonları (kırmızı) olarak işaretlendi.
+  "İptal" bilinçli olarak nötr kalır.
 - Ayarlar menüsüne yama notları sekmesi eklendi.
-  Görüntüleme seçili dilde yapılır.
+  Gösterim seçilen dilde yapılır.
 
 ### ➕ Yeni Özellikler
 
-- CD zamanlayıcısının sonuna “+” düğmesi eklendi
+- CD zamanlayıcının sonuna "+" butonu eklendi
 
-### 🧹 Temizlik
+### 🧹 Temizlik Çalışmaları
 
-- Simge diyalogundaki kullanılmayan sekme kaldırıldı
-- Sağ üstteki kullanılmayan “RM-EXP” rozeti kaldırıldı
+- İkon diyaloğundaki kullanılmayan sekme kaldırıldı
+- Kullanılmayan "RM-EXP" rozeti sağ üstten kaldırıldı
 
 ---
 
@@ -235,13 +359,13 @@ Tüm kullanıcı verileri artık `%APPDATA%\Flyff-U-Launcher\user\` altında bul
 
 ### 🚀 Yenilikler
 
-- Güncellemeler artık doğrudan launcher üzerinden yapılabiliyor
+- Güncellemeler artık doğrudan Launcher üzerinden yapılabilir
 
 ---
 
 ## 🔄 Sürüm 2.0.2
 
-### 🐛 Düzeltmeler
+### 🐛 Hata Düzeltmeleri
 
-- Yan panelin boş görünmesine neden olan hata düzeltildi
-- Çeviri hataları düzeltildi
+- Sidepanel'in boş gösterilmesine neden olan hata düzeltildi
+- Çevirideki hata düzeltildi

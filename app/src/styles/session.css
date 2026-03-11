@@ -799,3 +799,20 @@
 .ramTable tr:hover td{
   background: rgba(var(--accent-rgb), 0.06);
 }
+.ramTable tr.ramSectionHeader td{
+  padding: 10px 8px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--stroke);
+  background: none;
+}
+.ramTable tr.ramSectionHeader:hover td{
+  background: none;
+}
+.ramTable tr.ramSharedRow td{
+  color: var(--textMuted, rgba(255,255,255,0.5));
+  font-style: italic;
+}

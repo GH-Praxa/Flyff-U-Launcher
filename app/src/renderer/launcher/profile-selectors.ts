@@ -8,7 +8,7 @@ type LayoutType = keyof typeof GRID_CONFIGS;
 interface Profile {
     id: string;
     name: string;
-    job?: string;
+    characterJobs?: Record<string, string>;
     overlayTarget?: boolean;
     supportTarget?: boolean;
 }

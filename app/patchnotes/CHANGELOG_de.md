@@ -6,124 +6,90 @@
 ### ✨ Neue Funktionen
 
 **Neue Layout-Typen**
-- Vertikale Layouts hinzugefügt: 2x1, 3x1, 4x1 (Views übereinander)
+- Vertikale Layouts: 2x1, 3x1, 4x1 (Views übereinander)
 - Asymmetrische Layouts: Hauptfenster + 2–3 Nebenfenster rechts (`main-r2`, `main-r3`) oder unten (`main-b2`, `main-b3`)
 - Aufteilung der asymmetrischen Layouts per Slider einstellbar (min 20% / max 80%)
-
-**Layout-Picker mit ASCII-Vorschau**
-- Beim Hovern über ein Layout wird eine ASCII-Diagramm-Vorschau angezeigt
-- Alle 16 Layout-Typen haben eigene ASCII-Darstellungen
+- Layout-Picker mit ASCII-Vorschau: Beim Hovern wird ein Diagramm des Layouts angezeigt
 
 **Profil-Export/Import**
 - Profile als `.flyffprofile`-Datei exportieren und importieren
 - Enthält Profil-Metadaten, Electron-Session-Cookies und localStorage-Daten
-- Ermöglicht Backup, Transfer zwischen Rechnern oder Teilen mit Mitspielern
+- Ermöglicht Backup und Transfer zwischen Rechnern
 
-**Charakternamen pro Profil**
-- Charakternamen direkt im Profil hinterlegen und verwalten
-- Anzeige als farbige Badges in der Profilliste und im Bearbeitungsdialog
-- Plugins (z.B. Killfeed) nutzen die Profil-Charnamen per Combobox-Auswahl — kein manuelles Eintippen mehr nötig
+**Charakternamen & Berufe pro Charakter**
+- Charakternamen und Berufe pro Charakter im Profil hinterlegen — Anzeige als Badges mit Job-Icon in der Profilliste, filterbar und in Plugins per Combobox auswählbar
 
 **Launcher-Ankündigungen**
-- Neuer Bereich im rechten Panel zeigt Live-Nachrichten vom Entwickler ohne App-Update
-- Typen: 🐛 Bug, ℹ Info, ✨ Feature, ⚠ Warnung — jeweils farblich hervorgehoben
-- Vollständig lokalisiert: Nachrichten können in allen 8 Sprachen übersetzt werden
-- Deaktivierbar unter Einstellungen → Client-Einstellungen → „Launcher-Ankündigungen anzeigen"
-- Geöffnete Profile im rechten Panel sind jetzt auf- und zuklappbar
+- Neuer Bereich im rechten Panel zeigt Nachrichten vom Entwickler ohne App-Update — z. B. bekannte Fehler, aktuelle Entwicklungen oder geplante Features; auf Deutsch und Englisch verfügbar, deaktivierbar in den Einstellungen
+- Geöffnete Profile im rechten Panel sind auf- und zuklappbar
 
-**Schriftart- & Schriftgröße-Einstellung**
-- Neue Einstellung "Overlay- & UI-Schriftart" in den Client-Einstellungen
-- 9 vorinstallierte Google Fonts: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel
-- Schriftart wird in Launcher-Overlays und DOM-basierte UI-Elemente injiziert
-- Canvas 2D Font-Interceptor für Phaser-basierte Spiele
-- Neue Einstellung "Schriftgröße des Launchers": Textgröße im Launcher-Fenster skalierbar (75–150%)
+**Schriftart-Einstellung**
+- Neue Einstellung "Overlay- & UI-Schriftart" in den Client-Einstellungen — verfügbare Schriftarten: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel; Schriftart wird in Launcher-Overlays und DOM-basierte UI-Elemente im Spiel angewendet
 
-**Fehlerbericht-Funktion**
-- Log-Fenster: Logs anzeigen, speichern und löschen — zugänglich über ein Log-Icon in der Tab-Leiste
-- Fehlerbericht direkt an Discord senden — mit optionaler Beschreibung und Discord-Tag
-- 60-Sekunden-Cooldown zum Schutz vor versehentlichem Mehrfachsenden
+**Schriftgröße-Einstellung**
+- Neue Einstellung "Schriftgröße des Launchers": Textgröße im Launcher-Fenster skalierbar (75–150%), nicht im Spiel selbst
+
+**Fehlerprotokoll & Nachricht an Entwickler**
+- Log-Fenster vom Sidepanel in die Tab-Leiste verschoben — ermöglicht das Anzeigen, Speichern und Löschen von Fehlerlogs sowie das Senden einer Nachricht an den Entwickler (angezeigte Fehler werden mitgesendet); 60-Sekunden-Cooldown
 
 **Quest Guide Plugin**
-- Neues gebündeltes Plugin mit Quest-Chain-Visualisierung und Fortschritts-Tracking
-- Eigener Tab im Side Panel sowie eigene Einstellungen-UI
-- Unterstützt API-Abfragen für Quest, NPC, Monster und Item
-
-**Kill Timer Plugin**
-- Neues Plugin: Kill-Timer mit HP%-Schwellenwert-Alert für 1on1-Farming
-- Misst Time-to-Kill pro Gegner mit konfigurierbarem Overlay
-- Eigener Tab im Sidepanel und transparentes In-Game-Overlay
+- Neues Plugin im Sidepanel: zeigt Quests inkl. Start-/End-NPC, Aufgabe und Belohnungen mit Mapmarker an — benötigt Quest-, NPC-, Monster- und Item-Daten per API-Fetch
 
 **Unified Upgrade-Rechner**
-- Upgrade-Rechner zu einem einheitlichen Fenster mit Sidebar-Navigation zusammengeführt
-- Kombiniert: Waffen-Upgrade, Schmuck-Upgrade, Rüstungs-Piercing, Waffen-Piercing und Ultimate-Upgrades
+- Upgrade-Rechner um weitere Berechnungen zu Waffen, Schmuck, Rüstungs-Piercing, Waffen-Piercing, Ultimate erweitert inkl. Pity-System, FWC und Event-Bonus sowie bereits vorhandene Versuche
 
 **UI-Tooltips & Hilfe-Icons**
-- Alle wichtigen Bedienelemente im Launcher haben jetzt Tooltips (in allen 8 Sprachen)
-- Neue Hilfe-Icons (?) für komplexe Funktionen: Profilname, Tab-/Fenstermodus, Charakternamen
+- Alle wichtigen Bedienelemente im Launcher haben Tooltips (in allen 8 Sprachen)
+- Hilfe-Icons (?) für komplexe Funktionen: Profilname, Tab-/Fenstermodus, Charakternamen
 - Hinweise für Launcher-Breite/Höhe, Filter, Layout-Auswahl und Grid-Zellen
 
 **Telemetrie**
-- Anonyme Startstatistiken senden (Version, Betriebssystem, zufällige ID)
+- Optionale anonyme Startstatistiken (Version, Betriebssystem, zufällige ID)
 - Standardmäßig aktiviert, keine persönlichen Daten, jederzeit deaktivierbar
 
-**Update-Prüfung**
+**Update-Prüfung & Versions-Rollback**
 - Neue Einstellung: Beim Start automatisch nach Updates suchen (an/aus)
 - Manueller „Jetzt prüfen"-Button in den Einstellungen
-
-**ROI-Kalibrierung**
-- Lokalisierte Strings für den ROI-Kalibrator (alle Sprachen)
-- Verbesserte Persistierung für einzelne ROI-Keys
+- Versions-Rollback: Ältere Launcher-Versionen (ab 3.0.5) können direkt aus den Einstellungen installiert werden
+- Dropdown mit allen verfügbaren GitHub-Releases inkl. Datum und Markierung der aktuellen Version
 
 ### 🚀 Performance
 
-**OCR GPU-Stall-Fixes**
-- `webContents.capturePage()` durch plattform-sichere `safeCaptureWindow()` ersetzt — nutzt `xwd` auf Linux (kein GPU-Kontakt), `capturePage()` auf Win/Mac
-- Kein `capturePage()`-Fallback mehr auf Linux — bei xwd-Fehler wird der Scan übersprungen statt das Spiel einzufrieren
-- In-Memory-Caches für Profile, ROI-Store und ROI-Visibility-Store gegen häufige DB-Reads
-- ROI Pixel-Hash-Cache: OCR wird übersprungen wenn sich der Frame nicht geändert hat — reduziert CPU-Last bei statischen Spielinhalten
-
-**OCR Frame-Cache-Bugfixes (Freeze-Fix)**
-- Leere OCR-Ergebnisse werden jetzt korrekt gecacht — verhindert endlose Tesseract-Wiederholungen auf unveränderten Pixeln
-- enemyName-Pfad speichert Ergebnisse jetzt im Frame-Cache (fehlte komplett)
+**OCR-System optimiert**
+- Plattform-sichere Screen-Capture-Methode: `xwd` auf Linux (kein GPU-Kontakt), `capturePage()` auf Win/Mac — verhindert GPU-Stalls und Spiel-Freezes
+- Bei Capture-Fehler auf Linux wird der Scan übersprungen statt das Spiel einzufrieren
+- Pixel-Hash-Cache: OCR wird übersprungen wenn sich der Frame nicht geändert hat — reduziert CPU-Last bei statischen Spielinhalten
+- Leere OCR-Ergebnisse werden korrekt gecacht — keine unnötigen Tesseract-Wiederholungen auf unveränderten Pixeln
 - Globales Tesseract-Concurrency-Limit (max. 1 gleichzeitig) — verhindert CPU-Aushungerung des GPU-Prozesses
-
-**OCR-Verbesserungen**
-- Stroke Dilation für leichte Schriftarten in der Level-Erkennung — verbesserte Erkennungsgenauigkeit bei dünnen Schriften
+- In-Memory-Caches für Profile, ROI-Store und ROI-Visibility-Store statt häufiger DB-Reads
 
 **Overlay-Optimierung**
-- Overlay-Polling optimiert: unnötige Opacity-Wechsel entfernt, Intervalle reduziert
-- Linux: Show/Hide-Zyklen für transparente Overlays vermieden — jeder Aufruf geht durch den GPU-Compositor
+- Effizientes Overlay-Polling: minimierte Opacity-Wechsel und reduzierte Intervalle
+- Linux: Vermeidung unnötiger Show/Hide-Zyklen für transparente Overlays
 
 ### ⚙️ Verbesserungen
 
-- **Einstellungen komplett überarbeitet**: Neues Sidebar-Layout mit kategorisierten Unterseiten, Toggle-Switches und Slider-Cards statt alter Checkbox/Tab-Struktur
-- **Update-Prüfung konfigurierbar**: Neue Einstellung „Beim Start nach Updates suchen" (an/aus) mit manuellem „Jetzt prüfen"-Button
-- **RAM-Anzeige**: Neue Einstellung „RAM-Nutzung anzeigen" mit Speicherdetails pro Profil
+- **Layout-Karten verbessert**: ASCII-Vorschau des Layout-Typs direkt in der Layout-Karte; Anzeige „X Profile" statt „X Tabs"; kompaktere Darstellung
+- **Profil-Karten kompakter**: Reduzierte Kartenhöhe, Charaktere mit Job-Icons als horizontale Badges unter dem Profilnamen
+- **Einstellungen komplett überarbeitet**: Neues Sidebar-Layout mit kategorisierten Unterseiten, Toggle-Switches und Slider-Cards
+- **RAM-Anzeige**: Einstellung „RAM-Nutzung anzeigen" mit Speicherdetails pro Profil, Plugin und Systemprozess
 - **Killfeed-Overlay positionierbar**: Overlay per Drag verschieben, Position wird gespeichert (x/y im Layout)
-- **Killfeed-Charakterauswahl**: Charakternamen werden per Combobox aus dem Profil gewählt statt manuell eingetippt
-- Ankündigungen im Markdown-Format (statt JSON)
-- Live-Einstellungen im rechten Panel mit dynamischer Höhe
-- Quest-Erkennung: Profilfilterung korrigiert
-- Einstellung „Spiel-UI-Positionen merken" entfernt
-- Fehlerberichte senden nicht mehr an die Telemetrie-Einstellung gekoppelt
-- Side-Panel-Button von Overlay in die Session-Tab-Leiste verschoben
-- Client-Einstellungsänderungen werden an alle Session-Fenster übertragen
+- **Killfeed-Charakterauswahl**: Charakternamen werden per Combobox aus dem Profil gewählt
+- **Side-Panel-Button** in der Session-Tab-Leiste (statt im Overlay)
+- **Killfeed- und Scan-Tabs im Sidepanel vereinfacht**: übersichtlichere Darstellung und reduzierte Komplexität
 
 ### 🐛 Fehlerbehebungen
 
-- RAM-Anzeige auf Linux zeigt jetzt korrekte Werte (Fallback auf `/proc/[pid]/statm` statt `workingSetSize`)
-- Charakternamen in Profilen werden jetzt korrekt gespeichert
 - GLib/GTK-Assertion-Warnungen auf Linux unterdrückt (harmlose Chromium-interne Meldungen)
 
 ### 📦 Linux-Support
 
-- Tesseract-Binärdateien und Bibliotheken für Linux hinzugefügt
+- Tesseract-Binärdateien und Bibliotheken für Linux gebündelt
 - tessdata-Sprachdateien für Linux gebündelt
 
 ### 🌐 Übersetzungen
 
-- Neue Übersetzungen für alle neuen Funktionen in allen 8 Sprachen
-- ROI-Kalibrator vollständig lokalisiert
+- Übersetzungen erweitert
 
 ---
 ## 🐛 Version 3.0.5

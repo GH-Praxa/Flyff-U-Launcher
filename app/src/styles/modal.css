@@ -10,7 +10,7 @@
 
 
 .modal{
-  width: min(1000px, calc(100vw - 30px));
+  width: min(1200px, calc(100vw - 30px));
   height: min(900px, calc(100vh - 30px));
   display: flex;
   flex-direction: column;
@@ -1237,6 +1237,12 @@
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
+}
+
+.rollbackRow{
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sliderHeader{

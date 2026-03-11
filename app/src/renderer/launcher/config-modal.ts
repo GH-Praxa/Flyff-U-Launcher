@@ -512,6 +512,91 @@ export function openConfigModal(
     updateBtnCard.append(updateBtnInfo, checkUpdateBtn);
     behaviorGrid.append(updateBtnCard);
 
+    // ── Version rollback card ────────────────────────────────────────
+    const rollbackCard = el("div", "settingCard sliderCard") as HTMLDivElement;
+    const rollbackInfo = el("div", "settingInfo");
+    rollbackInfo.append(el("div", "settingLabel", t("config.client.rollback" as TranslationKey)));
+    rollbackInfo.append(el("div", "settingHint", t("config.client.rollback.hint" as TranslationKey)));
+    const rollbackRow = el("div", "rollbackRow");
+    const versionSelect = document.createElement("select") as HTMLSelectElement;
+    versionSelect.className = "select";
+    versionSelect.style.minWidth = "160px";
+    const placeholderOpt = document.createElement("option");
+    placeholderOpt.value = "";
+    placeholderOpt.textContent = t("config.client.rollback.loading" as TranslationKey);
+    placeholderOpt.disabled = true;
+    placeholderOpt.selected = true;
+    versionSelect.append(placeholderOpt);
+    versionSelect.disabled = true;
+    const rollbackBtn = el("button", "btn danger") as HTMLButtonElement;
+    rollbackBtn.textContent = t("config.client.rollback.button" as TranslationKey);
+    rollbackBtn.disabled = true;
+    rollbackRow.append(versionSelect, rollbackBtn);
+    rollbackCard.append(rollbackInfo, rollbackRow);
+    behaviorGrid.append(rollbackCard);
+    // Fetch releases async
+    (async () => {
+        try {
+            const res = await window.api.appListReleases();
+            versionSelect.innerHTML = "";
+            if (!res.ok || !res.releases?.length) {
+                const errOpt = document.createElement("option");
+                errOpt.value = "";
+                errOpt.textContent = t("config.client.rollback.noReleases" as TranslationKey);
+                errOpt.disabled = true;
+                errOpt.selected = true;
+                versionSelect.append(errOpt);
+                return;
+            }
+            const defaultOpt = document.createElement("option");
+            defaultOpt.value = "";
+            defaultOpt.textContent = t("config.client.rollback.select" as TranslationKey);
+            defaultOpt.disabled = true;
+            defaultOpt.selected = true;
+            versionSelect.append(defaultOpt);
+            for (const rel of res.releases) {
+                const opt = document.createElement("option");
+                opt.value = rel.version;
+                const dateStr = new Date(rel.date).toLocaleDateString();
+                const suffix = rel.current ? ` (${t("config.client.rollback.current" as TranslationKey)})` : "";
+                opt.textContent = `v${rel.version} – ${dateStr}${suffix}`;
+                if (rel.current) opt.disabled = true;
+                versionSelect.append(opt);
+            }
+            versionSelect.disabled = false;
+            versionSelect.onchange = () => {
+                rollbackBtn.disabled = !versionSelect.value;
+            };
+        } catch {
+            versionSelect.innerHTML = "";
+            const errOpt = document.createElement("option");
+            errOpt.value = "";
+            errOpt.textContent = t("config.client.rollback.error" as TranslationKey);
+            errOpt.disabled = true;
+            errOpt.selected = true;
+            versionSelect.append(errOpt);
+        }
+    })();
+    rollbackBtn.onclick = async () => {
+        const version = versionSelect.value;
+        if (!version) return;
+        rollbackBtn.disabled = true;
+        rollbackBtn.textContent = "...";
+        versionSelect.disabled = true;
+        try {
+            const res = await window.api.appInstallVersion(version);
+            if (!res.ok) {
+                showToast(res.error ?? "Unknown error", "error");
+            }
+        } catch (err) {
+            showToast(String(err), "error");
+        } finally {
+            rollbackBtn.disabled = false;
+            rollbackBtn.textContent = t("config.client.rollback.button" as TranslationKey);
+            versionSelect.disabled = false;
+        }
+    };
+
     behaviorPane.append(behaviorGrid);
 
     // Font pane content
@@ -1174,7 +1259,8 @@ export function openConfigModal(
                 const fullSrc = (src.startsWith("data:") || src.startsWith("http"))
                     ? src
                     : toFileUrl(`${assetsPath}/screenshots/${src}`);
-                return `<img class="docImage" src="${fullSrc}" alt="${escapeHtml(alt)}" loading="lazy">`;
+                const cls = alt.toLowerCase() === "small" ? "docImageSmall" : "docImage";
+                return `<img class="${cls}" src="${fullSrc}" alt="${escapeHtml(alt)}" loading="lazy">`;
             }
         );
         // Links [text](url)
@@ -1183,16 +1269,24 @@ export function openConfigModal(
             (_match, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`
         );
         // Tables (simple markdown tables)
+        // Mark separator rows, then convert all table rows
         html = html.replace(/^\|(.+)\|$/gm, (match) => {
             const cells = match.slice(1, -1).split("|").map(c => c.trim());
             const isHeader = cells.every(c => /^-+$/.test(c));
-            if (isHeader) return ""; // Skip separator row
-            const cellTag = "td";
-            const cellsHtml = cells.map(c => `<${cellTag}>${c}</${cellTag}>`).join("");
+            if (isHeader) return "<!--tbl-sep-->";
+            const cellsHtml = cells.map(c => `<td>${c}</td>`).join("");
             return `<tr>${cellsHtml}</tr>`;
         });
-        // Wrap table rows
-        html = html.replace(/(<tr>.*<\/tr>\n?)+/g, (match) => `<table class="docTable">${match}</table>`);
+        // Wrap consecutive table rows (including separator comments) into a table
+        html = html.replace(/((<tr>.*<\/tr>|<!--tbl-sep-->)\n?)+/g, (match) => {
+            // Remove separator comments
+            const clean = match.replace(/<!--tbl-sep-->\n?/g, "");
+            // Promote first row cells to <th>
+            const promoted = clean.replace(/^<tr>(.*?)<\/tr>/, (_m, inner) =>
+                `<tr>${inner.replace(/<td>/g, "<th>").replace(/<\/td>/g, "</th>")}</tr>`
+            );
+            return `<table class="docTable">${promoted}</table>`;
+        });
         // Headers
         html = html
             .replace(/^### (.+)$/gm, "<h3>$1</h3>")
@@ -1333,7 +1427,8 @@ export function openConfigModal(
                 }
                 // Action buttons
                 const actions = el("div", "pluginActions");
-                if (!isKillfeed && plugin.hasSettingsUI && plugin.permissions?.includes("settings:ui") && plugin.enabled) {
+                const isQuestGuide = plugin.id === "questguide";
+                if (!isKillfeed && !isQuestGuide && plugin.hasSettingsUI && plugin.permissions?.includes("settings:ui") && plugin.enabled) {
                     const uiBtn = el("button", "btn pluginBtn", t("config.plugins.openUI" as TranslationKey));
                     uiBtn.addEventListener("click", async () => {
                         uiBtn.disabled = true;

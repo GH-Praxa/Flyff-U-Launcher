@@ -13,7 +13,7 @@ export type Profile = {
 
     createdAt: string;
 
-    job?: string;
+    characterJobs?: Record<string, string>;
 
     launchMode: "tabs" | "window";
 

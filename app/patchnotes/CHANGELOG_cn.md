@@ -1,61 +1,185 @@
-﻿# 📦 更新日志
+# 📦 更新日志
 
 ---
-
 ## 🆕 Version 3.1.0
 
 ### ✨ 新功能
 
+**新布局类型**
+- 垂直布局：2x1、3x1、4x1（视图上下排列）
+- 非对称布局：主窗口 + 2-3 个侧窗口在右侧（`main-r2`、`main-r3`）或在下方（`main-b2`、`main-b3`）
+- 非对称布局的分割比例可通过滑块调整（最小 20% / 最大 80%）
+- 布局选择器带 ASCII 预览：悬停时显示布局示意图
+
+**档案导出/导入**
+- 将档案导出为 `.flyffprofile` 文件并导入
+- 包含档案元数据、Electron 会话 Cookie 和 localStorage 数据
+- 支持备份和在电脑之间转移
+
+**角色名称和职业**
+- 可在档案中为每个角色设置角色名和职业——在档案列表中显示为带有职业图标的徽章，支持筛选，插件中可通过下拉列表选择
+
 **启动器公告**
-- 右侧面板新增区域，无需更新应用即可显示开发者消息
-- 类型：🐛 Bug、ℹ 信息、✨ 功能、⚠ 警告——每种类型有独特颜色标识
-- 完整本地化：消息可翻译为全部8种支持语言
-- 可在设置 → 客户端设置 → "显示启动器公告"中关闭
-- 右侧面板中的已打开角色现在可以折叠
+- 右侧面板新增区域，无需更新应用即可显示开发者消息——例如已知错误、当前开发进展或计划中的功能；提供德语和英语版本，可在设置中关闭
+- 右侧面板中已打开的档案现可折叠和展开
+
+**字体设置**
+- 客户端设置中新增"Overlay 和 UI 字体"设置——可用字体：Josefin Sans、Roboto、Open Sans、Lato、Montserrat、Raleway、Nunito、Ubuntu、Cinzel；字体应用于启动器 Overlay 和游戏内基于 DOM 的 UI 元素
+
+**字号设置**
+- 新增"启动器字号"设置：启动器窗口中的文字大小可缩放（75–150%），不影响游戏本身
+
+**错误日志和开发者消息**
+- 日志窗口从 Sidepanel 移至标签栏——支持查看、保存和删除错误日志，以及向开发者发送消息（已显示的错误会一并发送）；60 秒冷却时间
+
+**Quest Guide 插件**
+- Sidepanel 中的新插件：显示任务，包括起始/结束 NPC、任务目标和奖励，带地图标记——需要通过 API-Fetch 获取任务、NPC、怪物和道具数据
+
+**统一升级计算器**
+- 升级计算器扩展了更多计算类型：武器、饰品、护甲穿透、武器穿透、Ultimate，包括 Pity 系统、FWC 和活动加成以及已有尝试次数
+
+**UI 提示和帮助图标**
+- 启动器中所有重要操作元素都有提示（支持全部 8 种语言）
+- 复杂功能的帮助图标（?）：档案名称、标签/窗口模式、角色名称
+- 启动器宽度/高度、筛选器、布局选择和网格格子的提示信息
+
+**遥测**
+- 可选的匿名启动统计（版本、操作系统、随机 ID）
+- 默认开启，无个人数据，可随时关闭
+
+**更新检查和版本回退**
+- 新设置：启动时自动检查更新（开/关）
+- 设置中的手动"立即检查"按钮
+- 版本回退：可从设置中直接安装旧版启动器（3.0.5 起）
+- 下拉列表显示所有可用的 GitHub Release，包含日期和当前版本标记
+
+### 🚀 性能
+
+**OCR 系统优化**
+- 跨平台安全的屏幕截图方法：Linux 上使用 `xwd`（无 GPU 接触），Win/Mac 上使用 `capturePage()`——防止 GPU 停顿和游戏冻结
+- Linux 上截图失败时跳过扫描，而不是冻结游戏
+- 像素哈希缓存：帧内容未变化时跳过 OCR——减少静态游戏画面下的 CPU 负载
+- 空 OCR 结果正确缓存——不再对未变化的像素重复调用 Tesseract
+- 全局 Tesseract 并发限制（最多 1 个同时运行）——防止 CPU 饿死 GPU 进程
+- Profile、ROI-Store 和 ROI-Visibility-Store 使用内存缓存代替频繁的数据库读取
+
+**Overlay 优化**
+- 高效的 Overlay 轮询：减少透明度切换和降低轮询间隔
+- Linux：避免透明 Overlay 不必要的显示/隐藏循环
+
+### ⚙️ 改进
+
+- **布局卡片改进**：布局卡片中直接显示布局类型的 ASCII 预览；显示"X 个档案"而非"X 个标签"；更紧凑的呈现
+- **档案卡片更紧凑**：减少卡片高度，角色以带职业图标的水平徽章显示在档案名下方
+- **设置完全重新设计**：新的侧栏布局，分类子页面、开关和滑块卡片
+- **RAM 显示**：设置中的"显示 RAM 使用量"，每个档案、插件和系统进程的内存详情
+- **Killfeed Overlay 可定位**：通过拖拽移动 Overlay 位置，位置被保存（布局中的 x/y）
+- **Killfeed 角色选择**：通过下拉列表从档案中选择角色名
+- **Sidepanel 按钮**移至会话标签栏（而非 Overlay 中）
+- **Sidepanel 中的 Killfeed 和扫描标签简化**：更清晰的展示，降低复杂度
+
+### 🐛 错误修复
+
+- 在 Linux 上抑制了 GLib/GTK 断言警告（无害的 Chromium 内部消息）
+
+### 📦 Linux 支持
+
+- 为 Linux 捆绑了 Tesseract 二进制文件和库
+- 为 Linux 捆绑了 tessdata 语言文件
+
+### 🌐 翻译
+
+- 翻译已扩展
 
 ---
-
 ## 🐛 Version 3.0.5
 
 ### 🐛 错误修复
-- 修复：Google账号登录问题
+- 修复：Google 账号登录问题
 
 ---
-
 ## 🐛 Version 3.0.4
 
-### 🐛 Bug Fixes (macOS)
-- Fixed: "damaged and can't be opened" error — the app inside the DMG is now ad-hoc signed before the DMG is assembled.
-- Fixed: Signing order is now correct: `package → sign → make DMG`.
-- Note: macOS still shows an "unidentified developer" prompt. Right-click the app → **Open** → **Open Anyway**.
+### 🐛 错误修复 (macOS)
+- 修复："damaged and can't be opened"错误——DMG 内的应用现在在组装 DMG 之前进行 ad-hoc 签名（之前签名步骤在 DMG 完成后才执行）。
+- 修复：顺序现在正确：`package → sign → DMG 创建`。
+- 提示：macOS 首次启动时仍会显示"未知开发者"对话框。右键点击应用 → **打开** → **仍然打开**，或使用 README 中的终端命令。
 
 ---
+## 🆕 Version 3.0.0
 
-## 🆕 版本 2.5.1
+### 🆕 新工具：升级费用计算器
+- 计算从 +0 到 +10 的物品升级预期费用，
+包括材料需求、尝试次数以及 Low Sprotect 与 Sprotect 的对比。
+
+### ✨ 新功能
+- Sidepanel 中新增日志标签，提供实时错误日志（警告/错误）以及删除和保存操作。
+- API-Fetch 插件 3.0.0，全新的原生 Sidepanel 界面（不再需要单独的 Python UI 窗口）。
+
+### 🚀 平台与分发 - Linux 和 Mac 支持
+- GitHub Actions 中的 Windows、macOS 和 Linux 构建/发布流水线。
+- 新包格式：macOS DMG 以及 Linux AppImage/DEB/RPM。
+- 平台特定的 Tesseract 捆绑（win32、darwin、linux），包含适配的运行时检测/回退。
+
+### 🐛 错误修复
+- 修正了 Fcoin 到 Penya 的汇率
+- Killfeed：减少快速 OCR 更新时的竞态条件（按档案序列化），广播更新不再被丢弃。
+
+### 📦 运行时与依赖
+- Sharp 图像处理库已捆绑在包中（无需单独安装）。
+
+### ⚙️ 改进
+- Killfeed 怪物识别现在优先考虑怪物 HP（带容差），其次是属性/等级。
+- TTK 目标识别更稳健，HP 容差优化；怪物宽限窗口从 5 秒调整为 2 秒。
+- 统计引擎更好地区分 OCR 等级噪声和真实等级变化。
+- ### 更多 Killfeed 改进即将到来
+- API-Fetch 随平台重建。仍可在设置中打开，另外也可在 Sidepanel 中使用。
+- 设置 -> 文档已扩展。
+
+### 🧹 清理工作
+- 移除旧的 API-Fetch Python 文件（.py、.exe），改用 JS/Sidepanel 版本。
+- Tesseract 资源重新组织到新的平台子目录中。
+
+:::accordion[各平台的存储路径]
+所有用户数据按平台存储在以下目录：
+
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**自 2.5.1 起的新文件：**
+- `user/tools/upgrades/upgrade_cost_calc.json` — 升级费用计算器
+- `user/logs/errors-*.txt` — 错误日志
+- `user/logs/ocr/` — OCR 调试日志
+
+:::
+
+---
+## 🆕 Version 2.5.1
 
 ### 🆕 新功能：Giant Tracker
-Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、**Violets** 与 **Bosses** 的击杀统计。
+Killfeed 插件中的独立窗口——用于采集并可视化 **Giants**、**Violets** 和 **Bosses** 的击杀统计。
 
 **筛选标签**
 - 5 个标签：**全部** · **Giants** · **Violets** · **Bosses** · **Drops**
-- **Bosses** —— 按 `boss` 等级筛选（红色卡片边框、专用图标样式）
-- **Drops** —— 仅显示有掉落记录的怪物，并在卡片中直接显示掉落池预览（按稀有度排序前 5 个物品）
+- **Bosses** ——按 `boss` 等级筛选（红色卡片边框、专用图标样式）
+- **Drops** ——仅显示有掉落记录的怪物，并在卡片中直接显示掉落池预览（按稀有度排序前 5 个物品）
 
 **击杀统计**
-- 卡片视图，支持 Compact 与 Expanded 模式
+- 卡片视图，支持紧凑和展开模式
 - 时间范围：今天、本周、本月、本年、总计
-- 怪物信息：图标、名称、等级、属性、等级阶级、HP、ATK
+- 怪物信息：图标、名称、等级、属性、阶级、HP、ATK
 
 **掉落追踪**
 - 从怪物掉落池记录掉落（支持稀有度筛选）
 - 按怪物记录掉落历史：物品名称、击杀计数值、时间戳
-- 统计：Ø 击杀/掉落、距上次掉落后的击杀数
+- 统计：平均击杀/掉落、距上次掉落后的击杀数
 
 **Time to Kill (TTK)**
 - 自动测量与 Giants、Violets、Bosses 的战斗时长
-- 取消目标后有 10 秒宽限时间（上 Buff、治疗等）—— 暂停时间不计入 TTK
-- 怪物名称 + 最大 HP 指纹：可可靠地重新识别目标
-- 显示：最近 TTK、Ø TTK、最快
+- 取消目标后有 10 秒宽限时间（上 Buff、治疗等）——暂停时间不计入 TTK
+- 怪物名称 + 最大 HP 指纹：可靠地重新识别目标
+- 显示：最近 TTK、平均 TTK、最快
 - 持久化写入击杀历史（CSV 列 `TTK_ms`）
 
 **其他**
@@ -65,69 +189,69 @@ Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、*
 ### ✨ 其他改进
 - Killfeed：改进怪物识别
 - 新的识别权重：怪物 HP > 怪物等级 > 怪物属性
-- Killfeed：怪物追踪现在会统计已击杀 mobs
-- Killfeed：新增历史记录（按配置档）
+- Killfeed：怪物追踪现在会统计已击杀的怪物
+- Killfeed：新增历史记录（按档案）
   - 按日期生成每日文件，记录每次击杀（`日期/时间`、`角色`、`等级`、`Monster-ID`、`阶级`、`怪物`、`属性`、`EXP 增长`、`预期 EXP`、`TTK_ms`）
   - 聚合的每日概览，包含 `Kills`、`EXP 总计`、`怪物分布`、`首个/最后击杀`
-- Killfeed：侧边栏中的怪物追踪现在会在击杀后立即更新（无需切换标签）
-- Killfeed：在怪物追踪手风琴中，现在每个阶级都有一个 Kills 按钮，可打开单次击杀的 ListView。
-  单次击杀可直接在 ListView 中删除。
-  删除单次击杀时，会同步更新 AppData 历史文件（daily/YYYY-MM-DD.csv、history.csv）以及侧边栏状态。
-- Killfeed：侧边栏现在会稳定跟随 overlay 目标配置档（不会在配置档 ID 之间跳转）
+- Killfeed：Sidepanel 中的怪物追踪现在会在击杀后立即更新（无需切换标签）
+- Killfeed：在怪物追踪折叠面板中，现在每个阶级都有一个 Kills 按钮，可打开单次击杀的列表视图。
+  单次击杀可直接在列表视图中删除。
+  删除单次击杀时，会同步更新 AppData 历史文件（daily/YYYY-MM-DD.csv、history.csv）以及 Sidepanel 状态。
+- Killfeed：Sidepanel 现在会稳定跟随 Overlay 目标档案（不会在档案 ID 之间跳转）
 - 已更新怪物参考数据
-- 已优化“选择布局”对话框设计
-- 已优化“管理配置档（登出）”对话框设计
+- 已优化"选择布局"对话框设计
+- 已优化"管理档案（登出）"对话框设计
 
 ### 🐛 错误修复
 - Overlay 不再遮挡关闭对话框
-- 文档中的手风琴组件现在可正确显示
+- 文档中的折叠面板现可正确显示
 - 从版本 2.3.0 迁移到新的 AppData 结构（`user/`）现在可稳定运行
 - Killfeed：负向 OCR EXP 跳变现在会被识别为 OCR 噪声，不再干扰击杀识别
 
-### 🧹 清理与重构
+### 🧹 清理工作
 - 模块化重构 Renderer 架构（内部重构）
 - 内部数据目录 `api_fetch/` 重命名为 `cache/`
 - AppData 目录结构重组：数据现在统一整理到 AppData\Roaming\Flyff-U-Launcher\user 子目录
-- 自动迁移：首次启动时会无缝迁移现有数据 —— 并显示进度
+- 自动迁移：首次启动时会无缝迁移现有数据——并显示进度
 - 静态数据（包括参考数据）会打包进构建产物，确保在发布构建中稳定可用
-- 减少 Killfeed/overlay 调试日志，让控制台更易读
+- 减少 Killfeed/Overlay 调试日志，让控制台更易读
 
 :::accordion[新的存储路径]
 所有用户数据现在位于 `%APPDATA%\Flyff-U-Launcher\user\`：
 
 - `user/config/settings.json` — 客户端设置
 - `user/config/features.json` — 功能开关
-- `user/profiles/profiles.json` — 启动器配置档
+- `user/profiles/profiles.json` — 启动器档案
 - `user/profiles/rois.json` — ROI 校准
 - `user/profiles/ocr-timers.json` — OCR 计时器
 - `user/ui/themes.json` — 主题
 - `user/ui/tab-layouts.json` — 标签布局
 - `user/ui/tab-active-color.json` — 活动标签颜色
-- `user/shopping/item-prices.json` — 高级购物清单价格
+- `user/shopping/item-prices.json` — Premium 购物清单价格
 - `user/plugin-data/` — 插件设置
-- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — 每个配置档的 Killfeed 每日概览
+- `user/plugin-data/killfeed/history/<profile-id>/history.csv` — 每个档案的 Killfeed 每日概览
 - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — 按击杀与日期记录的 Killfeed 详细历史
-- `user/cache/` — API fetch 数据与图标
+- `user/cache/` — API-Fetch 数据与图标
 - `user/logs/` — 诊断日志
 :::
 
 ---
 
-## 🆕 版本 2.3.0
+## 🆕 Version 2.3.0
 
-### 🐛 修复
+### 🐛 错误修复
 
-- 当游戏在独立的多窗口会话中运行时，OCR 数值（侧边面板）现在能够正确识别
+- 当游戏在独立的多窗口会话中运行时，OCR 数值（Sidepanel）现在能够正确识别
 - ROI 校准不再错误地打开新会话，而是使用已有的游戏窗口
-- OCR 现在可靠地使用内置的 Tesseract — 不再需要单独安装
+- OCR 现在可靠地使用内置的 Tesseract——不再需要单独安装
 
 ### ✨ 改进
 
-- 文档手风琴现在使用原生 HTML5 元素（不再需要 JavaScript）
+- 文档折叠面板现在使用原生 HTML5 元素（不再需要 JavaScript）
 
 ---
 
-## 🆕 版本 2.2.0
+## 🆕 Version 2.2.0
 
 ### ➕ 新功能
 
@@ -140,8 +264,8 @@ Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、*
 - 多窗口系统：可打开多个独立的会话窗口
 
 **快捷键** — 可自由分配的组合键（2-3 个键）
-- 隐藏覆盖层
-- 侧边面板开/关
+- 隐藏 Overlay
+- Sidepanel 开/关
 - 标签栏开/关
 - 将活动窗口截图保存到 `C:\Users\<USER>\Pictures\Flyff-U-Launcher\`
 - 上一个标签 / 下一个标签
@@ -151,7 +275,7 @@ Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、*
 - 打开 Premium 购物清单
 
 **新的客户端设置**
-- 启动器宽度 / 高度
+- 启动器宽度 / 启动器高度
 - 顺序加载网格标签
 - 布局的标签显示
 - 高亮当前网格视图
@@ -161,70 +285,77 @@ Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、*
 - 标签布局显示模式（紧凑、分组、分离、迷你网格）
 
 **菜单与工具**
-- 在标签栏新增 “工具（星形图标）” 菜单。该菜单会隐藏浏览器视图，角色保持登录。
+- 在标签栏新增"工具（星形图标）"菜单。
+  该菜单会隐藏浏览器视图，角色保持登录。
   - 内部工具：FCoins 转 Penya 计算器、Premium 购物清单
   - 外部链接：Flyff Universe 主页、Flyffipedia、Flyffulator、Skillulator
-- 标签栏新增 “键盘” 菜单，显示配置的快捷键。该菜单会隐藏浏览器视图，角色保持登录。
+- 标签栏新增菜单（键盘）显示配置的快捷键。
+  该菜单会隐藏浏览器视图，角色保持登录。
 
 **文档**
-- 设置菜单新增 “文档” 选项卡，提供多语言说明：
-  - 创建档案、创建布局、数据路径与持久化、API 获取、
-    CD 计时器、击杀提示、FCoins <-> Penya、Premium 购物清单
-- 文本已翻译成所有可用语言，部分图片尚缺。回退：英文界面 → 德文界面。
+- 设置菜单新增"文档"标签页，提供多语言说明：
+  - 创建档案、创建布局、数据路径与持久化、API-Fetch、
+    CD 计时器、Killfeed、FCoins <-> Penya、Premium 购物清单
+- 文本已翻译成所有可用语言，部分图片尚缺。
+  回退：英文界面 → 德文界面。
 
 **其他**
-- 新增主题 “Steel Ruby”
-- 启动器在新闻提要下方显示已打开档案列表
+- 新增主题"Steel Ruby"
+- 启动器在新闻源下方显示已打开的档案列表
 - 设置 → 支持 中新增捐赠功能
-- 多标签关闭对话框新增 “拆分为单个标签” 选项
+- 多标签关闭对话框新增"拆分为单个标签"选项
 - 在已有会话运行时打开档案，会询问是添加到当前窗口还是创建新窗口
 
-### 🧹 清理
+### 🧹 清理工作
 
 - 启动器窗口现在有最小尺寸，且在此范围内保持响应式
 - 启动器默认窗口尺寸从 980×640 改为 1200×970
-- 设置菜单新增 “X” 按钮
+- 设置菜单新增"X"按钮
 - 调整设置窗口尺寸
-- 修改档案和布局的 “管理” 菜单，现包含 “重命名” 与 “删除”
-- 布局选择中新增 “档案” 按钮，显示布局包含的档案
+- 修改档案和布局的"管理"菜单，现包含"重命名"与"删除"
+- 布局选择中新增"档案"按钮，显示布局包含的档案
 - 为放大标签栏的按钮添加图标
 - 在关闭对话框中突出显示活动标签
 
-### 🐛 修复
+### 🐛 错误修复
 
 - 修复了切换标签时导致游戏被隐藏的错误
 
 ### 🐛 已知问题
 
-- 偶尔会出现侧边面板的文本输入未正确接收
-- 覆盖层会显示在对话框中，例如 “关闭” 和 “选择布局” — 2.4.1 已修复 ✅
-- 窗口模式下不显示侧边面板
+- 偶尔会出现 Sidepanel 的文本输入未正确接收
+- Overlay 会显示在对话框中，例如"关闭"和"选择布局"     ✅ 已在 2.4.1 中修复
+- 窗口模式下不显示 Sidepanel
 
 
 ---
 
-## 🆕 版本 2.1.1
+## 🆕 Version 2.1.1
 
 ### ✨ 改进
 
-- 覆盖层不再遮挡外部窗口。窗口不活动时会自动隐藏。
-- 修复移动窗口时覆盖层闪烁的问题。移动时也会正确隐藏覆盖层。
+- Overlay 不再遮挡外部窗口。
+  窗口不活动时会自动隐藏。
+- 修复移动窗口时 Overlay 闪烁的问题。
+  移动时也会正确隐藏 Overlay。
 - 布局中的最后一个标签在启用分屏前会获得足够的加载时间。
-- 退出对话框中除“取消”外的所有操作现在都标记为危险按钮（红色）。保留“取消”为中立。
-- 设置菜单新增补丁说明标签页，按当前选择的语言显示。
+- 退出对话框中除"取消"外的所有操作现在都标记为危险按钮（红色）。
+  "取消"保持中立样式。
+- 设置菜单新增更新日志标签页。
+  按当前选择的语言显示。
 
 ### ➕ 新功能
 
-- 在 CD 计时器末尾新增 “+” 按钮
+- 在 CD 计时器末尾新增"+"按钮
 
-### 🧹 清理
+### 🧹 清理工作
 
 - 移除图标对话框中未使用的标签
-- 移除右上角未使用的 “RM-EXP” 徽章
+- 移除右上角未使用的"RM-EXP"徽章
 
 ---
 
-## 🔄 版本 2.1.0
+## 🔄 Version 2.1.0
 
 ### 🚀 新内容
 
@@ -232,9 +363,9 @@ Killfeed 插件中的独立窗口 —— 用于采集并可视化 **Giants**、*
 
 ---
 
-## 🔄 版本 2.0.2
+## 🔄 Version 2.0.2
 
-### 🐛 修复
+### 🐛 错误修复
 
-- 修复侧边面板显示为空的问题
+- 修复 Sidepanel 显示为空的问题
 - 修正翻译错误

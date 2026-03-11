@@ -1,36 +1,160 @@
-﻿# 📦 Notes de patch
+# 📦 Notes de patch
 
 ---
-
 ## 🆕 Version 3.1.0
 
 ### ✨ Nouvelles fonctionnalités
 
+**Nouveaux types de mise en page**
+- Mises en page verticales : 2x1, 3x1, 4x1 (vues empilées)
+- Mises en page asymétriques : fenêtre principale + 2–3 fenêtres secondaires à droite (`main-r2`, `main-r3`) ou en bas (`main-b2`, `main-b3`)
+- Répartition des mises en page asymétriques ajustable via un slider (min 20% / max 80%)
+- Sélecteur de mise en page avec aperçu ASCII : un diagramme du layout s'affiche au survol
+
+**Export/Import de profils**
+- Exporter et importer des profils sous forme de fichier `.flyffprofile`
+- Contient les métadonnées du profil, les cookies de session Electron et les données localStorage
+- Permet la sauvegarde et le transfert entre ordinateurs
+
+**Noms de personnages et classes par personnage**
+- Enregistrer des noms de personnages et classes par personnage dans le profil — affichage sous forme de badges avec icône de classe dans la liste des profils, filtrable et sélectionnable via liste déroulante dans les plugins
+
 **Annonces du launcher**
-- Nouvelle section dans le panneau droit affichant des messages du développeur sans mise à jour de l'application
-- Types : 🐛 Bug, ℹ Info, ✨ Fonctionnalité, ⚠ Avertissement — chacun avec une couleur distincte
-- Entièrement localisé : les messages peuvent être traduits dans les 8 langues prises en charge
-- Désactivable dans Paramètres → Paramètres client → « Afficher les annonces du launcher »
-- Les profils ouverts dans le panneau droit sont désormais repliables
+- Nouvelle section dans le panneau droit affichant des messages du développeur sans mise à jour de l'application — par ex. bugs connus, développements en cours ou fonctionnalités prévues ; disponible en allemand et en anglais, désactivable dans les paramètres
+- Les profils ouverts dans le panneau droit sont repliables et dépliables
+
+**Paramètre de police**
+- Nouveau paramètre "Police des overlays et de l'UI" dans les paramètres client — polices disponibles : Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel ; la police est appliquée aux overlays du launcher et aux éléments UI basés sur le DOM dans le jeu
+
+**Paramètre de taille de police**
+- Nouveau paramètre "Taille de police du launcher" : taille du texte dans la fenêtre du launcher ajustable (75–150%), pas dans le jeu lui-même
+
+**Journal d'erreurs et message au développeur**
+- Fenêtre de logs déplacée du Sidepanel vers la barre d'onglets — permet d'afficher, enregistrer et supprimer les logs d'erreurs ainsi que d'envoyer un message au développeur (les erreurs affichées sont envoyées avec) ; cooldown de 60 secondes
+
+**Plugin Quest Guide**
+- Nouveau plugin dans le Sidepanel : affiche les quêtes avec NPC de début/fin, objectif et récompenses avec marqueur de carte — nécessite les données de quêtes, NPC, monstres et items via API-Fetch
+
+**Calculateur d'upgrade unifié**
+- Calculateur d'upgrade étendu avec des calculs supplémentaires pour les armes, bijoux, piercing d'armure, piercing d'arme, Ultimate incluant le système de Pity, FWC et bonus d'événement ainsi que les tentatives déjà effectuées
+
+**Tooltips et icônes d'aide UI**
+- Tous les éléments importants du launcher ont des tooltips (dans les 8 langues)
+- Icônes d'aide (?) pour les fonctions complexes : nom de profil, mode onglet/fenêtre, noms de personnages
+- Indications pour la largeur/hauteur du launcher, les filtres, la sélection de mise en page et les cellules de grille
+
+**Télémétrie**
+- Statistiques de démarrage anonymes optionnelles (version, système d'exploitation, ID aléatoire)
+- Activée par défaut, aucune donnée personnelle, désactivable à tout moment
+
+**Vérification des mises à jour et rollback de version**
+- Nouveau paramètre : vérifier automatiquement les mises à jour au démarrage (on/off)
+- Bouton "Vérifier maintenant" manuel dans les paramètres
+- Rollback de version : les anciennes versions du launcher (à partir de 3.0.5) peuvent être installées directement depuis les paramètres
+- Menu déroulant avec toutes les releases GitHub disponibles, date et marquage de la version actuelle
+
+### 🚀 Performance
+
+**Système OCR optimisé**
+- Méthode de capture d'écran sécurisée par plateforme : `xwd` sur Linux (pas de contact GPU), `capturePage()` sur Win/Mac — empêche les blocages GPU et les freezes du jeu
+- En cas d'erreur de capture sur Linux, le scan est ignoré au lieu de geler le jeu
+- Cache de hash de pixels : l'OCR est ignoré lorsque le frame n'a pas changé — réduit la charge CPU sur les contenus de jeu statiques
+- Les résultats OCR vides sont correctement mis en cache — pas de répétitions Tesseract inutiles sur des pixels inchangés
+- Limite globale de concurrence Tesseract (max. 1 simultané) — empêche la famine CPU du processus GPU
+- Caches en mémoire pour les profils, le ROI-Store et le ROI-Visibility-Store au lieu de lectures fréquentes de la base de données
+
+**Optimisation des overlays**
+- Polling d'overlay efficace : changements d'opacité minimisés et intervalles réduits
+- Linux : évitement des cycles Show/Hide inutiles pour les overlays transparents
+
+### ⚙️ Améliorations
+
+- **Cartes de mise en page améliorées** : aperçu ASCII du type de mise en page directement dans la carte ; affichage "X profils" au lieu de "X onglets" ; présentation plus compacte
+- **Cartes de profil plus compactes** : hauteur de carte réduite, personnages avec icônes de classe en badges horizontaux sous le nom du profil
+- **Paramètres entièrement refondus** : nouveau layout avec barre latérale et sous-pages catégorisées, toggle-switches et slider-cards
+- **Affichage RAM** : paramètre "Afficher l'utilisation RAM" avec détails mémoire par profil, plugin et processus système
+- **Overlay Killfeed positionnable** : déplacer l'overlay par glisser-déposer, la position est sauvegardée (x/y dans le layout)
+- **Sélection de personnage Killfeed** : les noms de personnages sont choisis via liste déroulante depuis le profil
+- **Bouton Sidepanel** dans la barre d'onglets de session (au lieu de dans l'overlay)
+- **Onglets Killfeed et Scan dans le Sidepanel simplifiés** : affichage plus clair et complexité réduite
+
+### 🐛 Corrections de bugs
+
+- Avertissements d'assertion GLib/GTK supprimés sur Linux (messages internes inoffensifs de Chromium)
+
+### 📦 Support Linux
+
+- Binaires et bibliothèques Tesseract inclus pour Linux
+- Fichiers de langue tessdata inclus pour Linux
+
+### 🌐 Traductions
+
+- Traductions étendues
 
 ---
-
 ## 🐛 Version 3.0.5
 
 ### 🐛 Corrections de bugs
-- Corrigé : Problème de connexion avec un compte Google
+- Corrigé : problème de connexion avec un compte Google
 
 ---
-
 ## 🐛 Version 3.0.4
 
-### 🐛 Bug Fixes (macOS)
-- Fixed: "damaged and can't be opened" error — the app inside the DMG is now ad-hoc signed before the DMG is assembled.
-- Fixed: Signing order is now correct: `package → sign → make DMG`.
-- Note: macOS still shows an "unidentified developer" prompt. Right-click the app → **Open** → **Open Anyway**.
+### 🐛 Corrections de bugs (macOS)
+- Corrigé : erreur "damaged and can't be opened" — l'application dans le DMG est désormais signée ad-hoc avant l'assemblage du DMG (auparavant, l'étape de signature n'avait lieu qu'après le DMG finalisé).
+- Corrigé : l'ordre est désormais correct : `package → sign → créer le DMG`.
+- Remarque : macOS affiche toujours le dialogue "Développeur non identifié" au premier lancement. Clic droit sur l'application → **Ouvrir** → **Ouvrir quand même**, ou utiliser la commande Terminal du README.
 
 ---
+## 🆕 Version 3.0.0
 
+### 🆕 Nouvel outil : Calculateur de coûts d'upgrade
+- Calcule les coûts estimés pour les upgrades d'items de +0 à +10
+incluant les matériaux nécessaires, le nombre de tentatives et la comparaison entre Low Sprotect et Sprotect.
+
+### ✨ Nouvelles fonctionnalités
+- Nouvel onglet Logs dans le Sidepanel avec journal d'erreurs en direct (Warn/Error) ainsi qu'actions de suppression et de sauvegarde.
+- Plugin API-Fetch 3.0.0 avec nouvelle interface native dans le Sidepanel (plus de fenêtre UI Python séparée).
+
+### 🚀 Plateforme & Distribution - Support Linux et Mac
+- Pipeline de build/release pour Windows, macOS et Linux dans GitHub Actions.
+- Nouveaux formats de paquets : macOS DMG ainsi que Linux AppImage/DEB/RPM.
+- Bundling Tesseract spécifique par plateforme (win32, darwin, linux) avec détection/fallback runtime adaptés.
+
+### 🐛 Corrections de bugs
+- Taux de change Fcoin vers Penya corrigé
+- Killfeed : conditions de course lors de mises à jour OCR rapides réduites (sérialisation par profil), les mises à jour broadcast ne sont plus ignorées.
+
+### 📦 Runtime & Dépendances
+- Bibliothèque Sharp pour le traitement d'images incluse dans le paquet (pas d'installation séparée nécessaire).
+
+### ⚙️ Améliorations
+- La détection de monstres du Killfeed priorise désormais les HP du monstre (avec tolérance), puis l'élément/niveau.
+- Détection de cible TTK plus robuste grâce à la tolérance HP ; fenêtre de grâce du monstre ajustée de 5s à 2s.
+- Le moteur de stats distingue mieux entre le bruit de niveau OCR et les vrais changements de niveau.
+- ### D'autres améliorations du Killfeed suivront
+- API-Fetch reconstruit dans le cadre de la plateforme. Toujours accessible dans les paramètres, en plus dans le Sidepanel.
+- Paramètres → Documentation étendue.
+
+### 🧹 Nettoyage
+- Anciens artefacts Python d'API-Fetch supprimés (.py, .exe) au profit de la variante JS/Sidepanel.
+- Ressources Tesseract restructurées dans les nouveaux sous-dossiers par plateforme.
+
+:::accordion[Chemins de stockage par plateforme]
+Toutes les données utilisateur se trouvent dans les répertoires suivants selon la plateforme :
+
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**Nouveaux fichiers depuis 2.5.1 :**
+- `user/tools/upgrades/upgrade_cost_calc.json` — Calculateur de coûts d'upgrade
+- `user/logs/errors-*.txt` — Journaux d'erreurs
+- `user/logs/ocr/` — Logs de debug OCR
+
+:::
+
+---
 ## 🆕 Version 2.5.1
 
 ### 🆕 Nouvelle fonctionnalité : Giant Tracker
@@ -38,8 +162,8 @@ Fenêtre autonome dans le plugin Killfeed — capture et visualise les statistiq
 
 **Onglets de filtre**
 - 5 onglets : **Tous** · **Giants** · **Violets** · **Bosses** · **Drops**
-- **Bosses** — filtre sur le rang `boss` (bordure de carte rouge, style d'icône dédié)
-- **Drops** — affiche uniquement les monstres avec des drops enregistrés, y compris un aperçu du loot pool (top 5 des objets par rareté) directement dans la carte
+- **Bosses** — filtre par rang `boss` (bordure de carte rouge, style d'icône dédié)
+- **Drops** — affiche uniquement les monstres avec des drops enregistrés, y compris un aperçu du loot pool (top 5 items par rareté) directement dans la carte
 
 **Statistiques de kills**
 - Vue en cartes avec modes Compact et Étendu
@@ -53,12 +177,12 @@ Fenêtre autonome dans le plugin Killfeed — capture et visualise les statistiq
 
 **Time to Kill (TTK)**
 - Mesure automatiquement la durée du combat contre les Giants, Violets et Bosses
-- Délai de grâce de 10 s lors de la désélection de la cible (buff, soin, etc.) — le temps de pause n'est pas compté dans le TTK
+- Délai de grâce de 10s lors de la désélection de la cible (buff, soin, etc.) — le temps de pause n'est pas compté dans le TTK
 - Empreinte nom du monstre + HP max : la cible est reconnue de façon fiable
 - Affichage : Dernier TTK, Ø TTK, Plus rapide
 - Persisté dans l'historique des kills (colonne CSV `TTK_ms`)
 
-**Autres**
+**Divers**
 - Tri par kills, nom ou niveau
 - Champ de recherche pour filtrer par nom de monstre
 
@@ -69,17 +193,17 @@ Fenêtre autonome dans le plugin Killfeed — capture et visualise les statistiq
 - Killfeed : historique introduit (par profil)
   - Fichier quotidien par date avec kills individuels (`Date/Heure`, `Personnage`, `Niveau`, `Monster-ID`, `Rang`, `Monstre`, `Élément`, `Gain EXP`, `EXP attendue`, `TTK_ms`)
   - Vue quotidienne agrégée avec `Kills`, `EXP totale`, `Répartition des monstres`, `Premier/Dernier kill`
-- Killfeed : le suivi des monstres dans le panneau latéral se met maintenant à jour immédiatement après les kills (sans changement d'onglet)
-- Killfeed : dans les accordéons de suivi des monstres, chaque rang dispose maintenant d'un bouton Kills avec une ListView des kills individuels.
+- Killfeed : le suivi des monstres dans le Sidepanel se met maintenant à jour immédiatement après les kills (pas de changement d'onglet nécessaire)
+- Killfeed : dans les accordéons de suivi des monstres, chaque rang dispose désormais d'un bouton Kills avec une ListView des kills individuels.
   Les kills individuels peuvent être supprimés directement dans la ListView.
-  Lors de la suppression de kills individuels, les fichiers d'historique AppData (daily/YYYY-MM-DD.csv, history.csv) et l'état du panneau latéral sont mis à jour.
-- Killfeed : le panneau latéral suit maintenant de façon stable le profil cible de l'overlay (plus de saut entre les IDs de profil)
+  Lors de la suppression de kills individuels, les fichiers d'historique AppData (daily/YYYY-MM-DD.csv, history.csv) et l'état du Sidepanel sont mis à jour.
+- Killfeed : le Sidepanel suit désormais de façon stable le profil cible de l'overlay (plus de saut entre les IDs de profil)
 - Données de référence des monstres mises à jour
-- Design de la boîte de dialogue "Choisir une mise en page" optimisé
-- Design de la boîte de dialogue "Gérer les profils (déconnexion)" optimisé
+- Design du dialogue "Choisir un layout" optimisé
+- Design du dialogue "Gérer les profils (déconnexion)" optimisé
 
-### 🐛 Corrections
-- Les overlays ne recouvrent plus la boîte de dialogue de fermeture
+### 🐛 Corrections de bugs
+- Les overlays ne recouvrent plus le dialogue de fermeture
 - Les accordéons de la documentation s'affichent correctement
 - La migration de la version 2.3.0 vers la nouvelle structure AppData (`user/`) fonctionne désormais de manière fiable
 - Killfeed : les sauts négatifs d'EXP OCR sont désormais filtrés comme bruit OCR et ne faussent plus la détection des kills
@@ -107,7 +231,7 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 - `user/plugin-data/` — Paramètres des plugins
 - `user/plugin-data/killfeed/history/<profile-id>/history.csv` — Vue quotidienne Killfeed par profil
 - `user/plugin-data/killfeed/history/<profile-id>/daily/YYYY-MM-DD.csv` — Historique détaillé Killfeed par kill et par jour
-- `user/cache/` — Données API fetch & icônes
+- `user/cache/` — Données API-Fetch & icônes
 - `user/logs/` — Logs de diagnostic
 :::
 
@@ -115,9 +239,9 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 
 ## 🆕 Version 2.3.0
 
-### 🐛 Corrections
+### 🐛 Corrections de bugs
 
-- Les valeurs OCR (panneau latéral) sont désormais correctement détectées lorsque le jeu est lancé dans une fenêtre multi-fenêtres distincte
+- Les valeurs OCR (Sidepanel) sont désormais correctement détectées lorsque le jeu tourne dans une fenêtre multi-fenêtres séparée
 - La calibration ROI n'ouvre plus par erreur une nouvelle session mais utilise la fenêtre de jeu existante
 - L'OCR utilise désormais de manière fiable le Tesseract intégré — une installation séparée n'est plus nécessaire
 
@@ -141,67 +265,67 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 
 **Raccourcis clavier** — combinaisons librement assignables (2-3 touches)
 - Masquer les overlays
-- Panneau latéral on/off
+- Sidepanel on/off
 - Barre d'onglets on/off
-- Enregistrer la capture de l'écran actif dans `C:\Users\<USER>\Pictures\Flyff-U-Launcher\`
+- Enregistrer une capture d'écran de la fenêtre active dans `C:\Users\<USER>\Pictures\Flyff-U-Launcher\`
 - Onglet précédent / Onglet suivant
 - Instance de fenêtre suivante
-- Remettre le minuteur CD à 00:00, les icônes attendent un clic
+- Remettre le CD-Timer à 00:00, les icônes attendent un clic
 - Ouvrir le calculateur FCoins
-- Ouvrir la liste d’achats Premium
+- Ouvrir la liste d'achats Premium
 
 **Nouveaux paramètres client**
 - Largeur / hauteur du launcher
 - Charger les onglets de grille séquentiellement
 - Affichage des onglets pour les mises en page
-- Mettre en évidence la grille active
+- Mettre en évidence la vue de grille active
 - Actualiser les mises en page lors des modifications
-- Durée des messages d’état
-- Taux de change des FCoins
-- Mode d’affichage des mises en page d’onglets (Compact, Groupé, Séparé, Mini-grille)
+- Durée des messages d'état
+- Taux de change FCoins
+- Mode d'affichage des onglets de mise en page (Compact, Groupé, Séparé, Mini-grille)
 
 **Menus & Outils**
-- Nouveau menu « Tools (icône étoile) » ajouté à la barre d'onglets.
-  Ce menu masque la vue du navigateur, les personnages restent connectés.
-  - Outils internes : calculateur FCoins vers Penya, liste d’achats Premium
-  - Liens externes : page d’accueil Flyff Universe, Flyffipedia, Flyffulator, Skillulator
+- Nouveau menu "Tools (icône étoile)" ajouté à la barre d'onglets.
+  Ce menu masque la vue navigateur, les personnages restent connectés.
+  - Outils internes : calculateur FCoins vers Penya, liste d'achats Premium
+  - Liens externes : page d'accueil Flyff Universe, Flyffipedia, Flyffulator, Skillulator
 - Nouveau menu dans la barre d'onglets (icône clavier) affichant les raccourcis configurés.
-  Ce menu masque la vue du navigateur, les personnages restent connectés.
+  Ce menu masque la vue navigateur, les personnages restent connectés.
 
 **Documentation**
-- Nouvel onglet « Documentation » dans le menu des paramètres avec des explications en plusieurs langues :
-  - Créer un profil, créer une mise en page, chemins de données & persistance, API fetch,
-    minuteur CD, killfeed, FCoins <-> Penya, liste d’achats Premium
+- Nouvel onglet "Documentation" dans le menu des paramètres avec des explications en plusieurs langues :
+  - Créer un profil, créer une mise en page, chemins de données & persistance, API-Fetch,
+    CD-Timer, Killfeed, FCoins <-> Penya, liste d'achats Premium
 - Le texte est traduit dans toutes les langues disponibles. Certaines images manquent encore.
   Fallback : interface en anglais → interface en allemand.
 
 **Divers**
-- Nouveau thème « Steel Ruby » ajouté
-- Le launcher affiche sous le flux d’actualités la liste des profils déjà ouverts
+- Nouveau thème "Steel Ruby" ajouté
+- Le launcher affiche sous le fil d'actualités la liste des profils déjà ouverts
 - Fonction de don ajoutée dans Paramètres → Support
-- Le dialogue de fermeture en multi-onglets contient l’option « Scinder en onglets individuels »
-- Lorsqu’un profil est ouvert alors qu’une session est déjà active, on demande s’il faut l’ajouter à la fenêtre actuelle ou créer une nouvelle fenêtre
+- Le dialogue de fermeture en multi-onglets contient l'option "Séparer en onglets individuels"
+- Lors de l'ouverture d'un profil alors qu'une session est déjà active, il est demandé s'il faut l'ajouter à la fenêtre actuelle ou créer une nouvelle fenêtre
 
 ### 🧹 Nettoyage
 
-- La fenêtre du launcher a désormais une taille minimale et reste responsive jusqu’à ce seuil
+- La fenêtre du launcher a désormais une taille minimale et reste responsive jusqu'à ce seuil
 - Taille par défaut du launcher modifiée de 980×640 à 1200×970
-- Bouton « X » ajouté dans le menu des paramètres
+- Bouton "X" ajouté dans le menu des paramètres
 - Taille de la fenêtre des paramètres ajustée
-- Menu « Gérer » pour les profils et mises en page modifié. Il contient « Renommer » et « Supprimer »
-- Bouton « Profils » ajouté dans la sélection de mise en page. Il affiche les profils contenus dans la mise en page
-- Icône ajoutée pour le bouton d’agrandissement de la barre d’onglets
+- Menu "Gérer" pour les profils et mises en page modifié. Il contient "Renommer" et "Supprimer"
+- Bouton "Profils" ajouté dans la sélection de mise en page. Il affiche les profils contenus dans la mise en page
+- Icône ajoutée pour le bouton d'agrandissement de la barre d'onglets
 - Onglet actif mis en évidence dans le dialogue de fermeture
 
-### 🐛 Corrections
+### 🐛 Corrections de bugs
 
-- Correction d’un bug qui masquait le jeu lors du changement d’onglet
+- Correction d'un bug qui masquait le jeu lors du changement d'onglet
 
 ### 🐛 Problèmes connus
 
-- Il arrive que les saisies de texte du panneau latéral n’arrivent pas correctement
-- Les overlays s’affichent dans des fenêtres de dialogue, par ex. « Fermer » et « Choisir une mise en page » — corrigé en 2.4.1 ✅
-- Le panneau latéral n’est pas affiché en mode fenêtré
+- Il arrive que les saisies de texte dans le Sidepanel n'arrivent pas correctement
+- Les overlays s'affichent dans les fenêtres de dialogue, par ex. "Fermer" et "Choisir un layout"     ✅ corrigé en 2.4.1
+- Le Sidepanel n'est pas affiché en mode fenêtre
 
 
 ---
@@ -212,22 +336,22 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 
 - Les overlays ne recouvrent plus les fenêtres externes.
   Ils se masquent automatiquement lorsque la fenêtre est inactive.
-- Clignotement des overlays lors du déplacement de la fenêtre corrigé.
-  Là aussi les overlays sont correctement masqués.
-- Le dernier onglet de la mise en page dispose désormais d'assez de temps de chargement avant l’activation du split screen.
-- Toutes les actions du dialogue de sortie (sauf Annuler) sont maintenant marquées comme boutons dangereux (rouges).
-  « Annuler » reste volontairement neutre.
+- Scintillement des overlays lors du déplacement de la fenêtre corrigé.
+  Là aussi, les overlays sont désormais correctement masqués.
+- Le dernier onglet du layout dispose désormais d'un temps de chargement suffisant avant l'activation du splitscreen.
+- Toutes les actions du dialogue de fermeture (sauf Annuler) sont désormais marquées comme boutons dangereux (rouges).
+  "Annuler" reste volontairement neutre.
 - Onglet Patchnotes ajouté dans le menu des paramètres.
-  L’affichage se fait dans la langue sélectionnée.
+  L'affichage se fait dans la langue sélectionnée.
 
 ### ➕ Nouvelles fonctionnalités
 
-- Bouton « + » ajouté à la fin du minuteur CD
+- Bouton "+" ajouté à la fin du CD-Timer
 
 ### 🧹 Nettoyage
 
-- Onglet inutilisé retiré du dialogue d’icônes
-- Badge « RM-EXP » inutilisé en haut à droite supprimé
+- Onglet inutilisé retiré du dialogue d'icônes
+- Badge "RM-EXP" inutilisé en haut à droite supprimé
 
 ---
 
@@ -241,7 +365,7 @@ Toutes les données utilisateur se trouvent désormais sous `%APPDATA%\Flyff-U-L
 
 ## 🔄 Version 2.0.2
 
-### 🐛 Corrections
+### 🐛 Corrections de bugs
 
-- Correction d’un bug affichant le panneau latéral vide
-- Correction d’erreurs de traduction
+- Correction d'un bug affichant le Sidepanel vide
+- Correction d'erreurs de traduction

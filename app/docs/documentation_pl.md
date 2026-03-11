@@ -2,56 +2,195 @@
 
 :::accordion[Tworzenie profilu]
 
+**Krok 1 — Utwórz nowy profil:**
 - Kliknij **„Nowy profil”** w nagłówku.
 
 ![Opis](create_profil/create_profil_1_pl.png)
 
+**Krok 2 — Wpisz nazwę profilu:**
 - Wpisz nazwę profilu i kliknij **„Dodaj”**.
+- Kliknij **„Zamknij”**, aby zamknąć okno bez tworzenia profilu.
 
 ![Opis](create_profil/create_profil_2_pl.png)
 
-- Kliknij ikonę koła zębatego, aby otworzyć ustawienia profilu.
+**Krok 3 — Karta profilu:**
+
+Każdy profil wyświetlany jest jako karta na liście:
 
 ![Opis](create_profil/create_profil_3_pl.png)
 
-W tym menu możesz:
+| Nr | Element | Opis |
+|----|---------|------|
+| ❶ | Uchwyt przeciągania | Sortuj profile przez przeciągnij i upuść |
+| ❷ | Cel Overlay | Określa, który profil otrzymuje nakładki OCR i panel boczny |
+| ❸ | Cel Supportera | Określa, który profil służy jako widok supportera dla CD-Timera |
+| ❹ | Tryb uruchamiania | Pokazuje, czy profil otwiera się w trybie kart czy okna |
+| ❺ | Koło zębate | Otwórz ustawienia profilu |
+| ❻ | Graj | Rozpocznij sesję z tym profilem |
 
-- zmienić nazwę profilu,
-- wybrać klasę (określa emblemat profilu i służy jako filtr wyszukiwania),
-- zdecydować, czy profil może być otwierany wielokrotnie jednocześnie.
+**Krok 4 — Ustawienia profilu:**
 
-Gdy **„Używaj w kartach”** jest włączone, profil można używać równolegle; gdy jest wyłączone, otworzy się tylko w jednym oknie.
-
-Jeśli potrzebujesz obu wariantów, zduplikuj profil i używaj jednej kopii z włączoną opcją, drugiej bez.  
-Uwaga: jednocześnie można używać tylko jednego wariantu danego profilu.
+Kliknij ikonę koła zębatego ❺, aby otworzyć ustawienia:
 
 ![Opis](create_profil/create_profil_4_pl.png)
 
-Możesz tworzyć dowolną liczbę profili. Każdy profil ma własną zapisaną sesję Flyff.  
+| Nr | Element | Opis |
+|----|---------|------|
+| ❶ | Nazwa profilu | Zmień nazwę profilu |
+| ❷ | Klasa + nazwa postaci | Wybierz klasę z listy rozwijanej i wpisz nazwę postaci. Każda postać otrzymuje własną klasę. |
+| ❸ | Dodaj postać | Dodaj kolejną nazwę postaci do profilu (przycisk „Dodaj”) |
+| ❹ | Używaj w kartach | Włączone: profil można używać w layoutach z wieloma kartami. Wyłączone: profil otwiera się tylko w osobnym oknie. |
+| ❺ | Zapisz | Zastosuj zmiany |
+| ❻ | Kopiuj profil | Tworzy kopię profilu ze wszystkimi ustawieniami |
+| ❼ | Usuń | Trwale usuń profil |
+| ❽ | Zamknij | Zamknij okno dialogowe |
+
+Jeśli chcesz używać profilu zarówno w kartach, jak i w trybie okna, skopiuj go przyciskiem ❻ i użyj jednej kopii na tryb.
+
+**Krok 5 — Lista profili z postaciami:**
+
+Skonfigurowane profile wyświetlane są na liście z nazwami postaci i ikonami klas:
+
+![Opis](create_profil/create_profil_5_pl.png)
+
+- Każda postać wyświetlana jest jako odznaka z ikoną klasy pod nazwą profilu.
+- Filtr klasy i wyszukiwanie nazw w nagłówku przeszukują wszystkie postacie ze wszystkich profili.
+- Pluginy takie jak Killfeed korzystają z zapisanych nazw postaci za pomocą listy rozwijanej.
+
+Możesz tworzyć dowolną liczbę profili. Każdy profil ma własną zapisaną sesję Flyff.
 Ustawienia w grze nie przenoszą się między sesjami jak w przeglądarce.
+
+**Eksport/Import profili:**
+
+![small](create_profil/create_profil_6.png)
+
+| Nr | Element | Opis |
+|----|---------|------|
+| ❶ | Eksport | Zapisz profil jako plik `.flyffprofile` |
+| ❷ | Import | Wczytaj plik `.flyffprofile` i utwórz nowy profil |
+
+Eksportowany plik zawiera:
+
+- Metadane profilu (nazwa, klasa, ustawienia)
+- Ciasteczka sesji Electron (dane logowania)
+- Dane localStorage (ustawienia gry)
+
+Umożliwia to tworzenie kopii zapasowych i transfer między komputerami.
 :::
 
 :::accordion[Tworzenie layoutu]
 
-- Kliknij **„Graj”** na karcie utworzonego profilu. Upewnij się, że profil można używać w kartach.  
+**Krok 1 — Rozpocznij layout:**
+
+Kliknij **„Graj”** na profilu z włączonymi kartami.
+
 ![Opis](create_layout/create_layout_1_pl.png)
 
-- Wybierz żądaną siatkę layoutu.  
-![Opis](create_layout/create_layout_3.png)
+**Krok 2 — Wybierz siatkę:**
 
-- Przypisz profil do każdej komórki i kliknij **„Dalej”**.  
-![Opis](create_layout/create_layout_4_pl.png)
+Wybierz żądaną siatkę. Po najechaniu kursorem wyświetla się **podgląd ASCII** siatki.
 
-- Kliknij **„+”**, aby dodać kolejne karty layoutu.  
-![Opis](create_layout/create_layout_5.png)
+![Opis](create_layout/create_layout_2.png)
 
-- Zapisz layout, aby uruchamiać go z launchera.  
-![Opis](create_layout/create_layout_6.png)  
-![Opis](create_layout/create_layout_7.png)
+*Layouty symetryczne:*
+- **1×1** — Pojedyncze okno
+- **1×2 / 2×1** — Dwa okna obok siebie / jedno nad drugim
+- **1×3 / 3×1** — Trzy okna obok siebie / jedno nad drugim
+- **1×4 / 4×1** — Cztery okna obok siebie / jedno nad drugim
+- **2×2** — Cztery okna w siatce
+- **3+2** — Trzy u góry, dwa na dole
+- **2×3** — Sześć okien w siatce
+- **4+3** — Cztery u góry, trzy na dole
+- **2×4** — Osiem okien w siatce
 
-- Karty można zmienić nazwę prawym przyciskiem.
-- Karty mogą ładować się sekwencyjnie lub równocześnie.  
-  -> Ustawienia / Client Settings / Ładuj karty siatki sekwencyjnie
+*Layouty asymetryczne:*
+- **1+2 →** — Okno główne z lewej, 2 boczne po prawej
+- **1+3 →** — Okno główne z lewej, 3 boczne po prawej
+- **1+2 ↓** — Okno główne u góry, 2 boczne na dole
+- **1+3 ↓** — Okno główne u góry, 3 boczne na dole
+
+Layouty asymetryczne oferują **suwak** w pasku kart do regulacji podziału (min. 20 % / maks. 80 %).
+
+![small](create_layout/create_layout_slider.png)
+
+**Krok 3 — Przypisz profile:**
+
+Przypisz profil do każdej komórki. Niepotrzebne komórki mogą pozostać puste.
+
+![Opis](create_layout/create_layout_3_pl.png)
+
+| Nr | Element | Opis |
+|----|---------|------|
+| ❶ | Komórki siatki | Pokazuje komórki wybranej siatki. Kliknij komórkę, aby przypisać profil z listy poniżej. |
+| ❷ | Lista profili | Wszystkie profile z włączonymi kartami. Kliknij, aby przypisać do wybranej komórki. |
+| ❸ | Dalej | Potwierdza przypisanie i uruchamia layout z przypisanymi profilami. |
+
+**Krok 4 — Zapisz layout:**
+
+Przycisk zaznaczony na obrazku (na pasku tytułu) otwiera dialog zapisu.
+
+![Opis](create_layout/create_layout_4.png)
+
+Nadaj layoutowi nazwę i kliknij **„Zapisz”**.
+
+![Opis](create_layout/create_layout_5_pl.png)
+
+**Krok 5 — Karta layoutu w launcherze:**
+
+Zapisane layouty wyświetlane są jako karta na liście profili:
+
+![Opis](create_layout/create_layout_6_pl.png)
+
+- Karta pokazuje **nazwę layoutu**, **liczbę profili** i **miniaturę siatki**.
+- **„Graj”** uruchamia cały layout.
+- **Koło zębate** otwiera ustawienia layoutu (nazwa, przypisanie profili, siatka).
+
+**Powiązane ustawienia** (w Ustawienia / Layout):
+- **Ładuj karty siatki sekwencyjnie** — Uruchamiaj karty po kolei zamiast jednocześnie
+- **Aktualizuj layouty przy zmianach** — Automatycznie zapisuj zmiany layoutu
+- **Podświetl aktywny widok siatki** — Wizualnie wyróżnij aktualnie wybraną kartę
+- **Wyświetlanie kart dla layoutów** — Tryb wyświetlania kart layoutu w launcherze
+- **Opóźnienie layoutu** — Opóźnienie przy przełączaniu kart
+
+**Powiązane skróty** (w Ustawienia / Skróty):
+- **Poprzednia karta** / **Następna karta** — Przełączaj między kartami
+- **Następne okno** — Przełączaj fokus między otwartymi oknami
+- **Pasek kart wł./wył.** — Pokaż/ukryj pasek kart w oknie sesji
+
+**Multi-Window:**
+
+Oprócz layoutów można otwierać wiele niezależnych okien sesji równolegle. Przy otwieraniu profilu gdy sesja jest aktywna, pojawia się pytanie czy dodać do bieżącego okna czy utworzyć nowe.
+:::
+
+:::accordion[Skróty klawiszowe]
+
+Skróty klawiszowe to dowolne kombinacje klawiszy (2–3 klawisze), które działają nawet gdy okno gry jest aktywne.
+
+**Konfiguracja:**
+- Otwórz **Ustawienia → Skróty klawiszowe**.
+- Kliknij na znacznik obok akcji i naciśnij żądaną kombinację klawiszy.
+- Konflikty są automatycznie wykrywane i wyświetlane.
+
+![Opis](hotkeys/hotkeys_settings_de.png)
+
+**Dostępne akcje:**
+
+| Akcja | Opis |
+|-------|------|
+| Przełącz nakładki | Pokaż lub ukryj wszystkie nakładki |
+| Przełącz panel boczny | Otwórz lub zamknij panel boczny |
+| Przełącz pasek kart | Pokaż/ukryj pasek kart w oknie sesji |
+| Poprzednia karta | Przełącz na poprzednią kartę |
+| Następna karta | Przełącz na następną kartę |
+| Następne okno | Przełącz fokus między otwartymi oknami |
+| Wyzeruj CD timer | Ustaw wszystkie CD timery na 00:00 (oczekiwanie na naciśnięcie klawisza) |
+| Zrzut ekranu | Zapisz zrzut ekranu aktywnego okna |
+| Kalkulator FCoins | Otwórz kalkulator FCoins |
+| Lista zakupów | Otwórz listę zakupów premium |
+
+Skonfigurowane skróty klawiszowe można w każdej chwili sprawdzić za pomocą **ikony klawiatury** na pasku kart.
+
+![Opis](hotkeys/hotkeys_menu_de.png)
 :::
 
 :::accordion[Ścieżki danych i trwałość (Windows)]
@@ -145,38 +284,30 @@ Pluginy zwykle potrzebują danych i ikon z API. Pobierz je poprzez API-Fetch.
      (zob. dokumentację API-Fetch)
 2. **Aktywuj plugin**
    - W ustawieniach pluginów w launcherze włącz **Killfeed**.  
-   ![Opis](killfeed/killfeed_1_de.png)
 
 3. **Skalibruj regiony OCR** (jednorazowo na profil)
    - Uruchom okno gry z włączonym „przyciskiem miecza” z launchera.  
-    ![Opis](killfeed/killfeed_2_de.png)
    - W panelu bocznym otwórz kalibrację ROI.
    - Zaznacz obszary wokół:
      - **EXP%** – pasek doświadczenia
      - **Level** – poziom
      - **Character name** – nazwa postaci
    - Zapisz ROI. Są trzymane per profil, ustawiasz je tylko raz.  
-    ![Opis](killfeed/killfeed_3_de.png)
    - Lewy przycisk myszy przeciąga ROI.
    - Po ustawieniu ROI wciśnij TAB, by wybrać następny.  
-    ![Opis](killfeed/killfeed_4_de.png)
    - Dla Killfeed ustaw: LVL, NAME, EXP, ENEMY (poziom wroga), ENEMY HP
    - Naciśnij „Schließen” lub ESC, by zakończyć.  
-    ![Opis](killfeed/killfeed_5_de.png)
    - ROI można później doprecyzować.  
-    ![Opis](killfeed/killfeed_6_de.png)
    - Rozpoznane wartości są widoczne na żywo w panelu.
    - Najważniejsze są LVL i EXP; ENEMY i ENEMY HP to wsparcie na przyszłość.
    - Jeśli poziom w OCR jest błędny, ustaw go ręcznie – ma pierwszeństwo przed OCR.
    - Jeśli OCR „zgubi” EXP (np. po zmianie postaci), ustaw ręcznie ponownie;  
      reguły EXP mogą blokować auto-korektę.
-   - ![Opis](killfeed/killfeed_7_de.png)
 
 
 4. **Wybierz profil w panelu bocznym**
    - Otwórz zakładkę **Killfeed** w panelu.
    - Z listy wybierz profil do śledzenia.  
-    ![Opis](killfeed/killfeed_8_de.png)
 
 
 5. **Graj**
@@ -185,14 +316,11 @@ Pluginy zwykle potrzebują danych i ikon z API. Pobierz je poprzez API-Fetch.
 
 **Panel boczny:**
 - Włączaj/wyłączaj odznaki (Zabicia/Sesja, EXP/h, Zabicia do lvl up). 
-![Opis](killfeed/killfeed_9_de.png)
 - Skala overlay (0.6x–1.6x).
 - Liczba wierszy dla odznak. 
-![Opis](killfeed/killfeed_10_de.png)
 - Reset statystyk sesji przyciskiem Reset.
 - Dane każdej sesji są zapisywane lokalnie.
 
-![Opis](killfeed/killfeed_11_de.png)
 
 - Każde wykryte zabicie jest wyświetlane w panelu bocznym i zapisywane trwale.
 - Zapis odbywa się per profil do plików CSV w AppData:
@@ -201,12 +329,10 @@ Pluginy zwykle potrzebują danych i ikon z API. Pobierz je poprzez API-Fetch.
 - W akordeonach śledzenia potworów dostępny jest przycisk `Kills` dla każdego rangu.
 - `Kills` otwiera widok listy z pojedynczymi zabiciami wybranego rangu.
 
-![Opis](killfeed/killfeed_12_de.png)
 
 - W widoku listy można usuwać pojedyncze zabicia (`Delete` -> `Confirm`).
 - Usunięcie od razu aktualizuje widok panelu bocznego oraz pliki historii Killfeed (`daily/YYYY-MM-DD.csv` i `history.csv`).
 
-![Opis](killfeed/killfeed_13_de.png)
 
 
 **Reguły zaliczenia zabicia:**
@@ -330,6 +456,41 @@ TTK automatycznie mierzy czas walki z bossem — od pierwszego uderzenia do zabi
 
 :::
 
+:::accordion[Przewodnik po zadaniach]
+- Pokazuje dostępne zadania filtrowane według poziomu, regionu i typu — z wizualizacją łańcuchów i śledzeniem postępów na profil.
+- Wymagane API-Fetche: **Quest**, **NPC**, **Monster**, **Item**
+
+**Konfiguracja:**
+1. Upewnij się, że wtyczka **Quest Guide** jest włączona.
+2. Pobierz wymagane dane API przez API-Fetch (Quest, NPC, Monster, Item).
+3. Wybierz zakładkę **Quest Guide** w panelu bocznym.
+
+**Filtry i wyszukiwanie:**
+- **Pole wyszukiwania** — filtruje po nazwie zadania, NPC lub przedmiocie
+- **Tryb poziomu:**
+  - *OCR ±* — pokazuje zadania odpowiadające aktualnie wykrytemu poziomowi OCR (z regulowaną tolerancją, domyślnie: ±5)
+  - *Ręczny* — wprowadź poziom i tolerancję ręcznie
+  - *Min–Max* — ustaw stały zakres poziomów (domyślnie: 1–30)
+- **Region** — ogranicza wyświetlanie do konkretnego regionu gry
+- **Filtr typu** — Wszystkie / Łańcuchowe / Dzienne / Powtarzalne / Kategoria
+- **Podkategoria** — Dla powtarzalnych zadań: Zwierzęta, Kolekcja, Polowanie na potwory, Dostawa, Inne
+
+**Śledzenie postępów:**
+- Oznacz zadania jako ukończone — postęp jest zapisywany per profil
+- Pole wyboru „Pokaż ukończone" do wyświetlania/ukrywania
+- Pole wyboru „Pokaż niedostępne" do wyświetlania/ukrywania
+- Przycisk resetowania resetuje postępy
+
+**Pasek statystyk:**
+Pokazuje liczbę wszystkich, dostępnych i ukończonych zadań w skrócie.
+
+**Mapa zadań:**
+- Otwiera interaktywną mapę z lokalizacjami zadań za pomocą przycisku mapy w panelu bocznym.
+
+![Opis](quest_guide/quest_guide_sidepanel_de.png)
+![Opis](quest_guide/quest_guide_map_de.png)
+:::
+
 ## Narzędzia
 
 Narzędzia otworzysz skrótem klawiszowym lub w pasku kart przez menu gwiazdki.
@@ -409,4 +570,59 @@ W trybie porównania oba systemy ochrony (S-Protect vs. S-Protect Low) są wyśw
 
 **Zapisywanie:** Ceny i ustawienia są zapisywane automatycznie (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
+:::
+
+:::accordion[Ogłoszenia]
+
+W prawym panelu launchera wyświetlane są wiadomości od dewelopera — bez konieczności aktualizacji aplikacji. Przykłady: znane błędy, bieżące prace rozwojowe lub planowane funkcje. Wyświetlanie jest dostępne w języku niemieckim i angielskim i można je wyłączyć w ustawieniach.
+
+![Opis](announcements/announcements_de.png)
+:::
+
+:::accordion[Wiadomości i dziennik błędów (Logi)]
+
+**Ikona logów** na pasku kart otwiera osobne okno z dziennikiem błędów.
+
+**Funkcje:**
+- Wyświetla wszystkie ostrzeżenia i komunikaty o błędach ze znacznikiem czasu: `[HH:MM:SS] [POZIOM] [MODUŁ] Wiadomość`
+- **Usuń** — Usuń wszystkie wpisy logów
+- **Zapisz** — Eksportuj logi jako plik `.txt` (do `user/logs/`)
+- **Wyślij wiadomość** — Wyślij logi bezpośrednio do dewelopera (Discord)
+  - Opcjonalnie: dodaj opis i nazwę ingame/Discord
+  - 60-sekundowy cooldown, aby zapobiec przypadkowemu wielokrotnemu wysyłaniu
+
+![Opis](logs/logs_window_de.png)
+:::
+
+:::accordion[Sprawdzanie aktualizacji i przywracanie wersji]
+
+**Automatyczne aktualizacje:**
+- Launcher sprawdza przy starcie, czy dostępna jest nowa wersja (konfigurowalne w ustawieniach).
+- Jeśli aktualizacja jest dostępna, wyświetlany jest dialog z opcją pobrania.
+- Podczas pobierania postęp jest wyświetlany jako pasek procentowy.
+- Po pobraniu aktualizacja jest instalowana przy następnym restarcie.
+
+**Ręczne sprawdzanie:**
+- W **Ustawienia → Zachowanie** znajduje się przycisk **„Sprawdź teraz"**.
+
+**Przywracanie wersji:**
+- Starsze wersje launchera (od 3.0.5) można zainstalować bezpośrednio z ustawień.
+- Lista rozwijana pokazuje wszystkie dostępne wydania GitHub z datą i oznaczeniem bieżącej wersji.
+- Po wybraniu wersji jest ona pobierana i instalowana przy restarcie.
+
+![Opis](settings/settings_update_de.png)
+:::
+
+:::accordion[Wyświetlanie RAM]
+
+W **Ustawienia → Wyświetlanie → „Pokaż użycie RAM"** można włączyć wskaźnik pamięci na pasku kart.
+
+**Funkcje:**
+- Pokazuje całkowite użycie pamięci w MB.
+- Kliknięcie otwiera szczegółowy podział:
+  - Użycie pamięci na profil
+  - Użycie pamięci przez wtyczki (szacunkowe, ponieważ współdzielone)
+  - Narzut systemowy (launcher + OCR)
+
+![Opis](ram/ram_display_de.png)
 :::

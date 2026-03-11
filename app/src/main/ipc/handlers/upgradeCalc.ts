@@ -7,6 +7,13 @@ import * as fs from "fs";
 import { app } from "electron";
 import { SafeHandle, IpcEvent } from "../common";
 
+export interface UpgradeCalcBonus {
+    fwcActive: boolean;
+    fwcValue: number;
+    eventActive: boolean;
+    eventValue: number;
+}
+
 export interface UpgradeCalcSettings {
     prices: {
         mineral: number;
@@ -28,6 +35,7 @@ export interface UpgradeCalcSettings {
     };
     diceType: "dice4_6" | "dice12";
     systemMode: "compare" | "sProtect" | "sProtectLow";
+    bonus?: UpgradeCalcBonus;
 }
 
 const DEFAULT_SETTINGS: UpgradeCalcSettings = {
@@ -70,6 +78,7 @@ function loadSettings(): UpgradeCalcSettings {
             owned: { ...DEFAULT_SETTINGS.owned, ...parsed.owned },
             diceType: parsed.diceType || DEFAULT_SETTINGS.diceType,
             systemMode: parsed.systemMode || DEFAULT_SETTINGS.systemMode,
+            bonus: parsed.bonus ?? undefined,
         };
     } catch {
         return { ...DEFAULT_SETTINGS };
@@ -102,6 +111,7 @@ export function registerUpgradeCalcHandlers(safeHandle: SafeHandle): void {
             owned: { ...DEFAULT_SETTINGS.owned, ...s.owned },
             diceType: s.diceType || DEFAULT_SETTINGS.diceType,
             systemMode: s.systemMode || DEFAULT_SETTINGS.systemMode,
+            bonus: s.bonus ?? undefined,
         };
         saveSettings(merged);
         return true;

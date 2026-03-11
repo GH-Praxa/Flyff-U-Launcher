@@ -23,6 +23,7 @@ import mvag02upperIcon from "../../assets/mvag02upper.png";
 import armshibuckleIcon from "../../assets/armshibuckle.png";
 import goreIcon from "../../assets/gore.png";
 import weastaegoIcon from "../../assets/weastaego.png";
+import ultJewelryIcon from "../../assets/genjewnecmpulti.png";
 
 export function localeToIntl(loc: string): string {
     return loc === "cn" ? "zh-CN" :
@@ -408,6 +409,7 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
         armshibuckle: armshibuckleIcon,
         gore: goreIcon,
         weastaego: weastaegoIcon,
+        ultJewelry: ultJewelryIcon,
     };
 
     const DEFAULT_WS = {
@@ -478,7 +480,7 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
     .sidebar { width: 172px; flex-shrink: 0; background: ${theme.panel}; border-right: 1px solid ${theme.stroke}; display: flex; flex-direction: column; padding: 10px 7px; gap: 3px; overflow-y: auto; }
     .sidebar-title { font-size: 10px; font-weight: 700; color: rgba(var(--ar), 0.5); padding: 2px 7px 8px; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid rgba(var(--ar), 0.1); margin-bottom: 3px; }
     .nav-btn { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border-radius: 8px; border: none; background: transparent; color: rgba(var(--ar), 0.5); font-size: 11.5px; font-weight: 600; cursor: pointer; text-align: left; width: 100%; transition: background 0.12s, color 0.12s; }
-    .nav-icon { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; opacity: 0.65; transition: opacity 0.12s; }
+    .nav-icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; opacity: 0.65; transition: opacity 0.12s; }
     .nav-btn:hover .nav-icon, .nav-btn.active .nav-icon { opacity: 1; }
     .nav-btn:hover { background: rgba(var(--ar), 0.08); color: rgba(var(--ar), 0.85); }
     .nav-btn.active { background: rgba(var(--ar), 0.15); color: rgba(var(--ar), 0.95); }
@@ -592,8 +594,8 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
     <button id="nav-jewelry"        class="nav-btn"><img src="${ICONS.gore}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.aprotect}" class="nav-icon" /></button>
     <button id="nav-armorPiercing"  class="nav-btn"><img src="${ICONS.mvag02upper}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.gprotect}" class="nav-icon" /></button>
     <button id="nav-weaponPiercing" class="nav-btn"><img src="${ICONS.weaswowooden}" class="nav-icon" /><img src="${ICONS.armshibuckle}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.d8}" class="nav-icon" /><img src="${ICONS.gprotect}" class="nav-icon" /></button>
-    <button id="nav-ultimateWeapon" class="nav-btn"><img src="${ICONS.ultimateorb}" class="nav-icon" /><img src="${ICONS.weapon}" class="nav-icon" /></button>
-    <button id="nav-ultimateJewelry" class="nav-btn"><img src="${ICONS.ultimateorb}" class="nav-icon" /><img src="${ICONS.jewelry}" class="nav-icon" /></button>
+    <button id="nav-ultimateWeapon" class="nav-btn"><img src="${ICONS.weapon}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.sunstone}" class="nav-icon" /><img src="${ICONS.xprotect}" class="nav-icon" /></button>
+    <button id="nav-ultimateJewelry" class="nav-btn"><img src="${ICONS.ultJewelry}" class="nav-icon" /><span style="color:rgba(var(--ar),0.4);font-size:12px;"> - </span><img src="${ICONS.sunstone}" class="nav-icon" /><img src="${ICONS.xprotect}" class="nav-icon" /></button>
   </nav>
 
   <main class="content">
@@ -614,7 +616,7 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
             <button class="bonus-cfg-btn" id="bonus-fwcCfgBtn" title="FWC Bonus konfigurieren">⚙</button>
           </div>
           <div class="bonus-fwc-cfgrow hidden" id="bonus-fwcCfgRow">
-            <input type="number" class="bonus-cfg-input" id="bonus-fwcPct" min="0" max="100" step="1" value="100" />
+            <input type="number" class="bonus-cfg-input" id="bonus-fwcPct" min="0" max="1000" step="1" value="100" />
             <span class="bonus-unit">%</span>
           </div>
         </div>
@@ -1062,6 +1064,8 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
       bonusState.eventActive = document.getElementById('bonus-eventOn').checked;
       bonusState.eventValue  = parseFloat(document.getElementById('bonus-eventPct').value)  || 0;
       bonusUpdateUI();
+      // Persist bonus state into upgrade_cost_calc.json
+      wSave();
     }
 
     function bonusLoadUI() {

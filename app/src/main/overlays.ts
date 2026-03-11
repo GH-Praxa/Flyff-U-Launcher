@@ -61,10 +61,6 @@ export interface OverlaysState {
     roiSupportOverlayParent: BrowserWindow | null;
 }
 
-// On Linux with Electron 40 Ozone, every show()/hide() on a transparent
-// BrowserWindow goes through the GPU compositor and can stall the game's
-// WebGL context.  We avoid unnecessary show/hide cycles on Linux.
-const IS_LINUX = process.platform === "linux";
 const OVERLAY_SYNC_MS = 500;
 
 export function createOverlaysManager(deps: OverlaysDeps) {
@@ -281,25 +277,17 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 state.roiOverlayWindow.setBounds(nb);
             }
 
-            if (IS_LINUX) {
-                // Linux: avoid show/hide cycles – every call goes through the GPU
-                // compositor and can stall the game's WebGL context.  Keep the
-                // overlay visible as long as a valid host exists; it's already
-                // alwaysOnTop + click-through + transparent so it doesn't interfere.
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            const sidePanelWindow = deps.getSidePanelWindow();
+            const hostFocused = focusedWindow && (
+                focusedWindow.id === host.parent.id
+                || focusedWindow === sidePanelWindow
+                || focusedWindow.getParentWindow()?.id === host.parent.id
+            );
+            if (hostFocused) {
                 if (!state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.show();
             } else {
-                const focusedWindow = BrowserWindow.getFocusedWindow();
-                const sidePanelWindow = deps.getSidePanelWindow();
-                const hostFocused = focusedWindow && (
-                    focusedWindow.id === host.parent.id
-                    || focusedWindow === sidePanelWindow
-                    || focusedWindow.getParentWindow()?.id === host.parent.id
-                );
-                if (hostFocused) {
-                    if (!state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.show();
-                } else {
-                    if (state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.hide();
-                }
+                if (state.roiOverlayWindow.isVisible()) state.roiOverlayWindow.hide();
             }
         } catch (err) {
             logErr(err, "ROI Overlay Sync");
@@ -363,21 +351,17 @@ export function createOverlaysManager(deps: OverlaysDeps) {
                 state.roiSupportOverlayWindow.setBounds(nb);
             }
 
-            if (IS_LINUX) {
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            const sidePanelWindow = deps.getSidePanelWindow();
+            const hostFocused = focusedWindow && (
+                focusedWindow.id === host.parent.id
+                || focusedWindow === sidePanelWindow
+                || focusedWindow.getParentWindow()?.id === host.parent.id
+            );
+            if (hostFocused) {
                 if (!state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.show();
             } else {
-                const focusedWindow = BrowserWindow.getFocusedWindow();
-                const sidePanelWindow = deps.getSidePanelWindow();
-                const hostFocused = focusedWindow && (
-                    focusedWindow.id === host.parent.id
-                    || focusedWindow === sidePanelWindow
-                    || focusedWindow.getParentWindow()?.id === host.parent.id
-                );
-                if (hostFocused) {
-                    if (!state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.show();
-                } else {
-                    if (state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.hide();
-                }
+                if (state.roiSupportOverlayWindow.isVisible()) state.roiSupportOverlayWindow.hide();
             }
         } catch (err) {
             logErr(err, "ROI Support Overlay Sync");
@@ -391,25 +375,18 @@ export function createOverlaysManager(deps: OverlaysDeps) {
         return state.roiSupportOverlayWindow;
     };
 
-    // Setup window focus/blur handlers.
-    // On Linux, skip the hide-on-blur / show-on-focus cycle for overlay
-    // windows because every show()/hide() call triggers the GPU compositor
-    // and can freeze the game's WebGL context.  The sync loops will keep
-    // overlays visible as long as a valid host exists.
-    if (!IS_LINUX) {
-        app.on("browser-window-blur", () => {
-            setTimeout(() => {
-                const focusedWin = BrowserWindow.getFocusedWindow();
-                if (!focusedWin) {
-                    hideAll();
-                }
-            }, 100);
-        });
+    app.on("browser-window-blur", () => {
+        setTimeout(() => {
+            const focusedWin = BrowserWindow.getFocusedWindow();
+            if (!focusedWin) {
+                hideAll();
+            }
+        }, 100);
+    });
 
-        app.on("browser-window-focus", () => {
-            showAll();
-        });
-    }
+    app.on("browser-window-focus", () => {
+        showAll();
+    });
 
     return {
         get state() { return state; },

@@ -7,7 +7,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.5.8-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.1.0-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-März_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -32,7 +32,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 - Profile anlegen, umbenennen, klonen, löschen und per Drag & Drop sortieren
 - Job/Badge pro Profil (Vagrant bis Crackshooter) mit Suchfeld und Job-Filter
 - **Charakternamen** pro Profil hinterlegen — werden als farbige Badges angezeigt und von Plugins genutzt
-- **Profil-Export/Import** (`.flyffprofile`): Profile inkl. Cookies und localStorage sichern, übertragen oder teilen
+- **Profil-Export/Import** (`.flyffprofile`): Profile inkl. Cookies und localStorage sichern und übertragen
 - Startmodus pro Profil: **Tabs** (im Session-Fenster) oder **Fenster** (eigene Instanz)
 - Overlay-Ziel bestimmen, welches Profil die OCR-Overlays und das Sidepanel erhält
 - Tooltips und Hilfe-Icons an allen wichtigen Bedienelementen
@@ -118,7 +118,6 @@ Plugins werden im plattformspezifischen Datenverzeichnis unter `plugins/` abgele
 | **Killfeed** | EXP-Tracker mit Kill-Erkennung, Monster-Statistiken und detaillierter History (CSV) pro Profil. Derzeit nur im 1on1-Modus unterstützt — bei Charakterwechsel kann es zu Verwechslungen kommen. |
 | **Giant Tracker** | Kill-Statistiken für Giants, Violets und Bosse — mit Drop-Tracking, Loot-Pool-Vorschau und Time-to-Kill (TTK) |
 | **CD-Timer** | Timer für Buffs und Power-Ups — Icons warnen bei Ablauf |
-| **Kill Timer** | Kill-Timer mit HP%-Schwellenwert-Alert für 1on1-Farming — misst Time-to-Kill pro Gegner mit konfigurierbarem Overlay |
 | **Quest Guide** | Quest-Übersicht mit Chain-Visualisierung, Fortschritts-Tracking und interaktiver Karte. Benötigt API-Fetches: Quest, NPC, Monster, Item |
 | **API-Fetch** | Flyff-Universe-API-Daten herunterladen — native Sidepanel-Oberfläche (kein separates Fenster) |
 
@@ -233,7 +232,7 @@ Der Launcher sendet beim Start eine anonyme Nachricht an den Entwickler, um akti
 
 Beispielnachricht:
 ```
-Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.0.5.8 - Linux Mint 22.3 x64
+Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.1.0 - Linux Mint 22.3 x64
 ```
 
 Die Einstellung ist standardmäßig aktiviert und kann jederzeit unter **Einstellungen → Client-Einstellungen → „Startstatistiken senden"** deaktiviert werden.
@@ -263,7 +262,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 
 [![Download Latest Release](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download-Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/GH-Praxa/Flyff-U-Launcher/releases)
 
-![Version](https://img.shields.io/badge/Version-3.0.5.8-green?style=flat-square)
+![Version](https://img.shields.io/badge/Version-3.1.0-green?style=flat-square)
 ![Release](https://img.shields.io/badge/Release-March_2026-blue?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
@@ -284,7 +283,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 - Create, rename, clone, delete, and drag & drop sort profiles
 - Job/badge per profile (Vagrant to Crackshooter) with search and job filter
 - **Character names** per profile — displayed as colored badges and used by plugins
-- **Profile export/import** (`.flyffprofile`): Back up, transfer, or share profiles including cookies and localStorage
+- **Profile export/import** (`.flyffprofile`): Back up and transfer profiles including cookies and localStorage
 - Launch mode per profile: **Tabs** (inside session window) or **Window** (separate instance)
 - Overlay target determines which profile receives OCR overlays and the side panel
 - Tooltips and help icons on all major UI controls
@@ -370,7 +369,6 @@ Drop plugins into the platform-specific data directory under `plugins/` — they
 | **Killfeed** | EXP tracker with kill detection, monster statistics, and detailed per-profile history (CSV). Currently only supported in 1on1 mode — character switches may cause misattribution. |
 | **Giant Tracker** | Kill statistics for Giants, Violets, and Bosses — with drop tracking, loot pool preview, and time-to-kill (TTK) |
 | **CD-Timer** | Timers for buffs and power-ups — icons warn on expiry |
-| **Kill Timer** | Kill timer with HP% threshold alert for 1on1 farming — measures time-to-kill per enemy with configurable overlay |
 | **Quest Guide** | Quest overview with chain visualization, progress tracking, and interactive map. Requires API-Fetch: Quest, NPC, Monster, Item |
 | **API-Fetch** | Download Flyff Universe API data — native side panel interface (no separate window) |
 
@@ -485,7 +483,7 @@ On startup the launcher sends an anonymous message to the developer to track act
 
 Example message:
 ```
-Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.0.5.8 - Linux Mint 22.3 x64
+Startup ID: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 - v3.1.0 - Linux Mint 22.3 x64
 ```
 
 This setting is enabled by default and can be disabled at any time under **Settings → Client Settings → "Send launch statistics"**.

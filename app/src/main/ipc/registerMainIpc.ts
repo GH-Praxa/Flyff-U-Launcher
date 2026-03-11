@@ -16,7 +16,7 @@ import { registerDocumentationHandlers } from "./handlers/documentation";
 import { registerShoppingListHandlers } from "./handlers/shoppingList";
 import { registerUpgradeCalcHandlers } from "./handlers/upgradeCalc";
 import { registerProfileTransferHandlers } from "./handlers/profiles-transfer";
-import { registerMemoryHandlers } from "./handlers/memory";
+import { registerMemoryHandlers, type ExtraWindowInfo, type ExtraRowInfo } from "./handlers/memory";
 import type { ClientSettingsStore } from "../clientSettings/store";
 import type { ClientSettings } from "../../shared/schemas";
 import { logErr } from "../../shared/logger";
@@ -54,6 +54,10 @@ export type RegisterMainIpcOptions = {
     showToast?: (message: string, tone?: "info" | "success" | "error") => void;
     /** Game URL used for localStorage read/write during profile transfer */
     flyffUrl: string;
+    /** Returns labelled extra windows for memory display (plugins, sidepanel, overlays) */
+    getExtraWindows?: () => ExtraWindowInfo[];
+    /** Returns pre-built extra rows (plugin tabs, OCR, etc.) */
+    getExtraRows?: () => ExtraRowInfo[];
 };
 
 /**
@@ -143,6 +147,8 @@ registerShoppingListHandlers(safeHandle);
             }
             return sources;
         },
+        getExtraWindows: opts.getExtraWindows,
+        getExtraRows: opts.getExtraRows,
     });
 }
 

@@ -18,7 +18,6 @@ import {
     extractGoldTextMaskWide,
     extractWhiteTextMask,
     extractBrightTextMask,
-    estimateExpFillRatio,
     cropBgr,
     thresholdOtsu,
     thresholdBinary,
@@ -76,6 +75,9 @@ export class NativeOcrWorker {
     private nextId = 0;
     private pending = 0;
     private static readonly MAX_PENDING = 2;
+    /** Last accepted EXP value for continuity guard (rejects impossible drops). */
+    private lastExpVal: number | null = null;
+    private lastExpTs = 0;
 
     constructor(private opts: {
         tesseractExe?: string;
@@ -155,7 +157,34 @@ export class NativeOcrWorker {
         kind = (kind || "exp").toLowerCase();
 
         if (kind === "exp" || kind === "digits") {
-            const [val, raw] = await this.ocrExp(bgr);
+            let [val, raw] = await this.ocrExp(bgr);
+            console.log(`[OCR-EXP-DEBUG] raw="${raw}" val=${val} lastExp=${this.lastExpVal}`);
+
+            // Continuity guard: EXP only increases (or resets to ~0 on level-up).
+            // Reject readings that drop significantly but aren't near zero.
+            if (val !== null && this.lastExpVal !== null) {
+                const drop = this.lastExpVal - val;
+                const elapsed = Date.now() - this.lastExpTs;
+                // Large drop (>8%) and recent (<30s): almost certainly a mis-read.
+                // Level-up resets go to ~0%, so only allow drops to values < 1%.
+                if (drop > 8 && val > 1 && elapsed < 30_000) {
+                    // Try recovering the dropped leading digit: "4.6751" → "74.6751"
+                    const recovered = this.tryRecoverLeadingDigit(val, this.lastExpVal);
+                    if (recovered !== null) {
+                        console.log(`[OCR-EXP-GUARD] Recovered ${val.toFixed(4)}→${recovered.toFixed(4)} (leading digit restored)`);
+                        val = recovered;
+                    } else {
+                        console.log(`[OCR-EXP-GUARD] Rejected drop ${this.lastExpVal.toFixed(2)}→${val.toFixed(2)}, keeping last`);
+                        val = this.lastExpVal;
+                    }
+                }
+            }
+
+            if (val !== null) {
+                this.lastExpVal = val;
+                this.lastExpTs = Date.now();
+            }
+
             if (val === null) {
                 if (raw) return { id: 0, ok: true, raw, value: raw, unit: "%" };
                 return { id: 0, ok: false, raw, value: null, unit: "%" };
@@ -223,7 +252,8 @@ export class NativeOcrWorker {
     // -----------------------------------------------------------------------
 
     private async ocrExp(bgr: RawImage): Promise<[number | null, string]> {
-        const fillRatio = estimateExpFillRatio(bgr);
+        // estimateExpFillRatio disabled: unreliable (detects green game
+        // environment as EXP bar), all fill-ratio-based corrections removed.
         const { width: w, height: h } = bgr;
 
         await saveDebug("00_input", bgr);
@@ -231,10 +261,12 @@ export class NativeOcrWorker {
         const whitelist = "0123456789.,%";
         let fallbackRaw = "";
 
-        // Text is on the right half; crop to reduce bar bleed-in
-        const textX = Math.max(0, Math.floor(w * 0.35));
+        // Crop: remove top cell border + left bar bleed-in, keep text area.
+        // The white mask on this slice reliably reads "74.3795%" etc.
+        // Occasional dropped leading digit is handled by continuity guard.
         const bandTop = Math.max(0, Math.floor(h * 0.1));
         const bandBottom = Math.max(bandTop + 1, Math.floor(h * 0.9));
+        const textX = Math.max(0, Math.floor(w * 0.25));
         const textSlice = cropBgr(bgr, textX, bandTop, w - textX, bandBottom - bandTop);
 
         const tryImg = async (img: RawImage, name: string): Promise<[number | null, string]> => {
@@ -245,6 +277,7 @@ export class NativeOcrWorker {
 
             let v = parseExpPercent(raw);
             const digitsOnly = raw.replace(/[^0-9]/g, "");
+            console.log(`[OCR-EXP-PIPE] name="${name}" raw="${raw}" digits="${digitsOnly}" parsed=${v}`);
             if (digitsOnly.length < 4) return [null, raw];
 
             // Handle spaces in OCR output
@@ -265,7 +298,7 @@ export class NativeOcrWorker {
                 }
             }
 
-            [v, raw] = this.maybePrefer5(v, raw, fillRatio);
+            // maybePrefer5 disabled: relies on unreliable fillRatio
             if (v === null) return [null, raw];
 
             return [v, raw];
@@ -304,110 +337,27 @@ export class NativeOcrWorker {
             return [chosenVal, chosenRaw];
         };
 
+        // fillRatio-based snap disabled: estimateExpFillRatio is unreliable
+        // (detects green game environment as EXP bar fill).
+        // OCR text is trusted directly; fixOcrConfusions handles digit errors.
         const maybeSnapToFill = (val: number | null, raw: string): [number | null, string] => {
-            if (val === null || fillRatio === null) {
-                if (val !== null && val < 0.001) return [0.0, raw];
-                return [val, raw];
-            }
-            const digitsInRaw = (raw || "").replace(/[^0-9]/g, "");
-            if (digitsInRaw.length < 3) return [val, raw];
-
-            const target = fillRatio * 100;
-
-            // Prefer token closest to measured fill
-            try {
-                const tokens = (raw || "").match(FLOAT_RE) || [];
-                const cands: [number, string][] = [];
-                for (const tok of tokens) {
-                    const num = parseFloat(tok.replace(/,/g, "."));
-                    if (Number.isFinite(num) && num >= 0 && num <= 100) cands.push([num, tok]);
-                }
-                if (cands.length > 0) {
-                    const closest = cands.reduce((a, b) =>
-                        Math.abs(a[0] - target) <= Math.abs(b[0] - target) ? a : b
-                    );
-                    if (Math.abs(closest[0] - target) + 0.25 < Math.abs(val - target)) {
-                        val = closest[0];
-                        raw = closest[1];
-                    }
-                }
-            } catch { /* ignore */ }
-
-            // Well-formed percent within 8% of fill → trust OCR
-            if (/^\d{1,3}\.\d{1,6}%?$/.test((raw || "").trim())) {
-                if (Math.abs(val - target) <= 8.0) return [val, raw];
-            }
-
-            // Far off from fill → snap (only for very large deviations;
-            // fillRatio is an estimate and can itself be inaccurate)
-            if (target >= 5 && target <= 99.5 && Math.abs(val - target) > 25) {
-                return [Math.round(target * 10000) / 10000, raw];
-            }
-
-            // Digit swap heuristics
-            const trySwap = (src: string, dst: string): [number, string] | null => {
-                if (!raw.includes(src)) return null;
-                const idx = raw.indexOf(src);
-                const altRaw = raw.slice(0, idx) + dst + raw.slice(idx + 1);
-                const altVal = parseExpPercent(altRaw);
-                if (altVal === null) return null;
-                if (Math.abs(altVal - target) + 0.25 < Math.abs(val! - target)) return [altVal, altRaw];
-                return null;
-            };
-
-            let swap = trySwap("6", "8");
-            if (swap) [val, raw] = swap;
-            swap = trySwap("9", "8");
-            if (swap) [val, raw] = swap;
-
-            if (target >= 25 && val + 18 < target) {
-                return [Math.round(target * 10000) / 10000, raw];
-            }
-
-            if (target <= 0.02 && val < 0.05) return [0.0, raw];
-
+            if (val !== null && val < 0.001) return [0.0, raw];
             return [val, raw];
         };
 
         const runPipeline = async (
-            target: RawImage, suffix: string, preferWhiteFirst: boolean,
+            target: RawImage, suffix: string,
         ): Promise<[number | null, string]> => {
-            const tryGold = async (): Promise<[number | null, string]> => {
-                for (const scale of [5.0, 7.0]) {
-                    const goldMask = await extractGoldTextMaskWide(target, scale);
-                    let [val, raw] = await tryImg(goldMask, `gold_${scale}${suffix}`);
-                    if (val !== null) return maybeSnapToFill(val, raw);
-                    const bold = dilate(goldMask, 2, 2, 1);
-                    [val, raw] = await tryImg(bold, `gold_${scale}_bold${suffix}`);
-                    if (val !== null) return maybeSnapToFill(val, raw);
-                    [val, raw] = await tryImg(invert(goldMask), `gold_${scale}_inv${suffix}`);
-                    if (val !== null) return maybeSnapToFill(val, raw);
-                }
-                return [null, ""];
-            };
-
-            const tryWhite = async (): Promise<[number | null, string]> => {
-                for (const scale of [5.0, 7.0]) {
-                    let whiteMask = await extractWhiteTextMask(target, scale);
-                    whiteMask = dilate(whiteMask, 2, 2, 1);
-                    let [val, raw] = await tryImg(whiteMask, `white_${scale}${suffix}`);
-                    if (val !== null) return maybeSnapToFill(val, raw);
-                    [val, raw] = await tryImg(invert(whiteMask), `white_${scale}_inv${suffix}`);
-                    if (val !== null) return maybeSnapToFill(val, raw);
-                }
-                return [null, ""];
-            };
-
-            if (preferWhiteFirst) {
-                let [v, r] = await tryWhite();
-                if (v !== null) return [v, r];
-                [v, r] = await tryGold();
-                if (v !== null) return [v, r];
-            } else {
-                let [v, r] = await tryGold();
-                if (v !== null) return [v, r];
-                [v, r] = await tryWhite();
-                if (v !== null) return [v, r];
+            // White text first: Flyff EXP text is white on green bar.
+            // The vertical textBand crop removes the top cell border that
+            // previously caused white mask to pick up HP/FP numbers.
+            for (const scale of [5.0, 7.0]) {
+                let whiteMask = await extractWhiteTextMask(target, scale);
+                whiteMask = dilate(whiteMask, 2, 2, 1);
+                let [val, raw] = await tryImg(whiteMask, `white_${scale}${suffix}`);
+                if (val !== null) return [val, raw];
+                [val, raw] = await tryImg(invert(whiteMask), `white_${scale}_inv${suffix}`);
+                if (val !== null) return [val, raw];
             }
 
             // Grayscale fallback
@@ -428,53 +378,26 @@ export class NativeOcrWorker {
                 if (val !== null) return [val, raw];
             }
 
+            // Gold text fallback
+            for (const scale of [5.0, 7.0]) {
+                const goldMask = await extractGoldTextMaskWide(target, scale);
+                let [val, raw] = await tryImg(goldMask, `gold_${scale}${suffix}`);
+                if (val !== null) return [val, raw];
+                const bold = dilate(goldMask, 2, 2, 1);
+                [val, raw] = await tryImg(bold, `gold_${scale}_bold${suffix}`);
+                if (val !== null) return [val, raw];
+                [val, raw] = await tryImg(invert(goldMask), `gold_${scale}_inv${suffix}`);
+                if (val !== null) return [val, raw];
+            }
+
             return [null, ""];
         };
 
-        // First try with text-only slice
-        let [val, raw] = await runPipeline(textSlice, "_txt", true);
+        // Single pipeline on textSlice (horizontally + vertically cropped).
+        // white_5_txt consistently reads correct values (74.3795, 75.1185 etc.)
+        // Occasional dropped leading digit handled by continuity guard.
+        const [val, raw] = await runPipeline(textSlice, "");
         if (val !== null) return [val, raw];
-
-        // Primary: Gold/amber text extraction on full ROI
-        for (const scale of [5.0, 7.0]) {
-            const goldMask = await extractGoldTextMask(bgr, scale);
-            [val, raw] = await tryImg(goldMask, `gold_${scale}`);
-            if (val !== null) return maybeSnapToFill(val, raw);
-            const bold = dilate(goldMask, 2, 2, 1);
-            [val, raw] = await tryImg(bold, `gold_${scale}_bold`);
-            if (val !== null) return maybeSnapToFill(val, raw);
-            [val, raw] = await tryImg(invert(goldMask), `gold_${scale}_inv`);
-            if (val !== null) return maybeSnapToFill(val, raw);
-        }
-
-        // Secondary: White text extraction
-        for (const scale of [5.0, 7.0]) {
-            let whiteMask = await extractWhiteTextMask(bgr, scale);
-            [val, raw] = await tryImg(whiteMask, `white_${scale}`);
-            if (val !== null) return maybeSnapToFill(val, raw);
-            [val, raw] = await tryImg(invert(whiteMask), `white_${scale}_inv`);
-            if (val !== null) return maybeSnapToFill(val, raw);
-        }
-
-        // Fallback: Grayscale methods
-        const gray = bgrToGray(bgr);
-        for (const scale of [5.0, 7.0]) {
-            const scaled = await resizeGray(gray, scale);
-
-            const [, th1] = thresholdOtsu(scaled);
-            [val, raw] = await tryImg(th1, `gray_otsu_${scale}`);
-            if (val !== null) return [val, raw];
-            [val, raw] = await tryImg(invert(th1), `gray_otsu_${scale}_inv`);
-            if (val !== null) return [val, raw];
-
-            const enhanced = clahe(scaled);
-            const [, th2] = thresholdOtsu(enhanced);
-            [val, raw] = await tryImg(th2, `gray_clahe_${scale}`);
-            if (val !== null) return [val, raw];
-            [val, raw] = await tryImg(invert(th2), `gray_clahe_${scale}_inv`);
-            if (val !== null) return [val, raw];
-        }
-
         return [null, fallbackRaw];
     }
 
@@ -682,6 +605,29 @@ export class NativeOcrWorker {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Try to recover a dropped leading digit.
+     * e.g. "4.6751" should be "74.6751" if lastExp was ~74%.
+     * Tries prepending digits 1-9 and picks the one closest to lastExp.
+     */
+    private tryRecoverLeadingDigit(val: number, lastExp: number): number | null {
+        const valStr = val.toFixed(4);
+        let best: number | null = null;
+        let bestDist = Infinity;
+        for (let d = 1; d <= 9; d++) {
+            const candidate = parseFloat(`${d}${valStr}`);
+            if (!Number.isFinite(candidate) || candidate > 100) continue;
+            const dist = Math.abs(candidate - lastExp);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = candidate;
+            }
+        }
+        // Only accept if recovered value is within 3% of lastExp (plausible EXP gain)
+        if (best !== null && bestDist <= 3 && best >= lastExp - 0.5) return best;
+        return null;
+    }
 
     private maybePrefer5(
         value: number | null, raw: string, fillRatio: number | null,

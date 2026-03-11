@@ -6,63 +6,12 @@ const FLOAT_RE = /\d+(?:[.,]\d+)?/g;
 
 /**
  * Fix common OCR character confusions for EXP values.
- * Handles 7↔1 and 5↔9 confusion near decimal boundary.
+ * Disabled: the 5↔9 and 7↔1 heuristics near the decimal boundary caused
+ * more harm than good (e.g. "75.9125" → "75.5125"). The continuity guard
+ * in nativeWorker.ts now handles mis-reads instead.
  */
 export function fixOcrConfusions(text: string): string {
-    if (!text || text.length < 5) return text;
-
-    // Normalize
-    let t = text.replace(/,/g, ".").replace(/ /g, "");
-    const result = [...t];
-
-    // Case 1: With decimal point (X7.1XXX -> X7.7XXX)
-    const dotPos = t.indexOf(".");
-    if (dotPos > 0 && dotPos + 1 < result.length) {
-        const digitBefore = result[dotPos - 1]!;
-        const digitAfter = result[dotPos + 1]!;
-
-        if (digitBefore === "7" && digitAfter === "1") {
-            result[dotPos + 1] = "7";
-        } else if (
-            (digitBefore === "5" || digitBefore === "9") &&
-            (digitAfter === "5" || digitAfter === "9") &&
-            digitBefore !== digitAfter
-        ) {
-            result[dotPos + 1] = digitBefore;
-        }
-
-        return result.join("");
-    }
-
-    // Case 2: Without decimal point (OCR dropped it)
-    const digitsOnly = t.replace(/[^0-9]/g, "");
-    if (digitsOnly.length >= 5 && digitsOnly.length <= 7) {
-        const dr = [...digitsOnly];
-
-        let boundaryIdx: number | null = null;
-        if (dr.length === 5) boundaryIdx = 0;
-        else if (dr.length === 6) boundaryIdx = 1;
-        else if (dr.length === 7) boundaryIdx = 2;
-
-        if (boundaryIdx !== null && boundaryIdx < dr.length - 1) {
-            const digitBefore = dr[boundaryIdx]!;
-            const digitAfter = dr[boundaryIdx + 1]!;
-
-            if (digitBefore === "7" && digitAfter === "1") {
-                dr[boundaryIdx + 1] = "7";
-            } else if (
-                (digitBefore === "5" || digitBefore === "9") &&
-                (digitAfter === "5" || digitAfter === "9") &&
-                digitBefore !== digitAfter
-            ) {
-                dr[boundaryIdx + 1] = digitBefore;
-            }
-        }
-
-        return dr.join("");
-    }
-
-    return result.join("");
+    return text;
 }
 
 /**
@@ -92,7 +41,10 @@ export function parseExpPercent(text: string): number | null {
         // Implied 4 decimals if OCR dropped the dot
         if (!tok.includes(".") && /^\d+$/.test(tok) && tok.length >= 5 && tok.length <= 7) {
             const v = parseInt(tok, 10) / 10000.0;
-            if (v >= 0 && v <= 100) {
+            // Reject implausible values: below 5% is almost always OCR garbage
+            // (e.g. "20000" → 2.0, "10000" → 1.0). Real exp text with 5+ digits
+            // like "719373" → 71.9373 always produces values >= 5.
+            if (v >= 5 && v <= 100) {
                 vals.push(v);
             }
             continue;

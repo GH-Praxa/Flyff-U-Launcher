@@ -5,12 +5,91 @@
 
 ### ✨ New Features
 
+**New Layout Types**
+- Vertical layouts: 2x1, 3x1, 4x1 (views stacked vertically)
+- Asymmetric layouts: main window + 2–3 side windows on the right (`main-r2`, `main-r3`) or bottom (`main-b2`, `main-b3`)
+- Asymmetric layout split adjustable via slider (min 20% / max 80%)
+- Layout picker with ASCII preview: hovering shows a diagram of the layout
+
+**Profile Export/Import**
+- Export and import profiles as `.flyffprofile` files
+- Contains profile metadata, Electron session cookies, and localStorage data
+- Enables backup and transfer between computers
+
+**Character Names & Jobs per Character**
+- Store character names and jobs per character in the profile — displayed as badges with job icon in the profile list, filterable, and selectable in plugins via combobox
+
 **Launcher Announcements**
-- New section in the right panel shows live messages from the developer without requiring an app update
-- Types: 🐛 Bug, ℹ Info, ✨ Feature, ⚠ Warning — each with distinct color coding
-- Fully localized: messages can be translated into all 8 supported languages
-- Can be disabled under Settings → Client Settings → "Show launcher announcements"
+- New section in the right panel shows messages from the developer without an app update — e.g. known bugs, current developments, or planned features; available in German and English, can be disabled in settings
 - Open profiles in the right panel are now collapsible
+
+**Font Setting**
+- New setting "Overlay & UI Font" in client settings — available fonts: Josefin Sans, Roboto, Open Sans, Lato, Montserrat, Raleway, Nunito, Ubuntu, Cinzel; font is applied to launcher overlays and DOM-based UI elements in the game
+
+**Font Size Setting**
+- New setting "Launcher Font Size": text size in the launcher window can be scaled (75–150%), does not affect the game itself
+
+**Error Log & Message to Developer**
+- Log window moved from sidepanel to the tab bar — allows viewing, saving, and deleting error logs as well as sending a message to the developer (displayed errors are included); 60-second cooldown
+
+**Quest Guide Plugin**
+- New plugin in the sidepanel: shows quests including start/end NPC, objectives, and rewards with map markers — requires quest, NPC, monster, and item data via API-Fetch
+
+**Unified Upgrade Calculator**
+- Upgrade calculator expanded with additional calculations for weapons, jewelry, armor piercing, weapon piercing, ultimate including pity system, FWC and event bonus as well as existing attempts
+
+**UI Tooltips & Help Icons**
+- All important controls in the launcher have tooltips (in all 8 languages)
+- Help icons (?) for complex features: profile name, tab/window mode, character names
+- Hints for launcher width/height, filters, layout selection, and grid cells
+
+**Telemetry**
+- Optional anonymous startup statistics (version, operating system, random ID)
+- Enabled by default, no personal data, can be disabled at any time
+
+**Update Check & Version Rollback**
+- New setting: automatically check for updates on startup (on/off)
+- Manual "Check now" button in settings
+- Version rollback: older launcher versions (from 3.0.5) can be installed directly from settings
+- Dropdown with all available GitHub releases including date and current version marker
+
+### 🚀 Performance
+
+**OCR System Optimized**
+- Platform-safe screen capture method: `xwd` on Linux (no GPU contact), `capturePage()` on Win/Mac — prevents GPU stalls and game freezes
+- On Linux, capture errors cause the scan to be skipped instead of freezing the game
+- Pixel hash cache: OCR is skipped when the frame has not changed — reduces CPU load on static game content
+- Empty OCR results are cached correctly — no unnecessary Tesseract retries on unchanged pixels
+- Global Tesseract concurrency limit (max 1 simultaneous) — prevents CPU starvation of the GPU process
+- In-memory caches for profiles, ROI store, and ROI visibility store instead of frequent DB reads
+
+**Overlay Optimization**
+- Efficient overlay polling: minimized opacity switches and reduced intervals
+- Linux: avoidance of unnecessary show/hide cycles for transparent overlays
+
+### ⚙️ Improvements
+
+- **Layout cards improved**: ASCII preview of the layout type directly in the layout card; displays "X Profiles" instead of "X Tabs"; more compact presentation
+- **Profile cards more compact**: Reduced card height, characters with job icons as horizontal badges below the profile name
+- **Settings completely redesigned**: New sidebar layout with categorized subpages, toggle switches, and slider cards
+- **RAM display**: Setting "Show RAM usage" with memory details per profile, plugin, and system process
+- **Killfeed overlay positionable**: Overlay can be dragged to reposition, position is saved (x/y in layout)
+- **Killfeed character selection**: Character names are selected via combobox from the profile
+- **Side panel button** in the session tab bar (instead of in the overlay)
+- **Killfeed and scan tabs in sidepanel simplified**: cleaner presentation and reduced complexity
+
+### 🐛 Bug Fixes
+
+- Suppressed GLib/GTK assertion warnings on Linux (harmless Chromium-internal messages)
+
+### 📦 Linux Support
+
+- Tesseract binaries and libraries bundled for Linux
+- tessdata language files bundled for Linux
+
+### 🌐 Translations
+
+- Translations expanded
 
 ---
 ## 🐛 Version 3.0.5

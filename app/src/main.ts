@@ -47,6 +47,7 @@ if (process.platform === "linux") {
 
 import { createViewLoader } from "./main/viewLoader";
 import { registerMainIpc } from "./main/ipc/registerMainIpc";
+import type { ExtraWindowInfo, ExtraRowInfo } from "./main/ipc/handlers/memory";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
 import { createSafeHandler } from "./main/ipc/common";
 import { applyCSP, getCSPNonce } from "./main/security/harden";
@@ -557,6 +558,105 @@ app.whenReady().then(async () => {
                 /* ignore */
             }
         },
+        getExtraWindows: () => {
+            const extras: ExtraWindowInfo[] = [];
+
+            // ROI Overlay windows (system)
+            const roiOverlay = overlaysMgr.state.roiOverlayWindow;
+            if (roiOverlay && !roiOverlay.isDestroyed()) {
+                extras.push({ label: "Overlay", window: roiOverlay, category: "system" });
+            }
+            const roiSupportOverlay = overlaysMgr.state.roiSupportOverlayWindow;
+            if (roiSupportOverlay && !roiSupportOverlay.isDestroyed()) {
+                extras.push({ label: "Support Overlay", window: roiSupportOverlay, category: "system" });
+            }
+
+            // Plugin settings windows + other plugin-created windows:
+            // Collect all known non-plugin window IDs, then attribute the rest to plugins.
+            const spWin = sidePanelMgr?.state.window;
+            const knownWindowIds = new Set<number>();
+            if (launcherWindow && !launcherWindow.isDestroyed()) knownWindowIds.add(launcherWindow.id);
+            if (spWin && !spWin.isDestroyed()) knownWindowIds.add(spWin.id);
+            if (roiOverlay && !roiOverlay.isDestroyed()) knownWindowIds.add(roiOverlay.id);
+            if (roiSupportOverlay && !roiSupportOverlay.isDestroyed()) knownWindowIds.add(roiSupportOverlay.id);
+            const sessionWin = services.sessionWindow.get();
+            if (sessionWin && !sessionWin.isDestroyed()) knownWindowIds.add(sessionWin.id);
+            for (const entry of services.sessionRegistry.list()) {
+                if (!entry.window.isDestroyed()) knownWindowIds.add(entry.window.id);
+            }
+
+            for (const win of BrowserWindow.getAllWindows()) {
+                if (win.isDestroyed() || knownWindowIds.has(win.id)) continue;
+                const title = win.getTitle() || "Plugin";
+                extras.push({ label: title, window: win, category: "plugin" });
+            }
+
+            return extras;
+        },
+        getExtraRows: () => {
+            const rows: ExtraRowInfo[] = [];
+
+            // ── Sidepanel plugin tabs ──
+            // The sidepanel is one BrowserWindow with multiple plugin iframes inside.
+            // List each plugin tab individually, all sharing the sidepanel process memory.
+            const spWin = sidePanelMgr?.state.window;
+            if (spWin && !spWin.isDestroyed()) {
+                const spPid = spWin.webContents.getOSProcessId();
+                const spMetrics = app.getAppMetrics().find((m) => m.pid === spPid);
+                let spMemMB = spMetrics ? Math.round(spMetrics.memory.workingSetSize / 1024) : 0;
+                if (spMemMB <= 0 && process.platform === "linux") {
+                    try {
+                        const data = require("fs").readFileSync(`/proc/${spPid}/statm`, "utf-8");
+                        const resident = parseInt(data.trim().split(/\s+/)[1], 10);
+                        if (Number.isFinite(resident)) spMemMB = Math.round((resident * 4096) / (1024 * 1024));
+                    } catch { /* ignore */ }
+                }
+
+                // Find which plugins have sidepanel tabs loaded
+                const loadedIds = pluginHost.getLoadedPluginIds();
+                const spPlugins: string[] = [];
+                for (const id of loadedIds) {
+                    const p = pluginHost.getPlugin(id);
+                    if (!p) continue;
+                    const ui = p.manifest.ui as { sidepanelTab?: { label?: string } } | undefined;
+                    if (ui?.sidepanelTab) {
+                        spPlugins.push(p.manifest.name || id);
+                    }
+                }
+
+                if (spPlugins.length > 0) {
+                    // Show each plugin tab as a shared row
+                    for (const name of spPlugins) {
+                        rows.push({
+                            label: `${name} (Side Panel)`,
+                            memoryMB: spMemMB,
+                            category: "plugin",
+                            shared: true,
+                        });
+                    }
+                } else {
+                    // No plugin tabs, just show "Side Panel"
+                    rows.push({
+                        label: "Side Panel",
+                        memoryMB: spMemMB,
+                        category: "plugin",
+                        shared: false,
+                    });
+                }
+            }
+
+            // ── Main process (OCR, Plugin-Host, IPC) ──
+            const mainMem = process.memoryUsage();
+            const mainMB = Math.round(mainMem.rss / (1024 * 1024));
+            rows.push({
+                label: "Main Process inkl. OCR",
+                memoryMB: mainMB,
+                category: "system",
+                shared: false,
+            });
+
+            return rows;
+        },
     });
 
     // Register plugin management IPC handlers
@@ -635,9 +735,15 @@ app.whenReady().then(async () => {
             });
         }
     } else {
-        // Dev mode: register a stub so the renderer doesn't crash
+        // Dev mode: register stubs so the renderer doesn't crash
         ipcMain.handle("app:checkForUpdates", async () => {
             return { ok: false, error: "Update check is not available in development mode." };
+        });
+        ipcMain.handle("app:listReleases", async () => {
+            return { ok: false, error: "Not available in development mode." };
+        });
+        ipcMain.handle("app:installVersion", async () => {
+            return { ok: false, error: "Not available in development mode." };
         });
     }
 });

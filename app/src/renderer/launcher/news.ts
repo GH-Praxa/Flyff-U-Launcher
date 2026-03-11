@@ -269,9 +269,6 @@ function dateStringToNumber(input?: string): number {
 
     if (!input)
         return 0;
-    const parsed = Date.parse(input);
-    if (!Number.isNaN(parsed))
-        return parsed;
     const m = input.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
     if (m) {
         const day = Number(m[1]);

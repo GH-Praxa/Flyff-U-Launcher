@@ -2,73 +2,226 @@
 
 :::accordion[Profil erstellen]
 
+**Schritt 1 — Neues Profil anlegen:**
 - Klicke auf **"Neues Profil"** in der Kopfzeile.
 
 ![Beschreibung](create_profil/create_profil_1_de.png)
 
+**Schritt 2 — Profilname eingeben:**
 - Gib einen Namen für das Profil ein und klicke auf **"Hinzufügen"**.
+- Mit **"Schließen"** wird der Dialog ohne Anlegen geschlossen.
 
 ![Beschreibung](create_profil/create_profil_2_de.png)
 
-- Klicke auf das Zahnradsymbol, um die Profileinstellungen zu öffnen.
+**Schritt 3 — Profilkarte verstehen:**
+
+Jedes Profil wird als Karte in der Profilliste dargestellt:
 
 ![Beschreibung](create_profil/create_profil_3_de.png)
 
-In diesem Menü kannst du:
+| Nr. | Element | Beschreibung |
+|-----|---------|-------------|
+| ❶ | Drag-Handle | Profil per Drag & Drop in der Liste sortieren |
+| ❷ | Overlay-Ziel | Legt fest, welches Profil die OCR-Overlays und das Sidepanel erhält |
+| ❸ | Supporter-Ziel | Legt fest, welches Profil als Supporter-View für den CD-Timer dient |
+| ❹ | Startmodus | Zeigt an, ob das Profil im Tab- oder Fenstermodus geöffnet wird |
+| ❺ | Zahnrad | Profileinstellungen öffnen |
+| ❻ | Spielen | Spielsitzung mit diesem Profil starten |
 
-- den Profilnamen ändern,
-- einen Beruf auswählen (bestimmt das Emblem des Profils und kann als Suchfilter dienen),
-- festlegen, ob das Profil mehrfach gleichzeitig geöffnet werden darf.
+**Schritt 4 — Profileinstellungen:**
 
-Ist die Option **"In Tabs verwenden"** aktiviert, kann das Profil mehrfach gleichzeitig genutzt werden.  
-Ist sie deaktiviert, wird das Profil nur in einem einzelnen Fenster geöffnet.
-
-Möchtest du beide Varianten nutzen, dupliziere das Profil und verwende je eine Kopie mit aktivierter bzw. deaktivierter Option.  
-Beachte: Es kann nur eine Variante pro Profil gleichzeitig genutzt werden.
+Klicke auf das Zahnradsymbol ❺, um die Einstellungen zu öffnen:
 
 ![Beschreibung](create_profil/create_profil_4_de.png)
 
-Es können beliebig viele Profile erstellt werden. Jedes Profil hat seine eigene gespeicherte Flyff-Sitzung.  
+| Nr. | Element | Beschreibung |
+|-----|---------|-------------|
+| ❶ | Profilname | Name des Profils ändern |
+| ❷ | Beruf + Charaktername | Beruf per Dropdown wählen und Charakternamen eintragen. Pro Charakter wird ein eigener Beruf zugewiesen. |
+| ❸ | Charname hinzufügen | Weiteren Charakternamen zum Profil hinzufügen (mit „Hinzufügen"-Button) |
+| ❹ | In Tabs verwenden | Aktiviert: Profil kann in Layouts mit mehreren Tabs genutzt werden. Deaktiviert: Profil öffnet nur ein eigenes Fenster. |
+| ❺ | Speichern | Änderungen übernehmen |
+| ❻ | Profil kopieren | Erstellt eine Kopie des Profils mit allen Einstellungen |
+| ❼ | Löschen | Profil dauerhaft entfernen |
+| ❽ | Schließen | Dialog schließen |
+
+Möchtest du ein Profil sowohl in Tabs als auch im Fenstermodus nutzen, kopiere es mit ❻ und verwende je eine Kopie pro Modus.
+
+**Schritt 5 — Profilliste mit Charakteren:**
+
+Die fertig eingerichteten Profile werden in der Liste mit ihren Charakternamen und Job-Icons angezeigt:
+
+![Beschreibung](create_profil/create_profil_5_de.png)
+
+- Jeder Charakter wird als Badge mit Job-Icon unter dem Profilnamen dargestellt.
+- Der Beruf-Filter und die Charname-Suche in der Kopfzeile durchsuchen alle Charaktere aller Profile.
+- Plugins wie der Killfeed nutzen die hinterlegten Charakternamen per Combobox.
+
+Es können beliebig viele Profile erstellt werden. Jedes Profil hat seine eigene gespeicherte Flyff-Sitzung.
 Einstellungen im Spiel werden nicht wie im Browser auf andere Sitzungen übertragen.
+
+**Profil-Export/Import:**
+
+![small](create_profil/create_profil_6.png)
+
+| Nr. | Element | Beschreibung |
+|-----|---------|-------------|
+| ❶ | Exportieren | Profil als `.flyffprofile`-Datei speichern |
+| ❷ | Importieren | `.flyffprofile`-Datei laden und als neues Profil anlegen |
+
+Die exportierte Datei enthält:
+
+- Profil-Metadaten (Name, Beruf, Einstellungen)
+- Electron-Session-Cookies (Login-Daten)
+- localStorage-Daten (Spieleinstellungen)
+
+Das ermöglicht Backups und Transfer zwischen Rechnern.
 :::
 
 :::accordion[Layout erstellen]
 
-- Klicke auf **"Spielen"** im Reiter eines erstellten Profils. Stelle sicher, dass dieses Profil für Tabs verwendet werden darf.  
+**Schritt 1 — Layout starten:**
+
+Klicke auf **„Spielen"** bei einem Profil, das für Tabs aktiviert ist.
+
 ![Beschreibung](create_layout/create_layout_1_de.png)
 
-- Wähle das gewünschte Layout-Grid aus.  
-![Beschreibung](create_layout/create_layout_3.png)
+**Schritt 2 — Layout-Grid wählen:**
 
-- Wähle für jede Zelle ein Profil aus und klicke auf **"Weiter"**.  
-![Beschreibung](create_layout/create_layout_4_de.png)
+Wähle das gewünschte Layout-Raster aus. Beim Hovern wird rechts eine **ASCII-Vorschau** des Rasters angezeigt.
 
-- Mit Klick auf **"+"** kannst du weitere Layout-Tabs erstellen.  
-![Beschreibung](create_layout/create_layout_5.png)
+![Beschreibung](create_layout/create_layout_2.png)
 
-- Speichere das Layout, damit du es vom Launcher aus starten kannst.  
-![Beschreibung](create_layout/create_layout_6.png)  
-![Beschreibung](create_layout/create_layout_7.png)
+*Symmetrische Layouts:*
+- **1×1** — Einzelfenster
+- **1×2 / 2×1** — Zwei Fenster nebeneinander / übereinander
+- **1×3 / 3×1** — Drei Fenster nebeneinander / übereinander
+- **1×4 / 4×1** — Vier Fenster nebeneinander / übereinander
+- **2×2** — Vier Fenster im Raster
+- **3+2** — Drei oben, zwei unten
+- **2×3** — Sechs Fenster im Raster
+- **4+3** — Vier oben, drei unten
+- **2×4** — Acht Fenster im Raster
 
-- Tabs können mit einem Rechtsklick umbenannt werden.
-- Tabs können sequentiell oder gleichzeitig geladen werden  
-  -> Einstellungen / Client Settings / Grid-Tabs sequentiell laden
+*Asymmetrische Layouts:*
+- **1+2 →** — Hauptfenster links, 2 Nebenfenster rechts gestapelt
+- **1+3 →** — Hauptfenster links, 3 Nebenfenster rechts gestapelt
+- **1+2 ↓** — Hauptfenster oben, 2 Nebenfenster unten nebeneinander
+- **1+3 ↓** — Hauptfenster oben, 3 Nebenfenster unten nebeneinander
+
+Bei asymmetrischen Layouts erscheint ein **Slider** in der Tab-Leiste, mit dem die Aufteilung zwischen Hauptfenster und Nebenfenstern angepasst werden kann (min. 20 % / max. 80 %).
+
+![small](create_layout/create_layout_slider.png)
+
+**Schritt 3 — Profile zuweisen:**
+
+Weise jeder Zelle ein Profil zu. Nicht benötigte Zellen können leer gelassen werden.
+
+![Beschreibung](create_layout/create_layout_3_de.png)
+
+| Nr. | Element | Beschreibung |
+|-----|---------|-------------|
+| ❶ | Layout-Zellen | Zeigt die Zellen des gewählten Rasters. Klicke auf eine Zelle, um ein Profil aus der Liste darunter zuzuweisen. |
+| ❷ | Profilliste | Alle für Tabs freigegebenen Profile. Klicke auf ein Profil, um es der ausgewählten Zelle zuzuweisen. |
+| ❸ | Weiter | Übernimmt die Zuordnung und startet das Layout mit den zugewiesenen Profilen. |
+
+**Schritt 4 — Layout speichern:**
+
+Über den im Bild markierten Button in der Titelleiste wird der Speichern-Dialog geöffnet.
+
+![Beschreibung](create_layout/create_layout_4.png)
+
+Gib dem Layout einen Namen und klicke auf **„Speichern"**.
+
+![Beschreibung](create_layout/create_layout_5_de.png)
+
+**Schritt 5 — Layout-Karte im Launcher:**
+
+Gespeicherte Layouts werden als Karte in der Profilliste angezeigt:
+
+![Beschreibung](create_layout/create_layout_6_de.png)
+
+- Die Karte zeigt den **Layout-Namen**, die **Anzahl der Profile** und eine **Miniatur des Rasters**.
+- Über **„Spielen"** wird das gesamte Layout gestartet.
+- Über das **Zahnrad** lassen sich Layout-Einstellungen anpassen (Name, Profil-Zuordnung, Raster).
+
+**Relevante Einstellungen** (unter Einstellungen / Layout):
+- **Grid-Tabs sequentiell laden** — Tabs nacheinander statt gleichzeitig starten
+- **Layouts bei Änderungen aktualisieren** — Änderungen am Layout automatisch speichern
+- **Aktiven Grid-View hervorheben** — Den aktuell fokussierten Tab visuell hervorheben
+- **Tab-Anzeige für Layouts** — Anzeigemodus der Layout-Tabs im Launcher
+- **Layout-Verzögerung** — Verzögerung beim Tab-Wechsel
+
+**Relevante Hotkeys** (unter Einstellungen / Hotkeys):
+- **Vorheriger Tab** / **Nächster Tab** — Zwischen Tabs wechseln
+- **Nächstes Fenster** — Fokus durch offene Fenster-Instanzen wechseln
+- **Tab-Leiste ein/aus** — Tab-Leiste im Session-Fenster anzeigen/verbergen
+
+**Multi-Window:**
+
+Neben Layouts können auch mehrere unabhängige Session-Fenster parallel geöffnet werden. Beim Öffnen eines Profils, während bereits eine Session aktiv ist, wird abgefragt, ob es zum aktuellen Fenster hinzugefügt oder ein neues Fenster erstellt werden soll.
 :::
 
-:::accordion[Datenpfade & Persistenz (Windows)]
+:::accordion[Hotkeys]
 
-Alle Nutzerdaten liegen standardmäßig unter `%APPDATA%/Flyff-U-Launcher/` (Electron `userData`). Wichtige Dateien/Ordner:
+Hotkeys sind frei belegbare Tastenkombinationen (2–3 Tasten), die auch bei aktivem Spielfenster funktionieren.
 
-| Feature/Datei                | Zweck                                           | Pfad relativ zu `%APPDATA%/Flyff-U-Launcher` |
-|------------------------------|-------------------------------------------------|----------------------------------------------|
-| API-Fetch Daten & Icons      | Rohdaten/Icons für Plugins (Item, Monster, …)   | `api_fetch/<endpoint>/...`                   |
-| Premium Shopping List Preise | FCoin-Preise pro Item                           | `item-prices.json`                           |
-| Profile                      | Launcher-Profile (Name, Job, Flags)             | `profiles.json`                              |
-| Layouts                      | Grid-Layouts für Tabs                           | `tabLayouts.json`                            |
-| ROI-Kalibrierungen           | ROI-Definitionen für OCR/Killfeed               | `rois.json`                                  |
-| OCR-Timer                    | Abtastraten für OCR (Killfeed/CD-Timer)         | `ocr-timers.json`                            |
-| Plugin-Einstellungen         | Pro-Plugin Settings (z.B. killfeed, cd-timer)   | `plugin-data/<pluginId>/settings.json`       |
-| Themes & Tab-Farben          | Benutzer-Themes / aktive Tabfarbe               | `themes.json`, `tabActiveColor.json`         |
+**Konfiguration:**
+- Öffne **Einstellungen → Hotkeys**.
+- Klicke auf den Badge neben einer Aktion und drücke die gewünschte Tastenkombination.
+- Konflikte werden automatisch erkannt und angezeigt.
+
+![Beschreibung](hotkeys/hotkeys_settings_de.png)
+
+**Verfügbare Aktionen:**
+
+| Aktion | Beschreibung |
+|--------|-------------|
+| Overlays ein/aus | Alle Overlays ein- oder ausblenden |
+| Sidepanel ein/aus | Sidepanel öffnen oder schließen |
+| Tab-Leiste ein/aus | Tab-Leiste im Session-Fenster anzeigen/verbergen |
+| Vorheriger Tab | Zum vorherigen Tab wechseln |
+| Nächster Tab | Zum nächsten Tab wechseln |
+| Nächstes Fenster | Fokus durch offene Fenster-Instanzen wechseln |
+| CD-Timer ablaufen | Alle CD-Timer auf 00:00 setzen (warten auf Tastendruck) |
+| Screenshot | Screenshot des aktiven Fensters speichern |
+| FCoins-Rechner | FCoins-Rechner öffnen |
+| Einkaufsliste | Premium-Einkaufsliste öffnen |
+
+Die konfigurierten Hotkeys können jederzeit über das **Tastatur-Symbol** in der Tab-Leiste eingesehen werden.
+
+![Beschreibung](hotkeys/hotkeys_menu_de.png)
+:::
+
+:::accordion[Datenpfade & Persistenz]
+
+Alle Nutzerdaten liegen plattformabhängig in folgenden Verzeichnissen:
+
+| Plattform | Pfad |
+|-----------|------|
+| **Windows** | `%APPDATA%\Flyff-U-Launcher\user\` |
+| **macOS** | `~/Library/Application Support/Flyff-U-Launcher/user/` |
+| **Linux** | `~/.config/Flyff-U-Launcher/user/` |
+
+**Wichtige Dateien und Ordner:**
+
+| Feature | Zweck | Relativer Pfad |
+|---------|-------|----------------|
+| Profile | Launcher-Profile (Name, Job, Flags) | `user/profiles/profiles.json` |
+| ROI-Kalibrierungen | ROI-Definitionen für OCR/Killfeed | `user/profiles/rois.json` |
+| OCR-Timer | Abtastraten für OCR | `user/profiles/ocr-timers.json` |
+| Layouts | Grid-Layouts für Tabs | `user/ui/tab-layouts.json` |
+| Themes | Benutzer-Themes | `user/ui/themes.json` |
+| Aktive Tabfarbe | Tabfarbe-Einstellung | `user/ui/tab-active-color.json` |
+| Client-Einstellungen | Alle Launcher-Einstellungen | `user/config/settings.json` |
+| Feature-Flags | Aktivierte Features | `user/config/features.json` |
+| Premium-Einkaufsliste | FCoin-Preise pro Item | `user/shopping/item-prices.json` |
+| Plugin-Einstellungen | Pro-Plugin Settings | `user/plugin-data/<pluginId>/settings.json` |
+| Killfeed History | Tagesübersicht pro Profil | `user/plugin-data/killfeed/history/<id>/history.csv` |
+| Killfeed Einzelkills | Detail-History pro Kill und Tag | `user/plugin-data/killfeed/history/<id>/daily/YYYY-MM-DD.csv` |
+| API-Fetch Daten | Rohdaten/Icons für Plugins | `user/cache/` |
+| Fehlerprotokolle | Diagnose-Logs | `user/logs/` |
+| Upgrade-Rechner | Gespeicherte Preise/Einstellungen | `user/tools/upgrades/upgrade_cost_calc.json` |
 
 :::
 
@@ -78,19 +231,30 @@ Plugins benötigen in der Regel Daten und Icons aus der API. Diese kannst du mit
 
 :::accordion[API-Fetch]
 
-- Öffne **"API-Fetch"**.  
-![Beschreibung](api_fetch/api_fetch_1.png)  
+API-Fetch lädt Daten und Icons von der Flyff-Universe-API herunter. Andere Plugins (Killfeed, CD-Timer, Quest Guide, Premium-Einkaufsliste) benötigen diese Daten.
 
-- Wähle die benötigten Endpunkte aus und klicke auf **"Start"**.  
+- Öffne **"API-Fetch"** im Einstellungsmenü oder im Sidepanel.
+![Beschreibung](api_fetch/api_fetch_1.png)
+
+- Wähle die benötigten Endpunkte aus und klicke auf **"Start"**.
 ![Beschreibung](api_fetch/api_fetch_2.png)
 
-Der Fortschritt lässt sich live verfolgen. Status zeigt auf welche Endpunkte bereits abgearbeitet wurden.
-Durch das API Limit gibt es kurze Pausen um die Raten einzuhalten.
+Der Fortschritt lässt sich live verfolgen. Status zeigt an, welche Endpunkte bereits abgearbeitet wurden.
+Durch das API-Limit gibt es kurze Pausen, um die Raten einzuhalten.
 ![Beschreibung](api_fetch/api_fetch_3.png)
 
-API Fetch ist auch im Sidepanel verfügbar
+API-Fetch ist auch im Sidepanel verfügbar.
 ![Beschreibung](api_fetch/api_fetch_4.png)
 
+**Verfügbare Endpunkte:**
+
+| Endpunkt | Benötigt von |
+|----------|-------------|
+| **Monster** | Killfeed, Giant Tracker |
+| **Item** | CD-Timer, Premium-Einkaufsliste, Quest Guide |
+| **Skill** | CD-Timer |
+| **Quest** | Quest Guide |
+| **NPC** | Quest Guide |
 
 :::
 
@@ -98,14 +262,14 @@ API Fetch ist auch im Sidepanel verfügbar
 - Verfolgt Cooldowns deiner Skills/Items. Nach Ablauf eines Timers fordert ein Icon mit roter Umrandung zum Drücken der entsprechenden Taste auf.
 - Benötigte API-Fetches zum Anzeigen der Icons: "Item" + "Skill".
 
-- Stelle sicher, dass CD-Timer aktiviert ist.  
+- Stelle sicher, dass CD-Timer aktiviert ist.
 ![Beschreibung](cd_timer/cd_timer_1_de.png)
 
 - Im Sidepanel ist dann der Reiter CD-Timer verfügbar:
 ![Beschreibung](cd_timer/cd_timer_2_de.png)
 - "0/0 aktiv" zeigt an wie viele Timer konfiguriert sind und wie viele davon aktiv sind.
 - Mit der Checkbox "Alle aktiv" werden alle Timer aktiviert.
-- Der Button "Alle abgelaufen" setzt alle Timer auf 0:00:00, 
+- Der Button "Alle abgelaufen" setzt alle Timer auf 0:00:00,
   es wird also auf die Eingabe der konfigurierten Taste gewartet.
 
 - Die Anzeige der Timer-Icons lässt sich konfigurieren: X- und Y-Position, Icongröße sowie Spaltenanzahl.
@@ -143,7 +307,7 @@ API Fetch ist auch im Sidepanel verfügbar
 
 **Hinweis:**
 - Aktuell unterstützt der Killfeed nur das 1v1-Leveln.
-- In der Zukunft soll es auf AOE ausgeweitet werden, sowie das Tracken der Kills pro Monstergruppe und Bossmonster ermöglichen.
+- Bei Charakterwechsel kann es zu Verwechslungen kommen.
 
 **Einrichtung:**
 
@@ -153,40 +317,33 @@ API Fetch ist auch im Sidepanel verfügbar
      (siehe API-Fetch Dokumentation)
 2. **Plugin aktivieren**
    - Öffne die Plugin-Einstellungen im Launcher und stelle sicher, dass **Killfeed** aktiviert ist.
-   ![Beschreibung](killfeed/killfeed_1_de.png)
 
 3. **OCR-Regionen kalibrieren** (einmalig pro Profil)
    - Starte ein Spielfenster mit aktivem "Schwert-Button" über den Launcher.
-    ![Beschreibung](killfeed/killfeed_2_de.png)
    - Öffne die ROI-Kalibrierung (Region of Interest) im Sidepanel.
    - Zeichne Bereiche um folgende Anzeigen im Spiel:
      - **EXP%** – die Erfahrungspunkte-Anzeige
      - **Level** – die Level-Anzeige
      - **Charaktername** – der Name des Charakters
    - Speichere die Regionen. Diese werden pro Profil gespeichert und müssen nur einmal eingerichtet werden.
-    ![Beschreibung](killfeed/killfeed_3_de.png)
    - Mit der linken Maustaste können die ROIs gezogen werden.
    - Nach dem Setzen eines ROIs kann mit TAB das nächste ausgewählt werden.
-    ![Beschreibung](killfeed/killfeed_4_de.png)
    - Setze für den Killfeed: LVL, NAME, EXP, ENEMY (Gegnerlevel), ENEMY HP
    - Drücke "Schließen" oder ESC um die ROI-Eingabe abzuschließen.
-    ![Beschreibung](killfeed/killfeed_5_de.png)
    - Die ROIs lassen sich nach dem Ziehen noch feinjustieren.
-    ![Beschreibung](killfeed/killfeed_6_de.png)
    - Die erkannten Werte können im Sidepanel live angesehen werden.
    - Am wichtigsten sind hier LVL und EXP; ENEMY und ENEMY HP wirken bisher nur unterstützend und sind für die Zukunft wichtiger.
    - Wird das gezeigte Level im Live OCR nicht korrekt angezeigt, kann es manuell gesetzt werden,
     der manuell gesetzte Wert hat Vorrang vor dem OCR-Wert.
    - Verschluckt sich das OCR beim EXP-Wert einmal(z.b. bei Charakterwechsel), kann dieser manuell neu gesetzt werden.
      Die EXP-Regeln könnten die automatische Korrektur verhindern.
-   - ![Beschreibung](killfeed/killfeed_7_de.png)
 
 
 
 4. **Profil im Sidepanel auswählen**
    - Öffne das Sidepanel und wähle den Reiter **Killfeed**.
    - Wähle im Dropdown das Profil aus, das getrackt werden soll.
-    ![Beschreibung](killfeed/killfeed_8_de.png)
+   - Charakternamen werden per Combobox aus dem Profil gewählt — kein manuelles Eintippen nötig.
 
 
 5. **Spielen**
@@ -195,14 +352,12 @@ API Fetch ist auch im Sidepanel verfügbar
 
 **Sidepanel:**
 - Schalte einzelne Badges ein oder aus (z.B. Kills/Session, EXP/Stunde, Kills bis Level-Up).
-![Beschreibung](killfeed/killfeed_9_de.png)
 - Passe die Overlay-Skalierung an (0.6x – 1.6x).
 - Wähle, über wie viele Zeilen die Badges angezeigt werden sollen.
-![Beschreibung](killfeed/killfeed_10_de.png)
+- Das Overlay kann per Drag an eine beliebige Position im Spielfenster verschoben werden. Die Position wird gespeichert.
 - Setze die Session-Statistiken mit dem Reset-Button zurück.
 - Die Daten jeder Session werden lokal auf deinem Rechner gespeichert.
 
-![Beschreibung](killfeed/killfeed_11_de.png)
 
 
 - Jeder erkannte Kill wird im Sidepanel angezeigt und dauerhaft gespeichert.
@@ -211,13 +366,11 @@ API Fetch ist auch im Sidepanel verfügbar
   - `user/plugin-data/killfeed/history/<profile-id>/history.csv` (Tagesübersicht)
 - In den Monster-Tracking-Accordions steht pro Rang ein `Kills`-Button zur Verfügung.
 - `Kills` öffnet eine ListView mit den einzelnen Kills des gewählten Rangs.
-- 
-![Beschreibung](killfeed/killfeed_12_de.png)
+-
 
 - In der ListView lassen sich einzelne Kills löschen (`Löschen` -> `Sicher`).
 - Beim Löschen werden Sidepanel-Anzeige und Killfeed-History-Dateien (`daily/YYYY-MM-DD.csv` und `history.csv`) direkt aktualisiert.
 
-![Beschreibung](killfeed/killfeed_13_de.png)
 
 
 **Kill-Erkennung – Regeln:**
@@ -240,7 +393,7 @@ Ein Kill wird gezählt, wenn alle folgenden Bedingungen erfüllt sind:
 :::
 
 :::accordion[Killfeed: Giant Tracker]
-# ACHTUNG: 
+# ACHTUNG:
 ## Bis zum ersten erfassten Kill eines Giants, Violetts oder Boss werden Beispieldaten angezeigt um die Funktion darzustellen
 ---
 Der Giant Tracker ist ein eigenständiges Fenster innerhalb des Killfeed-Plugins. Er erfasst und visualisiert Kill-Statistiken für **Giants**, **Violets** und **Bosse** — inklusive Zeiträume, Drops und Time to Kill (TTK). Die fünf Filter-Tabs (Alle, Giants, Violets, Bosse, Drops) ermöglichen gezieltes Filtern nach Rang oder nach geloggten Drops.
@@ -341,6 +494,7 @@ Die TTK misst automatisch die Kampfdauer gegen ein Bossmonster — vom ersten Tr
 
 :::
 
+
 :::accordion[Quest Guide]
 - Zeigt verfügbare Quests gefiltert nach Level, Region und Typ — mit Chain-Visualisierung und Fortschritts-Tracking pro Profil.
 - Benötigte API-Fetches: **Quest**, **NPC**, **Monster**, **Item**
@@ -353,15 +507,17 @@ Die TTK misst automatisch die Kampfdauer gegen ein Bossmonster — vom ersten Tr
 **Filter & Suche:**
 - **Suchfeld** — filtert nach Quest-Name, NPC oder Item
 - **Level-Modus:**
-  - *OCR ±* — zeigt Quests passend zum aktuell per OCR erkannten Level (mit einstellbarer Toleranz)
+  - *OCR ±* — zeigt Quests passend zum aktuell per OCR erkannten Level (mit einstellbarer Toleranz, Standard: ±5)
   - *Manuell* — Level und Toleranz manuell eingeben
-  - *Min–Max* — festes Level-Fenster festlegen
+  - *Min–Max* — festes Level-Fenster festlegen (Standard: 1–30)
 - **Region** — schränkt die Anzeige auf eine bestimmte Spielregion ein
 - **Typ-Filter** — Alle / Chain / Daily / Repeat / Category
+- **Unterkategorie** — Bei Wiederholungsquests: Haustiere, Sammlung, Monsterjagd, Lieferung, Sonstige
 
 **Fortschritts-Tracking:**
 - Quests als erledigt markieren — Fortschritt wird pro Profil gespeichert
 - Checkbox „Erledigte anzeigen" ein-/ausblenden
+- Checkbox „Nicht verfügbare anzeigen" ein-/ausblenden
 - Reset-Button setzt den Fortschritt zurück
 
 **Statistik-Leiste:**
@@ -369,6 +525,9 @@ Zeigt die Anzahl Gesamt-, Verfügbarer und Erledigter Quests auf einen Blick.
 
 **Quest Map:**
 - Öffnet eine interaktive Karte mit Quest-Standorten über den Karten-Button im Sidepanel.
+
+![Beschreibung](quest_guide/quest_guide_sidepanel_de.png)
+![Beschreibung](quest_guide/quest_guide_map_de.png)
 :::
 
 ## Tools
@@ -388,16 +547,16 @@ Tools lassen sich entweder per Hotkey oder in der Tab-Leiste über das Menü (St
 
 :::accordion[Premium Einkaufsliste]
 - Planungs-Tool für Einkäufe im Premium-Shop; hilfreich, um vor dem FCoin-Kauf den Bedarf zu kalkulieren. Pop-ups müssen erlaubt sein.
-- Voraussetzungen: API-Fetch-Endpunkt **„Item“** inkl. Icons laden; ohne diese Daten bleibt die Suche leer.
+- Voraussetzungen: API-Fetch-Endpunkt **„Item"** inkl. Icons laden; ohne diese Daten bleibt die Suche leer.
 ![Beschreibung](tools/premium_shopping_list/premium_shopping_list_1.png)
 - Nutzung:
   1. Tool im Menü (Stern) öffnen und Item-Namen ins Suchfeld tippen.
-  2. Trefferliste (max. 20) zeigt Icon, Namen und Kategorie; mit **„+ Add“** hinzufügen oder Menge erhöhen.
+  2. Trefferliste (max. 20) zeigt Icon, Namen und Kategorie; mit **„+ Add"** hinzufügen oder Menge erhöhen.
   ![Beschreibung](tools/premium_shopping_list/premium_shopping_list_2.png)
   3. In der Liste Preis (FCoins) und Menge pro Item setzen; der Preis wird beim Verlassen des Felds gespeichert und bei künftigen Suchen vorausgefüllt.
-  4. Checkbox markiert erledigte/gekaufte Items, „X“ entfernt einen Eintrag.
+  4. Checkbox markiert erledigte/gekaufte Items, „X" entfernt einen Eintrag.
   5. Der Balken unten zeigt die Summe aller Einträge (`Preis × Menge`) in FCoins.
-- Speicherung: Preise werden dauerhaft im Launcher-Datenordner abgelegt (`%APPDATA%/Flyff-U-Launcher/item-prices.json`); die Liste selbst ist pro Sitzung neu.
+- Speicherung: Preise werden dauerhaft im Launcher-Datenordner abgelegt; die Liste selbst ist pro Sitzung neu.
 
 :::
 
@@ -452,7 +611,64 @@ Nach Klick auf „Berechnen" erscheint eine detaillierte Tabelle pro Upgrade-Stu
 
 Im Vergleichsmodus werden beide Schutz-Systeme nebeneinander dargestellt — die günstigere Option wird grün hervorgehoben.
 
-**Speicherung:** Preise und Einstellungen werden automatisch gespeichert (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
+**Speicherung:** Preise und Einstellungen werden automatisch gespeichert.
 
+:::
+
+## Weiteres
+
+:::accordion[Ankündigungen]
+
+Im rechten Panel des Launchers werden Nachrichten vom Entwickler angezeigt — ohne dass ein App-Update nötig ist. Beispiele: bekannte Fehler, aktuelle Entwicklungen oder geplante Features. Die Anzeige ist auf Deutsch und Englisch verfügbar und kann in den Einstellungen deaktiviert werden.
+
+![Beschreibung](announcements/announcements_de.png)
+:::
+
+:::accordion[Nachrichten & Fehlerprotokoll (Logs)]
+
+Über das **Log-Icon** in der Tab-Leiste öffnet sich ein separates Fenster mit dem Fehlerprotokoll.
+
+**Funktionen:**
+- Zeigt alle Warn- und Fehlermeldungen mit Zeitstempel an: `[HH:MM:SS] [LEVEL] [MODUL] Nachricht`
+- **Löschen** — Alle Logeinträge entfernen
+- **Speichern** — Logs als `.txt`-Datei exportieren (unter `user/logs/`)
+- **Nachricht senden** — Logs direkt an den Entwickler (Discord) senden
+  - Optional: Beschreibung und Ingame-/Discordname hinzufügen
+  - 60-Sekunden-Cooldown zum Schutz vor versehentlichem Mehrfachsenden
+
+![Beschreibung](logs/logs_window_de.png)
+:::
+
+:::accordion[Update-Prüfung & Versions-Rollback]
+
+**Automatische Updates:**
+- Der Launcher prüft beim Start, ob eine neue Version verfügbar ist (konfigurierbar unter Einstellungen).
+- Ist ein Update verfügbar, wird ein Dialog mit der Möglichkeit zum Download angezeigt.
+- Während des Downloads wird der Fortschritt als Prozentbalken angezeigt.
+- Nach dem Download wird das Update beim nächsten Neustart installiert.
+
+**Manuelle Prüfung:**
+- Unter **Einstellungen → Verhalten** befindet sich ein **„Jetzt prüfen"**-Button.
+
+**Versions-Rollback:**
+- Ältere Launcher-Versionen (ab 3.0.5) können direkt aus den Einstellungen installiert werden.
+- Ein Dropdown zeigt alle verfügbaren GitHub-Releases mit Datum und Markierung der aktuellen Version.
+- Nach Auswahl einer Version wird diese heruntergeladen und beim Neustart installiert.
+
+![Beschreibung](settings/settings_update_de.png)
+:::
+
+:::accordion[RAM-Anzeige]
+
+Unter **Einstellungen → Anzeige → „RAM-Nutzung anzeigen"** kann eine Speicheranzeige in der Tab-Leiste aktiviert werden.
+
+**Funktionen:**
+- Zeigt den Gesamtspeicherverbrauch in MB an.
+- Per Klick öffnet sich eine detaillierte Aufschlüsselung:
+  - Speicherverbrauch pro Profil
+  - Speicherverbrauch der Plugins (geschätzt, da geteilt)
+  - System-Overhead (Launcher + OCR)
+
+![Beschreibung](ram/ram_display_de.png)
 :::
 

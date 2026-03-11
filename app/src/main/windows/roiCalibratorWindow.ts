@@ -305,10 +305,10 @@ export function createRoiCalibratorWindow(opts: {
   function fromNorm(n) {
     if (!n) return null;
     return {
-      x: Math.round(n.x * canvas.width),
-      y: Math.round(n.y * canvas.height),
-      w: Math.round(n.w * canvas.width),
-      h: Math.round(n.h * canvas.height),
+      x: n.x * canvas.width,
+      y: n.y * canvas.height,
+      w: n.w * canvas.width,
+      h: n.h * canvas.height,
     };
   }
 

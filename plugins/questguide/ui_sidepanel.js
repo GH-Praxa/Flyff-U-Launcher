@@ -1435,7 +1435,7 @@
 
             if (detail.gold > 0) {
                 html += '<div class="reward-card gold">';
-                html += '<div class="reward-icon-placeholder" style="color:#fbbf24;">&#x1F4B0;</div>';
+                html += '<img class="reward-icon" src="penya.png" alt="">';
                 html += '<div><div class="reward-amount" style="color:#fbbf24;">' + detail.gold.toLocaleString() + '</div>';
                 html += '<div class="reward-label">' + esc(L.gold) + '</div></div></div>';
             }

@@ -9,7 +9,7 @@ type Profile = {
     id: string;
     name: string;
     createdAt: string;
-    job?: string;
+    characterJobs?: Record<string, string>;
     launchMode: "tabs" | "window";
     overlayTarget?: boolean;
     overlayIconKey?: string;
@@ -190,6 +190,9 @@ declare global {
             overlaysShowAfterDialog: () => Promise<void>;
             appQuit: () => Promise<boolean>;
             appGetVersion: () => Promise<string>;
+            appCheckForUpdates: () => Promise<{ ok: boolean; version?: string; error?: string }>;
+            appListReleases: () => Promise<{ ok: boolean; error?: string; releases?: Array<{ version: string; tag: string; name: string; date: string; prerelease: boolean; current: boolean }> }>;
+            appInstallVersion: (version: string) => Promise<{ ok: boolean; error?: string }>;
             // Plugin management
             pluginsList: () => Promise<PluginStateInfo[]>;
             pluginsListAll: () => Promise<PluginStateInfo[]>;

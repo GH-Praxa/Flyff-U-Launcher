@@ -20,16 +20,10 @@ const USER_AGENT =
 let ctxRef;
 let currentJob = null;
 let requestsMade = 0;
+let outputDir = null;
 
 const pluginRoot = __dirname;
 const endpointsPath = path.join(pluginRoot, "endpoints.json");
-const outputDir = path.join(
-  process.env.APPDATA ||
-    path.join(process.env.HOME || process.cwd(), "AppData", "Roaming"),
-  "Flyff-U-Launcher",
-  "user",
-  "cache",
-);
 
 function ensureDir(dirPath) {
   return fsp.mkdir(dirPath, { recursive: true });
@@ -339,6 +333,7 @@ async function downloadEndpoint(baseUrl, endpoint, job, cancelFlag) {
         }
         const combinedName = `${baseName}_parameter`;
         detailPaths = await storeJson(endpointDir, combinedName, collected, pretty);
+        detailPayload = collected;
       } else {
         const pth = endpoint.bulk_ids.path_template
           ? endpoint.bulk_ids.path_template.replace("{ids}", joined)
@@ -368,7 +363,7 @@ async function downloadEndpoint(baseUrl, endpoint, job, cancelFlag) {
       for (const style of styles) {
         const styleDir =
           iconCfg.include_style_dir === false
-            ? endpointDir
+            ? path.join(endpointDir, iconCfg.dest_subdir ? safeName(iconCfg.dest_subdir) : "icons")
             : path.join(endpointDir, iconCfg.dest_subdir ? safeName(iconCfg.dest_subdir) : "icons", safeName(style));
         await ensureDir(styleDir);
         for (const fname of names) {
@@ -573,6 +568,8 @@ async function handleOpenOutputDir(payload) {
 module.exports = {
   async init(ctx) {
     ctxRef = ctx;
+    const userDataPath = ctx.dataDir.replace(/[/\\]user[/\\]plugin-data[/\\]api-fetch$/, '');
+    outputDir = path.join(userDataPath, 'user', 'cache');
     ctx.ipc.handle("load:config", () => handleLoadConfig(ctx));
     ctx.ipc.handle("job:start", (data) => handleStartDownloads(ctx, data));
     ctx.ipc.handle("job:status", handleGetStatus);
