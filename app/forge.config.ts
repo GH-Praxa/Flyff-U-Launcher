@@ -97,7 +97,7 @@ if (fs.existsSync(tesseractPlatformDir) && fs.readdirSync(tesseractPlatformDir).
     console.warn(`Tesseract payload not found for platform '${process.platform}' at`, tesseractPlatformDir, "- bundle will skip it.");
 }
 const defaultPluginsDir = path.resolve(__dirname, "..", "plugins");
-const pluginIdsToBundle = ["api-fetch", "cd-timer", "killfeed"];
+const pluginIdsToBundle = ["api-fetch", "cd-timer", "killfeed", "questguide"];
 if (fs.existsSync(defaultPluginsDir)) {
     for (const pluginId of pluginIdsToBundle) {
         const pluginPath = path.join(defaultPluginsDir, pluginId);
