@@ -57,22 +57,22 @@ export function registerLogsHandlers(
         }
 
         const entries = getLogEntries();
-        if (!entries.length) {
-            return { ok: true, data: { noLogs: true } };
-        }
 
         const pad = (n: number) => String(n).padStart(2, "0");
-        const lines = entries.map((e) => {
-            const d = new Date(e.ts);
-            const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-            return `[${time}] [${e.level.toUpperCase()}] [${e.module}] ${e.message}`;
-        });
+        let logText = "";
+        if (entries.length) {
+            const lines = entries.map((e) => {
+                const d = new Date(e.ts);
+                const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                return `[${time}] [${e.level.toUpperCase()}] [${e.module}] ${e.message}`;
+            });
 
-        // Keep the most recent entries that fit within Discord's embed limit
-        const MAX_CHARS = 3800;
-        let logText = lines.join("\n");
-        if (logText.length > MAX_CHARS) {
-            logText = "...(truncated)\n" + logText.slice(-MAX_CHARS);
+            // Keep the most recent entries that fit within Discord's embed limit
+            const MAX_CHARS = 3800;
+            logText = lines.join("\n");
+            if (logText.length > MAX_CHARS) {
+                logText = "...(truncated)\n" + logText.slice(-MAX_CHARS);
+            }
         }
 
         const noteStr = typeof userNote === "string" && userNote.trim() ? userNote.trim() : null;
@@ -86,8 +86,8 @@ export function registerLogsHandlers(
         const payload = {
             username: "Flyff-U-Launcher",
             embeds: [{
-                title: "Error Logs",
-                description: "```\n" + logText + "\n```",
+                title: logText ? "Error Logs" : "User Report",
+                ...(logText ? { description: "```\n" + logText + "\n```" } : {}),
                 color: 0xff3b4f,
                 fields,
                 footer: { text: `v${app.getVersion()} \u2022 ${process.platform}` },

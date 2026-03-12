@@ -102,6 +102,7 @@ function buildSidePanelStrings(locale: Locale) {
         logsReportName: t("sidePanel.logs.reportName"),
         logsReportSend: t("sidePanel.logs.reportSend"),
         logsReportCancel: t("sidePanel.logs.reportCancel"),
+        logsSendError: t("sidePanel.logs.sendError"),
     };
 }
 
@@ -1384,10 +1385,14 @@ export function createSidePanelWindow(parent: BrowserWindow, opts?: {
           } else if (result.sent) {
             discordBtn.textContent = "OK";
             startDiscordCooldown(60_000);
+          } else {
+            discordBtn.textContent = STR.logsSendError;
+            setTimeout(() => { discordBtn.textContent = STR.logsSendDiscord; }, 3000);
           }
-          // noWebhook / noLogs: silently ignore
         } catch (err) {
           console.error("[LogsTab] sendToDiscord failed", err);
+          discordBtn.textContent = STR.logsSendError;
+          setTimeout(() => { discordBtn.textContent = STR.logsSendDiscord; }, 3000);
         }
       };
     };

@@ -23,6 +23,7 @@ function buildLogsStrings(locale: Locale) {
         logsReportName: t("sidePanel.logs.reportName"),
         logsReportSend: t("sidePanel.logs.reportSend"),
         logsReportCancel: t("sidePanel.logs.reportCancel"),
+        logsSendError: t("sidePanel.logs.sendError"),
     };
 }
 
@@ -344,18 +345,26 @@ export function openLogsWindow(opts: { preloadPath: string; locale?: Locale }): 
     if (sendBtn.disabled) return;
     var note = sanitizeText(document.getElementById('whenArea').value).substring(0, 1500);
     var name = sanitizeText(document.getElementById('nameInput').value).substring(0, 100);
-    try {
-      window.api.logsSendToDiscord(note || null, name || null).then(function(result) {
-        if (result && result.cooldownMs) {
-          startCooldown(result.cooldownMs);
-        } else if (result && result.sent) {
-          sendBtn.textContent = 'OK';
-          startCooldown(60000);
-          document.getElementById('whenArea').value = '';
-          document.getElementById('nameInput').value = '';
-        }
-      });
-    } catch(e) { console.error('[LogsWindow] sendToDiscord failed', e); }
+    sendBtn.disabled = true;
+    window.api.logsSendToDiscord(note || null, name || null).then(function(result) {
+      if (result && result.cooldownMs) {
+        startCooldown(result.cooldownMs);
+      } else if (result && result.sent) {
+        sendBtn.textContent = 'OK';
+        startCooldown(60000);
+        document.getElementById('whenArea').value = '';
+        document.getElementById('nameInput').value = '';
+      } else {
+        sendBtn.textContent = STR.logsSendError;
+        sendBtn.disabled = false;
+        setTimeout(function() { sendBtn.textContent = STR.logsSendDiscord; }, 3000);
+      }
+    }).catch(function(e) {
+      console.error('[LogsWindow] sendToDiscord failed', e);
+      sendBtn.textContent = STR.logsSendError;
+      sendBtn.disabled = false;
+      setTimeout(function() { sendBtn.textContent = STR.logsSendDiscord; }, 3000);
+    });
   };
 
 ${HTML_SCRIPT_CLOSE}
