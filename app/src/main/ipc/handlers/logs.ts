@@ -16,12 +16,12 @@ export function registerLogsHandlers(
     windowOpts?: { preloadPath: string; getLocale: () => Locale },
 ): void {
     safeHandle("logs:get", async () => {
-        return { ok: true, data: getLogEntries() };
+        return getLogEntries();
     });
 
     safeHandle("logs:clear", async () => {
         clearLogEntries();
-        return { ok: true, data: true };
+        return true;
     });
 
     safeHandle("logs:save", async () => {
@@ -38,7 +38,7 @@ export function registerLogsHandlers(
             return `[${time}] [${e.level.toUpperCase()}] [${e.module}] ${e.message}`;
         });
         await fsp.writeFile(filePath, lines.join("\n"), "utf-8");
-        return { ok: true, data: filePath };
+        return filePath;
     });
 
     safeHandle("logs:sendToDiscord", async (_event, userNote: unknown, userName: unknown) => {
@@ -46,14 +46,14 @@ export function registerLogsHandlers(
         if (lastSendTs !== null) {
             const elapsed = Date.now() - lastSendTs;
             if (elapsed < SEND_COOLDOWN_MS) {
-                return { ok: true, data: { cooldownMs: SEND_COOLDOWN_MS - elapsed } };
+                return { cooldownMs: SEND_COOLDOWN_MS - elapsed };
             }
         }
 
         const settings = await clientSettings.get();
         const webhookUrl = settings.logsWebhook;
         if (!webhookUrl) {
-            return { ok: true, data: { noWebhook: true } };
+            return { noWebhook: true };
         }
 
         const entries = getLogEntries();
@@ -105,19 +105,19 @@ export function registerLogsHandlers(
         if (!response.ok) {
             if (response.status === 404 || response.status === 401 || response.status === 403) {
                 // Webhook deleted, invalid, or unauthorized — treat as unconfigured
-                return { ok: true, data: { noWebhook: true } };
+                return { noWebhook: true };
             }
             const errText = await response.text().catch(() => "");
             throw new Error(`Discord webhook failed: ${response.status}${errText ? ` ${errText}` : ""}`);
         }
 
         lastSendTs = Date.now();
-        return { ok: true, data: { sent: true } };
+        return { sent: true };
     });
 
     safeHandle("logs:openWindow", async () => {
-        if (!windowOpts) return { ok: true, data: false };
+        if (!windowOpts) return false;
         openLogsWindow({ preloadPath: windowOpts.preloadPath, locale: windowOpts.getLocale() });
-        return { ok: true, data: true };
+        return true;
     });
 }
