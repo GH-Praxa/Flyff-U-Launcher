@@ -8,6 +8,8 @@
 
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
+- Nicht alle Schriftarten werden korrekt übernommen
+- Quest-Guide Plugin zeigt Map und Exp-Belohnungen nicht an (Dev zu Live Problem)
 
 ---
 
@@ -21,3 +23,5 @@
 
 ### Known Issues
 - Killfeed still occasionally shows incorrect values
+- Not all fonts are applied correctly
+- Quest Guide plugin does not show map and exp rewards (dev to live issue)
