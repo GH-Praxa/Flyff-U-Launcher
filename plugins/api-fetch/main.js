@@ -231,6 +231,32 @@ function dedupe(list) {
 
 function collectIconFilenames(payload, cfg) {
   const names = [];
+
+  // tile_grid mode: generate filenames from grid dimensions
+  if (cfg.tile_grid) {
+    const addTiles = (obj) => {
+      if (!obj || typeof obj !== "object") return;
+      const tileName = obj[cfg.tile_name_field || "tileName"];
+      const tileSize = obj[cfg.tile_size_field || "tileSize"];
+      const width = obj[cfg.width_field || "width"];
+      const height = obj[cfg.height_field || "height"];
+      if (!tileName || !tileSize || !width || !height) return;
+      const tilesX = Math.ceil(width / tileSize);
+      const tilesY = Math.ceil(height / tileSize);
+      for (let ty = 0; ty < tilesY; ty++) {
+        for (let tx = 0; tx < tilesX; tx++) {
+          names.push(`${tileName}${tx}-${ty}-0.png`);
+        }
+      }
+    };
+    if (Array.isArray(payload)) {
+      payload.forEach(addTiles);
+    } else if (payload && typeof payload === "object") {
+      addTiles(payload);
+    }
+    return dedupe(names);
+  }
+
   const add = (obj) => {
     if (!obj || typeof obj !== "object") return;
     if (cfg.filename_template) {
@@ -571,10 +597,10 @@ module.exports = {
     const userDataPath = ctx.dataDir.replace(/[/\\]user[/\\]plugin-data[/\\]api-fetch$/, '');
     outputDir = path.join(userDataPath, 'user', 'cache');
     ctx.ipc.handle("load:config", () => handleLoadConfig(ctx));
-    ctx.ipc.handle("job:start", (data) => handleStartDownloads(ctx, data));
+    ctx.ipc.handle("job:start", (_event, data) => handleStartDownloads(ctx, data));
     ctx.ipc.handle("job:status", handleGetStatus);
     ctx.ipc.handle("job:cancel", handleCancel);
-    ctx.ipc.handle("selection:set", (data) => handleSetSelections(ctx, data));
+    ctx.ipc.handle("selection:set", (_event, data) => handleSetSelections(ctx, data));
     ctx.ipc.handle("output:open", handleOpenOutputDir);
     ctx.ipc.handle("ui:launch", async () => {
       const { ipcMain } = require("electron");

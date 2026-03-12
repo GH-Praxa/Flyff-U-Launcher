@@ -804,14 +804,16 @@ async function getQuestDetail(questId, profileId, lang = 'en', playerLevel = nul
     
     if (quest.endReceiveExperience && quest.endReceiveExperience.length > 0) {
         const expTable = quest.endReceiveExperience;
-        const maxIdx = Math.max(0, (quest.minLevel || 1) - 1);
-        const playerIdx = Math.max(0, (playerLevel || quest.minLevel || 1) - 1);
-        
-        const expAtPlayerLevel = expTable[playerIdx];
-        const expAtMinLevel = expTable[maxIdx];
-        
-        detail.totalExp = typeof expAtPlayerLevel === 'number' ? expAtPlayerLevel : 0;
-        detail.maxExp = typeof expAtMinLevel === 'number' ? expAtMinLevel : 0;
+        const minLvl = quest.minLevel || 1;
+        const effectiveLevel = playerLevel || minLvl;
+        const maxIdx = Math.max(0, minLvl - 1);
+        const playerIdx = Math.max(0, effectiveLevel - 1);
+
+        const expAtPlayerLevel = typeof expTable[playerIdx] === 'number' ? expTable[playerIdx] : 0;
+        const expAtMinLevel = typeof expTable[maxIdx] === 'number' ? expTable[maxIdx] : 0;
+
+        detail.totalExp = expAtPlayerLevel;
+        detail.maxExp = expAtMinLevel;
     }
 
     // Prerequisites with completion status

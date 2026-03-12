@@ -1225,13 +1225,8 @@
     // ─── Accordion ──────────────────────────────────────────────────────────
 
     function getPlayerLevel() {
-        if (state.settings.levelMode === 'fixed') {
-            return parseInt(el.minLevelInput.value) || 1;
-        } else if (state.settings.levelMode === 'manual') {
-            return parseInt(el.manualLevelInput.value) || 1;
-        } else {
-            return ocrLevel || 1;
-        }
+        // Always use OCR level for EXP calculation — level mode only controls quest filtering
+        return ocrLevel || 1;
     }
 
     async function toggleAccordion(questId) {
@@ -1441,11 +1436,12 @@
             }
 
             if (detail.totalExp > 0) {
+                var fmtExp = function(v) { return typeof v === 'number' ? v.toFixed(4) + '%' : '0%'; };
                 html += '<div class="reward-card exp">';
                 html += '<div class="reward-icon-placeholder" style="color:#4ade80;">&#x2B50;</div>';
-                html += '<div><div class="reward-amount" style="color:#4ade80;">' + detail.totalExp.toLocaleString() + '</div>';
+                html += '<div><div class="reward-amount" style="color:#4ade80;">' + fmtExp(detail.totalExp) + '</div>';
                 if (detail.maxExp > 0 && detail.maxExp !== detail.totalExp) {
-                    html += '<div class="reward-label">' + esc(L.experience) + ' <span class="exp-max">(max: ' + detail.maxExp.toLocaleString() + ')</span></div></div></div>';
+                    html += '<div class="reward-label">' + esc(L.experience) + ' <span class="exp-max">(max: ' + fmtExp(detail.maxExp) + ')</span></div></div></div>';
                 } else {
                     html += '<div class="reward-label">' + esc(L.experience) + '</div></div></div>';
                 }
