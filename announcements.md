@@ -1,6 +1,3 @@
-### Erledigt, im nächsten Update enthalten:
-- Senden von Nachrichten im Fehlerprotokoll funktioniert auch ohne vorhandene Log-Einträge und zeigt Feedback an
-
 ### In Bearbeitung
 - Dokumentationen auf alle Sprachen erweitern
 - Quest-Guide optimieren
@@ -14,11 +11,10 @@
 - Scan-Unterstützung durch LLM
 - Timer welcher anzeigt wann nächstes Ziel angewählt werden kann
 
+### Erledigt, im nächsten Update enthalten:
+- Senden von Nachrichten im Fehlerprotokoll funktioniert auch ohne vorhandene Log-Einträge und zeigt Feedback an
 
 ---
-
-### Done, included in the next update:
-- Sending messages in the error log now works even without existing log entries and shows feedback
 
 ### In Progress
 - Expanding documentation to all languages
@@ -32,3 +28,6 @@
 ### Planned Features
 - Scan support via LLM
 - Timer showing when the next target can be selected
+
+### Done, included in the next update:
+- Sending messages in the error log now works even without existing log entries and shows feedback
