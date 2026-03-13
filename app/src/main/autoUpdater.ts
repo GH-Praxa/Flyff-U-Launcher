@@ -162,9 +162,6 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
             autoUpdater.allowDowngrade = true;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             autoUpdater.setFeedURL(versionFeed as any);
-            // Force the updater to consider this specific version as an update
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (autoUpdater as any).currentVersion = app.getVersion();
             const result = await autoUpdater.checkForUpdates();
             if (!result?.updateInfo) {
                 return { ok: false, error: "No update info returned" };
