@@ -38,8 +38,10 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
     autoUpdater.disableDifferentialDownload = true; // our artifacts do not ship blockmaps
 
     let isManualCheck = false;
+    let isVersionInstall = false;
 
     autoUpdater.on("update-available", async (info) => {
+        if (isVersionInstall) return; // Skip dialog for explicit version installs
         isManualCheck = false;
         const result = await dialog.showMessageBox({
             type: "info",
@@ -101,6 +103,7 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
         logErr(err, "AutoUpdater error event");
         const win = BrowserWindow.getAllWindows()[0];
         if (win) win.setProgressBar(-1);
+        if (isVersionInstall) return; // Errors are returned to caller via IPC
         if (isManualCheck) {
             isManualCheck = false;
             dialog.showErrorBox(t("update.error.title"), `${t("update.error.detail")}\n\n${String(err)}`);
@@ -148,36 +151,44 @@ export function setupAutoUpdater(deps: AutoUpdaterDeps): void {
 
     // ── Install a specific version (downgrade / rollback) ───────────
     ipcMain.handle("app:installVersion", async (_e, version: string) => {
+        isVersionInstall = true;
         try {
             logWarn(`User requested install of version ${version}`, "AutoUpdater");
-            // Point electron-updater to the specific release tag
-            const versionFeed: Record<string, string> = {
-                provider: "github",
-                owner: "GH-Praxa",
-                repo: "Flyff-U-Launcher",
-            };
-            if (process.env.GH_TOKEN) {
-                versionFeed.token = process.env.GH_TOKEN;
+
+            // Resolve exact tag from GitHub releases
+            const releases = await fetchGitHubReleases();
+            const release = releases.find(
+                (r) => r.tag_name.replace(/^v/, "") === version,
+            );
+            if (!release) {
+                return { ok: false, error: `Release for version ${version} not found` };
             }
+
+            // Use GenericProvider pointing directly at this release's assets.
+            // Each release has its own latest.yml / latest-linux.yml / latest-mac.yml,
+            // so the GenericProvider reads the correct version info.
+            const releaseAssetUrl = `https://github.com/GH-Praxa/Flyff-U-Launcher/releases/download/${release.tag_name}/`;
+
             autoUpdater.allowDowngrade = true;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            autoUpdater.setFeedURL(versionFeed as any);
+            autoUpdater.setFeedURL({ provider: "generic", url: releaseAssetUrl } as any);
+
             const result = await autoUpdater.checkForUpdates();
             if (!result?.updateInfo) {
                 return { ok: false, error: "No update info returned" };
             }
-            // If the found version matches what the user wants, download it
-            if (result.updateInfo.version === version) {
-                await autoUpdater.downloadUpdate();
-                return { ok: true };
+
+            if (result.updateInfo.version !== version) {
+                return { ok: false, error: `Version mismatch: found ${result.updateInfo.version}, wanted ${version}` };
             }
-            // Otherwise try direct download from GitHub release assets
-            return { ok: false, error: `Version mismatch: found ${result.updateInfo.version}, wanted ${version}` };
+
+            await autoUpdater.downloadUpdate();
+            return { ok: true };
         } catch (err) {
             logErr(err, "AutoUpdater installVersion");
             return { ok: false, error: String(err) };
         } finally {
-            // Restore original feed config
+            isVersionInstall = false;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             autoUpdater.setFeedURL(feedConfig as any);
             autoUpdater.allowDowngrade = false;
