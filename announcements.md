@@ -1,10 +1,10 @@
 ### In Bearbeitung
 - Dokumentationen auf alle Sprachen erweitern
 - Quest-Guide optimieren
+- Nicht alle Schriftarten werden korrekt übernommen (Tests benutzerdefiniertes CSS, Stylus)
 
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
-- Nicht alle Schriftarten werden korrekt übernommen
 
 ### Geplante Neuerungen
 - Scan-Unterstützung durch LLM
@@ -17,10 +17,10 @@
 ### In Progress
 - Expanding documentation to all languages
 - Optimizing Quest Guide
+- Not all fonts are applied correctly (testing custom CSS, Stylus)
 
 ### Known Issues
 - Killfeed still occasionally shows incorrect values
-- Not all fonts are applied correctly
 
 ### Planned Features
 - Scan support via LLM
