@@ -1,7 +1,7 @@
 {
   "id": "questguide",
   "name": "Quest Guide",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "minLauncherVersion": "1.2.0",
   "author": "Praxa",
   "description": "Quest-Guide mit Chain-Visualisierung und Fortschritts-Tracking. Benötigt API-Fetch: Quest, NPC, Monster, Item",

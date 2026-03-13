@@ -1,6 +1,27 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.2.0
+
+### ⚙️ Improvements
+
+- **Quest Guide: EXP display** — EXP values are shown as percentages with 4 decimal places; OCR level is always used for EXP calculation, level mode only controls quest filtering
+
+### 🐛 Bug Fixes
+
+- **API-Fetch**: Endpoint selection (checkboxes) was ignored — fixed missing parameter in IPC handlers
+- **API-Fetch**: World map tiles (`tile_grid`) are now downloaded correctly
+- Error reports can now be sent even without existing log entries
+- Error log send button now shows feedback after sending
+
+---
+## 🐛 Version 3.1.1
+
+### 🐛 Bug Fixes
+
+- Sidepanel UI completely broken in packaged build (white background, missing styles) — Content Security Policy blocked inline styles in temporary HTML files
+
+---
 ## 🆕 Version 3.1.0
 
 ### ✨ New Features

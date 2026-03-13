@@ -1,6 +1,27 @@
 # 📦 Yama Notları
 
 ---
+## 🆕 Sürüm 3.2.0
+
+### ⚙️ İyileştirmeler
+
+- **Quest Guide: EXP gösterimi** — EXP değerleri 4 ondalık basamakla yüzde olarak gösterilir; OCR seviyesi her zaman EXP hesaplaması için kullanılır, seviye modu yalnızca görev filtrelemesini kontrol eder
+
+### 🐛 Hata Düzeltmeleri
+
+- **API-Fetch**: Endpoint seçimi (onay kutuları) görmezden geliniyordu — IPC işleyicilerinde eksik parametre düzeltildi
+- **API-Fetch**: Dünya haritası karoları (`tile_grid`) artık doğru şekilde indiriliyor
+- Hata raporları artık mevcut günlük girişleri olmadan da gönderilebilir
+- Hata günlüğü gönder butonu artık gönderdikten sonra geri bildirim gösteriyor
+
+---
+## 🐛 Sürüm 3.1.1
+
+### 🐛 Hata Düzeltmeleri
+
+- Paketlenmiş derlemede Sidepanel arayüzü tamamen bozulmuş (beyaz arka plan, eksik stiller) — Content Security Policy geçici HTML dosyalarındaki inline stilleri engelliyordu
+
+---
 ## 🆕 Sürüm 3.1.0
 
 ### ✨ Yeni Özellikler

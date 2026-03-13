@@ -1,6 +1,27 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.2.0
+
+### ⚙️ Verbesserungen
+
+- **Quest Guide: EXP-Anzeige** — EXP-Werte werden als Prozent mit 4 Nachkommastellen angezeigt; OCR-Level wird immer für die EXP-Berechnung verwendet, Level-Modus steuert nur noch die Quest-Filterung
+
+### 🐛 Fehlerbehebungen
+
+- **API-Fetch**: Endpoint-Auswahl (Checkboxen) wurde ignoriert — fehlender Parameter in IPC-Handlern behoben
+- **API-Fetch**: Weltkarten-Kacheln (`tile_grid`) werden jetzt korrekt heruntergeladen
+- Fehlerberichte können jetzt auch ohne vorhandene Log-Einträge gesendet werden
+- Fehlerprotokoll Senden-Button zeigt Feedback nach dem Senden an
+
+---
+## 🐛 Version 3.1.1
+
+### 🐛 Fehlerbehebungen
+
+- Sidepanel-UI im gepackten Build komplett zerlegt (weißer Hintergrund, fehlende Styles) — Content Security Policy blockierte Inline-Styles in temporären HTML-Dateien
+
+---
 ## 🆕 Version 3.1.0
 
 ### ✨ Neue Funktionen

@@ -1,6 +1,27 @@
 # 📦 Notes de patch
 
 ---
+## 🆕 Version 3.2.0
+
+### ⚙️ Améliorations
+
+- **Quest Guide : affichage EXP** — les valeurs d'EXP sont affichées en pourcentage avec 4 décimales ; le niveau OCR est toujours utilisé pour le calcul de l'EXP, le mode niveau ne contrôle que le filtrage des quêtes
+
+### 🐛 Corrections de bugs
+
+- **API-Fetch** : la sélection des endpoints (cases à cocher) était ignorée — paramètre manquant dans les handlers IPC corrigé
+- **API-Fetch** : les tuiles de la carte du monde (`tile_grid`) sont désormais téléchargées correctement
+- Les rapports d'erreurs peuvent désormais être envoyés même sans entrées de journal existantes
+- Le bouton d'envoi du journal d'erreurs affiche désormais un retour après l'envoi
+
+---
+## 🐛 Version 3.1.1
+
+### 🐛 Corrections de bugs
+
+- Interface du Sidepanel complètement cassée dans le build empaqueté (fond blanc, styles manquants) — la Content Security Policy bloquait les styles inline dans les fichiers HTML temporaires
+
+---
 ## 🆕 Version 3.1.0
 
 ### ✨ Nouvelles fonctionnalités
