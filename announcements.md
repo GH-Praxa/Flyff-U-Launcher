@@ -11,11 +11,6 @@
 - Timer welcher anzeigt wann nächstes Ziel angewählt werden kann
 
 ### Erledigt, im nächsten Update enthalten:
-- Senden von Nachrichten im Fehlerprotokoll funktioniert auch ohne vorhandene Log-Einträge und zeigt Feedback an
-- API-Fetch: Endpunkt-Auswahl wird jetzt korrekt berücksichtigt
-- API-Fetch: Weltkarten-Tiles werden heruntergeladen
-- Quest-Guide: EXP-Belohnungen werden korrekt als Prozentwert angezeigt
-- Quest-Guide: Weltkarte wird dargestellt
 
 ---
 
@@ -32,8 +27,3 @@
 - Timer showing when the next target can be selected
 
 ### Done, included in the next update:
-- Sending messages in the error log now works even without existing log entries and shows feedback
-- API-Fetch: Endpoint selection is now correctly applied
-- API-Fetch: World map tiles are downloaded
-- Quest Guide: EXP rewards are correctly displayed as percentage values
-- Quest Guide: World map is displayed
