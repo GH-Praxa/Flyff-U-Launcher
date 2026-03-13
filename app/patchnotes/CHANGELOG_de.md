@@ -1,6 +1,14 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.3.0
+
+### 🐛 Fehlerbehebungen
+
+- **Versionsrückstufung**: Rückkehr zu einer älteren Version schlug fehl mit "TypeError: this.currentVersion.format is not a function" — der Update-Handler überschrieb interne Versionsdaten fälschlicherweise mit einem einfachen String statt einem Versions-Objekt
+- **Versionsrückstufung**: Auswahl einer bestimmten älteren Version fand immer das neueste Release — verwendet jetzt eine direkte Asset-URL für das Ziel-Release, sodass jede verfügbare Version installiert werden kann
+
+---
 ## 🆕 Version 3.2.0
 
 ### ⚙️ Verbesserungen

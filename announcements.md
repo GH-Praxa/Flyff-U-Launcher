@@ -5,7 +5,6 @@
 
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
-- Versionsrückstufung schlägt fehl mit "TypeError: this.currentVersion.format is not a function"
 
 ### Geplante Neuerungen
 - Scan-Unterstützung durch LLM
@@ -22,7 +21,6 @@
 
 ### Known Issues
 - Killfeed still occasionally shows incorrect values
-- Version rollback fails with "TypeError: this.currentVersion.format is not a function"
 
 ### Planned Features
 - Scan support via LLM

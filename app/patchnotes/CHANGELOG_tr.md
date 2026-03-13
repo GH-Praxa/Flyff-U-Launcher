@@ -1,6 +1,14 @@
 # 📦 Yama Notları
 
 ---
+## 🐛 Sürüm 3.3.0
+
+### 🐛 Hata Düzeltmeleri
+
+- **Sürüm Geri Alma**: Eski bir sürüme geri dönüş "TypeError: this.currentVersion.format is not a function" hatasıyla başarısız oluyordu — güncelleme işleyicisi dahili sürüm verilerini sürüm nesnesi yerine düz bir dize ile yanlışlıkla üzerine yazıyordu
+- **Sürüm Geri Alma**: Belirli bir eski sürümün seçilmesi her zaman en son sürümü buluyordu — artık hedef sürümün varlıkları için doğrudan URL kullanılıyor, böylece mevcut herhangi bir sürüm yüklenebilir
+
+---
 ## 🆕 Sürüm 3.2.0
 
 ### ⚙️ İyileştirmeler

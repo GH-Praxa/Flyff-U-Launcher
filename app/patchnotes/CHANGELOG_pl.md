@@ -1,6 +1,14 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Wersja 3.3.0
+
+### 🐛 Poprawki błędów
+
+- **Cofanie wersji**: Powrót do starszej wersji kończył się błędem "TypeError: this.currentVersion.format is not a function" — handler aktualizacji niepoprawnie nadpisywał wewnętrzne dane wersji zwykłym stringiem zamiast obiektem wersji
+- **Cofanie wersji**: Wybór konkretnej starszej wersji zawsze znajdował najnowsze wydanie — teraz używa bezpośredniego URL zasobów dla docelowego wydania, więc można zainstalować dowolną dostępną wersję
+
+---
 ## 🆕 Wersja 3.2.0
 
 ### ⚙️ Ulepszenia

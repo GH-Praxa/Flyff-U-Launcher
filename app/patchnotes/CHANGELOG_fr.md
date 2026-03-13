@@ -1,6 +1,14 @@
 # 📦 Notes de patch
 
 ---
+## 🐛 Version 3.3.0
+
+### 🐛 Corrections de bugs
+
+- **Retour à une version antérieure** : Le retour à une ancienne version échouait avec "TypeError: this.currentVersion.format is not a function" — le gestionnaire de mise à jour écrasait incorrectement les données de version internes avec une chaîne simple au lieu d'un objet version
+- **Retour à une version antérieure** : La sélection d'une version spécifique plus ancienne trouvait toujours la dernière version — utilise désormais une URL directe des ressources pour la version cible, permettant d'installer n'importe quelle version disponible
+
+---
 ## 🆕 Version 3.2.0
 
 ### ⚙️ Améliorations

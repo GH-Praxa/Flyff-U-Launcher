@@ -1,6 +1,14 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.3.0
+
+### 🐛 Bug Fixes
+
+- **Version Rollback**: Rolling back to an older version failed with "TypeError: this.currentVersion.format is not a function" — the update handler incorrectly overwrote internal version data with a plain string instead of a version object
+- **Version Rollback**: Selecting a specific older version always found the latest release instead — now uses a direct asset URL for the target release, so any available version can be installed
+
+---
 ## 🆕 Version 3.2.0
 
 ### ⚙️ Improvements
