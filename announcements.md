@@ -5,6 +5,7 @@
 
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
+- Facebook-Login funktioniert nicht
 
 ### Geplante Neuerungen
 - Scan-Unterstützung durch LLM
@@ -21,6 +22,7 @@
 
 ### Known Issues
 - Killfeed still occasionally shows incorrect values
+- Facebook login is not working
 
 ### Planned Features
 - Scan support via LLM
