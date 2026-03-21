@@ -10,6 +10,7 @@
 ### Geplante Neuerungen
 - Scan-Unterstützung durch LLM
 - Timer welcher anzeigt wann nächstes Ziel angewählt werden kann
+- Mehr Skalieroptionen für Layouts
 
 ### Erledigt, im nächsten Update enthalten:
 
@@ -27,5 +28,6 @@
 ### Planned Features
 - Scan support via LLM
 - Timer showing when the next target can be selected
+- More scaling options for layouts
 
 ### Done, included in the next update:
