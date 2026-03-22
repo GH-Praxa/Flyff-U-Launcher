@@ -1,6 +1,5 @@
 ### Bekannte Fehler
 - Killfeed zeigt weiterhin auch falsche Werte an
-- Nicht alle Schriftarten werden korrekt übernommen (Tests benutzerdefiniertes CSS, Stylus)
 
 ### Geplante Neuerungen
 - Scan-Unterstützung durch LLM
@@ -9,6 +8,7 @@
 - Quest-Guide optimieren
 
 ### Erledigt, im nächsten Update enthalten:
+- Schriftarten überarbeitet
 - Mehr Skalieroptionen für Layouts
 - Facebook-Login funktioniert nicht
 
@@ -16,7 +16,6 @@
 
 ### Known Issues
 - Killfeed still occasionally shows incorrect values
-- Not all fonts are applied correctly (testing custom CSS, Stylus)
 
 ### Planned Features
 - Scan support via LLM
@@ -25,5 +24,6 @@
 - Optimizing Quest Guide
 
 ### Done, included in the next update:
+- Fonts reworked
 - More scaling options for layouts
 - Facebook login is not working
