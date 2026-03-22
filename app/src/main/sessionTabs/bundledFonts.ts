@@ -119,3 +119,26 @@ export function getBundledFontFaceCSS(fontName: string): string | null {
         `*, *::before, *::after { font-family: ${name}, sans-serif !important; }`,
     ].join("\n");
 }
+
+/**
+ * Returns @font-face CSS and font-family override CSS as separate strings.
+ *
+ * This is needed because Chromium ignores @font-face rules in user-origin
+ * stylesheets (insertCSS with cssOrigin:'user'). The @font-face must be
+ * injected at author origin while the override uses user origin for highest
+ * cascade priority.
+ *
+ * Returns null for system/custom fonts that are not bundled.
+ */
+export function getBundledFontParts(fontName: string): { fontFace: string; override: string } | null {
+    const data = getCache()[fontName];
+    if (!data) return null;
+    const name = JSON.stringify(fontName);
+    return {
+        fontFace: [
+            `@font-face { font-family: ${name}; font-weight: 400; font-style: normal; src: url(${JSON.stringify(data.w400)}) format('woff2'); }`,
+            `@font-face { font-family: ${name}; font-weight: 700; font-style: normal; src: url(${JSON.stringify(data.w700)}) format('woff2'); }`,
+        ].join("\n"),
+        override: `*, *::before, *::after { font-family: ${name}, sans-serif !important; }`,
+    };
+}

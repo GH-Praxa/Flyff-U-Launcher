@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Killfeed Overlay - Freie Positionierung Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+    }
+
+    .demo-header h1 { font-size: 24px; margin-bottom: 10px; }
+    .demo-header p { color: rgba(255,255,255,0.7); font-size: 14px; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      background: rgba(99, 102, 241, 0.3);
+      border: 1px solid rgba(99, 102, 241, 0.6);
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .controls button:hover {
+      background: rgba(99, 102, 241, 0.5);
+    }
+
+    .controls button.active {
+      background: rgba(99, 102, 241, 0.7);
+      border-color: #6366f1;
+    }
+
+    .overlay-preview {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      background: rgba(0,0,0,0.2);
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .game-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.2);
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    .badge-container.grid-mode {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, max-content));
+      gap: 8px;
+      padding: 15px;
+      align-content: start;
+    }
+
+    .badge-container.free-mode {
+      position: absolute;
+      inset: 0;
+    }
+
+    .badge-container.free-mode .badge {
+      position: absolute;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      border-radius: 6px;
+      backdrop-filter: blur(8px);
+      cursor: grab;
+      transition: box-shadow 0.2s, transform 0.1s;
+      user-select: none;
+    }
+
+    .badge:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .badge.dragging {
+      cursor: grabbing;
+      opacity: 0.9;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+      z-index: 1000;
+    }
+
+    .badge-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-value {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    .badge[data-key="killsSession"] .badge-value { color: #22c55e; }
+    .badge[data-key="expPerHour"] .badge-value { color: #3b82f6; }
+    .badge[data-key="killsToLevel"] .badge-value { color: #f59e0b; }
+    .badge[data-key="timeSinceLastKill"] .badge-value { color: #ef4444; }
+
+    .badge.last3kills {
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 160px;
+    }
+
+    .kill-entry {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      gap: 10px;
+    }
+
+    .monster-name { color: rgba(255,255,255,0.8); }
+    .kill-exp { color: #22c55e; font-family: 'Consolas', monospace; }
+
+    .instructions {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .instructions h3 {
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .instructions ul {
+      margin-left: 20px;
+    }
+
+    .instructions li {
+      margin-bottom: 5px;
+    }
+
+    .mode-indicator {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 4px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-header">
+    <h1>Killfeed Overlay - Layout Demo</h1>
+    <p>Interaktive Vorschau der freien Badge-Positionierung</p>
+  </div>
+
+  <div class="controls">
+    <button id="gridBtn" class="active">Grid Layout</button>
+    <button id="freeBtn">Freie Positionierung</button>
+    <button id="resetBtn">Positionen zurücksetzen</button>
+  </div>
+
+  <div class="overlay-preview">
+    <div class="game-placeholder">Game Window (Hintergrund)</div>
+    <div class="badge-container grid-mode" id="badgeContainer">
+      <div class="badge" data-key="killsSession" style="left: 20px; top: 20px;">
+        <span class="badge-label">Kills</span>
+        <span class="badge-value">1,247</span>
+      </div>
+      <div class="badge" data-key="expPerHour" style="left: 20px; top: 70px;">
+        <span class="badge-label">E/h</span>
+        <span class="badge-value">0.8524%</span>
+      </div>
+      <div class="badge" data-key="killsToLevel" style="left: 20px; top: 120px;">
+        <span class="badge-label">Bis Lvl</span>
+        <span class="badge-value">342</span>
+      </div>
+      <div class="badge" data-key="sessionDuration" style="left: 20px; top: 170px;">
+        <span class="badge-label">Zeit</span>
+        <span class="badge-value">2:34:17</span>
+      </div>
+      <div class="badge" data-key="expSession" style="left: 180px; top: 20px;">
+        <span class="badge-label">Sess</span>
+        <span class="badge-value">2.1847%</span>
+      </div>
+      <div class="badge" data-key="timeSinceLastKill" style="left: 180px; top: 70px;">
+        <span class="badge-label">Idle</span>
+        <span class="badge-value">0:03</span>
+      </div>
+      <div class="badge" data-key="currentExp" style="left: 180px; top: 120px;">
+        <span class="badge-label">EXP</span>
+        <span class="badge-value">45.2134%</span>
+      </div>
+      <div class="badge" data-key="killsPerHour" style="left: 180px; top: 170px;">
+        <span class="badge-label">K/h</span>
+        <span class="badge-value">485.2</span>
+      </div>
+      <div class="badge last3kills" data-key="last3Kills" style="left: 320px; top: 20px;">
+        <span class="badge-label">Letzte</span>
+        <div class="kills-container">
+          <div class="kill-entry">
+            <span class="monster-name">Bangardian</span>
+            <span class="kill-exp">0.0018%</span>
+          </div>
+          <div class="kill-entry">
+            <span class="monster-name">Guardian</span>
+            <span class="kill-exp">0.0016%</span>
+          </div>
+          <div class="kill-entry">
+            <span class="monster-name">Bangardian</span>
+            <span class="kill-exp">0.0018%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mode-indicator" id="modeIndicator">Modus: Grid</div>
+  </div>
+
+  <div class="instructions">
+    <h3>Anleitung:</h3>
+    <ul>
+      <li><strong>Grid Layout:</strong> Badges werden automatisch in einem Raster angeordnet</li>
+      <li><strong>Freie Positionierung:</strong> Badges koennen ueberall per Drag&amp;Drop platziert werden</li>
+      <li><strong>Zuruecksetzen:</strong> Setzt alle Positionen auf Standard zurueck</li>
+      <li>Positionen werden pro Profil gespeichert</li>
+    </ul>
+  </div>
+
+  <script>
+    const container = document.getElementById('badgeContainer');
+    const gridBtn = document.getElementById('gridBtn');
+    const freeBtn = document.getElementById('freeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const modeIndicator = document.getElementById('modeIndicator');
+
+    let mode = 'grid';
+    let draggedBadge = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const defaultPositions = {
+      killsSession: { x: 20, y: 20 },
+      expPerHour: { x: 20, y: 70 },
+      killsToLevel: { x: 20, y: 120 },
+      sessionDuration: { x: 20, y: 170 },
+      expSession: { x: 180, y: 20 },
+      timeSinceLastKill: { x: 180, y: 70 },
+      currentExp: { x: 180, y: 120 },
+      killsPerHour: { x: 180, y: 170 },
+      last3Kills: { x: 320, y: 20 }
+    };
+
+    let positions = JSON.parse(JSON.stringify(defaultPositions));
+
+    function setMode(newMode) {
+      mode = newMode;
+      container.className = 'badge-container ' + newMode + '-mode';
+      
+      gridBtn.classList.toggle('active', newMode === 'grid');
+      freeBtn.classList.toggle('active', newMode === 'free');
+      modeIndicator.textContent = 'Modus: ' + (newMode === 'grid' ? 'Grid' : 'Frei');
+
+      if (newMode === 'free') {
+        applyPositions();
+      }
+    }
+
+    function applyPositions() {
+      var badges = container.querySelectorAll('.badge');
+      badges.forEach(function(badge) {
+        var key = badge.dataset.key;
+        if (positions[key]) {
+          badge.style.left = positions[key].x + 'px';
+          badge.style.top = positions[key].y + 'px';
+        }
+      });
+    }
+
+    function resetPositions() {
+      positions = JSON.parse(JSON.stringify(defaultPositions));
+      if (mode === 'free') {
+        applyPositions();
+      }
+    }
+
+    gridBtn.addEventListener('click', function() { setMode('grid'); });
+    freeBtn.addEventListener('click', function() { setMode('free'); });
+    resetBtn.addEventListener('click', resetPositions);
+
+    container.addEventListener('mousedown', function(e) {
+      if (mode !== 'free') return;
+      
+      var badge = e.target.closest('.badge');
+      if (!badge) return;
+
+      draggedBadge = badge;
+      var rect = badge.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      
+      badge.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!draggedBadge || mode !== 'free') return;
+
+      var containerRect = container.getBoundingClientRect();
+      var x = e.clientX - containerRect.left - offsetX;
+      var y = e.clientY - containerRect.top - offsetY;
+
+      x = Math.max(0, Math.min(x, containerRect.width - draggedBadge.offsetWidth));
+      y = Math.max(0, Math.min(y, containerRect.height - draggedBadge.offsetHeight));
+
+      draggedBadge.style.left = x + 'px';
+      draggedBadge.style.top = y + 'px';
+
+      var key = draggedBadge.dataset.key;
+      positions[key] = { x: x, y: y };
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (draggedBadge) {
+        draggedBadge.classList.remove('dragging');
+        draggedBadge = null;
+      }
+    });
+
+    setInterval(function() {
+      var killValue = document.querySelector('[data-key="killsSession"] .badge-value');
+      var current = parseInt(killValue.textContent.replace(/,/g, ''), 10);
+      killValue.textContent = (current + Math.floor(Math.random() * 3)).toLocaleString();
+
+      var idleValue = document.querySelector('[data-key="timeSinceLastKill"] .badge-value');
+      var parts = idleValue.textContent.split(':');
+      var secs = parseInt(parts[1], 10);
+      idleValue.textContent = '0:' + String((secs + 1) % 60).padStart(2, '0');
+    }, 2000);
+  </script>
+</body>
+</html>

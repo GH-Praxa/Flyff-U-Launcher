@@ -145,6 +145,23 @@ Kaydedilen layoutlar profil listesinde kart olarak gösterilir:
 - **"Oyna"** ile tüm layout başlatılır.
 - **Dişli simgesi** layout ayarlarını açar (ad, profil ataması, grid).
 
+**Özel düzen (Custom):**
+
+Önceden tanımlanmış ızgaraların yanı sıra **"Özel"** seçeneği serbest bir düzen oluşturmaya olanak tanır. Editörde 1–8 hücre tuval üzerinde serbestçe yerleştirilebilir ve boyutlandırılabilir.
+
+![Açıklama](custom_layout_editor.png)
+
+| No | Öğe | Açıklama |
+|-----|---------|-------------|
+| ❶ | Hücre ekle | Yeni bir hücre ekler (maks. 8). |
+| ❷ | Izgara | Taşıma/boyutlandırma sırasında yakalama hassasiyeti (%1, %5 veya %10). |
+| ❸ | Kaydırıcı | Ayarlanabilir bir ayırıcı çizgi belirler: yatay (↔), dikey (↕) veya yok (—). Yeşil çizgi editörde sürüklenebilir ve çalışma zamanında bölünme ayarı yapılabilir. |
+| ❹ | Hücreler | Her numaralı hücre sürüklenerek taşınabilir ve köşe/kenar tutamaçları ile boyutlandırılabilir. |
+| ❺ | Özellikler | Seçili hücrenin yüzde olarak X/Y konumu ve genişlik/yüksekliği. Değerler doğrudan da girilebilir. |
+| ❻ | Hücre kaldır | Seçili hücreyi kaldırır. |
+
+Üst üste binen hücreler yığılır — üstteki hücre girişi alır. Düzen onaylandıktan sonra, önceden tanımlanmış ızgaralarda olduğu gibi profil ataması yapılır.
+
 **İlgili ayarlar** (Ayarlar / Layout altında):
 - **Grid sekmelerini sıralı yükle** — Sekmeleri aynı anda değil sırayla başlat
 - **Değişikliklerde layoutları güncelle** — Layout değişikliklerini otomatik kaydet

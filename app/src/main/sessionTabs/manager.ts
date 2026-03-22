@@ -5,8 +5,8 @@ import { registerUiPositionInjection } from "./uiPositionInjector";
 import type { SessionWindowController } from "../windows/sessionWindow";
 import { GRID_CONFIGS, LAYOUT, TIMINGS } from "../../shared/constants";
 import { logErr } from "../../shared/logger"; // Added import
-import type { GridCell, MultiViewLayout } from "../../shared/schemas";
-import { getBundledFontFaceCSS } from "./bundledFonts";
+import type { CustomCell, GridCell, MultiViewLayout } from "../../shared/schemas";
+import { getBundledFontParts } from "./bundledFonts";
 export function createSessionTabsManager(opts: {
     sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
     flyffUrl: string;
@@ -38,10 +38,12 @@ export function createSessionTabsManager(opts: {
     let uiPositionPersistenceEnabled = false;
     // Font injection state
     const fontNavigateCleanups = new Map<string, () => void>();
-    // Maps each BrowserView to the CSS key returned by insertCSS (used for removal).
+    // Maps each BrowserView to the CSS keys returned by insertCSS (used for removal).
     // Keys become invalid after page navigation, but we still track them so we can
     // call removeInsertedCSS when explicitly clearing the font (font set to null).
     const fontCssKeysByView = new Map<BrowserView, string>();
+    // Separate tracking for @font-face CSS (injected at author origin).
+    const fontFaceCssKeysByView = new Map<BrowserView, string>();
     let currentGameFont: string | null = null;
     // Track which session partitions have already had their font CSP patched.
     const patchedFontCspSessions = new Set<string>();
@@ -137,12 +139,18 @@ export function createSessionTabsManager(opts: {
             logErr(err, "SessionTabs");
         }
     }
-    function buildFontCSS(font: string): string {
-        // For bundled fonts: @font-face with data URI + font-family override.
-        const bundled = getBundledFontFaceCSS(font);
-        if (bundled) return bundled;
-        // For system / custom fonts: just the font-family override (no @font-face needed).
-        return `*, *::before, *::after { font-family: ${JSON.stringify(font)}, sans-serif !important; }`;
+    /**
+     * Returns { fontFace, override } for bundled fonts, or { fontFace: null, override } for system fonts.
+     * fontFace must be injected at author origin (Chromium ignores @font-face in user stylesheets).
+     * override is injected at user origin for highest cascade priority.
+     */
+    function buildFontCSS(font: string): { fontFace: string | null; override: string } {
+        const parts = getBundledFontParts(font);
+        if (parts) return { fontFace: parts.fontFace, override: parts.override };
+        return {
+            fontFace: null,
+            override: `*, *::before, *::after { font-family: ${JSON.stringify(font)}, sans-serif !important; }`,
+        };
     }
 
     /**
@@ -190,11 +198,8 @@ export function createSessionTabsManager(opts: {
             '})()',
         ].join('');
     }
-    function applyFontToView(view: BrowserView): void {
-        if (view.webContents.isDestroyed()) return;
-
-        // Always remove the previously injected CSS first (key is page-scoped and
-        // becomes invalid after navigation anyway, but explicit removal is cleaner).
+    function removePreviousFontCss(view: BrowserView): void {
+        // Remove override CSS (user origin)
         const prevKey = fontCssKeysByView.get(view);
         if (prevKey) {
             fontCssKeysByView.delete(view);
@@ -205,10 +210,27 @@ export function createSessionTabsManager(opts: {
                 }
             } catch { /* view may be destroyed */ }
         }
-        // Also remove the complementary <style> element injected via executeJavaScript.
+        // Remove @font-face CSS (author origin)
+        const prevFfKey = fontFaceCssKeysByView.get(view);
+        if (prevFfKey) {
+            fontFaceCssKeysByView.delete(view);
+            try {
+                const rm = view.webContents.removeInsertedCSS(prevFfKey);
+                if (rm && typeof (rm as Promise<void>).then === "function") {
+                    (rm as Promise<void>).catch(() => {});
+                }
+            } catch { /* view may be destroyed */ }
+        }
+        // Remove complementary <style> element
         view.webContents.executeJavaScript(
             `(function(){var s=document.getElementById('__lch_font__');if(s)s.remove();})()`
         ).catch(() => {});
+    }
+
+    function applyFontToView(view: BrowserView): void {
+        if (view.webContents.isDestroyed()) return;
+
+        removePreviousFontCss(view);
 
         const font = currentGameFont;
         if (!font) {
@@ -219,13 +241,28 @@ export function createSessionTabsManager(opts: {
             return;
         }
 
-        const css = buildFontCSS(font);
+        const { fontFace, override } = buildFontCSS(font);
 
-        // ── Primary: insertCSS with user origin ──────────────────────────────
+        // ── @font-face: insertCSS at author origin ───────────────────────────
+        // Chromium ignores @font-face rules in user-origin stylesheets, so
+        // the font data must be registered at the default (author) origin.
+        if (fontFace) {
+            try {
+                const res = view.webContents.insertCSS(fontFace);
+                const setKey = (key: string) => { fontFaceCssKeysByView.set(view, key); };
+                if (res && typeof (res as Promise<string>).then === "function") {
+                    (res as Promise<string>).then(setKey).catch((e) => logErr(e, "SessionTabs"));
+                } else if (typeof res === "string") {
+                    setKey(res as string);
+                }
+            } catch (e) { logErr(e, "SessionTabs"); }
+        }
+
+        // ── Font-family override: insertCSS with user origin ─────────────────
         // cssOrigin:'user' gives our stylesheet the highest cascade priority:
         // user !important > author !important, regardless of specificity.
         try {
-            const res = view.webContents.insertCSS(css, { cssOrigin: "user" });
+            const res = view.webContents.insertCSS(override, { cssOrigin: "user" });
             const setKey = (key: string) => { fontCssKeysByView.set(view, key); };
             if (res && typeof (res as Promise<string>).then === "function") {
                 (res as Promise<string>).then(setKey).catch((e) => logErr(e, "SessionTabs"));
@@ -237,9 +274,9 @@ export function createSessionTabsManager(opts: {
         // ── Complementary: <style> element via executeJavaScript ─────────────
         // Handles edge cases where insertCSS alone may not be effective
         // (e.g. canvas-based overlays, iframes with strict isolation, etc.).
-        // The CSS string is safe to embed: base64 contains no backticks or ${.
         try {
-            const escaped = css.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
+            const fullCss = fontFace ? `${fontFace}\n${override}` : override;
+            const escaped = fullCss.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
             view.webContents.executeJavaScript(`(function(){
                 try {
                     var s=document.getElementById('__lch_font__');
@@ -400,6 +437,96 @@ export function createSessionTabsManager(opts: {
         }
         return result;
     }
+    function computeRow3Bounds(
+        bounds: ViewBounds,
+        cells: GridCell[],
+        ratio: number,
+        gap: number
+    ): Array<{ id: string; bounds: ViewBounds; position: number }> {
+        if (cells.length === 0) return [];
+        const clamped = clampSplitRatio(ratio);
+        const leftCell = cells.find((c) => c.position === 0) ?? cells[0];
+        const midCell = cells.find((c) => c.position === 1) ?? cells[1];
+        const rightCell = cells.find((c) => c.position === 2) ?? cells[2];
+        const count = [leftCell, midCell, rightCell].filter(Boolean).length;
+        const totalGap = gap * Math.max(0, count - 1);
+        const usable = bounds.width - totalGap;
+        const midWidth = midCell ? Math.max(1, Math.floor(usable * clamped)) : 0;
+        const sideTotal = Math.max(0, usable - midWidth);
+        const leftWidth = leftCell ? Math.max(1, Math.floor(sideTotal / 2)) : 0;
+        const rightWidth = rightCell ? Math.max(1, sideTotal - leftWidth) : 0;
+        const result: Array<{ id: string; bounds: ViewBounds; position: number }> = [];
+        let x = bounds.x;
+        if (leftCell) {
+            result.push({ id: leftCell.id, position: leftCell.position, bounds: { x, y: bounds.y, width: leftWidth, height: bounds.height } });
+            x += leftWidth + gap;
+        }
+        if (midCell) {
+            result.push({ id: midCell.id, position: midCell.position, bounds: { x, y: bounds.y, width: midWidth, height: bounds.height } });
+            x += midWidth + gap;
+        }
+        if (rightCell) {
+            result.push({ id: rightCell.id, position: rightCell.position, bounds: { x, y: bounds.y, width: rightWidth, height: bounds.height } });
+        }
+        return result;
+    }
+    function computeCustomBounds(
+        bounds: ViewBounds,
+        customCells: CustomCell[],
+        cells: GridCell[],
+        sliderLine?: { axis: "x" | "y"; pos: number } | null,
+        ratio?: number
+    ): Array<{ id: string; bounds: ViewBounds; position: number }> {
+        return customCells.map((cc, i) => {
+            const cell = cells.find(c => c.position === i);
+            if (!cell) return null;
+            let cx = cc.x, cy = cc.y, cw = cc.width, ch = cc.height;
+            // Apply slider line adjustment: scale cells proportionally within their group
+            if (sliderLine && ratio !== undefined) {
+                const linePos = sliderLine.pos;
+                const newLinePos = ratio * 100;
+                if (sliderLine.axis === "x") {
+                    const center = cx + cw / 2;
+                    if (center < linePos && linePos > 0) {
+                        // Group A (left of line) – scale into [0, newLinePos]
+                        const scale = newLinePos / linePos;
+                        cx = cx * scale;
+                        cw = cw * scale;
+                    } else if (center >= linePos && linePos < 100) {
+                        // Group B (right of line) – scale into [newLinePos, 100]
+                        const oldRange = 100 - linePos;
+                        const newRange = 100 - newLinePos;
+                        const scale = newRange / oldRange;
+                        cx = newLinePos + (cx - linePos) * scale;
+                        cw = cw * scale;
+                    }
+                } else {
+                    const center = cy + ch / 2;
+                    if (center < linePos && linePos > 0) {
+                        const scale = newLinePos / linePos;
+                        cy = cy * scale;
+                        ch = ch * scale;
+                    } else if (center >= linePos && linePos < 100) {
+                        const oldRange = 100 - linePos;
+                        const newRange = 100 - newLinePos;
+                        const scale = newRange / oldRange;
+                        cy = newLinePos + (cy - linePos) * scale;
+                        ch = ch * scale;
+                    }
+                }
+            }
+            return {
+                id: cell.id,
+                position: cell.position,
+                bounds: {
+                    x: bounds.x + Math.round(bounds.width * cx / 100),
+                    y: bounds.y + Math.round(bounds.height * cy / 100),
+                    width: Math.max(1, Math.round(bounds.width * cw / 100)),
+                    height: Math.max(1, Math.round(bounds.height * ch / 100)),
+                },
+            };
+        }).filter(Boolean) as Array<{ id: string; bounds: ViewBounds; position: number }>;
+    }
     function computeMainColsBounds(
         bounds: ViewBounds,
         cells: GridCell[],
@@ -514,6 +641,17 @@ export function createSessionTabsManager(opts: {
             const ratio = clampSplitRatio(effectiveLayout.ratio ?? sessionSplitRatio);
             sessionSplitRatio = ratio;
             return computeSplit2Bounds(sessionBounds, orderedCells, ratio, gridGap);
+        }
+        if (effectiveLayout.type === "row-3") {
+            const ratio = clampSplitRatio(effectiveLayout.ratio ?? sessionSplitRatio);
+            sessionSplitRatio = ratio;
+            return computeRow3Bounds(sessionBounds, orderedCells, ratio, gridGap);
+        }
+        if (effectiveLayout.type === "custom" && effectiveLayout.customCells) {
+            const sl = effectiveLayout.sliderLine;
+            const r = sl ? clampSplitRatio(effectiveLayout.ratio ?? sessionSplitRatio) : undefined;
+            if (sl) sessionSplitRatio = r!;
+            return computeCustomBounds(sessionBounds, effectiveLayout.customCells, orderedCells, sl, r);
         }
         const config2 = GRID_CONFIGS[effectiveLayout.type];
         if ("variant" in config2) {
@@ -781,6 +919,7 @@ export function createSessionTabsManager(opts: {
         const fontCleanup = fontNavigateCleanups.get(profileId);
         if (fontCleanup) { fontCleanup(); fontNavigateCleanups.delete(profileId); }
         fontCssKeysByView.delete(view);
+        fontFaceCssKeysByView.delete(view);
         removeActiveBorder(view);
         const win = opts.sessionWindow.get();
         if (win) {
@@ -1188,6 +1327,8 @@ export function createSessionTabsManager(opts: {
             cells,
             ratio: sessionSplitRatio,
             activePosition,
+            customCells: layout.customCells,
+            sliderLine: layout.sliderLine,
         };
         sessionActiveId = cells.find((c) => c.position === activePosition)?.id ?? cells[0].id;
         applyActiveBrowserView();
@@ -1287,7 +1428,8 @@ export function createSessionTabsManager(opts: {
         sessionSplitRatio = next;
         if (sessionLayout) {
             const cfg = GRID_CONFIGS[sessionLayout.type];
-            if (sessionLayout.type === "split-2" || "variant" in cfg)
+            const isCustomWithSlider = sessionLayout.type === "custom" && !!sessionLayout.sliderLine;
+            if (sessionLayout.type === "split-2" || sessionLayout.type === "row-3" || isCustomWithSlider || "variant" in cfg)
                 sessionLayout = { ...sessionLayout, ratio: next };
         }
         applyActiveBrowserView();
@@ -1309,6 +1451,7 @@ export function createSessionTabsManager(opts: {
         for (const cleanup of fontNavigateCleanups.values()) cleanup();
         fontNavigateCleanups.clear();
         fontCssKeysByView.clear();
+        fontFaceCssKeysByView.clear();
         patchedFontCspSessions.clear();
         hoverBorderTargetId = null;
         lastLayoutSnapshot = [];

@@ -145,6 +145,23 @@ Zapisane layouty wyświetlane są jako karta na liście profili:
 - **„Graj”** uruchamia cały layout.
 - **Koło zębate** otwiera ustawienia layoutu (nazwa, przypisanie profili, siatka).
 
+**Niestandardowy układ (Custom):**
+
+Oprócz predefiniowanych siatek opcja **„Niestandardowy"** pozwala stworzyć dowolny układ. W edytorze można swobodnie umieszczać i zmieniać rozmiar 1–8 komórek na płótnie.
+
+![Opis](custom_layout_editor.png)
+
+| Nr | Element | Opis |
+|-----|---------|-------------|
+| ❶ | Dodaj komórkę | Dodaje nową komórkę (maks. 8). |
+| ❷ | Siatka | Dokładność przyciągania przy przesuwaniu/zmianie rozmiaru (1%, 5% lub 10%). |
+| ❸ | Suwak | Ustawia regulowaną linię podziału: poziomą (↔), pionową (↕) lub brak (—). Zielona linia może być przeciągana w edytorze i umożliwia dostosowanie podziału w trakcie użytkowania. |
+| ❹ | Komórki | Każda ponumerowana komórka może być przeciągana i zmieniana za pomocą uchwytów na rogach i krawędziach. |
+| ❺ | Właściwości | Pozycja X/Y oraz szerokość/wysokość wybranej komórki w procentach. Wartości można również wpisać bezpośrednio. |
+| ❻ | Usuń komórkę | Usuwa aktualnie wybraną komórkę. |
+
+Nakładające się komórki są układane w stos — górna komórka odbiera dane wejściowe. Po zatwierdzeniu układu następuje przypisanie profili, jak w przypadku predefiniowanych siatek.
+
 **Powiązane ustawienia** (w Ustawienia / Layout):
 - **Ładuj karty siatki sekwencyjnie** — Uruchamiaj karty po kolei zamiast jednocześnie
 - **Aktualizuj layouty przy zmianach** — Automatycznie zapisuj zmiany layoutu

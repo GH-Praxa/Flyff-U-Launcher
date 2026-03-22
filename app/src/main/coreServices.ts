@@ -21,6 +21,7 @@ import type { LoadView } from "./viewLoader";
 import { logErr } from "../shared/logger";
 import { createFeatureStore } from "./features/store";
 import { createClientSettingsStore } from "./clientSettings/store";
+import { applyFontToWebContents, registerFontListener, cleanupWebContents } from "./fontInjector";
 
 // ============================================================================
 // Types
@@ -41,6 +42,7 @@ export type CoreServices = {
     createInstanceWindow: (profileId: string) => Promise<void>;
     createTabWindow: (opts?: { name?: string }) => Promise<string>; // Returns windowId
     createLauncherWindow: typeof createLauncherWindow;
+    setInstanceFont: (font: string | null) => void;
 };
 
 export type CreateCoreServicesOptions = {
@@ -178,6 +180,21 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         return id;
     };
 
+    // ── Instance window font state ──────────────────────────────────────
+    let instanceGameFont: string | null = null;
+    // Track font listeners so they can be cleaned up when windows close.
+    const instanceFontCleanups = new Map<number, () => void>();
+
+    /** Applies the current font to all open instance windows. */
+    function setInstanceFont(font: string | null): void {
+        instanceGameFont = font;
+        for (const { win } of instances.all()) {
+            if (!win.isDestroyed()) {
+                applyFontToWebContents(win.webContents, font);
+            }
+        }
+    }
+
     // Instance window factory
     const createInstanceWindowBound = async (profileId: string) => {
         const settings = await clientSettings.get();
@@ -209,7 +226,20 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             win.webContents,
             () => sessionTabs.getUiPositionPersistenceEnabled(),
         );
-        win.on("closed", release);
+        // Font injection for instance windows
+        instanceGameFont = settings.gameFont ?? null;
+        const fontCleanup = registerFontListener(
+            win.webContents,
+            () => instanceGameFont,
+        );
+        const winId = win.id;
+        instanceFontCleanups.set(winId, fontCleanup);
+        win.on("closed", () => {
+            release();
+            const cleanup = instanceFontCleanups.get(winId);
+            if (cleanup) { cleanup(); instanceFontCleanups.delete(winId); }
+            cleanupWebContents(win.webContents);
+        });
         instances.register(profileId, win);
 
         // Notify plugins through optional callback
@@ -237,6 +267,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         createInstanceWindow: createInstanceWindowBound,
         createTabWindow: createTabWindowBound,
         createLauncherWindow,
+        setInstanceFont,
     };
 }
 

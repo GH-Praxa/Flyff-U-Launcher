@@ -376,6 +376,8 @@ app.whenReady().then(async () => {
             entry.tabsManager.setGameFont?.(settings.gameFont ?? null);
             entry.tabsManager.setUiPositionPersistenceEnabled?.(settings.persistGameUiPositions ?? false);
         }
+        // Propagate font to instance windows
+        services.setInstanceFont(settings.gameFont ?? null);
         if (launcherWindow && !launcherWindow.isDestroyed()) {
             const display = screen.getDisplayMatching(launcherWindow.getBounds()) ?? screen.getPrimaryDisplay();
             const nextSize = fitLauncherSizeToWorkArea(launcherSize, display?.workAreaSize);

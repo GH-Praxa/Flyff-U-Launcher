@@ -145,6 +145,23 @@ Gespeicherte Layouts werden als Karte in der Profilliste angezeigt:
 - Über **„Spielen"** wird das gesamte Layout gestartet.
 - Über das **Zahnrad** lassen sich Layout-Einstellungen anpassen (Name, Profil-Zuordnung, Raster).
 
+**Benutzerdefiniertes Layout (Custom):**
+
+Neben den vordefinierten Rastern kann über die Option **„Benutzerdefiniert"** ein freies Layout erstellt werden. Im Editor lassen sich 1–8 Zellen frei auf einer Leinwand platzieren und in der Größe anpassen.
+
+![Beschreibung](custom_layout_editor.png)
+
+| Nr. | Element | Beschreibung |
+|-----|---------|-------------|
+| ❶ | Zelle hinzufügen | Fügt eine neue Zelle hinzu (max. 8). |
+| ❷ | Raster | Einrast-Genauigkeit beim Verschieben/Ändern der Größe (1 %, 5 % oder 10 %). |
+| ❸ | Slider | Legt eine verstellbare Trennlinie fest: horizontal (↔), vertikal (↕) oder keine (—). Die grüne Linie kann im Editor verschoben werden und dient zur Laufzeit-Anpassung der Aufteilung. |
+| ❹ | Zellen | Jede nummerierte Zelle kann per Drag verschoben und über die Griffe an Ecken und Kanten in der Größe verändert werden. |
+| ❺ | Eigenschaften | X/Y-Position und Breite/Höhe der ausgewählten Zelle in Prozent. Werte können auch direkt eingegeben werden. |
+| ❻ | Zelle entfernen | Entfernt die aktuell ausgewählte Zelle. |
+
+Überlappende Zellen werden gestapelt — die oberste Zelle empfängt die Eingaben. Nach dem Bestätigen des Layouts folgt die Profil-Zuweisung wie bei den vordefinierten Rastern.
+
 **Relevante Einstellungen** (unter Einstellungen / Layout):
 - **Grid-Tabs sequentiell laden** — Tabs nacheinander statt gleichzeitig starten
 - **Layouts bei Änderungen aktualisieren** — Änderungen am Layout automatisch speichern

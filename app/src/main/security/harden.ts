@@ -133,6 +133,10 @@ const ALLOWED_GAME_DOMAINS = [
     "universe.flyff.com",
     "accounts.google.com",
     "www.google.com",
+    "www.facebook.com",
+    "m.facebook.com",
+    "facebook.com",
+    "appleid.apple.com",
 ];
 
 function isAllowedUrl(url: string): boolean {

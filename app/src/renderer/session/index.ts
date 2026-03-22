@@ -3,6 +3,7 @@ import type { TranslationKey } from "../../i18n/translations";
 import { logErr } from "../../shared/logger";
 import { formatHotkey } from "../../shared/hotkeys";
 import { GRID_CONFIGS, LAYOUT as LAYOUT_CONST } from "../../shared/constants";
+import { showCustomLayoutEditor } from "../customLayoutEditor";
 import {
     flyffuniverseIcon,
     flyffipediaIcon,
@@ -25,9 +26,11 @@ import {
     setToastDurationSeconds,
     syncLocaleFromSettings,
     setSequentialGridLoad,
+    applyLauncherFont,
+    applyLauncherFontSize,
 } from "../settings";
 import { type Profile, qs, el, clear, createJobIcon, showToast, withTimeout, fetchTabLayouts } from "../dom-utils";
-import { layoutTooltips } from "../launcher/profile-selectors";
+import { layoutTooltips, generateCustomAscii } from "../launcher/profile-selectors";
 import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUnifiedUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
 import { setRootVar } from "../cssVarsManager";
 import { applyStoredTabActiveColor } from "../theme";
@@ -191,21 +194,32 @@ export async function renderSession(root: HTMLElement) {
     // Listen for live settings changes (e.g. RAM toggle from config modal)
     window.ipc?.on?.("clientSettings:changed", (settings: unknown) => {
         const s = settings as Record<string, unknown> | null;
-        if (s && typeof s === "object" && "showRamUsage" in s) {
+        if (!s || typeof s !== "object") return;
+        if ("showRamUsage" in s) {
             if (s.showRamUsage) startRamPolling(); else stopRamPolling();
+        }
+        if ("gameFont" in s) {
+            applyLauncherFont(typeof s.gameFont === "string" ? s.gameFont : null);
+        }
+        if ("launcherFontSize" in s) {
+            applyLauncherFontSize(typeof s.launcherFontSize === "number" ? s.launcherFontSize : null);
         }
     });
     // Layout types need to be defined before Tab type
 
     type LayoutType = keyof typeof GRID_CONFIGS;
 
-    function isResizableLayout(type: LayoutType): boolean {
-        if (type === "split-2") return true;
+    function isResizableLayout(type: LayoutType, layout?: LayoutState | null): boolean {
+        if (type === "split-2" || type === "row-3") return true;
+        if (type === "custom" && layout?.sliderLine) return true;
         const cfg = GRID_CONFIGS[type];
         return "variant" in cfg;
     }
 
     type GridCell = { id: string; position: number };
+
+    type CustomCellData = { id: string; x: number; y: number; width: number; height: number };
+    type SliderLineData = { axis: "x" | "y"; pos: number };
 
     type LayoutState = {
 
@@ -213,6 +227,8 @@ export async function renderSession(root: HTMLElement) {
         cells: GridCell[];
         ratio?: number;
         activePosition?: number;
+        customCells?: CustomCellData[];
+        sliderLine?: SliderLineData;
     };
     // Tab types - support for single-profile and layout tabs
 
@@ -691,6 +707,8 @@ export async function renderSession(root: HTMLElement) {
                 cells: orderedCells,
                 ratio: layout.ratio,
                 activePosition: layout.activePosition ?? orderedCells[0].position,
+                customCells: layout.customCells,
+                sliderLine: layout.sliderLine,
             };
             await window.api.sessionTabsSetMultiLayout(skeletonLayout, { ensureViews: false, allowMissingViews: true }).catch(console.error);
             pushBoundsInternal(true);
@@ -716,6 +734,8 @@ export async function renderSession(root: HTMLElement) {
                 cells: orderedCells,
                 ratio: layout.ratio ?? currentSplitRatio,
                 activePosition: skeletonLayout.activePosition,
+                customCells: layout.customCells,
+                sliderLine: layout.sliderLine,
             };
             await window.api.sessionTabsSetMultiLayout(finalLayoutForMain, { ensureViews: true, allowMissingViews: false }).catch(console.error);
             // Fortschritt wird nur abgeschlossen, wenn alle geplanten Tabs/Views fertig sind
@@ -796,8 +816,11 @@ export async function renderSession(root: HTMLElement) {
         const activePosition = next.activePosition !== undefined && cells.some((c) => c.position === next.activePosition)
             ? next.activePosition
             : cells[0].position;
-        const ratio = isResizableLayout(next.type) ? clampSplitRatio(next.ratio ?? currentSplitRatio) : undefined;
-        return { type: next.type, cells, ratio, activePosition };
+        const ratio = isResizableLayout(next.type, next) ? clampSplitRatio(next.ratio ?? currentSplitRatio) : undefined;
+        const result: LayoutState = { type: next.type, cells, ratio, activePosition };
+        if (next.customCells) result.customCells = next.customCells;
+        if (next.sliderLine) result.sliderLine = next.sliderLine;
+        return result;
     }
 
     function pruneLayoutState(): void {
@@ -1328,6 +1351,7 @@ export async function renderSession(root: HTMLElement) {
         "main-r3": "1+3 \u2192",
         "main-b2": "1+2 \u2193",
         "main-b3": "1+3 \u2193",
+        "custom":  t("layout.custom"),
     };
     // Helper function to update window title based on current tabs
 
@@ -1446,7 +1470,7 @@ export async function renderSession(root: HTMLElement) {
 
     function syncSplitSlider() {
 
-        if (!layoutState || !isResizableLayout(layoutState.type)) {
+        if (!layoutState || !isResizableLayout(layoutState.type, layoutState)) {
             splitControls.style.display = "none";
             splitSlider.disabled = true;
             return;
@@ -1458,11 +1482,20 @@ export async function renderSession(root: HTMLElement) {
         const pct = Math.round(ratio * 100);
         const pctOther = Math.max(0, 100 - pct);
         splitSlider.value = String(pct);
-        const isVertical = layoutState.type.startsWith("main-b");
-        splitSliderValue.textContent = isVertical ? `${pct}% ↕ ${pctOther}%` : `${pct}% ↔ ${pctOther}%`;
+        if (layoutState.type === "row-3") {
+            const sidePct = Math.max(0, Math.floor(pctOther / 2));
+            const sidePctR = Math.max(0, pctOther - sidePct);
+            splitSliderValue.textContent = `${sidePct}% ↔ ${pct}% ↔ ${sidePctR}%`;
+        } else if (layoutState.type === "custom" && layoutState.sliderLine) {
+            const isVert = layoutState.sliderLine.axis === "y";
+            splitSliderValue.textContent = isVert ? `${pct}% ↕ ${pctOther}%` : `${pct}% ↔ ${pctOther}%`;
+        } else {
+            const isVertical = layoutState.type.startsWith("main-b");
+            splitSliderValue.textContent = isVertical ? `${pct}% ↕ ${pctOther}%` : `${pct}% ↔ ${pctOther}%`;
+        }
     }
     splitSlider.addEventListener("input", () => {
-        if (!layoutState || !isResizableLayout(layoutState.type))
+        if (!layoutState || !isResizableLayout(layoutState.type, layoutState))
             return;
         const pct = Number(splitSlider.value);
         if (!Number.isFinite(pct))
@@ -1748,6 +1781,8 @@ export async function renderSession(root: HTMLElement) {
                             cells: saved.layout.cells,
                             ratio: saved.layout.ratio,
                             activePosition: saved.layout.activePosition,
+                            customCells: (saved.layout as LayoutState).customCells,
+                            sliderLine: (saved.layout as LayoutState).sliderLine,
                         });
                         layoutsToRestore.push({ name: saved.name, layout: normalized });
                         for (const cell of normalized.cells) {
@@ -1825,6 +1860,8 @@ export async function renderSession(root: HTMLElement) {
                         cells: sortedCells,
                         ratio: layoutForTab.ratio,
                         activePosition: layoutForTab.activePosition ?? sortedCells[0].position,
+                        customCells: layoutForTab.customCells,
+                        sliderLine: layoutForTab.sliderLine,
                     };
                     await window.api.sessionTabsSetMultiLayout(skeletonLayout, { ensureViews: false, allowMissingViews: true }).catch(console.error);
                     pushBoundsInternal(true);
@@ -1996,9 +2033,24 @@ export async function renderSession(root: HTMLElement) {
         }
         for (const layout of layouts) {
             const metaParts = [`${layout.tabs.length} Tabs`];
-            if (layout.split)
+            const firstSaved = layout.layouts?.[0]?.layout;
+            const splitObj = layout.split && "type" in layout.split ? layout.split : null;
+            const savedType = (firstSaved?.type ?? (splitObj as { type?: string } | null)?.type) as LayoutType | undefined;
+            if (savedType && layoutLabels[savedType]) {
+                metaParts.push(layoutLabels[savedType]);
+            } else if (layout.split) {
                 metaParts.push("Split");
-            const item = el("button", "pickerItem", `${layout.name} (${metaParts.join("  ")})`) as HTMLButtonElement;
+            }
+            const item = el("button", "pickerItem layoutPickerItem") as HTMLButtonElement;
+            const itemLabel = el("span", "", `${layout.name} (${metaParts.join(" \u00b7 ")})`);
+            item.append(itemLabel);
+            // Generate ASCII preview for custom layouts
+            const sourceLayout = firstSaved ?? (splitObj as { type?: string; customCells?: Array<{ x: number; y: number; width: number; height: number }> } | null);
+            if (sourceLayout?.type === "custom" && sourceLayout.customCells && sourceLayout.customCells.length > 0) {
+                const preview = el("pre", "layoutPickerPreview");
+                preview.textContent = generateCustomAscii(sourceLayout.customCells);
+                item.append(preview);
+            }
             item.onclick = async () => {
                 await applyLayout(layout);
                 await close();
@@ -2937,14 +2989,19 @@ export async function renderSession(root: HTMLElement) {
     async function showGridConfigModal(type: LayoutType, initial?: LayoutState | null): Promise<LayoutState | null> {
 
         const config = GRID_CONFIGS[type];
+        // For custom layouts, determine cell count from the initial editor result
+        const customSlotCount = type === "custom" && initial?.cells ? initial.cells.length : 0;
+        const effectiveCols = type === "custom" ? Math.min(customSlotCount, 4) || 1 : config.cols;
+        const effectiveRows = type === "custom" ? Math.ceil(customSlotCount / effectiveCols) || 1 : config.rows;
+        const effectiveMaxViews = type === "custom" ? customSlotCount : config.maxViews;
         const overlay = el("div", "modalOverlay");
         const modal = el("div", "modal gridConfigModal");
         const header = el("div", "modalHeader", layoutLabels[type] ?? t("layout.select"));
         const body = el("div", "modalBody");
         const hint = el("div", "modalHint", t("layout.gridHint"));
         const grid = el("div", "layoutGrid") as HTMLDivElement;
-        grid.style.gridTemplateColumns = `repeat(${config.cols}, minmax(${LAYOUT_CONST.MIN_CELL_WIDTH}px, 1fr))`;
-        grid.style.gridTemplateRows = `repeat(${config.rows}, minmax(${LAYOUT_CONST.MIN_CELL_HEIGHT}px, 1fr))`;
+        grid.style.gridTemplateColumns = `repeat(${effectiveCols}, minmax(${LAYOUT_CONST.MIN_CELL_WIDTH}px, 1fr))`;
+        grid.style.gridTemplateRows = `repeat(${effectiveRows}, minmax(${LAYOUT_CONST.MIN_CELL_HEIGHT}px, 1fr))`;
         const actions = el("div", "manageActions");
         const btnSave = el("button", "btn primary", t("create.save")) as HTMLButtonElement;
         const btnCancel = el("button", "btn", t("create.cancel")) as HTMLButtonElement;
@@ -3001,7 +3058,7 @@ export async function renderSession(root: HTMLElement) {
         function renderGrid() {
             grid.innerHTML = "";
             pickerContainer.innerHTML = "";
-            const maxCells = Math.min(config.maxViews, config.rows * config.cols);
+            const maxCells = Math.min(effectiveMaxViews, effectiveRows * effectiveCols);
             for (let pos = 0; pos < maxCells; pos++) {
                 const current = cells.find((c) => c.position === pos);
                 // Show only position number, profile name shown on hover/selection
@@ -3124,6 +3181,8 @@ export async function renderSession(root: HTMLElement) {
         return done;
     }
 
+    // showCustomLayoutEditor is now imported from ../customLayoutEditor
+
     async function showLayoutSelector() {
 
         await hideSessionViews();
@@ -3142,14 +3201,48 @@ export async function renderSession(root: HTMLElement) {
         modal.append(header, body);
         overlay.append(modal);
         document.body.append(overlay);
-        const options: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8"];
+        const options: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8", "custom"];
         options.forEach((opt) => {
             const item = el("button", "pickerItem", layoutLabels[opt]) as HTMLButtonElement;
             item.addEventListener("mouseenter", () => {
-                previewArt.textContent = layoutTooltips[opt];
+                previewArt.textContent = layoutTooltips[opt] ?? "";
             });
             item.onclick = async () => {
                 overlay.remove();
+                if (opt === "custom") {
+                    const existingCustom = layoutState?.type === "custom" ? layoutState : null;
+                    const editorResult = await showCustomLayoutEditor(existingCustom);
+                    if (!editorResult) {
+                        await showSessionViews();
+                        kickBounds();
+                        return;
+                    }
+                    // Build initial LayoutState with placeholder slots for grid config
+                    const initialForGrid: LayoutState = {
+                        type: "custom",
+                        cells: editorResult.cells.map((_c, i) => ({ id: `__slot${i}__`, position: i })),
+                        activePosition: 0,
+                    };
+                    // Show grid config modal for profile assignment
+                    const configured = await showGridConfigModal("custom", initialForGrid);
+                    await showSessionViews();
+                    kickBounds();
+                    if (configured) {
+                        // Merge customCells and sliderLine from editor
+                        configured.customCells = editorResult.cells.map((c, i) => ({
+                            id: configured.cells.find(cell => cell.position === i)?.id ?? `__slot${i}__`,
+                            ...c,
+                        }));
+                        if (editorResult.sliderLine) {
+                            configured.sliderLine = editorResult.sliderLine;
+                            configured.ratio = editorResult.ratio;
+                        }
+                        const activeTab = getActiveTab();
+                        const targetId = activeTab?.type === "layout" ? activeTab.id : null;
+                        await activateMultiLayout(configured, undefined, targetId);
+                    }
+                    return;
+                }
                 const activeTab = getActiveTab();
                 const initial = layoutState?.type === opt ? layoutState : null;
                 const targetLayoutTabId = initial && activeTab?.type === "layout" ? activeTab.id : null;
@@ -3262,7 +3355,7 @@ export async function renderSession(root: HTMLElement) {
         openTab(profileId).catch(console.error);
     });
     window.api.onOpenTabWithLayout?.((profileId: string, layoutType: string) => {
-        const validTypes: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8"];
+        const validTypes: LayoutType[] = ["single", "split-2", "row-3", "row-4", "grid-4", "grid-5", "grid-6", "grid-7", "grid-8", "custom"];
         if (!validTypes.includes(layoutType as LayoutType)) {
             console.error("Invalid layout type:", layoutType);
             openTab(profileId).catch(console.error);

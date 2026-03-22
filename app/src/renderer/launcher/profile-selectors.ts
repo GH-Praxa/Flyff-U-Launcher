@@ -2,8 +2,57 @@ import { GRID_CONFIGS } from "../../shared/constants";
 import type { TranslationKey } from "../../i18n/translations";
 import { el } from "../dom-utils";
 import { t } from "../i18n";
+import { showCustomLayoutEditor } from "../customLayoutEditor";
 
 type LayoutType = keyof typeof GRID_CONFIGS;
+
+/**
+ * Generates an ASCII-art preview from custom layout cells.
+ * Each cell is defined by x/y/width/height in percent (0-100).
+ * Output is a fixed grid of characters representing the layout.
+ */
+export function generateCustomAscii(cells: Array<{ x: number; y: number; width: number; height: number }>): string {
+    const W = 12; // character columns
+    const H = 5;  // character rows
+    // Initialize grid with spaces
+    const grid: string[][] = [];
+    for (let r = 0; r < H; r++) {
+        grid.push(new Array(W).fill(" "));
+    }
+    // Draw each cell
+    for (let ci = 0; ci < cells.length; ci++) {
+        const c = cells[ci];
+        const x1 = Math.round(c.x / 100 * W);
+        const y1 = Math.round(c.y / 100 * H);
+        const x2 = Math.min(W, Math.round((c.x + c.width) / 100 * W));
+        const y2 = Math.min(H, Math.round((c.y + c.height) / 100 * H));
+        if (x2 <= x1 || y2 <= y1) continue;
+        const label = String(ci + 1);
+        // Draw borders
+        for (let x = x1; x < x2; x++) {
+            if (y1 < H) grid[y1][x] = "-";
+            if (y2 - 1 < H) grid[y2 - 1][x] = "-";
+        }
+        for (let y = y1; y < y2; y++) {
+            if (x1 < W) grid[y][x1] = "|";
+            if (x2 - 1 < W) grid[y][x2 - 1] = "|";
+        }
+        // Corners
+        if (y1 < H && x1 < W) grid[y1][x1] = "+";
+        if (y1 < H && x2 - 1 < W) grid[y1][x2 - 1] = "+";
+        if (y2 - 1 < H && x1 < W) grid[y2 - 1][x1] = "+";
+        if (y2 - 1 < H && x2 - 1 < W) grid[y2 - 1][x2 - 1] = "+";
+        // Place label in center of cell interior
+        const midY = Math.floor((y1 + y2) / 2);
+        const midX = Math.floor((x1 + x2) / 2);
+        if (midY > y1 && midY < y2 - 1 && midX > x1 && midX < x2 - 1) {
+            for (let li = 0; li < label.length && midX + li < x2 - 1; li++) {
+                grid[midY][midX + li] = label[li];
+            }
+        }
+    }
+    return grid.map(row => row.join("")).join("\n");
+}
 
 interface Profile {
     id: string;
@@ -21,6 +70,7 @@ export const layoutOptions: LayoutType[] = [
     "row-3", "col-3", "row-4", "col-4",
     "grid-4", "grid-5", "grid-6", "grid-7", "grid-8",
     "main-r2", "main-r3", "main-b2", "main-b3",
+    "custom",
 ];
 
 export const layoutDisplayNames: Record<LayoutType, string> = {
@@ -40,6 +90,7 @@ export const layoutDisplayNames: Record<LayoutType, string> = {
     "main-r3": "1+3 →",
     "main-b2": "1+2 ↓",
     "main-b3": "1+3 ↓",
+    "custom":  "Custom",
 };
 
 export const layoutTooltips: Record<LayoutType, string> = {
@@ -155,6 +206,15 @@ export const layoutTooltips: Record<LayoutType, string> = {
         "| 2 | 3 |4 |",
         "+---+---+--+",
     ].join("\n"),
+    "custom": [
+        "+--+------+",
+        "|  |      |",
+        "+--+  2   |",
+        "|  |      |",
+        "|1 +--+---+",
+        "|  |3 | 4 |",
+        "+--+--+---+",
+    ].join("\n"),
 };
 
 /**
@@ -251,6 +311,30 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
             });
             item.onclick = async () => {
                 overlay.remove();
+                if (layoutType === "custom") {
+                    // Show custom layout editor first (position/size only, no profiles)
+                    const editorResult = await showCustomLayoutEditor();
+                    if (!editorResult) { resolve(); return; }
+                    // Then show grid config for profile assignment with correct slot count
+                    const layoutConfig = await showGridConfigModal(profileId, layoutType, editorResult.cells.length);
+                    if (!layoutConfig) { resolve(); return; }
+                    // Merge custom cells and slider line into the layout config
+                    layoutConfig.customCells = editorResult.cells.map((c: { x: number; y: number; width: number; height: number }, i: number) => ({
+                        id: layoutConfig.cells[i]?.id ?? `__slot${i}__`,
+                        ...c,
+                    }));
+                    if (editorResult.sliderLine) {
+                        layoutConfig.sliderLine = editorResult.sliderLine;
+                        layoutConfig.ratio = editorResult.ratio;
+                    }
+                    let targetWindowId = windowId;
+                    if (targetWindowId === null) {
+                        targetWindowId = await window.api.createTabWindow();
+                    }
+                    await window.api.createWindowWithLayout(layoutConfig, targetWindowId, profileId);
+                    resolve();
+                    return;
+                }
                 // Show grid configuration modal to select profiles for cells
                 const layoutConfig = await showGridConfigModal(profileId, layoutType);
                 if (!layoutConfig) {
@@ -278,10 +362,13 @@ export async function showLayoutSelectorForProfile(profileId: string, windowId: 
 
  */
 
-export async function showGridConfigModal(initialProfileId: string, layoutType: string): Promise<any | null> {
+export async function showGridConfigModal(initialProfileId: string, layoutType: string, customSlotCount?: number): Promise<any | null> {
 
     const config = GRID_CONFIGS[layoutType as LayoutType];
     if (!config) return null;
+    const effectiveCols = customSlotCount ? Math.min(customSlotCount, 4) : config.cols;
+    const effectiveRows = customSlotCount ? Math.ceil(customSlotCount / effectiveCols) : config.rows;
+    const effectiveMaxViews = customSlotCount ?? config.maxViews;
     // Get all profiles with tab mode
     const allProfiles = await window.api.profilesList();
     const tabProfiles = allProfiles.filter(p => p.launchMode === "tabs");
@@ -300,8 +387,8 @@ export async function showGridConfigModal(initialProfileId: string, layoutType: 
         const body = el("div", "modalBody");
         const hint = el("div", "modalHint", t("layout.gridHint") || "W�hlen Sie Profile f�r die Zellen");
         const grid = el("div", "layoutGrid");
-        grid.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
-        grid.style.gridTemplateRows = `repeat(${config.rows}, 1fr)`;
+        grid.style.gridTemplateColumns = `repeat(${effectiveCols}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${effectiveRows}, 1fr)`;
         const actions = el("div", "manageActions");
         const btnSave = el("button", "btn primary", t("create.save")) as HTMLButtonElement;
         const btnCancel = el("button", "btn", t("create.cancel")) as HTMLButtonElement;
@@ -338,7 +425,7 @@ export async function showGridConfigModal(initialProfileId: string, layoutType: 
         function renderGrid() {
             grid.innerHTML = "";
             pickerContainer.innerHTML = "";
-            const maxCells = Math.min(config.maxViews, config.rows * config.cols);
+            const maxCells = Math.min(effectiveMaxViews, effectiveRows * effectiveCols);
             for (let pos = 0; pos < maxCells; pos++) {
                 const current = cells.find(c => c.position === pos);
                 const cellBtn = el("button", "gridCellBtn") as HTMLButtonElement;

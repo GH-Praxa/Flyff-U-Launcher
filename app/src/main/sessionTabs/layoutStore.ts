@@ -48,16 +48,33 @@ function normalizeSplit(v: unknown): TabLayoutSplit | null {
     const cells = Array.from(unique.values()).sort((a, b) => a.position - b.position).slice(0, config.maxViews);
     if (cells.length === 0)
         return null;
-    const ratio = layout.type === "split-2" ? clampRatio(layout.ratio) : undefined;
+    const hasRatio = layout.type === "split-2" || layout.type === "row-3" || ("variant" in (GRID_CONFIGS[layout.type] ?? {}));
+    const ratio = hasRatio ? clampRatio(layout.ratio) : undefined;
     const activePosition = layout.activePosition !== undefined && cells.some((c) => c.position === layout.activePosition)
         ? layout.activePosition
         : cells[0].position;
-    return {
+    const result: MultiViewLayout = {
         type: layout.type,
         cells,
         ratio,
         activePosition,
-    } as MultiViewLayout;
+    };
+    if (layout.type === "custom" && layout.customCells) {
+        result.customCells = layout.customCells.map(cc => ({
+            id: cc.id,
+            x: Math.min(100, Math.max(0, cc.x)),
+            y: Math.min(100, Math.max(0, cc.y)),
+            width: Math.min(100, Math.max(5, cc.width)),
+            height: Math.min(100, Math.max(5, cc.height)),
+        }));
+        if (layout.sliderLine) {
+            result.sliderLine = {
+                axis: layout.sliderLine.axis,
+                pos: Math.min(95, Math.max(5, layout.sliderLine.pos)),
+            };
+        }
+    }
+    return result;
 }
 function normalizeLayoutsArray(v: unknown): SavedLayoutTab[] | undefined {
     if (!Array.isArray(v) || v.length === 0)

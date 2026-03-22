@@ -40,6 +40,7 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 ### Layouts & Splitscreen
 - **Grid-Layouts**: 1x1, 1x2, 2x1, 1x3, 3x1, 1x4, 4x1, 2x2, 3+2, 2x3, 4+3, 2x4
 - **Asymmetrische Layouts**: Hauptfenster + 2–3 Nebenfenster (rechts oder unten), Aufteilung per Slider einstellbar
+- **Custom Layout Editor**: Freie Positionierung und Größe für bis zu 8 Spielinstanzen — per Drag & Drop und Resize-Griffe im visuellen Editor
 - **ASCII-Vorschau**: Beim Hovern über ein Layout wird eine Vorschau als ASCII-Diagramm angezeigt
 - Layouts speichern/laden — per Klick mehrere Charaktere gleichzeitig starten
 - Auto-Save und optionaler Layout-Delay für sequentielles Laden
@@ -58,6 +59,13 @@ Multi-Accounts, Splitscreen, OCR-Overlays, Plugins und Live-News — alles in ei
 <div align="center">
 <img src="screen.png" width="700" alt="Session mit Splitscreen und Overlays" />
 <br/><sub>Splitscreen mit Sidepanel und Overlays</sub>
+</div>
+
+<br/>
+
+<div align="center">
+<img src="app/docs/assets/screenshots/45.png" width="700" alt="Benutzerdefiniertes Layout im Custom Layout Editor" />
+<br/><sub>Custom Layout Editor — freie Positionierung und Größe für bis zu 8 Spielinstanzen</sub>
 </div>
 
 ### OCR & Overlays
@@ -291,6 +299,7 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 ### Layouts & Splitscreen
 - **Grid layouts**: 1x1, 1x2, 2x1, 1x3, 3x1, 1x4, 4x1, 2x2, 3+2, 2x3, 4+3, 2x4
 - **Asymmetric layouts**: Main window + 2–3 secondary windows (right or bottom), ratio adjustable via slider
+- **Custom Layout Editor**: Free positioning and sizing for up to 8 game instances — drag & drop and resize handles in a visual editor
 - **ASCII preview**: Hovering over a layout shows a visual ASCII diagram
 - Save/load layouts — launch multiple characters at once with a single click
 - Auto-save and optional layout delay for sequential loading
@@ -309,6 +318,13 @@ Multi-accounts, splitscreen, OCR overlays, plugins, and live news — all in one
 <div align="center">
 <img src="screen.png" width="700" alt="Session with splitscreen and overlays" />
 <br/><sub>Splitscreen with side panel and overlays</sub>
+</div>
+
+<br/>
+
+<div align="center">
+<img src="app/docs/assets/screenshots/45.png" width="700" alt="Custom layout in the Custom Layout Editor" />
+<br/><sub>Custom Layout Editor — free positioning and sizing for up to 8 game instances</sub>
 </div>
 
 ### OCR & Overlays

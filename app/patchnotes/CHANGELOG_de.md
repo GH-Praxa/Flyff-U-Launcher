@@ -1,6 +1,31 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.4.0
+
+### ✨ Neue Funktionen
+
+**Benutzerdefiniertes Layout (Custom)**
+- Neuer Layout-Typ „Benutzerdefiniert" in der Layout-Auswahl — erlaubt die freie Anordnung von 1–8 BrowserViews mit individueller Position und Größe
+- Visueller Editor mit Drag & Drop: Zellen auf einer Leinwand (16:9) positionieren und per Griffe an Ecken/Kanten in der Größe ändern
+- Einstellbares Raster (Snap): 1 %, 5 % oder 10 % Genauigkeit beim Verschieben und Skalieren
+- Optionale Slider-Linie (horizontal oder vertikal) für Laufzeit-Anpassung der Aufteilung
+- Überlappende Zellen werden gestapelt (oberste Zelle empfängt Eingaben)
+- Gespeicherte Custom-Layouts zeigen eine dynamische ASCII-Vorschau basierend auf der tatsächlichen Zellanordnung
+
+**Verstellbarer Slider für 1×3-Layouts**
+- Das mittlere Fenster im 1×3-Layout (row-3) kann per Slider in der Breite angepasst werden — die Seitenfenster teilen sich den verbleibenden Platz gleichmäßig
+
+### ⚙️ Verbesserungen
+
+- Dokumentation um den Custom-Layout-Editor erweitert (alle 8 Sprachen)
+
+### 🐛 Fehlerbehebungen
+
+- **Schriftarten**: Gebündelte Schriftarten (Josefin Sans, Roboto, Open Sans u. a.) wurden nicht korrekt auf die Spiel-Browser angewendet; `@font-face` wird jetzt im Author-Origin geladen
+- **Login**: Anmeldung durch Facebook und Apple lud endlos
+
+---
 ## 🐛 Version 3.3.0
 
 ### 🐛 Fehlerbehebungen

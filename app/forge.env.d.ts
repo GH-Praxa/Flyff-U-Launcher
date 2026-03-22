@@ -22,10 +22,23 @@ type GridCell = {
 type MultiViewLayout = {
     type: "single" | "split-2" | "col-2" | "row-3" | "col-3" | "row-4" | "col-4"
         | "grid-4" | "grid-5" | "grid-6" | "grid-7" | "grid-8"
-        | "main-r2" | "main-r3" | "main-b2" | "main-b3";
+        | "main-r2" | "main-r3" | "main-b2" | "main-b3" | "custom";
     cells: GridCell[];
+    customCells?: CustomCell[];
+    sliderLine?: SliderLine;
     ratio?: number;
     activePosition?: number;
+};
+type SliderLine = {
+    axis: "x" | "y";
+    pos: number;
+};
+type CustomCell = {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 };
 type TabLayoutSplit =
     | { leftId: string; rightId: string; ratio?: number; }

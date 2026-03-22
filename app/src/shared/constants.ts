@@ -122,6 +122,7 @@ export const GRID_CONFIGS = {
     "main-r3": { rows: 1, cols: 4, maxViews: 4, variant: "main-cols" as const },
     "main-b2": { rows: 3, cols: 1, maxViews: 3, variant: "main-rows" as const },
     "main-b3": { rows: 4, cols: 1, maxViews: 4, variant: "main-rows" as const },
+    "custom":  { rows: 1, cols: 8, maxViews: 8 },
 } as const;
 
 // ============================================================================

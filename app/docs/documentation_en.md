@@ -145,6 +145,23 @@ Saved layouts are shown as a card in the profile list:
 - Click **"Play"** to launch the entire layout.
 - The **gear icon** opens layout settings (name, profile assignment, grid).
 
+**Custom layout:**
+
+In addition to the predefined grids, the **"Custom"** option allows creating a free-form layout. The editor lets you place and resize 1–8 cells freely on a canvas.
+
+![Description](custom_layout_editor.png)
+
+| No. | Element | Description |
+|-----|---------|-------------|
+| ❶ | Add cell | Adds a new cell (max. 8). |
+| ❷ | Snap | Snap precision when moving/resizing (1%, 5%, or 10%). |
+| ❸ | Slider | Sets an adjustable divider line: horizontal (↔), vertical (↕), or none (—). The green line can be dragged in the editor and allows runtime adjustment of the split. |
+| ❹ | Cells | Each numbered cell can be dragged to move and resized using the handles on corners and edges. |
+| ❺ | Properties | X/Y position and width/height of the selected cell in percent. Values can also be entered directly. |
+| ❻ | Remove cell | Removes the currently selected cell. |
+
+Overlapping cells are stacked — the top cell receives input. After confirming the layout, profile assignment follows as with predefined grids.
+
 **Relevant settings** (under Settings / Layout):
 - **Load grid tabs sequentially** — Start tabs one after another instead of simultaneously
 - **Update layouts on changes** — Automatically save layout changes

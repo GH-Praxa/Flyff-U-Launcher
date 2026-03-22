@@ -191,6 +191,7 @@ export const LayoutTypeSchema = z.enum([
     "main-r3",  // Haupt links (ratio%) + 3 rechts übereinander
     "main-b2",  // Haupt oben (ratio%) + 2 unten nebeneinander
     "main-b3",  // Haupt oben (ratio%) + 3 unten nebeneinander
+    "custom",   // Frei konfigurierbares Layout mit Prozent-Positionierung
 ]);
 export type LayoutType = z.infer<typeof LayoutTypeSchema>;
 
@@ -200,9 +201,26 @@ export const GridCellSchema = z.object({
 });
 export type GridCell = z.infer<typeof GridCellSchema>;
 
+export const CustomCellSchema = z.object({
+    id: IdSchema,
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    width: z.number().min(5).max(100),
+    height: z.number().min(5).max(100),
+});
+export type CustomCell = z.infer<typeof CustomCellSchema>;
+
+export const SliderLineSchema = z.object({
+    axis: z.enum(["x", "y"]),   // "x" = vertikale Linie, "y" = horizontale Linie
+    pos: z.number().min(5).max(95), // Default-Position in Prozent
+});
+export type SliderLine = z.infer<typeof SliderLineSchema>;
+
 export const MultiViewLayoutSchema = z.object({
     type: LayoutTypeSchema,
     cells: z.array(GridCellSchema).min(1).max(8),
+    customCells: z.array(CustomCellSchema).max(8).optional(),  // F\u00fcr type="custom"
+    sliderLine: SliderLineSchema.optional(), // Verstellbare Trennlinie f\u00fcr custom layouts
     ratio: RatioSchema.optional(),                 // F\u00fcr split-2 Kompatibilit\u00e4t
     activePosition: z.number().int().min(0).max(7).optional(),
 });

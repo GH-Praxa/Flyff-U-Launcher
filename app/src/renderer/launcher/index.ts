@@ -29,7 +29,7 @@ import { type Profile, el, clear, createJobIcon, decorateJobSelect, showToast, f
 import { openConfigModal as _openConfigModal } from "./config-modal";
 import { createNewsUI } from "./news";
 import { createAnnouncementsUI } from "./announcements";
-import { showWindowSelectorForProfile, layoutTooltips } from "./profile-selectors";
+import { showWindowSelectorForProfile, layoutTooltips, generateCustomAscii } from "./profile-selectors";
 
 export let langMenuCloser: ((e: MouseEvent) => void) | null = null;
 
@@ -598,8 +598,21 @@ export async function renderLauncher(root: HTMLElement) {
                     const typeKey = "type" in layout.split ? (layout.split as { type?: string }).type ?? "split-2" : "split-2";
                     previewTypes.push(typeKey);
                 }
-                for (const lt of previewTypes) {
-                    const art = (layoutTooltips as Record<string, string>)[lt];
+                for (let pi = 0; pi < previewTypes.length; pi++) {
+                    const lt = previewTypes[pi];
+                    let art: string | undefined;
+                    if (lt === "custom") {
+                        // Try to get customCells from the saved layout for dynamic preview
+                        const source = savedLayoutsArr[pi]?.layout as { customCells?: Array<{ x: number; y: number; width: number; height: number }> } | undefined;
+                        const splitSource = !source && layout.split && "type" in layout.split ? layout.split as { customCells?: Array<{ x: number; y: number; width: number; height: number }> } : undefined;
+                        const customCells = source?.customCells ?? splitSource?.customCells;
+                        if (customCells && customCells.length > 0) {
+                            art = generateCustomAscii(customCells);
+                        }
+                    }
+                    if (!art) {
+                        art = (layoutTooltips as Record<string, string>)[lt];
+                    }
                     if (art) {
                         const pre = document.createElement("pre");
                         pre.className = "layoutChipArt";

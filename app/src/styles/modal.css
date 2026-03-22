@@ -1471,6 +1471,120 @@
   border-color: rgba(var(--accent-rgb),0.6);
 }
 
+/* ── Custom Layout Editor ── */
+.customLayoutModal{
+  min-width: min(700px, calc(100vw - 30px));
+  max-width: 900px;
+}
+.customEditorCanvas{
+  position: relative;
+  aspect-ratio: 16/9;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.3);
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 5%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 5%);
+  overflow: hidden;
+  user-select: none;
+}
+.customCell{
+  position: absolute;
+  border: 2px solid rgba(var(--accent-rgb),0.5);
+  background: rgba(var(--accent-rgb),0.10);
+  border-radius: 4px;
+  cursor: move;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+.customCell:hover{ border-color: rgba(var(--accent-rgb),0.7); }
+.customCell.selected{
+  border-color: rgba(var(--accent-rgb),1);
+  box-shadow: 0 0 8px rgba(var(--accent-rgb),0.3);
+  z-index: 2;
+}
+.customCellLabel{
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.85;
+  pointer-events: none;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90%;
+}
+.customCellHandle{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: rgba(var(--accent-rgb),0.7);
+  border-radius: 2px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.customCell.selected .customCellHandle,
+.customCell:hover .customCellHandle{ opacity: 1; }
+.customCellHandle.nw{ top:-5px; left:-5px; cursor: nw-resize; }
+.customCellHandle.ne{ top:-5px; right:-5px; cursor: ne-resize; }
+.customCellHandle.sw{ bottom:-5px; left:-5px; cursor: sw-resize; }
+.customCellHandle.se{ bottom:-5px; right:-5px; cursor: se-resize; }
+.customCellHandle.n{ top:-5px; left:50%; transform:translateX(-50%); cursor: n-resize; }
+.customCellHandle.s{ bottom:-5px; left:50%; transform:translateX(-50%); cursor: s-resize; }
+.customCellHandle.e{ right:-5px; top:50%; transform:translateY(-50%); cursor: e-resize; }
+.customCellHandle.w{ left:-5px; top:50%; transform:translateY(-50%); cursor: w-resize; }
+.customSliderLine{
+  position: absolute;
+  background: rgba(0,200,80,0.6);
+  z-index: 4;
+  transition: background 0.15s;
+}
+.customSliderLine:hover{
+  background: rgba(0,200,80,0.9);
+}
+.customEditorToolbar{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.customEditorProps{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.customEditorProps .propGroup{
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.customEditorProps .propGroup label{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 52px;
+}
+.customEditorProps .propGroup input[type="number"]{
+  width: 60px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: rgba(var(--accent-rgb),0.10);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+.customEditorProps .propGroup input[type="number"]:focus{
+  border-color: rgba(var(--accent-rgb),0.6);
+}
+
 @media (max-width: 700px){
   .settingsSidebar{
     width: 56px;
@@ -1486,4 +1600,19 @@
   .settingsGrid{
     grid-template-columns: 1fr;
   }
+}
+.layoutPickerItem{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.layoutPickerPreview{
+  font-family: monospace;
+  font-size: 9px;
+  line-height: 1.1;
+  color: var(--muted);
+  margin: 0;
+  white-space: pre;
+  pointer-events: none;
 }

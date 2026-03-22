@@ -145,6 +145,23 @@ Les layouts enregistrés sont affichés sous forme de carte dans la liste des pr
 - Via **"Jouer"**, le layout complet est lancé.
 - Via l'**engrenage**, les paramètres du layout peuvent être ajustés (nom, assignation des profils, grille).
 
+**Disposition personnalisée (Custom) :**
+
+En plus des grilles prédéfinies, l'option **« Personnalisé »** permet de créer une disposition libre. L'éditeur permet de placer et redimensionner librement 1 à 8 cellules sur un canevas.
+
+![Description](custom_layout_editor.png)
+
+| N° | Élément | Description |
+|-----|---------|-------------|
+| ❶ | Ajouter une cellule | Ajoute une nouvelle cellule (max. 8). |
+| ❷ | Grille | Précision d'accrochage lors du déplacement/redimensionnement (1 %, 5 % ou 10 %). |
+| ❸ | Curseur | Définit une ligne de séparation ajustable : horizontale (↔), verticale (↕) ou aucune (—). La ligne verte peut être déplacée dans l'éditeur et permet un ajustement en temps réel. |
+| ❹ | Cellules | Chaque cellule numérotée peut être déplacée et redimensionnée à l'aide des poignées sur les coins et les bords. |
+| ❺ | Propriétés | Position X/Y et largeur/hauteur de la cellule sélectionnée en pourcentage. Les valeurs peuvent aussi être saisies directement. |
+| ❻ | Supprimer la cellule | Supprime la cellule actuellement sélectionnée. |
+
+Les cellules superposées sont empilées — la cellule du dessus reçoit les entrées. Après confirmation de la disposition, l'attribution des profils suit comme pour les grilles prédéfinies.
+
 **Paramètres associés** (sous Paramètres / Layout) :
 - **Charger les onglets de grille séquentiellement** — Démarrer les onglets un par un au lieu de simultanément
 - **Actualiser les layouts lors de modifications** — Enregistrer automatiquement les modifications du layout
