@@ -1,6 +1,31 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.4.0
+
+### ✨ New Features
+
+**Custom Layout**
+- New layout type "Custom" in the layout picker — allows free arrangement of 1–8 BrowserViews with individual position and size
+- Visual editor with drag & drop: position cells on a canvas (16:9) and resize via corner/edge handles
+- Adjustable grid (snap): 1%, 5% or 10% precision when moving and scaling
+- Optional slider line (horizontal or vertical) for runtime split adjustment
+- Overlapping cells are stacked (topmost cell receives input)
+- Saved custom layouts show a dynamic ASCII preview based on the actual cell arrangement
+
+**Adjustable Slider for 1×3 Layouts**
+- The middle window in the 1×3 layout (row-3) can be resized via slider — the side windows share the remaining space equally
+
+### ⚙️ Improvements
+
+- Documentation expanded with the custom layout editor (all 8 languages)
+
+### 🐛 Bug Fixes
+
+- **Fonts**: Bundled fonts (Josefin Sans, Roboto, Open Sans, etc.) were not correctly applied to the game browsers; `@font-face` is now loaded in the author origin
+- **Login**: Login via Facebook and Apple loaded endlessly
+
+---
 ## 🐛 Version 3.3.0
 
 ### 🐛 Bug Fixes

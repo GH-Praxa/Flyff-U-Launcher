@@ -1,6 +1,31 @@
 # 📦 Notes de patch
 
 ---
+## 🆕 Version 3.4.0
+
+### ✨ Nouvelles fonctionnalités
+
+**Disposition personnalisée (Custom)**
+- Nouveau type de disposition « Personnalisé » dans le sélecteur de disposition — permet l'agencement libre de 1 à 8 BrowserViews avec position et taille individuelles
+- Éditeur visuel avec glisser-déposer : positionnez les cellules sur un canevas (16:9) et redimensionnez via les poignées aux coins et bords
+- Grille ajustable (snap) : précision de 1 %, 5 % ou 10 % lors du déplacement et du redimensionnement
+- Ligne de curseur optionnelle (horizontale ou verticale) pour ajuster la répartition en temps réel
+- Les cellules superposées sont empilées (la cellule du dessus reçoit les entrées)
+- Les dispositions personnalisées enregistrées affichent un aperçu ASCII dynamique basé sur l'agencement réel des cellules
+
+**Curseur ajustable pour les dispositions 1×3**
+- La fenêtre centrale dans la disposition 1×3 (row-3) peut être redimensionnée via un curseur — les fenêtres latérales se partagent l'espace restant à parts égales
+
+### ⚙️ Améliorations
+
+- Documentation enrichie avec l'éditeur de disposition personnalisée (les 8 langues)
+
+### 🐛 Corrections de bugs
+
+- **Polices** : Les polices intégrées (Josefin Sans, Roboto, Open Sans, etc.) n'étaient pas correctement appliquées aux navigateurs de jeu ; `@font-face` est maintenant chargé dans l'author origin
+- **Connexion** : La connexion via Facebook et Apple chargeait indéfiniment
+
+---
 ## 🐛 Version 3.3.0
 
 ### 🐛 Corrections de bugs

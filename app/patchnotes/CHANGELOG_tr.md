@@ -1,6 +1,31 @@
 # 📦 Yama Notları
 
 ---
+## 🆕 Sürüm 3.4.0
+
+### ✨ Yeni Özellikler
+
+**Özel Düzen (Custom)**
+- Düzen seçicisinde yeni düzen türü "Özel" — 1–8 BrowserView'ın bireysel konum ve boyutla serbest yerleşimine olanak tanır
+- Sürükle ve bırak ile görsel editör: Hücreleri bir tuval (16:9) üzerinde konumlandırın ve köşe/kenar tutamaçlarıyla yeniden boyutlandırın
+- Ayarlanabilir ızgara (snap): Taşıma ve ölçeklendirmede %1, %5 veya %10 hassasiyet
+- İsteğe bağlı kaydırıcı çizgisi (yatay veya dikey) ile çalışma zamanında bölünme ayarı
+- Üst üste binen hücreler yığılır (en üstteki hücre girişleri alır)
+- Kaydedilen özel düzenler, gerçek hücre yerleşimine dayalı dinamik bir ASCII önizleme gösterir
+
+**1×3 Düzenler için Ayarlanabilir Kaydırıcı**
+- 1×3 düzenindeki (row-3) orta pencere kaydırıcı ile yeniden boyutlandırılabilir — yan pencereler kalan alanı eşit olarak paylaşır
+
+### ⚙️ İyileştirmeler
+
+- Belgeler özel düzen editörü ile genişletildi (tüm 8 dil)
+
+### 🐛 Hata Düzeltmeleri
+
+- **Yazı Tipleri**: Paketlenmiş yazı tipleri (Josefin Sans, Roboto, Open Sans vb.) oyun tarayıcılarına doğru şekilde uygulanmıyordu; `@font-face` artık author origin'de yükleniyor
+- **Giriş**: Facebook ve Apple ile giriş sonsuz yükleniyordu
+
+---
 ## 🐛 Sürüm 3.3.0
 
 ### 🐛 Hata Düzeltmeleri

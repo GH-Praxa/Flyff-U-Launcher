@@ -1,6 +1,31 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Wersja 3.4.0
+
+### ✨ Nowe funkcje
+
+**Niestandardowy układ (Custom)**
+- Nowy typ układu „Niestandardowy" w selektorze układów — umożliwia dowolne rozmieszczenie od 1 do 8 BrowserViews z indywidualną pozycją i rozmiarem
+- Edytor wizualny z przeciąganiem i upuszczaniem: umieszczaj komórki na płótnie (16:9) i zmieniaj rozmiar za pomocą uchwytów na rogach i krawędziach
+- Regulowana siatka (snap): dokładność 1%, 5% lub 10% podczas przesuwania i skalowania
+- Opcjonalna linia suwaka (pozioma lub pionowa) do regulacji podziału w czasie rzeczywistym
+- Nakładające się komórki są układane w stos (najwyższa komórka odbiera dane wejściowe)
+- Zapisane niestandardowe układy wyświetlają dynamiczny podgląd ASCII na podstawie rzeczywistego rozmieszczenia komórek
+
+**Regulowany suwak dla układów 1×3**
+- Środkowe okno w układzie 1×3 (row-3) można zmienić za pomocą suwaka — okna boczne dzielą równomiernie pozostałą przestrzeń
+
+### ⚙️ Ulepszenia
+
+- Dokumentacja rozszerzona o edytor niestandardowych układów (wszystkie 8 języków)
+
+### 🐛 Poprawki błędów
+
+- **Czcionki**: Dołączone czcionki (Josefin Sans, Roboto, Open Sans itp.) nie były prawidłowo stosowane w przeglądarkach gry; `@font-face` jest teraz ładowany w author origin
+- **Logowanie**: Logowanie przez Facebook i Apple ładowało się w nieskończoność
+
+---
 ## 🐛 Wersja 3.3.0
 
 ### 🐛 Poprawki błędów
