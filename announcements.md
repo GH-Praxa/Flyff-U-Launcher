@@ -8,9 +8,6 @@
 - Quest-Guide optimieren
 
 ### Erledigt, im nächsten Update enthalten:
-- Schriftarten überarbeitet
-- Mehr Skalieroptionen für Layouts
-- Facebook-Login funktioniert nicht
 
 ---
 
@@ -24,6 +21,3 @@
 - Optimizing Quest Guide
 
 ### Done, included in the next update:
-- Fonts reworked
-- More scaling options for layouts
-- Facebook login is not working
