@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.4.1
+
+### 🐛 Bug fixes
+
+**Multiple layout windows at the same time**
+- Pressing "Play" on a saved layout now opens an **additional** window — the running one stays open
+- Window title shows the layout's name
+- If a profile is already open in another window, the cell shows a notice with a "Jump to that window" button — no second login, no character kick
+
+🙏 Thanks to **@ODevil97** for the detailed bug report (GitHub)
+
+---
 ## 🆕 Version 3.4.0
 
 ### ✨ New Features

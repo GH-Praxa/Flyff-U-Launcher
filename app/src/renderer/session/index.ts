@@ -182,7 +182,19 @@ export async function renderSession(root: HTMLElement) {
     const btnLogin = el("button", "btn primary", t("session.login")) as HTMLButtonElement;
     loginOverlay.append(loginTitle, loginName, loginHint, btnLogin);
     content.append(loginOverlay);
-    root.append(tabsBar, content);
+    // Container for "profile is open in another window" overlays — sits over cells
+    // whose profile we deliberately did not load to avoid a same-character conflict.
+    const conflictOverlayContainer = el("div", "conflictOverlayContainer") as HTMLDivElement;
+    conflictOverlayContainer.style.position = "fixed";
+    conflictOverlayContainer.style.left = "0";
+    conflictOverlayContainer.style.top = "0";
+    conflictOverlayContainer.style.pointerEvents = "none";
+    conflictOverlayContainer.style.zIndex = "10";
+    root.append(tabsBar, content, conflictOverlayContainer);
+    /** profileIds whose layout-cell shows a "jump to other window" overlay (no view loaded). */
+    const conflictProfileIds = new Set<string>();
+    /** profileId → overlay DIV currently mounted in conflictOverlayContainer. */
+    const conflictOverlays = new Map<string, HTMLDivElement>();
         loadClientSettings()
             .then((settings) => {
             setLayoutDelaySeconds(settings.layoutDelaySeconds);
@@ -852,16 +864,16 @@ export async function renderSession(root: HTMLElement) {
     async function pushLayoutToMain(): Promise<void> {
 
         pruneLayoutState();
-        const activeIsLoggedOut = isProfileLoggedOut(activeProfileId);
+        const activeIsSkipped = shouldSkipView(activeProfileId);
         if (layoutState) {
-            const opts = layoutHasLoggedOut(layoutState)
+            const opts = layoutHasSkipped(layoutState)
                 ? { ensureViews: false, allowMissingViews: true }
                 : undefined;
             await window.api.sessionTabsSetMultiLayout?.(layoutState, opts);
             return;
         }
         if (activeProfileId) {
-            if (activeIsLoggedOut) {
+            if (activeIsSkipped) {
                 const skeleton: LayoutState = {
                     type: "single",
                     cells: [{ id: activeProfileId, position: 0 }],
@@ -1451,11 +1463,28 @@ export async function renderSession(root: HTMLElement) {
         return !!profileId && isTabLoggedOut(profileId);
     }
 
+    /**
+     * True for profiles whose BrowserView must NOT be created in this window:
+     * either the user logged the character out, or the profile is currently
+     * open in another session window (would force a same-character double login).
+     */
+    function shouldSkipView(profileId: string | null): boolean {
+
+        return !!profileId && (isTabLoggedOut(profileId) || conflictProfileIds.has(profileId));
+    }
+
     function layoutHasLoggedOut(layout: LayoutState | null | undefined): boolean {
 
         if (!layout)
             return false;
         return layout.cells.some((c) => isProfileLoggedOut(c.id));
+    }
+
+    function layoutHasSkipped(layout: LayoutState | null | undefined): boolean {
+
+        if (!layout)
+            return false;
+        return layout.cells.some((c) => shouldSkipView(c.id));
     }
 
     function updateLoginOverlay() {
@@ -1685,21 +1714,21 @@ export async function renderSession(root: HTMLElement) {
         const visibleIds = layoutState ? layoutState.cells.map((c) => c.id) : activeProfileId ? [activeProfileId] : [];
         if (visibleIds.length === 0)
             return;
-        const hasLoggedOut = visibleIds.some((id) => isProfileLoggedOut(id)) || layoutHasLoggedOut(layoutState);
+        const hasSkipped = visibleIds.some((id) => shouldSkipView(id)) || layoutHasSkipped(layoutState);
         // Force bounds push before switching to ensure views have correct dimensions
         pushBoundsInternal(true);
         // Re-apply current layout to ensure all views are attached
         if (layoutState) {
             try {
                 await window.api.sessionTabsSetMultiLayout(layoutState, {
-                    ensureViews: !hasLoggedOut,
-                    allowMissingViews: hasLoggedOut,
+                    ensureViews: !hasSkipped,
+                    allowMissingViews: hasSkipped,
                 });
             }
             catch (err) {
                 logErr(err, "renderer");
             }
-        } else if (activeProfileId && isProfileLoggedOut(activeProfileId)) {
+        } else if (activeProfileId && shouldSkipView(activeProfileId)) {
             const skeleton: LayoutState = {
                 type: "single",
                 cells: [{ id: activeProfileId, position: 0 }],
@@ -1707,13 +1736,13 @@ export async function renderSession(root: HTMLElement) {
                 activePosition: 0,
             };
             await window.api.sessionTabsSetMultiLayout(skeleton, { ensureViews: false, allowMissingViews: true }).catch((err) => logErr(err, "renderer"));
-            // No BrowserView should be focused while logged out
+            // No BrowserView should be focused while logged out / in conflict
             pushBoundsInternal(true);
             return;
         }
         // Switch to each visible view to ensure it's properly activated and rendered
         for (const id of visibleIds) {
-            if (isProfileLoggedOut(id))
+            if (shouldSkipView(id))
                 continue;
             try {
                 await window.api.sessionTabsSwitch(id);
@@ -1723,7 +1752,7 @@ export async function renderSession(root: HTMLElement) {
             }
         }
         // Ensure the correct active view is focused last
-        if (activeProfileId && !isProfileLoggedOut(activeProfileId) && visibleIds[visibleIds.length - 1] !== activeProfileId) {
+        if (activeProfileId && !shouldSkipView(activeProfileId) && visibleIds[visibleIds.length - 1] !== activeProfileId) {
             await window.api.sessionTabsSwitch(activeProfileId).catch((err) => logErr(err, "renderer"));
         }
         // Final bounds push to ensure everything is correctly sized
@@ -1751,6 +1780,31 @@ export async function renderSession(root: HTMLElement) {
                 updateSplitGlyphs();
                 syncTabClasses();
                 updateLoginOverlay();
+                clearConflictOverlays();
+                conflictProfileIds.clear();
+
+                // Identify profiles already open in OTHER session windows so we
+                // can render a "jump to that window" overlay for those cells
+                // instead of opening a second BrowserView (which would force
+                // the same character to log in twice).
+                try {
+                    const allOpen = (await window.api.sessionTabsGetAllOpenProfiles?.()) ?? [];
+                    const layoutProfileSet = new Set(layout.tabs ?? []);
+                    for (const id of allOpen) {
+                        if (layoutProfileSet.has(id)) conflictProfileIds.add(id);
+                    }
+                } catch (err) {
+                    logErr(err, "renderer");
+                }
+                // Tell the main-process tabs manager so it refuses to create
+                // BrowserViews for these profiles even via late callbacks
+                // (reattachVisibleViews, setMultiLayout ensureViews, etc.).
+                try {
+                    await window.api.sessionTabsSetSkippedProfiles?.(Array.from(conflictProfileIds));
+                } catch (err) {
+                    logErr(err, "renderer");
+                }
+
                 const profiles = await window.api.profilesList();
                 profiles.forEach((p) => rememberProfileName(p.id, p.name, p.characterJobs, p.characters));
                 const existingIds = new Set((profiles ?? []).map((p: Profile) => p.id));
@@ -1834,7 +1888,21 @@ export async function renderSession(root: HTMLElement) {
                     if (isSingleLayout) {
                         const singleId = layoutForTab.cells[0].id;
                         allLayoutIds.add(singleId);
-                        await openTab(singleId);
+                        if (conflictProfileIds.has(singleId)) {
+                            // Profile is open in another window — render an empty
+                            // single layout in the manager so bounds are computed
+                            // for the cell, then overlay the "jump" card.
+                            const skeleton: LayoutState = {
+                                type: "single",
+                                cells: [{ id: singleId, position: 0 }],
+                                ratio: layoutForTab.ratio ?? currentSplitRatio,
+                                activePosition: 0,
+                            };
+                            await window.api.sessionTabsSetMultiLayout(skeleton, { ensureViews: false, allowMissingViews: true }).catch(console.error);
+                            pushBoundsInternal(true);
+                        } else {
+                            await openTab(singleId);
+                        }
                         incrementLoadProgress();
                         if (delayMs > 0) {
                             await sleep(delayMs);
@@ -1865,11 +1933,14 @@ export async function renderSession(root: HTMLElement) {
                     };
                     await window.api.sessionTabsSetMultiLayout(skeletonLayout, { ensureViews: false, allowMissingViews: true }).catch(console.error);
                     pushBoundsInternal(true);
-                    // Load BrowserViews into their grid cells
+                    // Load BrowserViews into their grid cells (skip conflict cells)
                     if (sequentialGridLoad) {
-                        // Sequential loading - load into specific cells one by one
                         for (let i = 0; i < sortedCells.length; i++) {
                             const cell = sortedCells[i];
+                            if (conflictProfileIds.has(cell.id)) {
+                                incrementLoadProgress();
+                                continue;
+                            }
                             try {
                                 await window.api.sessionTabsOpenInCell(cell.position, cell.id, {
                                     activate: cell.position === skeletonLayout.activePosition,
@@ -1880,29 +1951,35 @@ export async function renderSession(root: HTMLElement) {
                             catch (err) {
                                 logErr(`Failed to open layout view ${cell.id}: ${err}`, "renderer");
                             }
-                            // Delay between views (except after last one)
                             if (delayMs > 0 && i < sortedCells.length - 1) {
                                 await sleep(delayMs);
                             }
                         }
                     } else {
-                        // Parallel loading - all views in this grid at once
                         await Promise.all(
-                            sortedCells.map((cell) =>
-                                window.api.sessionTabsOpenInCell(cell.position, cell.id, {
-                                    activate: cell.position === skeletonLayout.activePosition,
-                                })
-                                    .catch((err) => logErr(`Failed to open layout view ${cell.id}: ${err}`, "renderer"))
-                            )
+                            sortedCells
+                                .filter((cell) => !conflictProfileIds.has(cell.id))
+                                .map((cell) =>
+                                    window.api.sessionTabsOpenInCell(cell.position, cell.id, {
+                                        activate: cell.position === skeletonLayout.activePosition,
+                                    })
+                                        .catch((err) => logErr(`Failed to open layout view ${cell.id}: ${err}`, "renderer"))
+                                )
                         );
-                        // Increment progress once for all views in this tab
                         for (const _ of sortedCells) {
                             incrementLoadProgress();
                         }
                         pushBoundsInternal(true);
                     }
-                    // Finalize layout for this tab
-                    await window.api.sessionTabsSetMultiLayout(skeletonLayout, { ensureViews: true, allowMissingViews: false }).catch(console.error);
+                    // Finalize layout for this tab. allowMissingViews stays true if
+                    // any cell in this layout is a conflict cell — its BrowserView
+                    // was deliberately not created and the manager must keep the
+                    // cell slot anyway so our DOM overlay can sit on top.
+                    const hasConflictInThisLayout = sortedCells.some((c) => conflictProfileIds.has(c.id));
+                    await window.api.sessionTabsSetMultiLayout(skeletonLayout, {
+                        ensureViews: !hasConflictInThisLayout,
+                        allowMissingViews: hasConflictInThisLayout,
+                    }).catch(console.error);
                     pushBoundsInternal(true);
                     // Delay before next tab (always, if delay is set)
                     if (delayMs > 0) {
@@ -1986,7 +2063,7 @@ export async function renderSession(root: HTMLElement) {
             }, 200);
             setTimeout(() => {
                 pushBoundsInternal(true);
-                if (activeProfileId && !isProfileLoggedOut(activeProfileId)) {
+                if (activeProfileId && !shouldSkipView(activeProfileId)) {
                     window.api.sessionTabsSwitch(activeProfileId).catch((err) => logErr(err, "renderer"));
                 }
             }, 500);
@@ -1995,6 +2072,7 @@ export async function renderSession(root: HTMLElement) {
             // Re-enable auto-save after layout is fully applied
             isApplyingLayout = false;
             scheduleProgressHide();
+            scheduleConflictOverlayRefresh();
         }
     );
     }
@@ -2086,6 +2164,9 @@ export async function renderSession(root: HTMLElement) {
             return;
         lastBounds = next;
         window.api.sessionTabsSetBounds(next);
+        if (conflictProfileIds.size > 0) {
+            scheduleConflictOverlayRefresh();
+        }
     }
 
     function pushBounds(force = false) {
@@ -2120,6 +2201,98 @@ export async function renderSession(root: HTMLElement) {
     window.addEventListener("resize", kickBounds);
     new ResizeObserver(kickBounds).observe(tabsBar);
 
+    function clearConflictOverlays(): void {
+        for (const [, el] of conflictOverlays) el.remove();
+        conflictOverlays.clear();
+    }
+
+    function buildConflictOverlay(profileId: string): HTMLDivElement {
+        const card = document.createElement("div");
+        card.className = "conflictOverlay";
+        Object.assign(card.style, {
+            position: "fixed",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            padding: "24px",
+            boxSizing: "border-box",
+            background: "rgba(11, 18, 32, 0.96)",
+            color: "#e6eaf2",
+            border: "2px solid rgba(120, 140, 180, 0.3)",
+            borderRadius: "8px",
+            pointerEvents: "auto",
+            textAlign: "center",
+            fontSize: "14px",
+            lineHeight: "1.4",
+        });
+        const title = document.createElement("div");
+        title.style.fontSize = "16px";
+        title.style.fontWeight = "600";
+        title.textContent = t("layout.profileOnlineTitle").replace("{profile}", getProfileLabel(profileId));
+        const hint = document.createElement("div");
+        hint.style.opacity = "0.75";
+        hint.style.maxWidth = "320px";
+        hint.textContent = t("layout.profileOnlineHint");
+        const btn = document.createElement("button");
+        btn.className = "btn primary";
+        btn.textContent = t("layout.profileOnlineButton");
+        btn.addEventListener("click", async () => {
+            try {
+                await window.api.sessionFocusProfile?.(profileId);
+            } catch (err) {
+                logErr(err, "renderer");
+            }
+        });
+        card.append(title, hint, btn);
+        return card;
+    }
+
+    async function refreshConflictOverlayPositions(): Promise<void> {
+        if (conflictProfileIds.size === 0) {
+            clearConflictOverlays();
+            return;
+        }
+        let bounds: Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }> = [];
+        try {
+            bounds = (await window.api.sessionTabsGetLayoutBounds?.()) ?? [];
+        } catch (err) {
+            logErr(err, "renderer");
+            return;
+        }
+        const seen = new Set<string>();
+        for (const cell of bounds) {
+            if (!conflictProfileIds.has(cell.id)) continue;
+            seen.add(cell.id);
+            let card = conflictOverlays.get(cell.id);
+            if (!card) {
+                card = buildConflictOverlay(cell.id);
+                conflictOverlayContainer.append(card);
+                conflictOverlays.set(cell.id, card);
+            }
+            card.style.left = `${cell.bounds.x}px`;
+            card.style.top = `${cell.bounds.y}px`;
+            card.style.width = `${cell.bounds.width}px`;
+            card.style.height = `${cell.bounds.height}px`;
+        }
+        // Remove overlays for cells that are no longer in the active layout.
+        for (const [id, el] of conflictOverlays) {
+            if (!seen.has(id)) {
+                el.remove();
+                conflictOverlays.delete(id);
+            }
+        }
+    }
+
+    function scheduleConflictOverlayRefresh(): void {
+        // Bounds change after pushBoundsInternal IPC roundtrip; defer one frame plus
+        // a small delay so the main process has applied them before we query.
+        setTimeout(() => { refreshConflictOverlayPositions().catch((err) => logErr(err, "renderer")); }, 80);
+    }
+
+    window.addEventListener("resize", scheduleConflictOverlayRefresh);
+
     async function applySplit(next: LayoutState | null) {
 
         layoutState = normalizeLayoutState(next);
@@ -2132,7 +2305,7 @@ export async function renderSession(root: HTMLElement) {
         syncTabClasses();
         updateSplitGlyphs();
         await pushLayoutToMain();
-        if (activeProfileId && !isProfileLoggedOut(activeProfileId)) {
+        if (activeProfileId && !shouldSkipView(activeProfileId)) {
             await window.api.sessionTabsSwitch(activeProfileId).catch((err) => logErr(err, "renderer"));
         }
         pushBoundsInternal(true);
@@ -2170,13 +2343,13 @@ export async function renderSession(root: HTMLElement) {
             activeProfileId = activeCell?.id ?? null;
             currentSplitRatio = tab.layout.ratio ?? currentSplitRatio;
             const orderedCells = [...tab.layout.cells].sort((a, b) => a.position - b.position);
-            const hasLoggedOutCells = layoutHasLoggedOut(layoutState);
+            const hasSkippedCells = layoutHasSkipped(layoutState);
             // Push layout skeleton first so BrowserViews can attach directly into their cells
             await window.api.sessionTabsSetMultiLayout(layoutState, { ensureViews: false, allowMissingViews: true });
             // Materialize all cells in parallel but without changing the active layout type
             await Promise.all(
                 orderedCells
-                    .filter((cell) => !isProfileLoggedOut(cell.id))
+                    .filter((cell) => !shouldSkipView(cell.id))
                     .map((cell) =>
                         window.api.sessionTabsOpenInCell(cell.position, cell.id, {
                             activate: cell.position === layoutState?.activePosition,
@@ -2185,14 +2358,14 @@ export async function renderSession(root: HTMLElement) {
             );
             // Finalize layout with full bounds
             await window.api.sessionTabsSetMultiLayout(layoutState, {
-                ensureViews: !hasLoggedOutCells,
-                allowMissingViews: hasLoggedOutCells,
+                ensureViews: !hasSkippedCells,
+                allowMissingViews: hasSkippedCells,
             });
             // Force bounds update to ensure views are correctly sized
             pushBoundsInternal(true);
             // Re-attach visible views to ensure they're displayed
             await reattachVisibleViews();
-            if (activeProfileId && !isProfileLoggedOut(activeProfileId)) {
+            if (activeProfileId && !shouldSkipView(activeProfileId)) {
                 await window.api.sessionTabsSwitch(activeProfileId);
             }
         } else if (tab.type === "single" && tab.profileId) {
@@ -2234,7 +2407,7 @@ export async function renderSession(root: HTMLElement) {
                 syncTabClasses();
                 updateSplitGlyphs();
                 await pushLayoutToMain();
-                if (!isProfileLoggedOut(profileId)) {
+                if (!shouldSkipView(profileId)) {
                     await window.api.sessionTabsSwitch(profileId);
                 }
                 applyStoredTabActiveColor();
@@ -2268,7 +2441,7 @@ export async function renderSession(root: HTMLElement) {
         activeProfileId = profileId;
         syncTabClasses();
         updateSplitGlyphs();
-        if (!isProfileLoggedOut(profileId)) {
+        if (!shouldSkipView(profileId)) {
             await window.api.sessionTabsSwitch(profileId);
         }
         applyStoredTabActiveColor();

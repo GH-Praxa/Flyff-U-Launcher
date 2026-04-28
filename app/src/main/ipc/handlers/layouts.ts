@@ -1,10 +1,15 @@
 /**
  * IPC handlers for tab layout operations.
+ *
+ * tabLayouts:apply opens a NEW session window per layout via the multi-window
+ * registry — existing windows stay open. Per-layoutId dedupe prevents rapid
+ * double-clicks from spawning duplicate windows.
  */
 import type { BrowserWindow } from "electron";
 import { BrowserWindow as BW } from "electron";
 import { SafeHandle, IpcEvent, assertValidId, NotFoundError, assertValid } from "../common";
 import { TabLayout, TabLayoutInput, TabLayoutInputSchema } from "../../../shared/schemas";
+import type { SessionRegistry } from "../../windows/sessionRegistry";
 
 export type TabLayoutsStore = {
     list: () => Promise<TabLayout[]>;
@@ -30,6 +35,8 @@ export type LayoutHandlerOptions = {
     tabLayouts: TabLayoutsStore;
     sessionWindow: SessionWindowController;
     sessionTabs: SessionTabsController;
+    sessionRegistry: SessionRegistry;
+    createTabWindow: (opts?: { name?: string; params?: Record<string, string> }) => Promise<string>;
     /** Send toast to launcher window */
     showToast?: (message: string, tone?: "info" | "success" | "error") => void;
 };
@@ -47,10 +54,21 @@ export function registerLayoutHandlers(
     opts: LayoutHandlerOptions,
     logErr: (msg: unknown) => void
 ): void {
-    // Track pending layouts with timestamps to handle race conditions
-    let pendingLayout: TabLayout | null = null;
-    let pendingLayoutTimestamp = 0;
-    let applyInProgress = false;
+    /**
+     * Per-layoutId dedupe set. Prevents rapid double-clicks of "Play" on
+     * the same layout from spawning multiple windows. Cleared once the
+     * window is created (or on failure).
+     */
+    const inFlightLayoutIds = new Set<string>();
+
+    /**
+     * Pending layouts awaiting renderer pickup, keyed by webContents ID.
+     * The renderer of a freshly opened session window calls
+     * `tabLayouts:pending` during its watchdog cycle if the
+     * `session:applyLayout` IPC event was missed (e.g. the listener wasn't
+     * registered yet when we dispatched). Acts as a safety net.
+     */
+    const pendingByWebContentsId = new Map<number, TabLayout>();
 
     safeHandle("tabLayouts:list", async () => await opts.tabLayouts.list());
 
@@ -63,7 +81,6 @@ export function registerLayoutHandlers(
         // Preserve existing name on updates; only default when creating new layouts
         let name = String(input?.name ?? "").trim();
         if (!name && input?.id) {
-            // Try to load current layout to reuse its name
             const existing = await opts.tabLayouts.get(String(input.id));
             if (existing?.name) {
                 name = existing.name;
@@ -87,118 +104,98 @@ export function registerLayoutHandlers(
         return result;
     });
 
-    // Allows renderer to pull any pending layout if the apply event was missed (e.g. during startup races)
-    safeHandle("tabLayouts:pending", async () => {
-        const result = pendingLayout;
-        pendingLayout = null;
-        pendingLayoutTimestamp = 0;
-        return result;
+    // Watchdog endpoint: a freshly opened session window's renderer polls
+    // this in case the `session:applyLayout` IPC was missed.
+    safeHandle("tabLayouts:pending", async (e: IpcEvent): Promise<TabLayout | null> => {
+        const wcId = e.sender.id;
+        const layout = pendingByWebContentsId.get(wcId) ?? null;
+        if (layout) {
+            pendingByWebContentsId.delete(wcId);
+        }
+        return layout;
     });
 
     safeHandle("tabLayouts:apply", async (_e: IpcEvent, layoutId: string) => {
         assertValidId(layoutId, "layoutId");
 
-        // Prevent concurrent applies - wait for previous to complete
-        if (applyInProgress) {
-            throw new Error("Layout apply already in progress");
+        if (inFlightLayoutIds.has(layoutId)) {
+            // Same layout already being opened — silently ignore the duplicate click.
+            return false;
         }
-
-        applyInProgress = true;
-        const applyTimestamp = Date.now();
-
+        // Mark in-flight BEFORE any await so concurrent invocations dedupe.
+        inFlightLayoutIds.add(layoutId);
         try {
             const layout = await opts.tabLayouts.get(layoutId);
             if (!layout) {
                 throw new NotFoundError("layout not found");
             }
 
-            // Extract profile IDs from layout (tabs array contains all profile IDs)
-            const layoutProfileIds = layout.tabs;
+            // Profile conflicts (same profile already open in another window)
+            // are NOT blocked here — the renderer detects them via
+            // sessionTabsGetAllOpenProfiles() and renders a "jump to window"
+            // overlay for those cells instead of opening a second BrowserView.
 
-            // Check if any profile in the layout is already online
-            const alreadyOnlineProfiles = layoutProfileIds.filter(id =>
-                opts.sessionTabs.hasLoadedProfile(id)
-            );
+            // Always create a NEW window — never close existing ones.
+            // Pass layoutId as URL param so the renderer's startInitialLoad
+            // watchdog can pick up the layout if the IPC event is missed.
+            const windowId = await opts.createTabWindow({
+                name: layout.name,
+                params: { layoutId: layout.id },
+            });
+            const entry = opts.sessionRegistry.get(windowId);
+            if (!entry) {
+                throw new Error(`failed to create session window (${windowId})`);
+            }
+            const win = entry.window;
+            // Cache the webContents id BEFORE registering the closed listener.
+            // Once the window is destroyed, `win.webContents` access throws.
+            const wcId = win.webContents.id;
 
-            if (alreadyOnlineProfiles.length > 0) {
-                // Show toast message about already online profiles
-                const profileList = alreadyOnlineProfiles.join(", ");
-                if (opts.showToast) {
-                    opts.showToast(
-                        alreadyOnlineProfiles.length === 1
-                            ? `Profil "${profileList}" ist bereits online`
-                            : `Profile "${profileList}" sind bereits online`,
-                        "error"
-                    );
-                }
-                return false;
+            // Stash the layout so the renderer's tabLayouts:pending poll resolves
+            // it if the dispatched event missed the listener registration window.
+            pendingByWebContentsId.set(wcId, layout);
+            win.once("closed", () => {
+                pendingByWebContentsId.delete(wcId);
+            });
+
+            // Track first profile of the layout for downstream title computation.
+            const firstProfile = layout.activeId ?? layout.tabs[0];
+            if (firstProfile) {
+                opts.sessionRegistry.setInitialProfileId(windowId, firstProfile);
             }
 
-            // If a session window exists, close it and reset tabs to start fresh
-            const existingWin = opts.sessionWindow.get();
-            if (existingWin && !existingWin.isDestroyed()) {
-                opts.sessionTabs.reset();
-                opts.sessionWindow.closeWithoutPrompt();
-                // Small delay to ensure window is fully closed before creating new one
-                await new Promise<void>(resolve => setTimeout(resolve, 100));
-            }
-
-            // Only update pending if this is the most recent request
-            if (applyTimestamp >= pendingLayoutTimestamp) {
-                pendingLayout = layout;
-                pendingLayoutTimestamp = applyTimestamp;
-            }
-
-            // Create new window (passing layoutId for query params) and focus it
-            const win = await opts.sessionWindow.ensure({ layoutId });
-            const windowIsNew = opts.sessionWindow.isNew();
-            win.show();
-            win.focus();
-
-            // Dispatch layout to renderer once it's ready (also for newly created windows)
-            const dispatch = () => {
-                try {
-                    // Only send if window is still valid
-                    if (!win.isDestroyed()) {
-                        win.webContents.send("session:applyLayout", layout);
+            try {
+                if (!win.isDestroyed()) {
+                    win.show();
+                    win.focus();
+                    if (layout.name) {
+                        win.setTitle(layout.name);
                     }
                 }
-                catch (err) {
+            } catch (err) {
+                logErr(err);
+            }
+
+            // Dispatch as a fast path. If the renderer has already consumed
+            // pending (via tabLayouts:pending), skip — applyLayout would
+            // otherwise run twice and cause a visible re-load.
+            const dispatchIfStillPending = () => {
+                try {
+                    if (win.isDestroyed()) return;
+                    if (!pendingByWebContentsId.has(wcId)) return;
+                    pendingByWebContentsId.delete(wcId);
+                    win.webContents.send("session:applyLayout", layout);
+                } catch (err) {
                     logErr(err);
                 }
             };
 
-            const wc = win.webContents;
-            if (wc.isLoading()) {
-                await new Promise<void>((resolve) => {
-                    const loadHandler = () => {
-                        setTimeout(() => {
-                            dispatch();
-                            resolve();
-                        }, windowIsNew ? 420 : 260);
-                    };
-
-                    // Handle case where window is closed during load
-                    const closeHandler = () => {
-                        wc.off("did-finish-load", loadHandler);
-                        resolve();
-                    };
-
-                    wc.once("did-finish-load", loadHandler);
-                    win.once("closed", closeHandler);
-                });
-            }
-            else {
-                await new Promise<void>((resolve) => {
-                    setTimeout(() => {
-                        dispatch();
-                        resolve();
-                    }, 120);
-                });
-            }
+            // Fire-and-forget bonus path; the URL-param + tabLayouts:pending
+            // poll in startInitialLoad is the primary mechanism.
+            setTimeout(dispatchIfStillPending, 600);
             return true;
         } finally {
-            applyInProgress = false;
+            inFlightLayoutIds.delete(layoutId);
         }
     });
 }

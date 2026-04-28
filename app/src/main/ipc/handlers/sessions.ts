@@ -48,7 +48,7 @@ export type SessionHandlerOptions = {
     sessionRegistry: SessionRegistry; // Multi-window registry
     profiles: ProfilesStore;
     createInstanceWindow: (profileId: string) => Promise<void>;
-    createTabWindow: (opts?: { name?: string }) => Promise<string>; // Returns windowId
+    createTabWindow: (opts?: { name?: string; params?: Record<string, string> }) => Promise<string>; // Returns windowId
     getLocale?: () => Promise<Locale>;
 };
 
@@ -520,6 +520,54 @@ export function registerSessionHandlers(
         return true;
     });
 
+    /**
+     * Tell the manager which profiles must NOT have a BrowserView created
+     * (conflict cells whose profile is already open in another window).
+     * Renderer calls this before applyLayout so the manager refuses to
+     * spawn views even via late callbacks (`reattachVisibleViews`, etc.).
+     */
+    safeHandle("sessionTabs:setSkippedProfiles", async (e: IpcEvent, profileIds: string[]): Promise<boolean> => {
+        assertValid(z.array(z.string()), profileIds, "profile ids");
+        const entry = findWindowFromSender(e);
+        if (entry) {
+            const fn = (entry.tabsManager as unknown as { setSkippedProfiles?: (ids: string[]) => void }).setSkippedProfiles;
+            if (typeof fn === "function") fn(profileIds);
+            return true;
+        }
+        const fn = (opts.sessionTabs as unknown as { setSkippedProfiles?: (ids: string[]) => void }).setSkippedProfiles;
+        if (typeof fn === "function") fn(profileIds);
+        return true;
+    });
+
+    /**
+     * Returns per-cell bounds for the current multi-layout in the calling
+     * window. Used by the renderer to position DOM overlays for "conflict"
+     * cells where no BrowserView is opened (profile already in another window).
+     */
+    safeHandle("sessionTabs:getLayoutBounds", async (e: IpcEvent): Promise<Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }>> => {
+        const entry = findWindowFromSender(e);
+        if (entry) {
+            const fn = (entry.tabsManager as unknown as { computeLayoutBounds?: () => Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }> }).computeLayoutBounds;
+            if (typeof fn === "function") {
+                try {
+                    return fn() ?? [];
+                } catch (err) {
+                    logErr(err);
+                }
+            }
+            return [];
+        }
+        const fn = (opts.sessionTabs as unknown as { computeLayoutBounds?: () => Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }> }).computeLayoutBounds;
+        if (typeof fn === "function") {
+            try {
+                return fn() ?? [];
+            } catch (err) {
+                logErr(err);
+            }
+        }
+        return [];
+    });
+
     safeHandle("sessionTabs:setSplitRatio", async (e: IpcEvent, ratio: number) => {
         assertValid(RatioSchema, ratio, "ratio");
 
@@ -656,6 +704,62 @@ export function registerSessionHandlers(
         return success;
     });
 
+    /**
+     * Focus the window currently hosting a given profile and activate its tab.
+     * Used by the conflict-overlay button when a profile is already open in
+     * another session window.
+     */
+    safeHandle("session:focusProfile", async (_e: IpcEvent, profileId: string): Promise<boolean> => {
+        assertValidId(profileId, "profileId");
+
+        const focusWindow = (win: BrowserWindow) => {
+            try {
+                if (win.isMinimized()) win.restore();
+                win.show();
+                win.focus();
+            } catch (err) {
+                logErr(err);
+            }
+        };
+
+        for (const entry of opts.sessionRegistry.list()) {
+            const get = entry.tabsManager.getLoadedProfileIds;
+            if (typeof get !== "function") continue;
+            try {
+                if (!get().includes(profileId)) continue;
+            } catch (err) {
+                logErr(err);
+                continue;
+            }
+            focusWindow(entry.window);
+            try {
+                await entry.tabsManager.switchTo(profileId);
+            } catch (err) {
+                logErr(err);
+            }
+            return true;
+        }
+
+        try {
+            if (typeof opts.sessionTabs.hasLoadedProfile === "function" &&
+                opts.sessionTabs.hasLoadedProfile(profileId)) {
+                const win = opts.sessionWindow.get();
+                if (win && !win.isDestroyed()) {
+                    focusWindow(win);
+                    try {
+                        await opts.sessionTabs.switchTo(profileId);
+                    } catch (err) {
+                        logErr(err);
+                    }
+                    return true;
+                }
+            }
+        } catch (err) {
+            logErr(err);
+        }
+        return false;
+    });
+
     safeHandle("session:updateWindowTitle", async (e: IpcEvent, layoutTypes: string[]) => {
         assertValid(z.array(z.string()), layoutTypes, "layout types");
 
@@ -666,8 +770,14 @@ export function registerSessionHandlers(
             return false;
         }
 
-        // Resolve initial profile ID (fallback to active/loaded if missing)
-        let profileId =
+        // Prefer the saved layout name (set when the window was created from
+        // a layout) so the title reflects which layout the user opened.
+        if (entry.name) {
+            return opts.sessionRegistry.updateWindowTitle(entry.id, entry.name, layoutTypes);
+        }
+
+        // Otherwise fall back to the initial profile name.
+        const profileId =
             entry.initialProfileId ??
             opts.sessionRegistry.getInitialProfileId(entry.id) ??
             entry.tabsManager.getActiveId?.() ??
@@ -678,16 +788,12 @@ export function registerSessionHandlers(
             console.error("[session:updateWindowTitle] No initial or active profile ID available for window");
             return false;
         }
-        // Persist the discovered profile as initial for future updates
         ensureInitialProfile(entry.id, profileId);
 
-        // Get profile name
         try {
             const profiles = await opts.profiles.list();
             const profile = profiles.find(p => p.id === profileId);
             const profileName = profile?.name || profileId;
-
-            // Update window title
             return opts.sessionRegistry.updateWindowTitle(entry.id, profileName, layoutTypes);
         } catch (err) {
             console.error("[session:updateWindowTitle] Error:", err);

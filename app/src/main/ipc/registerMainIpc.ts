@@ -42,7 +42,7 @@ export type RegisterMainIpcOptions = {
     clientSettings: ClientSettingsStore;
     loadView?: LoadView;
     createInstanceWindow: (profileId: string) => Promise<void>;
-    createTabWindow: (opts?: { name?: string }) => Promise<string>; // Multi-window factory
+    createTabWindow: (opts?: { name?: string; params?: Record<string, string> }) => Promise<string>; // Multi-window factory
     roiOpen: (profileId: string, roiKey?: "lvl" | "charname" | "exp" | "lauftext" | "rmExp" | "enemyName" | "enemyHp") => Promise<boolean>;
     roiLoad: (profileId: string) => Promise<RoiData | null>;
     roiSave: (profileId: string, rois: RoiData) => Promise<boolean>;
@@ -86,6 +86,8 @@ export function registerMainIpc(opts: RegisterMainIpcOptions): void {
         tabLayouts: opts.tabLayouts,
         sessionWindow: opts.sessionWindow,
         sessionTabs: opts.sessionTabs,
+        sessionRegistry: opts.sessionRegistry,
+        createTabWindow: opts.createTabWindow,
         showToast: opts.showToast,
     }, ipcLogErr);
 

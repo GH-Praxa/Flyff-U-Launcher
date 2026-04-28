@@ -37,14 +37,25 @@ describe("Layout IPC handlers", () => {
         getLoadedProfileIds: ReturnType<typeof vi.fn>;
         reset: ReturnType<typeof vi.fn>;
     };
+    let sessionRegistry: {
+        list: ReturnType<typeof vi.fn>;
+        get: ReturnType<typeof vi.fn>;
+        setInitialProfileId: ReturnType<typeof vi.fn>;
+    };
+    let createTabWindow: ReturnType<typeof vi.fn>;
     let showToast: ReturnType<typeof vi.fn>;
     const win = {
         show: vi.fn(),
         focus: vi.fn(),
+        setTitle: vi.fn(),
         isDestroyed: vi.fn().mockReturnValue(false),
+        once: vi.fn(),
         webContents: {
+            id: 42,
             send: vi.fn(),
             isLoading: vi.fn().mockReturnValue(false),
+            once: vi.fn(),
+            off: vi.fn(),
         },
     };
     const logErr = vi.fn();
@@ -56,6 +67,14 @@ describe("Layout IPC handlers", () => {
         win.webContents.send.mockReset();
         win.webContents.isLoading.mockReset();
         win.webContents.isLoading.mockReturnValue(false);
+        win.webContents.once.mockReset();
+        win.webContents.off.mockReset();
+        win.once.mockReset();
+        win.show.mockReset();
+        win.focus.mockReset();
+        win.setTitle.mockReset();
+        win.isDestroyed.mockReset();
+        win.isDestroyed.mockReturnValue(false);
 
         tabLayouts = {
             list: vi.fn().mockResolvedValue([]),
@@ -74,13 +93,26 @@ describe("Layout IPC handlers", () => {
             getLoadedProfileIds: vi.fn().mockReturnValue([]),
             reset: vi.fn(),
         };
+        sessionRegistry = {
+            list: vi.fn().mockReturnValue([]),
+            get: vi.fn().mockReturnValue({
+                id: "session-1",
+                name: undefined,
+                createdAt: new Date().toISOString(),
+                window: win,
+                tabsManager: { getLoadedProfileIds: (): string[] => [] },
+                initialProfileId: undefined,
+            }),
+            setInitialProfileId: vi.fn().mockReturnValue(true),
+        };
+        createTabWindow = vi.fn().mockResolvedValue("session-1");
         showToast = vi.fn();
 
         const safeHandle = createSafeHandle(handlers);
         registerLayoutHandlers(
             safeHandle,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            { tabLayouts, sessionWindow, sessionTabs, showToast } as any,
+            { tabLayouts, sessionWindow, sessionTabs, sessionRegistry, createTabWindow, showToast } as any,
             logErr as any,
         );
     });
@@ -98,8 +130,9 @@ describe("Layout IPC handlers", () => {
         await expect(apply({} as IpcEvent, "missing")).rejects.toBeInstanceOf(NotFoundError);
     });
 
-    it("wendet Layout an und sendet Event", async () => {
+    it("öffnet ein neues Fenster mit layoutId-Param und legt Pending ab", async () => {
         const apply = handler("tabLayouts:apply");
+        const pending = handler("tabLayouts:pending");
         const layout: TabLayout = {
             id: "layout-1",
             name: "Test",
@@ -114,8 +147,18 @@ describe("Layout IPC handlers", () => {
 
         await expect(apply({} as IpcEvent, layout.id)).resolves.toBe(true);
 
-        expect(sessionWindow.ensure).toHaveBeenCalled();
-        expect(win.webContents.send).toHaveBeenCalledWith("session:applyLayout", layout);
+        expect(createTabWindow).toHaveBeenCalledWith({
+            name: "Test",
+            params: { layoutId: layout.id },
+        });
+        expect(sessionRegistry.setInitialProfileId).toHaveBeenCalledWith("session-1", "a");
+        expect(win.setTitle).toHaveBeenCalledWith("Test");
+
+        // Renderer of the new window polls tabLayouts:pending → gets the layout once.
+        const fakeEvent = { sender: { id: 42 } } as unknown as IpcEvent;
+        await expect(pending(fakeEvent)).resolves.toEqual(layout);
+        // Second poll returns null (already consumed).
+        await expect(pending(fakeEvent)).resolves.toBeNull();
     });
 
     it("validiert Eingaben für save", async () => {
@@ -128,7 +171,9 @@ describe("Layout IPC handlers", () => {
         expect(tabLayouts.save).toHaveBeenCalled();
     });
 
-    it("zeigt Toast wenn Profil bereits online ist", async () => {
+    it("öffnet das Layout-Fenster auch wenn ein Profil bereits anderswo online ist", async () => {
+        // Conflict handling moved to renderer (DOM overlay over the cell);
+        // the handler must NOT abort or jump to the other window anymore.
         const apply = handler("tabLayouts:apply");
         const layout: TabLayout = {
             id: "layout-1",
@@ -141,19 +186,49 @@ describe("Layout IPC handlers", () => {
             loggedOutChars: [],
         };
         tabLayouts.get.mockResolvedValueOnce(layout);
-        // Profile "a" is already online
+        sessionTabs.getLoadedProfileIds.mockReturnValue(["a"]);
         sessionTabs.hasLoadedProfile.mockImplementation((id: string) => id === "a");
 
-        await expect(apply({} as IpcEvent, layout.id)).resolves.toBe(false);
+        await expect(apply({} as IpcEvent, layout.id)).resolves.toBe(true);
 
-        expect(showToast).toHaveBeenCalledWith(
-            expect.stringContaining("a"),
-            "error"
-        );
-        expect(sessionWindow.ensure).not.toHaveBeenCalled();
+        expect(createTabWindow).toHaveBeenCalledWith({
+            name: "Test",
+            params: { layoutId: layout.id },
+        });
     });
 
-    it("schließt bestehendes Fenster vor Layout-Anwendung", async () => {
+    it("öffnet das Layout auch wenn ein Profil in einem Multi-Window offen ist", async () => {
+        // Conflict cells are flagged by the renderer (which overlays a "jump"
+        // button); the apply handler always opens a new window.
+        const apply = handler("tabLayouts:apply");
+        const layout: TabLayout = {
+            id: "layout-1",
+            name: "Test",
+            createdAt: "2024-01-01",
+            updatedAt: "2024-01-02",
+            tabs: ["c"],
+            split: null,
+            activeId: "c",
+            loggedOutChars: [],
+        };
+        tabLayouts.get.mockResolvedValueOnce(layout);
+        sessionRegistry.list.mockReturnValue([
+            {
+                id: "session-existing",
+                name: "Other Layout",
+                tabsManager: { getLoadedProfileIds: (): string[] => ["c"] },
+                window: win,
+                createdAt: "",
+                initialProfileId: undefined,
+            },
+        ]);
+
+        await expect(apply({} as IpcEvent, layout.id)).resolves.toBe(true);
+
+        expect(createTabWindow).toHaveBeenCalled();
+    });
+
+    it("schließt bestehende Fenster NICHT — multi-window add-only", async () => {
         const apply = handler("tabLayouts:apply");
         const layout: TabLayout = {
             id: "layout-1",
@@ -166,16 +241,44 @@ describe("Layout IPC handlers", () => {
             loggedOutChars: [],
         };
         tabLayouts.get.mockResolvedValueOnce(layout);
-        // No profiles online
-        sessionTabs.hasLoadedProfile.mockReturnValue(false);
-        // But existing window exists
         const existingWin = { isDestroyed: vi.fn().mockReturnValue(false) };
         sessionWindow.get.mockReturnValue(existingWin);
 
         await expect(apply({} as IpcEvent, layout.id)).resolves.toBe(true);
 
-        expect(sessionTabs.reset).toHaveBeenCalled();
-        expect(sessionWindow.closeWithoutPrompt).toHaveBeenCalled();
-        expect(sessionWindow.ensure).toHaveBeenCalled();
+        expect(sessionTabs.reset).not.toHaveBeenCalled();
+        expect(sessionWindow.closeWithoutPrompt).not.toHaveBeenCalled();
+        expect(createTabWindow).toHaveBeenCalled();
+    });
+
+    it("dedupliziert parallele Apply-Calls für dieselbe layoutId", async () => {
+        const apply = handler("tabLayouts:apply");
+        const layout: TabLayout = {
+            id: "layout-1",
+            name: "Test",
+            createdAt: "2024-01-01",
+            updatedAt: "2024-01-02",
+            tabs: ["a"],
+            split: null,
+            activeId: "a",
+            loggedOutChars: [],
+        };
+        tabLayouts.get.mockResolvedValue(layout);
+
+        // Slow down createTabWindow so the two calls overlap.
+        let resolveCreate: (id: string) => void;
+        createTabWindow.mockImplementationOnce(
+            () => new Promise<string>((r) => { resolveCreate = r; })
+        );
+
+        const first = apply({} as IpcEvent, layout.id);
+        const second = await apply({} as IpcEvent, layout.id);
+
+        // Second call returns false (deduped) without creating another window.
+        expect(second).toBe(false);
+        expect(createTabWindow).toHaveBeenCalledTimes(1);
+
+        resolveCreate!("session-1");
+        await first;
     });
 });

@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.4.1
+
+### 🐛 Fehlerbehebungen
+
+**Mehrere Layout-Fenster gleichzeitig**
+- „Play" auf einem gespeicherten Layout öffnet jetzt ein **zusätzliches** Fenster, das laufende bleibt offen
+- Fenstertitel zeigt den Namen des Layouts
+- Ist ein Profil schon in einem anderen Fenster offen, erscheint in der Zelle ein Hinweis mit „Zum Fenster springen"-Button — kein zweiter Login, kein Rauswurf des Charakters
+
+🙏 Danke an **@ODevil97** für den ausführlichen Bug-Report (GitHub)
+
+---
 ## 🆕 Version 3.4.0
 
 ### ✨ Neue Funktionen

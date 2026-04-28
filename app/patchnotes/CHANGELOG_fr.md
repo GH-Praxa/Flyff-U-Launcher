@@ -1,6 +1,18 @@
 # 📦 Notes de patch
 
 ---
+## 🐛 Version 3.4.1
+
+### 🐛 Corrections de bugs
+
+**Plusieurs fenêtres de layout en même temps**
+- Cliquer « Play » sur un layout enregistré ouvre désormais une fenêtre **supplémentaire** — celle en cours reste ouverte
+- Le titre de la fenêtre affiche le nom du layout
+- Si un profil est déjà ouvert dans une autre fenêtre, la cellule affiche une note avec un bouton « Aller à la fenêtre » — pas de second login, pas de personnage éjecté
+
+🙏 Merci à **@ODevil97** pour le rapport de bug détaillé (GitHub)
+
+---
 ## 🆕 Version 3.4.0
 
 ### ✨ Nouvelles fonctionnalités

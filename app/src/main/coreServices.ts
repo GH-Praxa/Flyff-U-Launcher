@@ -40,7 +40,7 @@ export type CoreServices = {
     roiStore: ReturnType<typeof createRoiStore>;
     roiController: ReturnType<typeof createRoiController>;
     createInstanceWindow: (profileId: string) => Promise<void>;
-    createTabWindow: (opts?: { name?: string }) => Promise<string>; // Returns windowId
+    createTabWindow: (opts?: { name?: string; params?: Record<string, string> }) => Promise<string>; // Returns windowId
     createLauncherWindow: typeof createLauncherWindow;
     setInstanceFont: (font: string | null) => void;
 };
@@ -139,7 +139,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
     });
 
     // Tab window factory for multi-window support
-    const createTabWindowBound = async (windowOpts?: { name?: string }): Promise<string> => {
+    const createTabWindowBound = async (windowOpts?: { name?: string; params?: Record<string, string> }): Promise<string> => {
         const settings = await clientSettings.get();
         const windowId = `session-${Date.now()}`;
 
@@ -148,7 +148,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             loadView: opts.loadView,
             shouldMaximize: async () => settings.startFullscreen,
             windowId,
-            params: { windowId }, // Pass windowId as URL parameter
+            params: { windowId, ...(windowOpts?.params ?? {}) },
         });
 
         // Create a window-specific SessionWindowController wrapper

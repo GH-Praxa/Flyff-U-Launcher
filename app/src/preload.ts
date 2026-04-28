@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld("api", {
     sessionTabsSetVisible: (visible: boolean) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setVisible", visible)),
     sessionTabsGetOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getOpenProfiles")) as Promise<string[]>,
     sessionTabsGetAllOpenProfiles: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getAllOpenProfiles")) as Promise<string[]>,
+    sessionFocusProfile: (profileId: string) => unwrapIpc(ipcRenderer.invoke("session:focusProfile", profileId)) as Promise<boolean>,
+    sessionTabsGetLayoutBounds: () => unwrapIpc(ipcRenderer.invoke("sessionTabs:getLayoutBounds")) as Promise<Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }>>,
+    sessionTabsSetSkippedProfiles: (profileIds: string[]) => unwrapIpc(ipcRenderer.invoke("sessionTabs:setSkippedProfiles", profileIds)) as Promise<boolean>,
     sessionTabsSetMultiLayout: (
         layout: import("./shared/schemas").MultiViewLayout | null,
         options?: { ensureViews?: boolean; allowMissingViews?: boolean }

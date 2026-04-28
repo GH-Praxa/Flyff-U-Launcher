@@ -16,6 +16,12 @@ export function createSessionTabsManager(opts: {
     const sessionViews = new Map<string, BrowserView>();
     const loadedProfiles = new Set<string>();
     const loggedOutProfiles = new Set<string>();
+    /**
+     * Profiles that must NOT have a BrowserView created (set by the renderer
+     * when the profile is already open in another session window — creating
+     * a second view would force a same-character double login on the server).
+     */
+    const skippedProfiles = new Set<string>();
     let sessionActiveId: string | null = null;
     let sessionLayout: MultiViewLayout | null = null;
     // When true, keep layout cells even if their BrowserView has not been created yet (sequential grid load).
@@ -859,9 +865,15 @@ export function createSessionTabsManager(opts: {
         clearInterval(hoverTimer);
         hoverTimer = null;
     }
-    function ensureSessionView(profileId: string) {
+    function ensureSessionView(profileId: string): BrowserView | null {
         if (sessionViews.has(profileId))
             return sessionViews.get(profileId)!;
+        if (skippedProfiles.has(profileId)) {
+            // Profile is already loaded in another window; refuse to create a
+            // second BrowserView with the same partition. The renderer paints
+            // a "jump to that window" overlay over the cell.
+            return null;
+        }
         const view = new BrowserView({
             webPreferences: {
                 partition: `persist:${profileId}`,
@@ -1005,6 +1017,10 @@ export function createSessionTabsManager(opts: {
             return true;
         }
         const view = ensureSessionView(profileId);
+        if (!view) {
+            // Profile is in skippedProfiles — renderer overlays a "jump" card.
+            return false;
+        }
         const webContents = view.webContents;
         if (!webContents || webContents.isDestroyed()) {
             logErr(`Cannot open session tab; webContents missing for profile ${profileId}`, "SessionTabs");
@@ -1087,6 +1103,12 @@ export function createSessionTabsManager(opts: {
         }
 
         const view = ensureSessionView(profileId);
+        if (!view) {
+            // Profile is skipped (already open in another window) — leave the
+            // cell empty; renderer paints a "jump to that window" overlay.
+            applyActiveBrowserView();
+            return true;
+        }
         const webContents = view.webContents;
         const layoutBounds = computeLayoutBounds();
         const target = layoutBounds.find((c) => c.id === profileId) ?? layoutBounds.find((c) => c.position === pos);
@@ -1202,7 +1224,8 @@ export function createSessionTabsManager(opts: {
             ratio: sessionSplitRatio,
             activePosition: 0,
         };
-        layoutAllowsMissingViews = false;
+        // For skipped profiles (open in another window) we never created a view.
+        layoutAllowsMissingViews = skippedProfiles.has(profileId);
         applyActiveBrowserView();
         stopHoverActivation();
         return true;
@@ -1447,6 +1470,7 @@ export function createSessionTabsManager(opts: {
         sessionSplitRatio = defaultSplitRatio;
         layoutAllowsMissingViews = false;
         loggedOutProfiles.clear();
+        skippedProfiles.clear();
         activeBorderCssByView.clear();
         for (const cleanup of fontNavigateCleanups.values()) cleanup();
         fontNavigateCleanups.clear();
@@ -1492,6 +1516,16 @@ export function createSessionTabsManager(opts: {
     function getUiPositionPersistenceEnabled(): boolean {
         return uiPositionPersistenceEnabled;
     }
+    /**
+     * Mark profiles as "skipped" — no BrowserView will be created for them
+     * (they're already open in another session window). The renderer overlays
+     * a "jump to that window" card over each skipped cell.
+     */
+    function setSkippedProfiles(ids: string[]): void {
+        skippedProfiles.clear();
+        for (const id of ids) skippedProfiles.add(id);
+    }
+
     return {
         open,
         openInCell,
@@ -1517,6 +1551,8 @@ export function createSessionTabsManager(opts: {
         getBounds,
         getLoadedProfileIds,
         hasLoadedProfile,
+        computeLayoutBounds,
+        setSkippedProfiles,
     };
 }
 export type SessionTabsManager = ReturnType<typeof createSessionTabsManager>;

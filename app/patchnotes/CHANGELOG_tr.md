@@ -1,6 +1,18 @@
 # 📦 Yama Notları
 
 ---
+## 🐛 Sürüm 3.4.1
+
+### 🐛 Hata düzeltmeleri
+
+**Aynı anda birden fazla yerleşim penceresi**
+- Kaydedilmiş bir yerleşimde „Play" artık **ek** bir pencere açar — çalışan pencere açık kalır
+- Pencere başlığı yerleşimin adını gösterir
+- Bir profil zaten başka bir pencerede açıksa, hücre „Pencereye geç" düğmeli bir not gösterir — ikinci giriş yok, karakter kovulmaz
+
+🙏 Ayrıntılı hata raporu için **@ODevil97**'a teşekkürler (GitHub)
+
+---
 ## 🆕 Sürüm 3.4.0
 
 ### ✨ Yeni Özellikler

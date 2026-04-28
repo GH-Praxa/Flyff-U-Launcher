@@ -46,6 +46,7 @@ export const IPC_CHANNELS = {
     SESSION_OPEN_TAB_WITH_LAYOUT: "session:openTabWithLayout",
     SESSION_CREATE_WINDOW_WITH_LAYOUT: "session:createWindowWithLayout",
     SESSION_UPDATE_WINDOW_TITLE: "session:updateWindowTitle",
+    SESSION_FOCUS_PROFILE: "session:focusProfile",
 
     // Instance window
     INSTANCE_OPEN_WINDOW: "instance:openWindow",

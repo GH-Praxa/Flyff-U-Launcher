@@ -1,6 +1,18 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Wersja 3.4.1
+
+### 🐛 Poprawki błędów
+
+**Wiele okien układów jednocześnie**
+- Kliknięcie „Play" na zapisanym układzie otwiera teraz **dodatkowe** okno — działające pozostaje otwarte
+- Tytuł okna pokazuje nazwę układu
+- Jeśli profil jest już otwarty w innym oknie, komórka pokazuje informację z przyciskiem „Przejdź do okna" — bez drugiego logowania i wyrzucenia postaci
+
+🙏 Podziękowania dla **@ODevil97** za szczegółowe zgłoszenie błędu (GitHub)
+
+---
 ## 🆕 Wersja 3.4.0
 
 ### ✨ Nowe funkcje

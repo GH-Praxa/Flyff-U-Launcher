@@ -244,6 +244,9 @@ declare global {
             // Session tabs (extended)
             sessionTabsGetOpenProfiles: () => Promise<string[]>;
             sessionTabsGetAllOpenProfiles: () => Promise<string[]>;
+            sessionTabsGetLayoutBounds: () => Promise<Array<{ id: string; position: number; bounds: { x: number; y: number; width: number; height: number } }>>;
+            sessionTabsSetSkippedProfiles: (profileIds: string[]) => Promise<boolean>;
+            sessionFocusProfile: (profileId: string) => Promise<boolean>;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             sessionTabsSetMultiLayout: (layout: any, options?: { ensureViews?: boolean; allowMissingViews?: boolean }) => Promise<void>;
             sessionTabsOpenInCell: (position: number, profileId: string, options?: { activate?: boolean; forceLoad?: boolean }) => Promise<void>;
