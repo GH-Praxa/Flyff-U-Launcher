@@ -50,7 +50,7 @@ import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import type { ExtraWindowInfo, ExtraRowInfo } from "./main/ipc/handlers/memory";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
 import { registerControllerHandlers } from "./main/ipc/handlers/controller";
-import { createControllerInputRouter } from "./main/controller/inputRouter";
+import { createControllerInputRouter, DEFAULT_BUTTON_MAPPING, resolveButtonMapping, type ControllerButtonMapping } from "./main/controller/inputRouter";
 import { createSafeHandler } from "./main/ipc/common";
 import { applyCSP, getCSPNonce } from "./main/security/harden";
 import { logInfo, logErr, logWarn, setLogListener } from "./shared/logger";
@@ -713,11 +713,10 @@ app.whenReady().then(async () => {
     // Cache fuer Per-Profil-Button-Mapping (Override → vollstaendiges Mapping).
     // Wird beim Start aus den Profilen befuellt und bei jedem Profil-Update
     // aktualisiert.
-    const buttonMappings = new Map<string, ReturnType<typeof import("./main/controller/inputRouter").resolveButtonMapping>>();
+    const buttonMappings = new Map<string, ControllerButtonMapping>();
     const reloadButtonMappingsForProfile = (profileId: string, override: unknown) => {
-        const ctrlInputRouter = require("./main/controller/inputRouter") as typeof import("./main/controller/inputRouter");
         if (override && typeof override === "object") {
-            buttonMappings.set(profileId, ctrlInputRouter.resolveButtonMapping(override as Record<string, string | null | undefined>));
+            buttonMappings.set(profileId, resolveButtonMapping(override as Record<string, string | null | undefined>));
         }
         else {
             buttonMappings.delete(profileId);
@@ -732,9 +731,8 @@ app.whenReady().then(async () => {
         },
         getButtonMapping: (sender) => {
             const profileId = webContentsToProfile.get(sender.id);
-            if (!profileId) return require("./main/controller/inputRouter").DEFAULT_BUTTON_MAPPING;
-            return buttonMappings.get(profileId)
-                ?? require("./main/controller/inputRouter").DEFAULT_BUTTON_MAPPING;
+            if (!profileId) return DEFAULT_BUTTON_MAPPING;
+            return buttonMappings.get(profileId) ?? DEFAULT_BUTTON_MAPPING;
         },
         notify: (msg) => controllerToast(msg, "info"),
     });
