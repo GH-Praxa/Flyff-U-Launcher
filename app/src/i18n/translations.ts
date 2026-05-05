@@ -570,6 +570,10 @@ const messagesEn = {
   "controller.saved": "Controller mapping saved.",
   "controller.saveFailed": "Saving failed.",
   "controller.resetAll": "Reset all",
+  "controller.section.face": "Face buttons",
+  "controller.section.shoulders": "Shoulders & Triggers",
+  "controller.section.dpad": "D-Pad",
+  "controller.section.system": "System & Sticks",
 };
 
 const messagesDe: typeof messagesEn = {
@@ -1139,6 +1143,10 @@ const messagesDe: typeof messagesEn = {
   "controller.saved": "Controller-Belegung gespeichert.",
   "controller.saveFailed": "Speichern fehlgeschlagen.",
   "controller.resetAll": "Alle zurücksetzen",
+  "controller.section.face": "Face-Buttons",
+  "controller.section.shoulders": "Schultern & Trigger",
+  "controller.section.dpad": "D-Pad",
+  "controller.section.system": "System & Sticks",
 };
 
 const messagesPl: typeof messagesEn = {
@@ -1711,6 +1719,10 @@ const messagesPl: typeof messagesEn = {
   "controller.saved": "Mapowanie kontrolera zapisane.",
   "controller.saveFailed": "Zapis nie powiódł się.",
   "controller.resetAll": "Resetuj wszystkie",
+  "controller.section.face": "Przyciski twarzy",
+  "controller.section.shoulders": "Naramienne i spusty",
+  "controller.section.dpad": "Krzyżak",
+  "controller.section.system": "System i drążki",
 };
 
 const messagesFr: typeof messagesEn = {
@@ -2280,6 +2292,10 @@ const messagesFr: typeof messagesEn = {
   "controller.saved": "Configuration de la manette enregistrée.",
   "controller.saveFailed": "Échec de l'enregistrement.",
   "controller.resetAll": "Tout réinitialiser",
+  "controller.section.face": "Boutons faciaux",
+  "controller.section.shoulders": "Gâchettes & boutons",
+  "controller.section.dpad": "Croix directionnelle",
+  "controller.section.system": "Système & sticks",
 };
 
 const messagesRu: typeof messagesEn = {
@@ -2851,6 +2867,10 @@ const messagesRu: typeof messagesEn = {
   "controller.saved": "Настройка контроллера сохранена.",
   "controller.saveFailed": "Сохранение не удалось.",
   "controller.resetAll": "Сбросить всё",
+  "controller.section.face": "Кнопки лица",
+  "controller.section.shoulders": "Бамперы и курки",
+  "controller.section.dpad": "Крестовина",
+  "controller.section.system": "Система и стики",
 };
 
 const messagesTr: typeof messagesEn = {
@@ -3422,6 +3442,10 @@ const messagesTr: typeof messagesEn = {
   "controller.saved": "Kumanda eşlemesi kaydedildi.",
   "controller.saveFailed": "Kayıt başarısız oldu.",
   "controller.resetAll": "Tümünü sıfırla",
+  "controller.section.face": "Yüz düğmeleri",
+  "controller.section.shoulders": "Omuzlar ve tetikler",
+  "controller.section.dpad": "D-Pad",
+  "controller.section.system": "Sistem ve çubuklar",
 };
 
 const messagesCn: typeof messagesEn = {
@@ -3993,6 +4017,10 @@ const messagesCn: typeof messagesEn = {
   "controller.saved": "控制器映射已保存。",
   "controller.saveFailed": "保存失败。",
   "controller.resetAll": "全部重置",
+  "controller.section.face": "面按钮",
+  "controller.section.shoulders": "肩键 & 扳机",
+  "controller.section.dpad": "方向键",
+  "controller.section.system": "系统 & 摇杆",
 };
 
 const messagesJp: typeof messagesEn = {
@@ -4564,6 +4592,10 @@ const messagesJp: typeof messagesEn = {
   "controller.saved": "コントローラー設定を保存しました。",
   "controller.saveFailed": "保存に失敗しました。",
   "controller.resetAll": "すべてリセット",
+  "controller.section.face": "フェイスボタン",
+  "controller.section.shoulders": "ショルダー & トリガー",
+  "controller.section.dpad": "十字キー",
+  "controller.section.system": "システム & スティック",
 };
 
 export type TranslationKey = keyof typeof messagesEn;

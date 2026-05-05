@@ -1394,7 +1394,7 @@ export function openConfigModal(
         btn.addEventListener("click", () => selectSidebarItem(id));
     }
     // ====================================================================
-    // Controller-Tab: Per-Profil-Mapping-Editor
+    // Controller-Tab: Per-Profil-Mapping-Editor (kompakt, Sektionen, Grid)
     // ====================================================================
     type ControllerButtonName =
         | "a" | "b" | "x" | "y"
@@ -1404,29 +1404,37 @@ export function openConfigModal(
 
     type ControllerButtonOverride = Partial<Record<ControllerButtonName, string | null>>;
 
-    interface ControllerButtonRow {
+    interface ControllerButtonInfo {
         key: ControllerButtonName;
-        label: string;
+        symbol: string;
+        name: string;
         defaultAction: string | null;
     }
 
-    const CONTROLLER_BUTTON_ROWS: ControllerButtonRow[] = [
-        { key: "a",         label: "✕ / A",            defaultAction: "Space" },
-        { key: "b",         label: "◯ / B",            defaultAction: "Escape" },
-        { key: "x",         label: "☐ / X",            defaultAction: "Z" },
-        { key: "y",         label: "△ / Y",            defaultAction: "Tab" },
-        { key: "l1",        label: "L1 / LB",           defaultAction: "1" },
-        { key: "r1",        label: "R1 / RB",           defaultAction: "2" },
-        { key: "l2",        label: "L2 / LT",           defaultAction: null },
-        { key: "r2",        label: "R2 / RT",           defaultAction: "3" },
-        { key: "select",    label: "Share / Back",      defaultAction: null },
-        { key: "start",     label: "Options / Start",   defaultAction: "Return" },
-        { key: "l3",        label: "L3 (Stick links)",  defaultAction: "I" },
-        { key: "r3",        label: "R3 (Stick rechts)", defaultAction: "C" },
-        { key: "dpadUp",    label: "D-Pad ↑",           defaultAction: "@actionPad" },
-        { key: "dpadDown",  label: "D-Pad ↓",           defaultAction: null },
-        { key: "dpadLeft",  label: "D-Pad ←",           defaultAction: null },
-        { key: "dpadRight", label: "D-Pad →",           defaultAction: null },
+    const CONTROLLER_BUTTONS: Record<ControllerButtonName, ControllerButtonInfo> = {
+        a:         { key: "a",         symbol: "✕",  name: "Cross / A",      defaultAction: "Space" },
+        b:         { key: "b",         symbol: "◯",  name: "Circle / B",     defaultAction: "Escape" },
+        x:         { key: "x",         symbol: "☐",  name: "Square / X",     defaultAction: "Z" },
+        y:         { key: "y",         symbol: "△",  name: "Triangle / Y",   defaultAction: "Tab" },
+        l1:        { key: "l1",        symbol: "L1", name: "L1 / LB",         defaultAction: "1" },
+        r1:        { key: "r1",        symbol: "R1", name: "R1 / RB",         defaultAction: "2" },
+        l2:        { key: "l2",        symbol: "L2", name: "L2 / LT",         defaultAction: null },
+        r2:        { key: "r2",        symbol: "R2", name: "R2 / RT",         defaultAction: "3" },
+        select:    { key: "select",    symbol: "⊟",  name: "Share / Back",    defaultAction: null },
+        start:     { key: "start",     symbol: "≡",  name: "Options / Start", defaultAction: "Return" },
+        l3:        { key: "l3",        symbol: "L3", name: "Stick links (Klick)",  defaultAction: "I" },
+        r3:        { key: "r3",        symbol: "R3", name: "Stick rechts (Klick)", defaultAction: "C" },
+        dpadUp:    { key: "dpadUp",    symbol: "↑",  name: "D-Pad ↑",         defaultAction: "@actionPad" },
+        dpadDown:  { key: "dpadDown",  symbol: "↓",  name: "D-Pad ↓",         defaultAction: null },
+        dpadLeft:  { key: "dpadLeft",  symbol: "←",  name: "D-Pad ←",         defaultAction: null },
+        dpadRight: { key: "dpadRight", symbol: "→",  name: "D-Pad →",         defaultAction: null },
+    };
+
+    const CONTROLLER_SECTIONS: Array<{ titleKey: string; buttons: ControllerButtonName[] }> = [
+        { titleKey: "controller.section.face",      buttons: ["a", "b", "x", "y"] },
+        { titleKey: "controller.section.shoulders", buttons: ["l1", "r1", "l2", "r2"] },
+        { titleKey: "controller.section.dpad",      buttons: ["dpadUp", "dpadDown", "dpadLeft", "dpadRight"] },
+        { titleKey: "controller.section.system",    buttons: ["select", "start", "l3", "r3"] },
     ];
 
     /** UI-freundliche Repraesentation eines Action-Werts. */
@@ -1446,10 +1454,15 @@ export function openConfigModal(
 
     async function renderControllerTab(): Promise<void> {
         controllerPane.innerHTML = "";
+        controllerPane.classList.add("controllerPaneInner");
 
-        const title = el("div", "controllerTitle settingSectionTitle", t("controller.tabTitle" as TranslationKey));
-        const intro = el("div", "controllerIntro muted", t("controller.intro" as TranslationKey));
-        controllerPane.append(title, intro);
+        // Header: Titel + Intro
+        const head = el("div", "ctrlHead");
+        head.append(
+            el("div", "ctrlTabTitle", t("controller.tabTitle" as TranslationKey)),
+            el("div", "ctrlIntro", t("controller.intro" as TranslationKey)),
+        );
+        controllerPane.append(head);
 
         // Profile dropdown
         const profiles = (await window.api.profilesList?.()) as Array<{
@@ -1458,15 +1471,14 @@ export function openConfigModal(
             controller?: { buttons?: ControllerButtonOverride };
         }>;
         if (!profiles || profiles.length === 0) {
-            const empty = el("div", "controllerEmpty muted", t("controller.noProfiles" as TranslationKey));
-            controllerPane.append(empty);
+            controllerPane.append(el("div", "ctrlEmpty", t("controller.noProfiles" as TranslationKey)));
             return;
         }
 
-        const selectorRow = el("div", "controllerProfileRow");
-        const selectorLabel = el("span", "controllerProfileLabel", t("controller.profileLabel" as TranslationKey));
+        const profileRow = el("div", "ctrlProfileRow");
+        profileRow.append(el("span", "ctrlProfileLabel", t("controller.profileLabel" as TranslationKey)));
         const selectEl = document.createElement("select");
-        selectEl.className = "controllerProfileSelect";
+        selectEl.className = "ctrlProfileSelect";
         for (const p of profiles) {
             const opt = document.createElement("option");
             opt.value = p.id;
@@ -1480,120 +1492,147 @@ export function openConfigModal(
             currentControllerProfileId = profiles[0].id;
             selectEl.value = profiles[0].id;
         }
-        selectorRow.append(selectorLabel, selectEl);
-        controllerPane.append(selectorRow);
+        profileRow.append(selectEl);
+        controllerPane.append(profileRow);
 
-        const rowsContainer = el("div", "controllerRowsList");
-        controllerPane.append(rowsContainer);
+        controllerPane.append(el("div", "ctrlCalibrateHint", t("controller.calibrateHint" as TranslationKey)));
 
-        const calibrateHint = el("div", "controllerCalibrateHint muted", t("controller.calibrateHint" as TranslationKey));
-        controllerPane.append(calibrateHint);
+        const sectionsContainer = el("div", "ctrlSections");
+        controllerPane.append(sectionsContainer);
 
-        const renderRowsForProfile = (profileId: string) => {
+        const renderForProfile = (profileId: string) => {
             const p = profiles.find((x) => x.id === profileId);
             currentControllerOverride = { ...(p?.controller?.buttons ?? {}) };
-            rowsContainer.innerHTML = "";
-            for (const row of CONTROLLER_BUTTON_ROWS) {
-                const rowEl = el("div", "controllerRow");
-                const labelEl = el("div", "controllerRowLabel", row.label);
-
-                const valueEl = el("div", "controllerRowValue");
-                const refreshValue = () => {
-                    valueEl.innerHTML = "";
-                    const override = currentControllerOverride[row.key];
-                    if (override === null) {
-                        const span = el("span", "controllerActionUnbound", controllerActionLabel(null));
-                        valueEl.append(span);
-                    }
-                    else if (typeof override === "string") {
-                        const span = el("span", "controllerActionOverride", controllerActionLabel(override));
-                        valueEl.append(span);
-                    }
-                    else {
-                        // Default
-                        const span = el("span", "controllerActionDefault muted", controllerActionLabel(row.defaultAction) || "—");
-                        const tag = el("span", "controllerActionDefaultTag", t("controller.defaultTag" as TranslationKey));
-                        valueEl.append(span, tag);
-                    }
-                };
-                refreshValue();
-
-                const captureBtn = document.createElement("button");
-                captureBtn.type = "button";
-                captureBtn.className = "controllerCaptureBtn";
-                captureBtn.textContent = t("controller.capture" as TranslationKey);
-                captureBtn.addEventListener("click", () => {
-                    captureBtn.textContent = t("controller.capturing" as TranslationKey);
-                    captureBtn.disabled = true;
-                    const onKey = (ev: KeyboardEvent) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        document.removeEventListener("keydown", onKey, true);
-                        captureBtn.textContent = t("controller.capture" as TranslationKey);
-                        captureBtn.disabled = false;
-                        if (ev.key === "Escape") {
-                            return;
-                        }
-                        // Convert KeyboardEvent → Accelerator-style code
-                        // Single-char keys: uppercase letter or digit. Special keys: ev.key.
-                        let code = ev.key;
-                        if (code.length === 1) code = code.toUpperCase();
-                        if (code === " ") code = "Space";
-                        if (code === "Enter") code = "Return";
-                        currentControllerOverride[row.key] = code;
-                        refreshValue();
-                    };
-                    document.addEventListener("keydown", onKey, true);
-                });
-
-                const padBtn = document.createElement("button");
-                padBtn.type = "button";
-                padBtn.className = "controllerPadBtn";
-                padBtn.textContent = t("controller.bindActionPad" as TranslationKey);
-                padBtn.title = t("controller.bindActionPadHint" as TranslationKey);
-                padBtn.addEventListener("click", () => {
-                    currentControllerOverride[row.key] = "@actionPad";
-                    refreshValue();
-                });
-
-                const unbindBtn = document.createElement("button");
-                unbindBtn.type = "button";
-                unbindBtn.className = "controllerUnbindBtn";
-                unbindBtn.textContent = t("controller.unbind" as TranslationKey);
-                unbindBtn.addEventListener("click", () => {
-                    currentControllerOverride[row.key] = null;
-                    refreshValue();
-                });
-
-                const resetBtn = document.createElement("button");
-                resetBtn.type = "button";
-                resetBtn.className = "controllerResetBtn";
-                resetBtn.textContent = t("controller.reset" as TranslationKey);
-                resetBtn.title = t("controller.resetHint" as TranslationKey);
-                resetBtn.addEventListener("click", () => {
-                    delete currentControllerOverride[row.key];
-                    refreshValue();
-                });
-
-                const actions = el("div", "controllerRowActions");
-                actions.append(captureBtn, padBtn, unbindBtn, resetBtn);
-
-                rowEl.append(labelEl, valueEl, actions);
-                rowsContainer.append(rowEl);
+            sectionsContainer.innerHTML = "";
+            for (const section of CONTROLLER_SECTIONS) {
+                const sec = el("div", "ctrlSection");
+                sec.append(el("div", "ctrlSectionTitle", t(section.titleKey as TranslationKey)));
+                const grid = el("div", "ctrlGrid");
+                for (const btnKey of section.buttons) {
+                    grid.append(buildButtonCard(btnKey));
+                }
+                sec.append(grid);
+                sectionsContainer.append(sec);
             }
         };
 
-        renderRowsForProfile(selectEl.value);
+        const buildButtonCard = (btnKey: ControllerButtonName): HTMLElement => {
+            const info = CONTROLLER_BUTTONS[btnKey];
+            const card = el("div", "ctrlCard");
+
+            const symbol = el("div", "ctrlSymbol", info.symbol);
+            const meta = el("div", "ctrlCardInfo");
+            const name = el("div", "ctrlCardName", info.name);
+            const binding = el("div", "ctrlCardBinding");
+            meta.append(name, binding);
+
+            const refreshBinding = () => {
+                binding.className = "ctrlCardBinding";
+                binding.innerHTML = "";
+                const override = currentControllerOverride[btnKey];
+                if (override === null) {
+                    binding.classList.add("unbound");
+                    binding.textContent = t("controller.binding.unbound" as TranslationKey);
+                }
+                else if (typeof override === "string") {
+                    binding.classList.add("override");
+                    binding.textContent = controllerActionLabel(override);
+                }
+                else {
+                    const def = controllerActionLabel(info.defaultAction);
+                    binding.classList.add("default");
+                    binding.append(
+                        document.createTextNode(def || "—"),
+                        el("span", "ctrlDefaultTag", " " + t("controller.defaultTag" as TranslationKey)),
+                    );
+                }
+            };
+
+            const actions = el("div", "ctrlCardActions");
+            const captureBtn = document.createElement("button");
+            captureBtn.type = "button";
+            captureBtn.className = "ctrlBtn ctrlBtnCapture";
+            captureBtn.textContent = t("controller.capture" as TranslationKey);
+            captureBtn.addEventListener("click", () => {
+                const orig = captureBtn.textContent || "";
+                captureBtn.textContent = t("controller.capturing" as TranslationKey);
+                captureBtn.disabled = true;
+                captureBtn.classList.add("capturing");
+                const onKey = (ev: KeyboardEvent) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    document.removeEventListener("keydown", onKey, true);
+                    captureBtn.textContent = orig;
+                    captureBtn.disabled = false;
+                    captureBtn.classList.remove("capturing");
+                    if (ev.key === "Escape") return;
+                    let code = ev.key;
+                    if (code.length === 1) code = code.toUpperCase();
+                    if (code === " ") code = "Space";
+                    if (code === "Enter") code = "Return";
+                    currentControllerOverride[btnKey] = code;
+                    refreshBinding();
+                };
+                document.addEventListener("keydown", onKey, true);
+            });
+
+            const padBtn = document.createElement("button");
+            padBtn.type = "button";
+            padBtn.className = "ctrlBtn ctrlBtnPad";
+            padBtn.textContent = "⊕";
+            padBtn.title = t("controller.bindActionPadHint" as TranslationKey);
+            padBtn.addEventListener("click", () => {
+                currentControllerOverride[btnKey] = "@actionPad";
+                refreshBinding();
+            });
+
+            const unbindBtn = document.createElement("button");
+            unbindBtn.type = "button";
+            unbindBtn.className = "ctrlBtn ctrlBtnUnbind";
+            unbindBtn.textContent = "✕";
+            unbindBtn.title = t("controller.unbind" as TranslationKey);
+            unbindBtn.addEventListener("click", () => {
+                currentControllerOverride[btnKey] = null;
+                refreshBinding();
+            });
+
+            const resetBtn = document.createElement("button");
+            resetBtn.type = "button";
+            resetBtn.className = "ctrlBtn ctrlBtnReset";
+            resetBtn.textContent = "↺";
+            resetBtn.title = t("controller.resetHint" as TranslationKey);
+            resetBtn.addEventListener("click", () => {
+                delete currentControllerOverride[btnKey];
+                refreshBinding();
+            });
+
+            actions.append(captureBtn, padBtn, unbindBtn, resetBtn);
+
+            card.append(symbol, meta, actions);
+            refreshBinding();
+            return card;
+        };
+
+        renderForProfile(selectEl.value);
         selectEl.addEventListener("change", () => {
             currentControllerProfileId = selectEl.value;
-            renderRowsForProfile(selectEl.value);
+            renderForProfile(selectEl.value);
         });
 
-        // Save / Reset-All buttons
-        const footer = el("div", "controllerFooter");
+        // Footer
+        const footer = el("div", "ctrlFooter");
+        const resetAllBtn = document.createElement("button");
+        resetAllBtn.type = "button";
+        resetAllBtn.className = "ctrlBtn ctrlBtnResetAll";
+        resetAllBtn.textContent = t("controller.resetAll" as TranslationKey);
+        resetAllBtn.addEventListener("click", () => {
+            currentControllerOverride = {};
+            renderForProfile(selectEl.value);
+        });
+
         const saveBtn = document.createElement("button");
         saveBtn.type = "button";
-        saveBtn.className = "controllerSaveBtn primaryBtn";
+        saveBtn.className = "ctrlBtn ctrlBtnSave primaryBtn";
         saveBtn.textContent = t("controller.save" as TranslationKey);
         saveBtn.addEventListener("click", async () => {
             if (!currentControllerProfileId) return;
@@ -1606,7 +1645,6 @@ export function openConfigModal(
                 const ctrlApi = (window as unknown as { controllerApi?: { reloadMapping: (id: string) => void } }).controllerApi;
                 ctrlApi?.reloadMapping(currentControllerProfileId);
                 showToast(t("controller.saved" as TranslationKey), "success");
-                // Refresh profiles list (controller.buttons may differ now)
                 const updated = (await window.api.profilesList?.()) as Array<{
                     id: string;
                     controller?: { buttons?: ControllerButtonOverride };
@@ -1621,15 +1659,6 @@ export function openConfigModal(
             finally {
                 saveBtn.disabled = false;
             }
-        });
-
-        const resetAllBtn = document.createElement("button");
-        resetAllBtn.type = "button";
-        resetAllBtn.className = "controllerResetAllBtn";
-        resetAllBtn.textContent = t("controller.resetAll" as TranslationKey);
-        resetAllBtn.addEventListener("click", () => {
-            currentControllerOverride = {};
-            renderRowsForProfile(selectEl.value);
         });
 
         footer.append(resetAllBtn, saveBtn);

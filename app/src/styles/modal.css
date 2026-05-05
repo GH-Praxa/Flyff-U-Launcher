@@ -1616,3 +1616,222 @@
   white-space: pre;
   pointer-events: none;
 }
+
+/* ========================================================================== */
+/* Controller-Tab (Settings → Controller)                                     */
+/* ========================================================================== */
+
+.controllerPaneInner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ctrlHead {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ctrlTabTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ctrlIntro {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ctrlProfileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius2, 10px);
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+}
+.ctrlProfileLabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.ctrlProfileSelect {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: var(--panel, #1a1a22);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.ctrlCalibrateHint {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 6px 10px;
+  border-left: 2px solid rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.05);
+  border-radius: 0 6px 6px 0;
+}
+
+.ctrlSections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ctrlSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ctrlSectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--stroke);
+}
+.ctrlGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  .ctrlGrid { grid-template-columns: 1fr; }
+}
+
+.ctrlCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+  transition: 0.15s ease;
+  min-height: 56px;
+}
+.ctrlCard:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(255,255,255,0.05);
+}
+
+.ctrlSymbol {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent);
+  flex-shrink: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.ctrlCardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ctrlCardName {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ctrlCardBinding {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctrlCardBinding.override { color: var(--accent); }
+.ctrlCardBinding.unbound { font-style: italic; opacity: 0.55; font-weight: 400; }
+.ctrlCardBinding.default { font-weight: 500; }
+.ctrlDefaultTag {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.ctrlCardActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ctrlBtn {
+  padding: 5px 8px;
+  font-size: 11px;
+  border-radius: 5px;
+  border: 1px solid var(--stroke);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.12s ease;
+  font-family: inherit;
+  line-height: 1;
+}
+.ctrlBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.06);
+}
+.ctrlBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ctrlBtn.ctrlBtnPad,
+.ctrlBtn.ctrlBtnUnbind,
+.ctrlBtn.ctrlBtnReset {
+  width: 26px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+.ctrlBtnCapture.capturing {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+  animation: ctrlPulse 1s ease-in-out infinite;
+}
+@keyframes ctrlPulse {
+  0%, 100% { background: rgba(var(--accent-rgb), 0.08); }
+  50%      { background: rgba(var(--accent-rgb), 0.20); }
+}
+
+.ctrlFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--stroke);
+  gap: 10px;
+}
+.ctrlBtnSave {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), 0.20);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+.ctrlBtnSave:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.30);
+}
+.ctrlBtnResetAll {
+  padding: 8px 14px;
+}
+
+.ctrlEmpty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
