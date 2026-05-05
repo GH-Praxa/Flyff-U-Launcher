@@ -875,7 +875,7 @@ export function openConfigModal(
     supportActions.append(supportBtn, supportThanks);
     supportPane.append(supportTitle, supportText, supportActions);
     // All panes go into the content area (right side)
-    content.append(displayPane, layoutPane, behaviorPane, themePane, tabColorPane, fontPane, hotkeysPane, pluginsPane, patchnotesPane, docsPane, supportPane);
+    content.append(displayPane, layoutPane, behaviorPane, themePane, tabColorPane, fontPane, hotkeysPane, controllerPane, pluginsPane, patchnotesPane, docsPane, supportPane);
 
     const refreshClientSettings = async () => {
 
