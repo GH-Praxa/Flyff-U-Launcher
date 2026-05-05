@@ -121,17 +121,49 @@ export function deriveActionPadAnchor(
     };
 }
 
-export interface ControllerInputRouterDeps {
-    /**
-     * Liefert den Action-Pad-Anker (Bruchteil 0..1 der Window-Groesse) fuer die
-     * Sender-WebContents (z.B. anhand der Profil-ID, die ueber das Partition-
-     * Mapping gefunden wird). `null` falls nicht kalibriert.
-     */
-    getActionPadAnchor: (sender: WebContents) => ActionPadAnchor | null;
+/**
+ * Mapping von Button-Index → Aktion. Aktionen sind entweder Accelerator-Keys
+ * ("W", "Space", "Escape", "1"...) oder Special-Actions mit `@`-Prefix:
+ *   "@actionPad" — feuert den kalibrierten Action-Pad-Klick
+ *   "@cursorMode" — toggelt Cursor-Modus (Stage 3, noch nicht implementiert)
+ */
+export type ControllerButtonMapping = Record<number, string | null | undefined>;
 
+/**
+ * Default-Mapping fuer Standard-Gamepads (PS4/Xbox/SCUF-XInput). Faces folgen
+ * der typischen Belegung in 3D-MMORPGs:
+ *  - Cross/A → Space (Jump/Action)
+ *  - Circle/B → Escape (Menue/Cancel)
+ *  - Square/X → Z (Attack)
+ *  - Triangle/Y → Tab (naechstes Ziel)
+ *  - L1/R1/R2 → Skill-Slots 1/2/3
+ *  - L3/R3 → Inventar / Char-Info
+ *  - Start → Enter (Chat)
+ *  - D-Pad-Up → Action-Pad-Trigger
+ *
+ * L2 ist absichtlich frei (reserviert fuer Cursor-Modus, Stage 3).
+ */
+export const DEFAULT_BUTTON_MAPPING: ControllerButtonMapping = {
+    [BTN.A]: "Space",
+    [BTN.B]: "Escape",
+    [BTN.X]: "Z",
+    [BTN.Y]: "Tab",
+    [BTN.L1]: "1",
+    [BTN.R1]: "2",
+    [BTN.R2]: "3",
+    [BTN.START]: "Return",
+    [BTN.L3]: "I",
+    [BTN.R3]: "C",
+    [BTN.DPAD_UP]: "@actionPad",
+};
+
+export interface ControllerInputRouterDeps {
+    getActionPadAnchor: (sender: WebContents) => ActionPadAnchor | null;
     /**
-     * Optionale Toast-Anzeige (z.B. "Bitte erst Action-Pad kalibrieren").
+     * Liefert das Button-Mapping fuer die Sender-WebContents. Falls kein
+     * spezielles Mapping konfiguriert ist, fallback auf DEFAULT_BUTTON_MAPPING.
      */
+    getButtonMapping?: (sender: WebContents) => ControllerButtonMapping;
     notify?: (message: string) => void;
 }
 
@@ -140,6 +172,13 @@ const ACTION_PAD_OFFSET_PX = 18;
 const ACTION_PAD_DRIFT_PX = 3;
 const ACTION_PAD_DURATION_MIN_MS = 55;
 const ACTION_PAD_DURATION_RANGE_MS = 60;
+
+const STICK_DEADZONE = 0.15;
+const STICK_KEY_THRESHOLD = 0.4;
+const CAMERA_INITIAL_DRAG_PX = 60;     // erster Mausschub in Stick-Richtung
+const CAMERA_SPEED_PX = 14;            // Pixel pro Pump-Tick bei voller Auslenkung
+const CAMERA_PUMP_INTERVAL_MS = 16;    // ~60 Hz
+const CAMERA_EDGE_BUFFER_PX = 80;
 
 function rand(min: number, max: number): number {
     return min + Math.random() * (max - min);
@@ -156,42 +195,248 @@ function rand(min: number, max: number): number {
  */
 export class ControllerInputRouter {
     private prevButtons: boolean[] = [];
+    private prevAxes: number[] = [];
     private actionPadInProgress = false;
     private lastActionPadFireMs = 0;
 
+    /** Aktuell als gehalten registrierte Tasten (KeyDown ohne KeyUp). */
+    private heldKeys: Set<string> = new Set();
+
+    /** Camera-Drag-State (rechter Stick). Nur eine Drag-Sequenz gleichzeitig. */
+    private cameraActive = false;
+    private cameraSender: WebContents | null = null;
+    private cameraViewportW = 0;
+    private cameraViewportH = 0;
+    private cameraStickX = 0;
+    private cameraStickY = 0;
+    private cameraLastX = 0;
+    private cameraLastY = 0;
+    private cameraPumpTimer: ReturnType<typeof setInterval> | null = null;
+
     constructor(private readonly deps: ControllerInputRouterDeps) {}
 
-    /**
-     * Verarbeitet einen einzelnen Gamepad-Frame. Aufgerufen vom IPC-Handler,
-     * der Frames vom Preload empfaengt. `sender` ist die WebContents in der
-     * Flyff laeuft (BrowserView-WebContents) — Klicks und Tastendruecke werden
-     * direkt dorthin geschickt.
-     */
     handleFrame(frame: GamepadFrame, sender: WebContents): void {
         const buttons = frame.buttons;
         const prev = this.prevButtons;
 
-        // D-Pad-Up: zwei Pfade.
-        //
-        // 1) Standard-Mapping (PS4/Xbox/SCUF-XInput): buttons[12].
-        //
-        // 2) Non-Standard / DInput-Mapping: D-Pad als HAT auf den letzten zwei
-        //    Achsen (Konvention: vorletzte = HAT_X, letzte = HAT_Y). Wir
-        //    verlangen Y stark negativ UND X nahe 0, damit Links/Rechts/
-        //    Diagonalen nicht faelschlich als Up zaehlen.
-        const dpadUpFromButtons = this.isEdgeDown(prev, buttons, BTN.DPAD_UP);
-        const dpadUpFromHat = this.isHatUpEdge(frame);
-        if (dpadUpFromButtons || dpadUpFromHat) {
-            this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
+        // 1) Linker Stick → WASD
+        const lx = applyDeadzone(frame.axes[0] ?? 0);
+        const ly = applyDeadzone(frame.axes[1] ?? 0);
+        this.updateStickKey(sender, "A", lx < -STICK_KEY_THRESHOLD);
+        this.updateStickKey(sender, "D", lx > STICK_KEY_THRESHOLD);
+        this.updateStickKey(sender, "W", ly < -STICK_KEY_THRESHOLD);
+        this.updateStickKey(sender, "S", ly > STICK_KEY_THRESHOLD);
+
+        // 2) Rechter Stick → Kamera-Drag (rechte Maustaste, gepumpt aus Mitte
+        //    des Viewports). Solange ausgelenkt: Drag aktiv. Sobald neutral:
+        //    MouseUp.
+        const rx = applyDeadzone(frame.axes[2] ?? 0);
+        const ry = applyDeadzone(frame.axes[3] ?? 0);
+        this.updateCameraStick(sender, frame.viewportWidth, frame.viewportHeight, rx, ry);
+
+        // 3) Buttons → Mapping (Tasten oder Special-Actions wie @actionPad).
+        //    D-Pad-Up-via-HAT bleibt zusaetzlich aktiv (manche Pads liefern
+        //    D-Pad ausschliesslich als Achse).
+        const mapping = this.deps.getButtonMapping?.(sender) ?? DEFAULT_BUTTON_MAPPING;
+        for (let i = 0; i < buttons.length; i++) {
+            const action = mapping[i];
+            if (!action) continue;
+            const wasDown = prev[i] === true;
+            const isDown = buttons[i] === true;
+            if (isDown && !wasDown) {
+                this.handleButtonDown(sender, action, frame);
+            }
+            else if (!isDown && wasDown) {
+                this.handleButtonUp(sender, action);
+            }
         }
 
-        // (Stage 2: weitere Buttons + Sticks hier)
+        // 4) D-Pad-Up als HAT-Achse (DInput-Modus, keine Buttons-Eintraege).
+        //    Triggert immer Action-Pad — ist die einzige sinnvolle Aktion fuer
+        //    "POV-Up" auf solchen Controllern.
+        if (this.isHatUpEdge(frame)) {
+            this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
+        }
 
         this.prevButtons = buttons.slice();
         this.prevAxes = frame.axes.slice();
     }
 
-    private prevAxes: number[] = [];
+    private handleButtonDown(sender: WebContents, action: string, frame: GamepadFrame): void {
+        if (action.startsWith("@")) {
+            if (action === "@actionPad") {
+                this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
+            }
+            // andere @-Actions (z.B. @cursorMode) folgen in Stage 3
+            return;
+        }
+        if (this.heldKeys.has(action)) return;
+        this.heldKeys.add(action);
+        try {
+            sender.sendInputEvent({ type: "keyDown", keyCode: action });
+        }
+        catch (err) {
+            logWarn("controller", `keyDown ${action} failed: ${(err as Error).message}`);
+        }
+    }
+
+    private handleButtonUp(sender: WebContents, action: string): void {
+        if (action.startsWith("@")) return;
+        if (!this.heldKeys.has(action)) return;
+        this.heldKeys.delete(action);
+        try {
+            sender.sendInputEvent({ type: "keyUp", keyCode: action });
+        }
+        catch (err) {
+            logWarn("controller", `keyUp ${action} failed: ${(err as Error).message}`);
+        }
+    }
+
+    private updateStickKey(sender: WebContents, keyCode: string, shouldBeHeld: boolean): void {
+        const isHeld = this.heldKeys.has(keyCode);
+        if (shouldBeHeld && !isHeld) {
+            this.heldKeys.add(keyCode);
+            try { sender.sendInputEvent({ type: "keyDown", keyCode }); } catch { /* ignore */ }
+        }
+        else if (!shouldBeHeld && isHeld) {
+            this.heldKeys.delete(keyCode);
+            try { sender.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
+        }
+    }
+
+    private updateCameraStick(
+        sender: WebContents,
+        viewportWidth: number,
+        viewportHeight: number,
+        rx: number,
+        ry: number,
+    ): void {
+        this.cameraStickX = rx;
+        this.cameraStickY = ry;
+        const isDeflected = rx !== 0 || ry !== 0;
+
+        if (isDeflected) {
+            if (!this.cameraActive) {
+                if (viewportWidth <= 0 || viewportHeight <= 0) return;
+                const cx = viewportWidth / 2;
+                const cy = viewportHeight / 2;
+                const mag = Math.sqrt(rx * rx + ry * ry);
+                const nx = mag > 0 ? rx / mag : 0;
+                const ny = mag > 0 ? ry / mag : 0;
+                const initialX = clamp(cx + nx * CAMERA_INITIAL_DRAG_PX, 0, viewportWidth);
+                const initialY = clamp(cy + ny * CAMERA_INITIAL_DRAG_PX, 0, viewportHeight);
+                try {
+                    sender.sendInputEvent({ type: "mouseMove", x: Math.round(cx), y: Math.round(cy) });
+                    sender.sendInputEvent({
+                        type: "mouseDown",
+                        x: Math.round(cx),
+                        y: Math.round(cy),
+                        button: "right",
+                        clickCount: 1,
+                    });
+                    sender.sendInputEvent({
+                        type: "mouseMove",
+                        x: Math.round(initialX),
+                        y: Math.round(initialY),
+                    });
+                }
+                catch (err) {
+                    logWarn("controller", `cameraStart failed: ${(err as Error).message}`);
+                    return;
+                }
+                this.cameraSender = sender;
+                this.cameraViewportW = viewportWidth;
+                this.cameraViewportH = viewportHeight;
+                this.cameraLastX = initialX;
+                this.cameraLastY = initialY;
+                this.cameraActive = true;
+                if (this.cameraPumpTimer) clearInterval(this.cameraPumpTimer);
+                this.cameraPumpTimer = setInterval(() => this.pumpCamera(), CAMERA_PUMP_INTERVAL_MS);
+            }
+            else {
+                this.cameraViewportW = viewportWidth;
+                this.cameraViewportH = viewportHeight;
+                this.cameraSender = sender;
+            }
+        }
+        else if (this.cameraActive) {
+            this.stopCameraDrag();
+        }
+    }
+
+    private pumpCamera(): void {
+        if (!this.cameraActive) return;
+        const wc = this.cameraSender;
+        if (!wc || wc.isDestroyed()) {
+            this.stopCameraDrag();
+            return;
+        }
+        const w = this.cameraViewportW;
+        const h = this.cameraViewportH;
+        const dx = this.cameraStickX * CAMERA_SPEED_PX;
+        const dy = this.cameraStickY * CAMERA_SPEED_PX;
+        let newX = this.cameraLastX + dx;
+        let newY = this.cameraLastY + dy;
+
+        const buf = CAMERA_EDGE_BUFFER_PX;
+        const needsReset = newX < buf || newX > w - buf || newY < buf || newY > h - buf;
+
+        try {
+            if (needsReset) {
+                // MouseUp am letzten Punkt, dann frischer Down von der Mitte —
+                // sonst wuerde die Kamera am Rand "feststecken".
+                wc.sendInputEvent({
+                    type: "mouseUp",
+                    x: Math.round(this.cameraLastX),
+                    y: Math.round(this.cameraLastY),
+                    button: "right",
+                    clickCount: 1,
+                });
+                const cx = w / 2;
+                const cy = h / 2;
+                wc.sendInputEvent({ type: "mouseMove", x: Math.round(cx), y: Math.round(cy) });
+                wc.sendInputEvent({
+                    type: "mouseDown",
+                    x: Math.round(cx),
+                    y: Math.round(cy),
+                    button: "right",
+                    clickCount: 1,
+                });
+                newX = clamp(cx + dx, 0, w);
+                newY = clamp(cy + dy, 0, h);
+            }
+            wc.sendInputEvent({ type: "mouseMove", x: Math.round(newX), y: Math.round(newY) });
+        }
+        catch (err) {
+            logWarn("controller", `cameraPump failed: ${(err as Error).message}`);
+            this.stopCameraDrag();
+            return;
+        }
+        this.cameraLastX = newX;
+        this.cameraLastY = newY;
+    }
+
+    private stopCameraDrag(): void {
+        if (this.cameraPumpTimer) {
+            clearInterval(this.cameraPumpTimer);
+            this.cameraPumpTimer = null;
+        }
+        const wc = this.cameraSender;
+        if (this.cameraActive && wc && !wc.isDestroyed()) {
+            try {
+                wc.sendInputEvent({
+                    type: "mouseUp",
+                    x: Math.round(this.cameraLastX),
+                    y: Math.round(this.cameraLastY),
+                    button: "right",
+                    clickCount: 1,
+                });
+            }
+            catch { /* ignore */ }
+        }
+        this.cameraActive = false;
+        this.cameraSender = null;
+    }
 
     private isHatUpEdge(frame: GamepadFrame): boolean {
         const axes = frame.axes;
@@ -308,12 +553,27 @@ export class ControllerInputRouter {
         }, totalMs);
     }
 
-    /** Reset bei Window-Wechsel oder Disable, damit keine Edge-Phantome auftauchen. */
+    /** Reset bei Window-Wechsel oder Disable: gehaltene Tasten lockerlassen,
+     *  Camera-Drag beenden, Edge-Tracking nullen. */
     reset(): void {
+        // Held-Keys sauber loslassen — sonst laeuft der Char weiter, weil ein
+        // KeyDown ohne KeyUp im Spiel haengen bleibt.
+        const sender = this.cameraSender;
+        if (sender && !sender.isDestroyed()) {
+            for (const keyCode of this.heldKeys) {
+                try { sender.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
+            }
+        }
+        this.heldKeys.clear();
+        this.stopCameraDrag();
         this.prevButtons = [];
         this.prevAxes = [];
         this.actionPadInProgress = false;
     }
+}
+
+function applyDeadzone(value: number): number {
+    return Math.abs(value) < STICK_DEADZONE ? 0 : value;
 }
 
 function clamp(value: number, min: number, max: number): number {
