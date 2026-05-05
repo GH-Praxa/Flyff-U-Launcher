@@ -30,13 +30,23 @@ export type ProfileFeatures = {
     };
 };
 /**
- * Per-Profil-Controller-Daten — Action-Pad-Position als Bruchteil 0..1 der
- * Canvas-Groesse. `null`/undefined = nicht kalibriert, D-Pad-Up triggert
- * dann nichts.
+ * Per-Profil-Controller-Daten. Action-Pad-Position als Anchor + Pixel-Offset
+ * gespeichert (statt als Bruchteil 0..1) — robust gegen Window-Resize bei
+ * Unity-WebGL-HUDs mit eck-fixierten UI-Elementen.
+ *
+ * Anchor-Achsen:
+ *   hAnchor: "left" (X=0) / "center" (X=W/2) / "right" (X=W)
+ *   vAnchor: "top"  (Y=0) / "middle" (Y=H/2) / "bottom" (Y=H)
+ * Trigger-Pixel = anchor + (offsetX, offsetY).
  */
+export type ProfileActionPadAnchor = {
+    hAnchor: "left" | "center" | "right";
+    vAnchor: "top" | "middle" | "bottom";
+    offsetX: number;
+    offsetY: number;
+};
 export type ProfileController = {
-    actionPadX?: number | null;
-    actionPadY?: number | null;
+    actionPad?: ProfileActionPadAnchor | null;
 };
 export type Profile = {
     id: string;
@@ -115,14 +125,19 @@ function defaultFeatures(): ProfileFeatures {
 function normalizeController(v: unknown): ProfileController | undefined {
     if (!v || typeof v !== "object") return undefined;
     const obj = v as Record<string, unknown>;
-    const x = typeof obj.actionPadX === "number" && obj.actionPadX >= 0 && obj.actionPadX <= 1
-        ? obj.actionPadX
+    const padRaw = obj.actionPad;
+    if (!padRaw || typeof padRaw !== "object") return undefined;
+    const p = padRaw as Record<string, unknown>;
+    const hAnchor = p.hAnchor === "left" || p.hAnchor === "center" || p.hAnchor === "right"
+        ? p.hAnchor
         : null;
-    const y = typeof obj.actionPadY === "number" && obj.actionPadY >= 0 && obj.actionPadY <= 1
-        ? obj.actionPadY
+    const vAnchor = p.vAnchor === "top" || p.vAnchor === "middle" || p.vAnchor === "bottom"
+        ? p.vAnchor
         : null;
-    if (x === null && y === null) return undefined;
-    return { actionPadX: x, actionPadY: y };
+    const offsetX = typeof p.offsetX === "number" && Number.isFinite(p.offsetX) ? p.offsetX : null;
+    const offsetY = typeof p.offsetY === "number" && Number.isFinite(p.offsetY) ? p.offsetY : null;
+    if (hAnchor === null || vAnchor === null || offsetX === null || offsetY === null) return undefined;
+    return { actionPad: { hAnchor, vAnchor, offsetX, offsetY } };
 }
 
 function normalizeFeatures(v: unknown): ProfileFeatures {

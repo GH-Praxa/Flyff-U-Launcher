@@ -8,6 +8,7 @@
  */
 import { ipcMain, type IpcMainEvent, type WebContents } from "electron";
 import type { ControllerInputRouter, GamepadFrame, ActionPadAnchor } from "../../controller/inputRouter";
+import { deriveActionPadAnchor } from "../../controller/inputRouter";
 import { logErr, logInfo } from "../../../shared/logger";
 
 export interface ControllerHandlerOptions {
@@ -84,14 +85,15 @@ export function registerControllerHandlers(opts: ControllerHandlerOptions): () =
                 opts.notify?.("Kalibrierung: ungültige Viewport-Größe", "error");
                 return;
             }
-            const fx = clamp01(payload.x / w);
-            const fy = clamp01(payload.y / h);
-            await opts.setActionPadAnchor(profileId, { x: fx, y: fy });
+            const anchor = deriveActionPadAnchor(payload.x, payload.y, w, h);
+            await opts.setActionPadAnchor(profileId, anchor);
             opts.notify?.(
-                `Action-Pad kalibriert: ${fx.toFixed(2)} / ${fy.toFixed(2)}`,
+                `Action-Pad kalibriert: ${anchor.vAnchor}-${anchor.hAnchor} `
+                + `(${anchor.offsetX >= 0 ? "+" : ""}${anchor.offsetX.toFixed(0)}, `
+                + `${anchor.offsetY >= 0 ? "+" : ""}${anchor.offsetY.toFixed(0)})`,
                 "success",
             );
-            logInfo("controller", `Action-pad calibrated for profile ${profileId}: ${fx.toFixed(3)} / ${fy.toFixed(3)}`);
+            logInfo("controller", `Action-pad calibrated for profile ${profileId}: ${anchor.vAnchor}-${anchor.hAnchor} offset (${anchor.offsetX.toFixed(1)}, ${anchor.offsetY.toFixed(1)})`);
         }
         catch (err) {
             logErr("controller:calibrate:done handler failed: " + String(err));
@@ -130,9 +132,3 @@ function isCalibrateDonePayload(value: unknown): value is CalibrateDonePayload {
         && typeof v.viewportHeight === "number";
 }
 
-function clamp01(value: number): number {
-    if (!Number.isFinite(value)) return 0;
-    if (value < 0) return 0;
-    if (value > 1) return 1;
-    return value;
-}

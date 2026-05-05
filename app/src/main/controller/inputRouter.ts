@@ -61,9 +61,64 @@ export const BTN = {
     DPAD_RIGHT: 15,
 } as const;
 
+/**
+ * Action-Pad-Anker als Eck-Referenz + Pixel-Offset. Robust gegen Window-
+ * Resize bei Unity-WebGL-HUDs mit eck-fixierten Buttons (Default fuer
+ * praktisch alle Browser-MMORPGs inkl. Flyff Universe).
+ */
 export interface ActionPadAnchor {
-    x: number;  // 0..1
-    y: number;  // 0..1
+    hAnchor: "left" | "center" | "right";
+    vAnchor: "top" | "middle" | "bottom";
+    offsetX: number;
+    offsetY: number;
+}
+
+export function resolveActionPadPixel(
+    anchor: ActionPadAnchor,
+    viewportWidth: number,
+    viewportHeight: number,
+): { x: number; y: number } {
+    const baseX = anchor.hAnchor === "left"
+        ? 0
+        : anchor.hAnchor === "center"
+            ? viewportWidth / 2
+            : viewportWidth;
+    const baseY = anchor.vAnchor === "top"
+        ? 0
+        : anchor.vAnchor === "middle"
+            ? viewportHeight / 2
+            : viewportHeight;
+    return { x: baseX + anchor.offsetX, y: baseY + anchor.offsetY };
+}
+
+/**
+ * Pickt aus einer rohen Klick-Position die naechste der 9 Anchor-Positionen
+ * (Drittel-Aufteilung pro Achse) und gibt den Pixel-Offset zu diesem Anker
+ * zurueck. Wird bei der Kalibrierung benutzt.
+ */
+export function deriveActionPadAnchor(
+    clickX: number,
+    clickY: number,
+    viewportWidth: number,
+    viewportHeight: number,
+): ActionPadAnchor {
+    const w = viewportWidth;
+    const h = viewportHeight;
+    const fx = w > 0 ? clickX / w : 0.5;
+    const fy = h > 0 ? clickY / h : 0.5;
+
+    const hAnchor: ActionPadAnchor["hAnchor"] = fx < 1 / 3 ? "left" : fx > 2 / 3 ? "right" : "center";
+    const vAnchor: ActionPadAnchor["vAnchor"] = fy < 1 / 3 ? "top" : fy > 2 / 3 ? "bottom" : "middle";
+
+    const baseX = hAnchor === "left" ? 0 : hAnchor === "center" ? w / 2 : w;
+    const baseY = vAnchor === "top" ? 0 : vAnchor === "middle" ? h / 2 : h;
+
+    return {
+        hAnchor,
+        vAnchor,
+        offsetX: clickX - baseX,
+        offsetY: clickY - baseY,
+    };
 }
 
 export interface ControllerInputRouterDeps {
@@ -181,14 +236,16 @@ export class ControllerInputRouter {
         const size = { width: viewportWidth, height: viewportHeight };
         if (size.width <= 0 || size.height <= 0) return;
 
+        const resolved = resolveActionPadPixel(anchor, viewportWidth, viewportHeight);
+
         const now = Date.now();
         if (now - this.lastActionPadFireMs < ACTION_PAD_DEBOUNCE_MS) return;
         if (this.actionPadInProgress) return;
         this.lastActionPadFireMs = now;
         this.actionPadInProgress = true;
 
-        const cx = size.width * anchor.x;
-        const cy = size.height * anchor.y;
+        const cx = resolved.x;
+        const cy = resolved.y;
         const ox = (Math.random() - 0.5) * ACTION_PAD_OFFSET_PX * 2;
         const oy = (Math.random() - 0.5) * ACTION_PAD_OFFSET_PX * 2;
         const baseX = clamp(cx + ox, 0, size.width);

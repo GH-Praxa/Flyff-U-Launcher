@@ -192,7 +192,7 @@ app.whenReady().then(async () => {
     // beschleunigt den synchronen Lookup im Router (vermeidet async Profil-Load
     // pro Frame).
     const webContentsToProfile = new Map<number, string>();
-    const actionPadAnchors = new Map<string, { x: number; y: number }>();
+    const actionPadAnchors = new Map<string, import("./main/controller/inputRouter").ActionPadAnchor>();
 
     // Create core services
     const services = createCoreServices({
@@ -215,10 +215,17 @@ app.whenReady().then(async () => {
     // Profilen — beim ersten Frame-Eingang ist der Anker dann sofort verfuegbar.
     void services.profiles.list().then((profiles) => {
         for (const p of profiles) {
-            const c = (p as { controller?: { actionPadX?: number | null; actionPadY?: number | null } }).controller;
-            if (c && typeof c.actionPadX === "number" && typeof c.actionPadY === "number") {
-                actionPadAnchors.set(p.id, { x: c.actionPadX, y: c.actionPadY });
-            }
+            const c = (p as {
+                controller?: {
+                    actionPad?: {
+                        hAnchor: "left" | "center" | "right";
+                        vAnchor: "top" | "middle" | "bottom";
+                        offsetX: number;
+                        offsetY: number;
+                    } | null;
+                };
+            }).controller;
+            if (c?.actionPad) actionPadAnchors.set(p.id, c.actionPad);
         }
     }).catch(() => { /* ignore */ });
     const roiVisibilityStore = createRoiVisibilityStore();
@@ -719,7 +726,7 @@ app.whenReady().then(async () => {
             actionPadAnchors.set(profileId, anchor);
             await services.profiles.update({
                 id: profileId,
-                controller: { actionPadX: anchor.x, actionPadY: anchor.y },
+                controller: { actionPad: anchor },
             } as Parameters<typeof services.profiles.update>[0]);
         },
         notify: (msg, tone) => controllerToast(msg, tone),
