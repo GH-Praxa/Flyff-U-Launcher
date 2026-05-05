@@ -45,8 +45,33 @@ export type ProfileActionPadAnchor = {
     offsetX: number;
     offsetY: number;
 };
+/**
+ * Per-Button-Override. `null` = explizit "nicht belegt" (auch nicht Default).
+ * Fehlender Key (undefined) = Default-Mapping benutzen. Werte sind entweder
+ * Accelerator-Keys ("Space", "W", "1") oder Special-Actions mit `@`-Prefix
+ * ("@actionPad").
+ */
+export type ProfileButtonMapping = {
+    a?: string | null;
+    b?: string | null;
+    x?: string | null;
+    y?: string | null;
+    l1?: string | null;
+    r1?: string | null;
+    l2?: string | null;
+    r2?: string | null;
+    select?: string | null;
+    start?: string | null;
+    l3?: string | null;
+    r3?: string | null;
+    dpadUp?: string | null;
+    dpadDown?: string | null;
+    dpadLeft?: string | null;
+    dpadRight?: string | null;
+};
 export type ProfileController = {
     actionPad?: ProfileActionPadAnchor | null;
+    buttons?: ProfileButtonMapping;
 };
 export type Profile = {
     id: string;
@@ -122,22 +147,60 @@ function normalizeHudLayout(v: unknown): OverlayHudLayout {
 function defaultFeatures(): ProfileFeatures {
     return { questlog: { enabled: false } };
 }
+const BUTTON_KEYS: Array<keyof ProfileButtonMapping> = [
+    "a", "b", "x", "y",
+    "l1", "r1", "l2", "r2",
+    "select", "start", "l3", "r3",
+    "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
+];
+
+function normalizeButtonMapping(v: unknown): ProfileButtonMapping | undefined {
+    if (!v || typeof v !== "object") return undefined;
+    const obj = v as Record<string, unknown>;
+    const out: ProfileButtonMapping = {};
+    let any = false;
+    for (const key of BUTTON_KEYS) {
+        const raw = obj[key];
+        if (raw === null) {
+            out[key] = null;
+            any = true;
+        }
+        else if (typeof raw === "string" && raw.length > 0 && raw.length <= 32) {
+            out[key] = raw;
+            any = true;
+        }
+    }
+    return any ? out : undefined;
+}
+
 function normalizeController(v: unknown): ProfileController | undefined {
     if (!v || typeof v !== "object") return undefined;
     const obj = v as Record<string, unknown>;
+    const out: ProfileController = {};
+    let any = false;
+
     const padRaw = obj.actionPad;
-    if (!padRaw || typeof padRaw !== "object") return undefined;
-    const p = padRaw as Record<string, unknown>;
-    const hAnchor = p.hAnchor === "left" || p.hAnchor === "center" || p.hAnchor === "right"
-        ? p.hAnchor
-        : null;
-    const vAnchor = p.vAnchor === "top" || p.vAnchor === "middle" || p.vAnchor === "bottom"
-        ? p.vAnchor
-        : null;
-    const offsetX = typeof p.offsetX === "number" && Number.isFinite(p.offsetX) ? p.offsetX : null;
-    const offsetY = typeof p.offsetY === "number" && Number.isFinite(p.offsetY) ? p.offsetY : null;
-    if (hAnchor === null || vAnchor === null || offsetX === null || offsetY === null) return undefined;
-    return { actionPad: { hAnchor, vAnchor, offsetX, offsetY } };
+    if (padRaw && typeof padRaw === "object") {
+        const p = padRaw as Record<string, unknown>;
+        const hAnchor = p.hAnchor === "left" || p.hAnchor === "center" || p.hAnchor === "right"
+            ? p.hAnchor : null;
+        const vAnchor = p.vAnchor === "top" || p.vAnchor === "middle" || p.vAnchor === "bottom"
+            ? p.vAnchor : null;
+        const offsetX = typeof p.offsetX === "number" && Number.isFinite(p.offsetX) ? p.offsetX : null;
+        const offsetY = typeof p.offsetY === "number" && Number.isFinite(p.offsetY) ? p.offsetY : null;
+        if (hAnchor !== null && vAnchor !== null && offsetX !== null && offsetY !== null) {
+            out.actionPad = { hAnchor, vAnchor, offsetX, offsetY };
+            any = true;
+        }
+    }
+
+    const buttons = normalizeButtonMapping(obj.buttons);
+    if (buttons) {
+        out.buttons = buttons;
+        any = true;
+    }
+
+    return any ? out : undefined;
 }
 
 function normalizeFeatures(v: unknown): ProfileFeatures {

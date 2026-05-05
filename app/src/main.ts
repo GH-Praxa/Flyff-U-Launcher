@@ -211,8 +211,8 @@ app.whenReady().then(async () => {
         },
     });
 
-    // Initial-Befuellung des Action-Pad-Anker-Caches aus den persistenten
-    // Profilen — beim ersten Frame-Eingang ist der Anker dann sofort verfuegbar.
+    // Initial-Befuellung der Caches aus den persistenten Profilen — beim ersten
+    // Frame-Eingang sind Anker und Mapping dann sofort verfuegbar.
     void services.profiles.list().then((profiles) => {
         for (const p of profiles) {
             const c = (p as {
@@ -223,9 +223,11 @@ app.whenReady().then(async () => {
                         offsetX: number;
                         offsetY: number;
                     } | null;
+                    buttons?: Record<string, string | null | undefined>;
                 };
             }).controller;
             if (c?.actionPad) actionPadAnchors.set(p.id, c.actionPad);
+            if (c?.buttons) reloadButtonMappingsForProfile(p.id, c.buttons);
         }
     }).catch(() => { /* ignore */ });
     const roiVisibilityStore = createRoiVisibilityStore();
@@ -708,11 +710,31 @@ app.whenReady().then(async () => {
             launcherWindow?.webContents.send("toast:show", { message: msg, tone, ttlMs: toastDurationMs });
         } catch { /* ignore */ }
     };
+    // Cache fuer Per-Profil-Button-Mapping (Override → vollstaendiges Mapping).
+    // Wird beim Start aus den Profilen befuellt und bei jedem Profil-Update
+    // aktualisiert.
+    const buttonMappings = new Map<string, ReturnType<typeof import("./main/controller/inputRouter").resolveButtonMapping>>();
+    const reloadButtonMappingsForProfile = (profileId: string, override: unknown) => {
+        const ctrlInputRouter = require("./main/controller/inputRouter") as typeof import("./main/controller/inputRouter");
+        if (override && typeof override === "object") {
+            buttonMappings.set(profileId, ctrlInputRouter.resolveButtonMapping(override as Record<string, string | null | undefined>));
+        }
+        else {
+            buttonMappings.delete(profileId);
+        }
+    };
+
     const controllerRouter = createControllerInputRouter({
         getActionPadAnchor: (sender) => {
             const profileId = webContentsToProfile.get(sender.id);
             if (!profileId) return null;
             return actionPadAnchors.get(profileId) ?? null;
+        },
+        getButtonMapping: (sender) => {
+            const profileId = webContentsToProfile.get(sender.id);
+            if (!profileId) return require("./main/controller/inputRouter").DEFAULT_BUTTON_MAPPING;
+            return buttonMappings.get(profileId)
+                ?? require("./main/controller/inputRouter").DEFAULT_BUTTON_MAPPING;
         },
         notify: (msg) => controllerToast(msg, "info"),
     });
@@ -728,6 +750,12 @@ app.whenReady().then(async () => {
                 id: profileId,
                 controller: { actionPad: anchor },
             } as Parameters<typeof services.profiles.update>[0]);
+        },
+        reloadButtonMapping: async (profileId) => {
+            const list = await services.profiles.list();
+            const p = list.find((x) => x.id === profileId);
+            const c = (p as { controller?: { buttons?: Record<string, string | null | undefined> } } | undefined)?.controller;
+            reloadButtonMappingsForProfile(profileId, c?.buttons);
         },
         notify: (msg, tone) => controllerToast(msg, tone),
     });

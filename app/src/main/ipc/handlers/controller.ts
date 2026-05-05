@@ -14,21 +14,13 @@ import { logErr, logInfo } from "../../../shared/logger";
 export interface ControllerHandlerOptions {
     router: ControllerInputRouter;
     onControllerConnected?: (info: { id: string; mapping: string; axesCount: number; buttonsCount: number }) => void;
-    /**
-     * Liefert die Profil-ID, die zur Sender-WebContents gehoert. Wird vom
-     * Calibrate-Handler genutzt, um die kalibrierte Position dem richtigen
-     * Profil zuzuweisen. `null` falls die WebContents nicht zu einer
-     * registrierten Flyff-View gehoert.
-     */
     getProfileForWebContents: (wc: WebContents) => string | null;
-    /**
-     * Persistiert den neu kalibrierten Action-Pad-Anker fuer ein Profil
-     * (Update auf den ProfilesStore + In-Memory-Cache).
-     */
     setActionPadAnchor: (profileId: string, anchor: ActionPadAnchor) => Promise<void>;
     /**
-     * Toast nach erfolgreicher / fehlgeschlagener Kalibrierung.
+     * Wird vom UI nach Save eines neuen Button-Mappings aufgerufen, damit der
+     * In-Memory-Cache fuer den naechsten Frame schon den neuen Wert benutzt.
      */
+    reloadButtonMapping: (profileId: string) => Promise<void>;
     notify?: (message: string, tone?: "info" | "success" | "error") => void;
 }
 
@@ -101,14 +93,26 @@ export function registerControllerHandlers(opts: ControllerHandlerOptions): () =
         }
     };
 
+    const onReloadMapping = async (_event: IpcMainEvent, profileId: unknown) => {
+        try {
+            if (typeof profileId !== "string" || !profileId) return;
+            await opts.reloadButtonMapping(profileId);
+        }
+        catch (err) {
+            logErr("controller:reloadMapping handler failed: " + String(err));
+        }
+    };
+
     ipcMain.on("controller:frame", onFrame);
     ipcMain.on("controller:connected", onConnected);
     ipcMain.on("controller:calibrate:done", onCalibrateDone);
+    ipcMain.on("controller:reloadMapping", onReloadMapping);
 
     return () => {
         ipcMain.removeListener("controller:frame", onFrame);
         ipcMain.removeListener("controller:connected", onConnected);
         ipcMain.removeListener("controller:calibrate:done", onCalibrateDone);
+        ipcMain.removeListener("controller:reloadMapping", onReloadMapping);
     };
 }
 

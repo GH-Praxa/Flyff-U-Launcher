@@ -501,4 +501,14 @@ contextBridge.exposeInMainWorld("roiBridge", {
     ipcRenderer.on("controller:calibrate:cancel", cancelCalibration);
 })();
 
+// Renderer-API fuer das Controller-Settings-Tab (Custom-Mapping-Editor): einmal
+// Reload-Trigger schicken, damit Main den Mapping-Cache fuer das Profil neu
+// lädt nachdem profilesUpdate gespeichert hat.
+contextBridge.exposeInMainWorld("controllerApi", {
+    reloadMapping: (profileId: string) => {
+        try { ipcRenderer.send("controller:reloadMapping", profileId); }
+        catch { /* ignore */ }
+    },
+});
+
 export {};

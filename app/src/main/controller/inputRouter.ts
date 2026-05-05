@@ -122,6 +122,37 @@ export function deriveActionPadAnchor(
 }
 
 /**
+ * Symbolische Button-Namen — User-friendly statt numerischer Indizes. Der
+ * Router uebersetzt zwischen Index (frame.buttons[i]) und Name via BTN_INDEX_TO_NAME.
+ */
+export const BUTTON_NAMES = [
+    "a", "b", "x", "y",
+    "l1", "r1", "l2", "r2",
+    "select", "start", "l3", "r3",
+    "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
+] as const;
+export type ButtonName = typeof BUTTON_NAMES[number];
+
+export const BTN_INDEX_TO_NAME: Record<number, ButtonName> = {
+    [BTN.A]: "a",
+    [BTN.B]: "b",
+    [BTN.X]: "x",
+    [BTN.Y]: "y",
+    [BTN.L1]: "l1",
+    [BTN.R1]: "r1",
+    [BTN.L2]: "l2",
+    [BTN.R2]: "r2",
+    [BTN.SELECT]: "select",
+    [BTN.START]: "start",
+    [BTN.L3]: "l3",
+    [BTN.R3]: "r3",
+    [BTN.DPAD_UP]: "dpadUp",
+    [BTN.DPAD_DOWN]: "dpadDown",
+    [BTN.DPAD_LEFT]: "dpadLeft",
+    [BTN.DPAD_RIGHT]: "dpadRight",
+};
+
+/**
  * Mapping von Button-Index → Aktion. Aktionen sind entweder Accelerator-Keys
  * ("W", "Space", "Escape", "1"...) oder Special-Actions mit `@`-Prefix:
  *   "@actionPad" — feuert den kalibrierten Action-Pad-Klick
@@ -156,6 +187,32 @@ export const DEFAULT_BUTTON_MAPPING: ControllerButtonMapping = {
     [BTN.R3]: "C",
     [BTN.DPAD_UP]: "@actionPad",
 };
+
+/**
+ * Erzeugt aus einem Per-Profil-Button-Override (symbolische Namen) und dem
+ * Default ein vollstaendiges Mapping (Index → Action). Override-Werte:
+ *   string  → benutze diesen Wert (Tasten-Code oder @-Action)
+ *   null    → explizit unbelegt (KEIN Default)
+ *   undef   → Default verwenden
+ */
+export function resolveButtonMapping(
+    override: Partial<Record<ButtonName, string | null | undefined>> | undefined,
+): ControllerButtonMapping {
+    const out: ControllerButtonMapping = { ...DEFAULT_BUTTON_MAPPING };
+    if (!override) return out;
+    for (const [idxStr, name] of Object.entries(BTN_INDEX_TO_NAME)) {
+        const idx = Number(idxStr);
+        const v = override[name];
+        if (v === null) {
+            out[idx] = null;        // explizit unbelegt
+        }
+        else if (typeof v === "string" && v.length > 0) {
+            out[idx] = v;            // expliziter Override
+        }
+        // else (undefined): Default beibehalten
+    }
+    return out;
+}
 
 export interface ControllerInputRouterDeps {
     getActionPadAnchor: (sender: WebContents) => ActionPadAnchor | null;

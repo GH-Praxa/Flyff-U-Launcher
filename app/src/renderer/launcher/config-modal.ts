@@ -80,6 +80,7 @@ export function openConfigModal(
     // ── Global Sidebar with sub-categories ──
     type SidebarId = "client.display" | "client.layout" | "client.behavior"
         | "client.theme" | "client.tabcolor" | "client.font" | "client.hotkeys"
+        | "controller"
         | "plugins" | "patchnotes" | "docs" | "support";
     const globalSidebar = el("div", "settingsSidebar");
     const allSidebarBtns = new Map<SidebarId, HTMLButtonElement>();
@@ -115,6 +116,7 @@ export function openConfigModal(
     const sep = el("div", "sidebarSep");
     globalSidebar.append(sep);
     // Other pages
+    createSidebarBtn("controller", "\uD83C\uDFAE", t("config.tab.controller" as TranslationKey));
     createSidebarBtn("plugins", "\uD83E\uDDE9", t("config.tab.plugins" as TranslationKey));
     createSidebarBtn("patchnotes", "\uD83D\uDCCB", t("config.tab.patchnotes" as TranslationKey));
     createSidebarBtn("docs", "\uD83D\uDCD6", t("config.tab.docs" as TranslationKey));
@@ -132,6 +134,10 @@ export function openConfigModal(
     tabColorPane.style.display = "none";
     const fontPane = el("div", "configPaneCard");
     const hotkeysPane = el("div", "configPaneCard");
+    // Controller pane
+    const controllerPane = el("div", "controllerPane configPaneCard");
+    controllerPane.style.display = "none";
+
     // Plugins pane
     const pluginsPane = el("div", "pluginsPane configPaneCard");
     const pluginsTitle = el("div", "pluginsTitle", t("config.plugins.title" as TranslationKey));
@@ -1349,6 +1355,7 @@ export function openConfigModal(
         "client.tabcolor": tabColorPane,
         "client.font": fontPane,
         "client.hotkeys": hotkeysPane,
+        "controller": controllerPane,
         "plugins": pluginsPane,
         "patchnotes": patchnotesPane,
         "docs": docsPane,
@@ -1379,10 +1386,256 @@ export function openConfigModal(
         if (id === "docs") {
             loadDocumentation();
         }
+        if (id === "controller") {
+            renderControllerTab().catch((e) => logErr(e, "ControllerTab"));
+        }
     }
     for (const [id, btn] of allSidebarBtns) {
         btn.addEventListener("click", () => selectSidebarItem(id));
     }
+    // ====================================================================
+    // Controller-Tab: Per-Profil-Mapping-Editor
+    // ====================================================================
+    type ControllerButtonName =
+        | "a" | "b" | "x" | "y"
+        | "l1" | "r1" | "l2" | "r2"
+        | "select" | "start" | "l3" | "r3"
+        | "dpadUp" | "dpadDown" | "dpadLeft" | "dpadRight";
+
+    type ControllerButtonOverride = Partial<Record<ControllerButtonName, string | null>>;
+
+    interface ControllerButtonRow {
+        key: ControllerButtonName;
+        label: string;
+        defaultAction: string | null;
+    }
+
+    const CONTROLLER_BUTTON_ROWS: ControllerButtonRow[] = [
+        { key: "a",         label: "✕ / A",            defaultAction: "Space" },
+        { key: "b",         label: "◯ / B",            defaultAction: "Escape" },
+        { key: "x",         label: "☐ / X",            defaultAction: "Z" },
+        { key: "y",         label: "△ / Y",            defaultAction: "Tab" },
+        { key: "l1",        label: "L1 / LB",           defaultAction: "1" },
+        { key: "r1",        label: "R1 / RB",           defaultAction: "2" },
+        { key: "l2",        label: "L2 / LT",           defaultAction: null },
+        { key: "r2",        label: "R2 / RT",           defaultAction: "3" },
+        { key: "select",    label: "Share / Back",      defaultAction: null },
+        { key: "start",     label: "Options / Start",   defaultAction: "Return" },
+        { key: "l3",        label: "L3 (Stick links)",  defaultAction: "I" },
+        { key: "r3",        label: "R3 (Stick rechts)", defaultAction: "C" },
+        { key: "dpadUp",    label: "D-Pad ↑",           defaultAction: "@actionPad" },
+        { key: "dpadDown",  label: "D-Pad ↓",           defaultAction: null },
+        { key: "dpadLeft",  label: "D-Pad ←",           defaultAction: null },
+        { key: "dpadRight", label: "D-Pad →",           defaultAction: null },
+    ];
+
+    /** UI-freundliche Repraesentation eines Action-Werts. */
+    function controllerActionLabel(action: string | null | undefined): string {
+        if (action === null) return t("controller.binding.unbound" as TranslationKey);
+        if (!action) return "";
+        if (action === "@actionPad") return t("controller.binding.actionPad" as TranslationKey);
+        if (action === "Space") return "Leertaste";
+        if (action === "Return" || action === "Enter") return "Enter";
+        if (action === "Escape") return "Escape";
+        if (action === "Tab") return "Tab";
+        return action;
+    }
+
+    let currentControllerProfileId: string | null = null;
+    let currentControllerOverride: ControllerButtonOverride = {};
+
+    async function renderControllerTab(): Promise<void> {
+        controllerPane.innerHTML = "";
+
+        const title = el("div", "controllerTitle settingSectionTitle", t("controller.tabTitle" as TranslationKey));
+        const intro = el("div", "controllerIntro muted", t("controller.intro" as TranslationKey));
+        controllerPane.append(title, intro);
+
+        // Profile dropdown
+        const profiles = (await window.api.profilesList?.()) as Array<{
+            id: string;
+            name: string;
+            controller?: { buttons?: ControllerButtonOverride };
+        }>;
+        if (!profiles || profiles.length === 0) {
+            const empty = el("div", "controllerEmpty muted", t("controller.noProfiles" as TranslationKey));
+            controllerPane.append(empty);
+            return;
+        }
+
+        const selectorRow = el("div", "controllerProfileRow");
+        const selectorLabel = el("span", "controllerProfileLabel", t("controller.profileLabel" as TranslationKey));
+        const selectEl = document.createElement("select");
+        selectEl.className = "controllerProfileSelect";
+        for (const p of profiles) {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.name;
+            selectEl.append(opt);
+        }
+        if (currentControllerProfileId && profiles.some((p) => p.id === currentControllerProfileId)) {
+            selectEl.value = currentControllerProfileId;
+        }
+        else {
+            currentControllerProfileId = profiles[0].id;
+            selectEl.value = profiles[0].id;
+        }
+        selectorRow.append(selectorLabel, selectEl);
+        controllerPane.append(selectorRow);
+
+        const rowsContainer = el("div", "controllerRowsList");
+        controllerPane.append(rowsContainer);
+
+        const calibrateHint = el("div", "controllerCalibrateHint muted", t("controller.calibrateHint" as TranslationKey));
+        controllerPane.append(calibrateHint);
+
+        const renderRowsForProfile = (profileId: string) => {
+            const p = profiles.find((x) => x.id === profileId);
+            currentControllerOverride = { ...(p?.controller?.buttons ?? {}) };
+            rowsContainer.innerHTML = "";
+            for (const row of CONTROLLER_BUTTON_ROWS) {
+                const rowEl = el("div", "controllerRow");
+                const labelEl = el("div", "controllerRowLabel", row.label);
+
+                const valueEl = el("div", "controllerRowValue");
+                const refreshValue = () => {
+                    valueEl.innerHTML = "";
+                    const override = currentControllerOverride[row.key];
+                    if (override === null) {
+                        const span = el("span", "controllerActionUnbound", controllerActionLabel(null));
+                        valueEl.append(span);
+                    }
+                    else if (typeof override === "string") {
+                        const span = el("span", "controllerActionOverride", controllerActionLabel(override));
+                        valueEl.append(span);
+                    }
+                    else {
+                        // Default
+                        const span = el("span", "controllerActionDefault muted", controllerActionLabel(row.defaultAction) || "—");
+                        const tag = el("span", "controllerActionDefaultTag", t("controller.defaultTag" as TranslationKey));
+                        valueEl.append(span, tag);
+                    }
+                };
+                refreshValue();
+
+                const captureBtn = document.createElement("button");
+                captureBtn.type = "button";
+                captureBtn.className = "controllerCaptureBtn";
+                captureBtn.textContent = t("controller.capture" as TranslationKey);
+                captureBtn.addEventListener("click", () => {
+                    captureBtn.textContent = t("controller.capturing" as TranslationKey);
+                    captureBtn.disabled = true;
+                    const onKey = (ev: KeyboardEvent) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        document.removeEventListener("keydown", onKey, true);
+                        captureBtn.textContent = t("controller.capture" as TranslationKey);
+                        captureBtn.disabled = false;
+                        if (ev.key === "Escape") {
+                            return;
+                        }
+                        // Convert KeyboardEvent → Accelerator-style code
+                        // Single-char keys: uppercase letter or digit. Special keys: ev.key.
+                        let code = ev.key;
+                        if (code.length === 1) code = code.toUpperCase();
+                        if (code === " ") code = "Space";
+                        if (code === "Enter") code = "Return";
+                        currentControllerOverride[row.key] = code;
+                        refreshValue();
+                    };
+                    document.addEventListener("keydown", onKey, true);
+                });
+
+                const padBtn = document.createElement("button");
+                padBtn.type = "button";
+                padBtn.className = "controllerPadBtn";
+                padBtn.textContent = t("controller.bindActionPad" as TranslationKey);
+                padBtn.title = t("controller.bindActionPadHint" as TranslationKey);
+                padBtn.addEventListener("click", () => {
+                    currentControllerOverride[row.key] = "@actionPad";
+                    refreshValue();
+                });
+
+                const unbindBtn = document.createElement("button");
+                unbindBtn.type = "button";
+                unbindBtn.className = "controllerUnbindBtn";
+                unbindBtn.textContent = t("controller.unbind" as TranslationKey);
+                unbindBtn.addEventListener("click", () => {
+                    currentControllerOverride[row.key] = null;
+                    refreshValue();
+                });
+
+                const resetBtn = document.createElement("button");
+                resetBtn.type = "button";
+                resetBtn.className = "controllerResetBtn";
+                resetBtn.textContent = t("controller.reset" as TranslationKey);
+                resetBtn.title = t("controller.resetHint" as TranslationKey);
+                resetBtn.addEventListener("click", () => {
+                    delete currentControllerOverride[row.key];
+                    refreshValue();
+                });
+
+                const actions = el("div", "controllerRowActions");
+                actions.append(captureBtn, padBtn, unbindBtn, resetBtn);
+
+                rowEl.append(labelEl, valueEl, actions);
+                rowsContainer.append(rowEl);
+            }
+        };
+
+        renderRowsForProfile(selectEl.value);
+        selectEl.addEventListener("change", () => {
+            currentControllerProfileId = selectEl.value;
+            renderRowsForProfile(selectEl.value);
+        });
+
+        // Save / Reset-All buttons
+        const footer = el("div", "controllerFooter");
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "controllerSaveBtn primaryBtn";
+        saveBtn.textContent = t("controller.save" as TranslationKey);
+        saveBtn.addEventListener("click", async () => {
+            if (!currentControllerProfileId) return;
+            saveBtn.disabled = true;
+            try {
+                await window.api.profilesUpdate?.({
+                    id: currentControllerProfileId,
+                    controller: { buttons: currentControllerOverride },
+                } as unknown as Parameters<NonNullable<typeof window.api.profilesUpdate>>[0]);
+                const ctrlApi = (window as unknown as { controllerApi?: { reloadMapping: (id: string) => void } }).controllerApi;
+                ctrlApi?.reloadMapping(currentControllerProfileId);
+                showToast(t("controller.saved" as TranslationKey), "success");
+                // Refresh profiles list (controller.buttons may differ now)
+                const updated = (await window.api.profilesList?.()) as Array<{
+                    id: string;
+                    controller?: { buttons?: ControllerButtonOverride };
+                }>;
+                const fresh = updated?.find((p) => p.id === currentControllerProfileId);
+                currentControllerOverride = { ...(fresh?.controller?.buttons ?? {}) };
+            }
+            catch (err) {
+                logErr(err, "ControllerSave");
+                showToast(t("controller.saveFailed" as TranslationKey), "error");
+            }
+            finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+        const resetAllBtn = document.createElement("button");
+        resetAllBtn.type = "button";
+        resetAllBtn.className = "controllerResetAllBtn";
+        resetAllBtn.textContent = t("controller.resetAll" as TranslationKey);
+        resetAllBtn.addEventListener("click", () => {
+            currentControllerOverride = {};
+            renderRowsForProfile(selectEl.value);
+        });
+
+        footer.append(resetAllBtn, saveBtn);
+        controllerPane.append(footer);
+    }
+
     // Load and render plugins list
 
     async function loadPluginsList() {
