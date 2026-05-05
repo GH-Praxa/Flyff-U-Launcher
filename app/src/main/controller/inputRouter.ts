@@ -116,43 +116,17 @@ export class ControllerInputRouter {
         const buttons = frame.buttons;
         const prev = this.prevButtons;
 
-        // D-Pad-Up: Edge-Detect (nicht gedrueckt → gedrueckt) → Action-Pad-Trigger.
-        // Manche Controller (SCUF DInput-Modus etc.) liefern D-Pad als HAT-Achse
-        // axes[9] (Standard-Mapping POV als fraktionalem Wert). Beide Pfade
-        // werden hier abgedeckt.
-        const dpadUpFromButtons = this.isEdgeDown(prev, buttons, BTN.DPAD_UP);
-        const dpadUpFromHat = this.isHatUpEdge(frame);
-        if (dpadUpFromButtons || dpadUpFromHat) {
+        // D-Pad-Up: Edge-Detect via buttons[12] im Standard-Mapping. Standard-
+        // Mapping deckt PS4/Xbox/SCUF (XInput) ab. Falls ein Controller D-Pad
+        // ausschliesslich als HAT-Achse liefert (DInput-only), kommt das
+        // Mapping spaeter pro Controller-ID.
+        if (this.isEdgeDown(prev, buttons, BTN.DPAD_UP)) {
             this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
         }
 
         // (Stage 2: weitere Buttons + Sticks hier)
 
         this.prevButtons = buttons.slice();
-        this.prevAxes = frame.axes.slice();
-    }
-
-    /**
-     * Erkennt D-Pad-Up auf einer HAT-Achse. Standard-Mapping kennt kein POV-Hat
-     * direkt, aber im "non-standard"-Modus liefern viele Pads axes[9] (oder eine
-     * der hoeheren Achsen) mit einem POV-Wert -1..1, wobei -1 ungefaehr Up
-     * bedeutet. Wir erkennen Edge: Achse > -0.5 (kein Up) → Achse <= -0.7 (Up).
-     */
-    private prevAxes: number[] = [];
-
-    private isHatUpEdge(frame: GamepadFrame): boolean {
-        const axes = frame.axes;
-        const prev = this.prevAxes;
-        // axes[7] (Y) bei vielen Pads, axes[9] bei Standard-Web-Gamepad-API,
-        // oder axes[5] / axes[6] je nach Treiber. Wir scannen alle Achsen ab
-        // Index 4 (nach den zwei Sticks) auf eine, die jetzt <= -0.7 ist und
-        // vorher > -0.5 war.
-        for (let i = 4; i < axes.length; i++) {
-            const cur = axes[i];
-            const old = prev[i] ?? 0;
-            if (cur <= -0.7 && old > -0.5) return true;
-        }
-        return false;
     }
 
     private isEdgeDown(prev: boolean[], curr: boolean[], idx: number): boolean {
@@ -257,7 +231,6 @@ export class ControllerInputRouter {
     /** Reset bei Window-Wechsel oder Disable, damit keine Edge-Phantome auftauchen. */
     reset(): void {
         this.prevButtons = [];
-        this.prevAxes = [];
         this.actionPadInProgress = false;
     }
 }
