@@ -369,4 +369,79 @@ contextBridge.exposeInMainWorld("roiBridge", {
         ipcRenderer.send(`${roiChannel}:debug`, payload);
     },
 });
+
+// =========================================================================
+// Controller-Support (v3.5.0): Gamepad-Polling in Session-Windows.
+// Aktiviert nur auf Flyff-Domains, damit der Launcher-Renderer keine
+// Gamepad-Events empfaengt. Per RAF-Loop, sendet Diff-Frames per IPC an
+// Main, der die Events am Chromium-Input-Layer der fokussierten Session-
+// WebContents absetzt.
+// =========================================================================
+(() => {
+    const isSessionWindow = (() => {
+        try {
+            return /(^|\.)flyff\.com$/i.test(window.location.hostname);
+        } catch {
+            return false;
+        }
+    })();
+    if (!isSessionWindow) return;
+
+    let prevButtons: boolean[] = [];
+    let prevAxes: number[] = [];
+    let polling = false;
+
+    const sendFrame = (gp: Gamepad) => {
+        const buttons = gp.buttons.map(b => b.pressed === true);
+        const axes = Array.from(gp.axes);
+        try {
+            ipcRenderer.send("controller:frame", {
+                index: gp.index,
+                timestamp: gp.timestamp ?? performance.now(),
+                axes,
+                buttons,
+            });
+        }
+        catch {
+            // ignore — IPC channel might not yet be ready
+        }
+    };
+
+    const tick = () => {
+        if (!polling) return;
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        let chosen: Gamepad | null = null;
+        for (let i = 0; i < pads.length; i++) {
+            const p = pads[i];
+            if (p) { chosen = p; break; }
+        }
+        if (chosen) {
+            const buttons = chosen.buttons.map(b => b.pressed === true);
+            const axes = Array.from(chosen.axes);
+            const buttonsChanged = buttons.some((b, i) => b !== prevButtons[i]) || buttons.length !== prevButtons.length;
+            const axesChanged = axes.some((a, i) => Math.abs(a - (prevAxes[i] ?? 0)) > 0.01) || axes.length !== prevAxes.length;
+            if (buttonsChanged || axesChanged) {
+                sendFrame(chosen);
+                prevButtons = buttons;
+                prevAxes = axes;
+            }
+        }
+        requestAnimationFrame(tick);
+    };
+
+    const start = () => {
+        if (polling) return;
+        polling = true;
+        requestAnimationFrame(tick);
+    };
+    const stop = () => { polling = false; };
+
+    window.addEventListener("focus", start);
+    window.addEventListener("blur", stop);
+    window.addEventListener("gamepadconnected", start);
+    if (typeof document !== "undefined" && document.hasFocus && document.hasFocus()) {
+        start();
+    }
+})();
+
 export {};

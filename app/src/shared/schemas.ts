@@ -86,6 +86,17 @@ export const ProfileFeaturesSchema = z.object({
 });
 export type ProfileFeatures = z.infer<typeof ProfileFeaturesSchema>;
 
+/**
+ * Per-Profil-Daten fuer die Controller-Steuerung. Position des Action-Pads als
+ * Bruchteil 0..1 der Canvas-Groesse (nicht Pixel) — bleibt korrekt nach Window-
+ * Resize. `null` = nicht kalibriert, D-Pad-Up triggert dann nichts.
+ */
+export const ProfileControllerSchema = z.object({
+    actionPadX: z.number().min(0).max(1).nullable().optional(),
+    actionPadY: z.number().min(0).max(1).nullable().optional(),
+});
+export type ProfileController = z.infer<typeof ProfileControllerSchema>;
+
 export const ProfileSchema = z.object({
     id: IdSchema,
     name: NameSchema,
@@ -100,6 +111,7 @@ export const ProfileSchema = z.object({
     overlayHud: OverlayHudLayoutSchema.optional(),
     features: ProfileFeaturesSchema.optional(),
     characters: z.array(z.string().min(1).max(64)).optional(),
+    controller: ProfileControllerSchema.optional(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -164,6 +176,12 @@ export const ClientSettingsSchema = z.object({
     showRamUsage: z.boolean(),
     /** Check for updates automatically on app startup. Default: true. */
     checkForUpdatesOnStart: z.boolean(),
+    /**
+     * Controller-Support: aktiviert das Polling und Event-Routing. Action-Pad-
+     * Position wird pro Profil gespeichert (siehe Profile.controller). Default
+     * `false` damit Bestands-User keine ungewollten Eingaben bekommen.
+     */
+    controllerEnabled: z.boolean().optional(),
 });
 export type ClientSettings = z.infer<typeof ClientSettingsSchema>;
 export const ClientSettingsPatchSchema = ClientSettingsSchema.partial();
