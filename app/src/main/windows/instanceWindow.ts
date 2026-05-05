@@ -49,6 +49,9 @@ export function createInstanceWindow(profileId: string, opts: {
     flyffUrl: string;
     startFullscreen: boolean;
     partition?: string;
+    /** Preload-Skript (gleiches wie in der Launcher-Window) — ohne dies laeuft
+     *  z.B. das Controller-Gamepad-Polling nicht im Game-Context. */
+    preloadPath?: string;
 }): BrowserWindow {
     const partition = opts.partition ?? `persist:${profileId}`;
     ensureInstanceCsp(partition);
@@ -65,6 +68,7 @@ export function createInstanceWindow(profileId: string, opts: {
             nodeIntegration: false,
             sandbox: true,
             backgroundThrottling: false,
+            ...(opts.preloadPath ? { preload: opts.preloadPath } : {}),
         },
     });
     hardenGameContents(win.webContents);

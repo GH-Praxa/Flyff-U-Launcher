@@ -84,6 +84,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
     const sessionTabs = createSessionTabsManager({
         sessionWindow,
         flyffUrl: opts.flyffUrl,
+        preloadPath: opts.preloadPath,
     });
 
     // Reset tabs when session window is closed and restore visibility for next launch
@@ -161,6 +162,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             sessionWindow: windowController,
             flyffUrl: opts.flyffUrl,
             windowId,
+            preloadPath: opts.preloadPath,
         });
 
         // Inherit UI position persistence setting from client settings
@@ -205,6 +207,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             flyffUrl: opts.flyffUrl,
             startFullscreen: settings.startFullscreen,
             partition,
+            preloadPath: opts.preloadPath,
         });
         try {
             win.setTitle(`Flyff - ${profileId}${existingForProfile > 0 ? ` (${existingForProfile + 1})` : ""}`);

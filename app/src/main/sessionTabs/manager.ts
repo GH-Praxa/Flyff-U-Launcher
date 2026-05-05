@@ -11,6 +11,12 @@ export function createSessionTabsManager(opts: {
     sessionWindow: Pick<SessionWindowController, "ensure" | "get">;
     flyffUrl: string;
     windowId?: string; // Optional ID for multi-window tracking
+    /**
+     * Preload-Skript fuer die BrowserView in der Flyff laeuft. Ohne dieses
+     * laeuft kein Code in der Game-Page-Context-Bridge — z.B. das Gamepad-
+     * Polling fuer Controller-Support waere stumm.
+     */
+    preloadPath?: string;
 }) {
     const windowId = opts.windowId ?? "default";
     const sessionViews = new Map<string, BrowserView>();
@@ -879,6 +885,7 @@ export function createSessionTabsManager(opts: {
                 partition: `persist:${profileId}`,
                 contextIsolation: true,
                 nodeIntegration: false,
+                ...(opts.preloadPath ? { preload: opts.preloadPath } : {}),
             },
         });
         try {
