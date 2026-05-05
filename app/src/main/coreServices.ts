@@ -52,6 +52,14 @@ export type CreateCoreServicesOptions = {
     followIntervalMs?: number;
     /** Optional callback when instance window is opened (for plugin refresh) */
     onInstanceOpened?: () => void;
+    /**
+     * Controller-Modul: Mapping `webContents.id → profileId` registrieren beim
+     * Erstellen einer Flyff-WebContents (BrowserView/BrowserWindow), entfernen
+     * beim Zerstoeren. Wird vom Controller-Router gebraucht, um pro-Profil
+     * Action-Pad-Anker / Kalibrierung der richtigen Session zuzuordnen.
+     */
+    registerWebContentsProfile?: (webContentsId: number, profileId: string) => void;
+    unregisterWebContentsProfile?: (webContentsId: number) => void;
 };
 
 // ============================================================================
@@ -85,6 +93,8 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         sessionWindow,
         flyffUrl: opts.flyffUrl,
         preloadPath: opts.preloadPath,
+        registerWebContentsProfile: opts.registerWebContentsProfile,
+        unregisterWebContentsProfile: opts.unregisterWebContentsProfile,
     });
 
     // Reset tabs when session window is closed and restore visibility for next launch
@@ -163,6 +173,8 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             flyffUrl: opts.flyffUrl,
             windowId,
             preloadPath: opts.preloadPath,
+            registerWebContentsProfile: opts.registerWebContentsProfile,
+            unregisterWebContentsProfile: opts.unregisterWebContentsProfile,
         });
 
         // Inherit UI position persistence setting from client settings
@@ -208,6 +220,8 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             startFullscreen: settings.startFullscreen,
             partition,
             preloadPath: opts.preloadPath,
+            registerWebContentsProfile: opts.registerWebContentsProfile,
+            unregisterWebContentsProfile: opts.unregisterWebContentsProfile,
         });
         try {
             win.setTitle(`Flyff - ${profileId}${existingForProfile > 0 ? ` (${existingForProfile + 1})` : ""}`);

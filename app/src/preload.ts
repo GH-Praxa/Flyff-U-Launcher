@@ -461,6 +461,44 @@ contextBridge.exposeInMainWorld("roiBridge", {
     if (typeof document !== "undefined" && document.hasFocus && document.hasFocus()) {
         start();
     }
+
+    // Action-Pad-Kalibrierung: Main schickt controller:calibrate:start, der
+    // naechste mousedown auf der Page wird als Position erfasst und als
+    // Bruchteile zurueckgemeldet. Capture-Phase, damit wir's vor Flyff sehen;
+    // wir verhindern den Default NICHT — der User klickt absichtlich auf das
+    // Action-Pad und sieht so visuell die Bestaetigung dass er die richtige
+    // Stelle erwischt hat. 10 s Timeout falls nichts geklickt wird.
+    let calibrationHandler: ((e: MouseEvent) => void) | null = null;
+    let calibrationTimeout: ReturnType<typeof setTimeout> | null = null;
+    const cancelCalibration = () => {
+        if (calibrationHandler) {
+            document.removeEventListener("mousedown", calibrationHandler, true);
+            calibrationHandler = null;
+        }
+        if (calibrationTimeout) {
+            clearTimeout(calibrationTimeout);
+            calibrationTimeout = null;
+        }
+    };
+    ipcRenderer.on("controller:calibrate:start", () => {
+        cancelCalibration();
+        const handler = (e: MouseEvent) => {
+            cancelCalibration();
+            try {
+                ipcRenderer.send("controller:calibrate:done", {
+                    x: e.clientX,
+                    y: e.clientY,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                });
+            }
+            catch { /* ignore */ }
+        };
+        calibrationHandler = handler;
+        document.addEventListener("mousedown", handler, true);
+        calibrationTimeout = setTimeout(cancelCalibration, 10000);
+    });
+    ipcRenderer.on("controller:calibrate:cancel", cancelCalibration);
 })();
 
 export {};

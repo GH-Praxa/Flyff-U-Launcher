@@ -52,6 +52,9 @@ export function createInstanceWindow(profileId: string, opts: {
     /** Preload-Skript (gleiches wie in der Launcher-Window) — ohne dies laeuft
      *  z.B. das Controller-Gamepad-Polling nicht im Game-Context. */
     preloadPath?: string;
+    /** Callbacks fuer webContents.id → profileId Mapping (Controller-Modul). */
+    registerWebContentsProfile?: (webContentsId: number, profileId: string) => void;
+    unregisterWebContentsProfile?: (webContentsId: number) => void;
 }): BrowserWindow {
     const partition = opts.partition ?? `persist:${profileId}`;
     ensureInstanceCsp(partition);
@@ -72,6 +75,10 @@ export function createInstanceWindow(profileId: string, opts: {
         },
     });
     hardenGameContents(win.webContents);
+    opts.registerWebContentsProfile?.(win.webContents.id, profileId);
+    win.webContents.once("destroyed", () => {
+        opts.unregisterWebContentsProfile?.(win.webContents.id);
+    });
     win.webContents.loadURL("about:blank").catch((err) => console.error("[InstanceWindow] load failed", err));
     win.webContents.loadURL(opts.flyffUrl).catch((err) => {
         console.error("Failed to load Flyff URL in instance window:", err);

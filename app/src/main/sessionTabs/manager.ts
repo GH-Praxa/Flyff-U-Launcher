@@ -17,6 +17,13 @@ export function createSessionTabsManager(opts: {
      * Polling fuer Controller-Support waere stumm.
      */
     preloadPath?: string;
+    /**
+     * Optionale Callbacks zum Registrieren/Deregistrieren der Zuordnung
+     * `webContents.id → profileId` — gebraucht vom Controller-Modul, damit
+     * pro-Profil-Anker / Kalibrierung der richtigen Session zugeordnet werden.
+     */
+    registerWebContentsProfile?: (webContentsId: number, profileId: string) => void;
+    unregisterWebContentsProfile?: (webContentsId: number) => void;
 }) {
     const windowId = opts.windowId ?? "default";
     const sessionViews = new Map<string, BrowserView>();
@@ -904,6 +911,10 @@ export function createSessionTabsManager(opts: {
         const fontCleanup = registerFontForView(profileId, view);
         fontNavigateCleanups.set(profileId, fontCleanup);
         sessionViews.set(profileId, view);
+        opts.registerWebContentsProfile?.(view.webContents.id, profileId);
+        view.webContents.once("destroyed", () => {
+            opts.unregisterWebContentsProfile?.(view.webContents.id);
+        });
         return view;
     }
     /** Returns true if a load was actually started, false if already loaded or skipped. */

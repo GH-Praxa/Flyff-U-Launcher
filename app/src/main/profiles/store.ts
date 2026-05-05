@@ -29,6 +29,15 @@ export type ProfileFeatures = {
         enabled: boolean;
     };
 };
+/**
+ * Per-Profil-Controller-Daten — Action-Pad-Position als Bruchteil 0..1 der
+ * Canvas-Groesse. `null`/undefined = nicht kalibriert, D-Pad-Up triggert
+ * dann nichts.
+ */
+export type ProfileController = {
+    actionPadX?: number | null;
+    actionPadY?: number | null;
+};
 export type Profile = {
     id: string;
     name: string;
@@ -43,6 +52,7 @@ export type Profile = {
     overlayHud?: OverlayHudLayout;
     features?: ProfileFeatures;
     characters?: string[];
+    controller?: ProfileController;
 };
 function defaultOverlaySettings(): OverlaySettings {
     return {
@@ -102,6 +112,19 @@ function normalizeHudLayout(v: unknown): OverlayHudLayout {
 function defaultFeatures(): ProfileFeatures {
     return { questlog: { enabled: false } };
 }
+function normalizeController(v: unknown): ProfileController | undefined {
+    if (!v || typeof v !== "object") return undefined;
+    const obj = v as Record<string, unknown>;
+    const x = typeof obj.actionPadX === "number" && obj.actionPadX >= 0 && obj.actionPadX <= 1
+        ? obj.actionPadX
+        : null;
+    const y = typeof obj.actionPadY === "number" && obj.actionPadY >= 0 && obj.actionPadY <= 1
+        ? obj.actionPadY
+        : null;
+    if (x === null && y === null) return undefined;
+    return { actionPadX: x, actionPadY: y };
+}
+
 function normalizeFeatures(v: unknown): ProfileFeatures {
     const base = defaultFeatures();
     if (!v || typeof v !== "object")
@@ -152,6 +175,7 @@ function normalizeProfile(v: unknown): Profile | null {
         characters: Array.isArray(p.characters)
             ? p.characters.filter((c): c is string => typeof c === "string" && c.length > 0).slice(0, 64)
             : undefined,
+        controller: normalizeController(p.controller),
     };
 }
 
@@ -206,12 +230,16 @@ export function createProfilesStore() {
                     const mergedFeatures = patch.features !== undefined
                         ? normalizeFeatures({ ...(p.features ?? defaultFeatures()), ...patch.features })
                         : p.features;
+                    const mergedController = patch.controller !== undefined
+                        ? normalizeController({ ...(p.controller ?? {}), ...patch.controller })
+                        : p.controller;
                     return {
                         ...p,
                         ...patch,
                         overlaySettings: mergedSettings,
                         overlayHud: mergedHud,
                         features: mergedFeatures ?? defaultFeatures(),
+                        controller: mergedController,
                     };
                 })
             );

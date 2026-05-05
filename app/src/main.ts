@@ -5,7 +5,7 @@
  * EXP-Tracker, Questlog, Buff-Wecker are loaded as plugins from userData/plugins/
  */
 
-import { app, BrowserWindow, Menu, session, ipcMain, globalShortcut, screen } from "electron";
+import { app, BrowserWindow, Menu, session, ipcMain, globalShortcut, screen, webContents } from "electron";
 import path from "path";
 import { execSync } from "child_process";
 import squirrelStartup from "electron-squirrel-startup";
@@ -186,6 +186,14 @@ app.whenReady().then(async () => {
         baseDir: __dirname,
     });
 
+    // Controller-Support: Mapping webContents.id → profileId, fuer pro-Profil-
+    // Action-Pad-Anker und Kalibrierung. Wird vom sessionTabsManager und
+    // instanceWindow ueber Callbacks gepflegt. Cache fuer Action-Pad-Anker
+    // beschleunigt den synchronen Lookup im Router (vermeidet async Profil-Load
+    // pro Frame).
+    const webContentsToProfile = new Map<number, string>();
+    const actionPadAnchors = new Map<string, { x: number; y: number }>();
+
     // Create core services
     const services = createCoreServices({
         preloadPath,
@@ -195,7 +203,24 @@ app.whenReady().then(async () => {
         onInstanceOpened: () => {
             logWarn("Instance window opened", "Main");
         },
+        registerWebContentsProfile: (wcId, profileId) => {
+            webContentsToProfile.set(wcId, profileId);
+        },
+        unregisterWebContentsProfile: (wcId) => {
+            webContentsToProfile.delete(wcId);
+        },
     });
+
+    // Initial-Befuellung des Action-Pad-Anker-Caches aus den persistenten
+    // Profilen — beim ersten Frame-Eingang ist der Anker dann sofort verfuegbar.
+    void services.profiles.list().then((profiles) => {
+        for (const p of profiles) {
+            const c = (p as { controller?: { actionPadX?: number | null; actionPadY?: number | null } }).controller;
+            if (c && typeof c.actionPadX === "number" && typeof c.actionPadY === "number") {
+                actionPadAnchors.set(p.id, { x: c.actionPadX, y: c.actionPadY });
+            }
+        }
+    }).catch(() => { /* ignore */ });
     const roiVisibilityStore = createRoiVisibilityStore();
 
     sessionWindowController = services.sessionWindow;
@@ -668,35 +693,67 @@ app.whenReady().then(async () => {
 
     // ====================================================================
     // Controller-Support (v3.5.0): Gamepad-Polling im Preload, Event-
-    // Injection am Chromium-Input-Layer DIREKT in der Sender-WebContents
-    // (Frame kommt aus der BrowserView, in der Flyff laeuft — die ist auch
-    // das Ziel des synthetischen Klicks). Pre1: hardcoded Action-Pad-
-    // Position; Kalibrierung + Settings folgen in pre2.
+    // Injection am Chromium-Input-Layer DIREKT in der Sender-WebContents.
+    // Pre2: pro-Profil-Action-Pad-Anker + Lehrmodus via Strg+Shift+F1.
     // ====================================================================
+    const controllerToast = (msg: string, tone: "info" | "success" | "error" = "info") => {
+        try {
+            launcherWindow?.webContents.send("toast:show", { message: msg, tone, ttlMs: toastDurationMs });
+        } catch { /* ignore */ }
+    };
     const controllerRouter = createControllerInputRouter({
-        getActionPadAnchor: () => {
-            // Pre1-Stub: hardcoded "unten Mitte" — typische Action-Pad-Position
-            // im Default-HUD. Wird in pre2 durch Per-Profil-Lehrmodus ersetzt.
-            return { x: 0.5, y: 0.85 };
+        getActionPadAnchor: (sender) => {
+            const profileId = webContentsToProfile.get(sender.id);
+            if (!profileId) return null;
+            return actionPadAnchors.get(profileId) ?? null;
         },
-        notify: (msg) => {
-            try {
-                launcherWindow?.webContents.send("toast:show", { message: msg, tone: "info", ttlMs: toastDurationMs });
-            } catch { /* ignore */ }
-        },
+        notify: (msg) => controllerToast(msg, "info"),
     });
     registerControllerHandlers({
         router: controllerRouter,
         onControllerConnected: (info) => {
-            try {
-                launcherWindow?.webContents.send("toast:show", {
-                    message: `Controller verbunden: ${info.id} (${info.mapping})`,
-                    tone: "success",
-                    ttlMs: toastDurationMs,
-                });
-            } catch { /* ignore */ }
+            controllerToast(`Controller verbunden: ${info.id} (${info.mapping})`, "success");
         },
+        getProfileForWebContents: (wc) => webContentsToProfile.get(wc.id) ?? null,
+        setActionPadAnchor: async (profileId, anchor) => {
+            actionPadAnchors.set(profileId, anchor);
+            await services.profiles.update({
+                id: profileId,
+                controller: { actionPadX: anchor.x, actionPadY: anchor.y },
+            } as Parameters<typeof services.profiles.update>[0]);
+        },
+        notify: (msg, tone) => controllerToast(msg, tone),
     });
+
+    // Lehrmodus-Trigger: Strg+Shift+F1 schickt allen aktuell fokussierten
+    // Flyff-WebContents ein controller:calibrate:start; der Preload fängt
+    // den naechsten Maus-Klick ab und meldet die Position zurueck. Nur die
+    // fokussierte WebContents reagiert (via webContents.isFocused()) — falls
+    // keine, kommt eine Toast-Fehlermeldung.
+    try {
+        const ok = globalShortcut.register("Control+Shift+F1", () => {
+            if (webContentsToProfile.size === 0) {
+                controllerToast("Action-Pad-Lehrmodus: kein Spiel-Fenster offen", "error");
+                return;
+            }
+            let dispatched = 0;
+            for (const [wcId] of webContentsToProfile) {
+                const wc = webContents.fromId(wcId);
+                if (!wc || wc.isDestroyed()) continue;
+                if (!wc.isFocused()) continue;
+                wc.send("controller:calibrate:start");
+                dispatched++;
+            }
+            if (dispatched === 0) {
+                controllerToast("Lehrmodus: bitte zuerst das Spiel-Fenster anklicken", "error");
+                return;
+            }
+            controllerToast("Lehrmodus aktiv — klicke auf das Action-Pad im Spiel (10 s)", "info");
+        });
+        if (!ok) logWarn("Failed to register Ctrl+Shift+F1 for action-pad calibration", "Controller");
+    } catch (err) {
+        logWarn(`globalShortcut.register failed: ${(err as Error).message}`, "Controller");
+    }
 
     // Initialize OCR system (load persisted timers, manual overrides)
     await ocrSystem.init();
