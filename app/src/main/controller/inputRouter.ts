@@ -116,17 +116,40 @@ export class ControllerInputRouter {
         const buttons = frame.buttons;
         const prev = this.prevButtons;
 
-        // D-Pad-Up: Edge-Detect via buttons[12] im Standard-Mapping. Standard-
-        // Mapping deckt PS4/Xbox/SCUF (XInput) ab. Falls ein Controller D-Pad
-        // ausschliesslich als HAT-Achse liefert (DInput-only), kommt das
-        // Mapping spaeter pro Controller-ID.
-        if (this.isEdgeDown(prev, buttons, BTN.DPAD_UP)) {
+        // D-Pad-Up: zwei Pfade.
+        //
+        // 1) Standard-Mapping (PS4/Xbox/SCUF-XInput): buttons[12].
+        //
+        // 2) Non-Standard / DInput-Mapping: D-Pad als HAT auf den letzten zwei
+        //    Achsen (Konvention: vorletzte = HAT_X, letzte = HAT_Y). Wir
+        //    verlangen Y stark negativ UND X nahe 0, damit Links/Rechts/
+        //    Diagonalen nicht faelschlich als Up zaehlen.
+        const dpadUpFromButtons = this.isEdgeDown(prev, buttons, BTN.DPAD_UP);
+        const dpadUpFromHat = this.isHatUpEdge(frame);
+        if (dpadUpFromButtons || dpadUpFromHat) {
             this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
         }
 
         // (Stage 2: weitere Buttons + Sticks hier)
 
         this.prevButtons = buttons.slice();
+        this.prevAxes = frame.axes.slice();
+    }
+
+    private prevAxes: number[] = [];
+
+    private isHatUpEdge(frame: GamepadFrame): boolean {
+        const axes = frame.axes;
+        if (axes.length < 2) return false;
+        // Heuristik: HAT auf den letzten zwei Achsen (X, Y).
+        const xIdx = axes.length - 2;
+        const yIdx = axes.length - 1;
+        const curX = axes[xIdx] ?? 0;
+        const curY = axes[yIdx] ?? 0;
+        const oldY = this.prevAxes[yIdx] ?? 0;
+        const wasNotUp = oldY > -0.5;
+        const isPureUp = curY <= -0.7 && Math.abs(curX) < 0.5;
+        return wasNotUp && isPureUp;
     }
 
     private isEdgeDown(prev: boolean[], curr: boolean[], idx: number): boolean {
@@ -231,6 +254,7 @@ export class ControllerInputRouter {
     /** Reset bei Window-Wechsel oder Disable, damit keine Edge-Phantome auftauchen. */
     reset(): void {
         this.prevButtons = [];
+        this.prevAxes = [];
         this.actionPadInProgress = false;
     }
 }
