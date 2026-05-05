@@ -6,10 +6,11 @@
  */
 import { ipcMain, type IpcMainEvent } from "electron";
 import type { ControllerInputRouter, GamepadFrame } from "../../controller/inputRouter";
-import { logErr } from "../../../shared/logger";
+import { logErr, logInfo } from "../../../shared/logger";
 
 export interface ControllerHandlerOptions {
     router: ControllerInputRouter;
+    onControllerConnected?: (info: { id: string; mapping: string; axesCount: number; buttonsCount: number }) => void;
 }
 
 export function registerControllerHandlers(opts: ControllerHandlerOptions): () => void {
@@ -23,10 +24,30 @@ export function registerControllerHandlers(opts: ControllerHandlerOptions): () =
         }
     };
 
+    const onConnected = (_event: IpcMainEvent, info: unknown) => {
+        try {
+            if (!info || typeof info !== "object") return;
+            const i = info as Record<string, unknown>;
+            const sanitized = {
+                id: typeof i.id === "string" ? i.id : "unknown",
+                mapping: typeof i.mapping === "string" ? i.mapping : "unknown",
+                axesCount: typeof i.axesCount === "number" ? i.axesCount : 0,
+                buttonsCount: typeof i.buttonsCount === "number" ? i.buttonsCount : 0,
+            };
+            logInfo("controller", `Gamepad connected: ${sanitized.id} (mapping=${sanitized.mapping}, axes=${sanitized.axesCount}, buttons=${sanitized.buttonsCount})`);
+            opts.onControllerConnected?.(sanitized);
+        }
+        catch (err) {
+            logErr("controller:connected handler failed: " + String(err));
+        }
+    };
+
     ipcMain.on("controller:frame", onFrame);
+    ipcMain.on("controller:connected", onConnected);
 
     return () => {
         ipcMain.removeListener("controller:frame", onFrame);
+        ipcMain.removeListener("controller:connected", onConnected);
     };
 }
 

@@ -704,7 +704,18 @@ app.whenReady().then(async () => {
             } catch { /* ignore */ }
         },
     });
-    registerControllerHandlers({ router: controllerRouter });
+    registerControllerHandlers({
+        router: controllerRouter,
+        onControllerConnected: (info) => {
+            try {
+                launcherWindow?.webContents.send("toast:show", {
+                    message: `Controller verbunden: ${info.id} (${info.mapping})`,
+                    tone: "success",
+                    ttlMs: toastDurationMs,
+                });
+            } catch { /* ignore */ }
+        },
+    });
 
     // Initialize OCR system (load persisted timers, manual overrides)
     await ocrSystem.init();

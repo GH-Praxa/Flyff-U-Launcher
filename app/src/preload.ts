@@ -390,6 +390,22 @@ contextBridge.exposeInMainWorld("roiBridge", {
     let prevButtons: boolean[] = [];
     let prevAxes: number[] = [];
     let polling = false;
+    const announced = new Set<number>();
+
+    const announceConnected = (gp: Gamepad) => {
+        if (announced.has(gp.index)) return;
+        announced.add(gp.index);
+        try {
+            ipcRenderer.send("controller:connected", {
+                index: gp.index,
+                id: gp.id,
+                mapping: gp.mapping,
+                axesCount: gp.axes.length,
+                buttonsCount: gp.buttons.length,
+            });
+        }
+        catch { /* ignore */ }
+    };
 
     const sendFrame = (gp: Gamepad) => {
         const buttons = gp.buttons.map(b => b.pressed === true);
@@ -416,6 +432,7 @@ contextBridge.exposeInMainWorld("roiBridge", {
             if (p) { chosen = p; break; }
         }
         if (chosen) {
+            announceConnected(chosen);
             const buttons = chosen.buttons.map(b => b.pressed === true);
             const axes = Array.from(chosen.axes);
             const buttonsChanged = buttons.some((b, i) => b !== prevButtons[i]) || buttons.length !== prevButtons.length;
