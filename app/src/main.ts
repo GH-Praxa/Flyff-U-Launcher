@@ -668,31 +668,12 @@ app.whenReady().then(async () => {
 
     // ====================================================================
     // Controller-Support (v3.5.0): Gamepad-Polling im Preload, Event-
-    // Injection am Chromium-Input-Layer der fokussierten Session-WebContents.
-    // Pre1: hardcoded Action-Pad-Position, kein UI; Kalibrierung + Settings
-    // folgen in pre2.
+    // Injection am Chromium-Input-Layer DIREKT in der Sender-WebContents
+    // (Frame kommt aus der BrowserView, in der Flyff laeuft — die ist auch
+    // das Ziel des synthetischen Klicks). Pre1: hardcoded Action-Pad-
+    // Position; Kalibrierung + Settings folgen in pre2.
     // ====================================================================
     const controllerRouter = createControllerInputRouter({
-        getTargetWebContents: () => {
-            const focused = BrowserWindow.getFocusedWindow();
-            if (!focused || focused.isDestroyed()) return null;
-            const sessionWin = services.sessionWindow.get();
-            if (sessionWin && !sessionWin.isDestroyed() && focused.id === sessionWin.id) {
-                return focused.webContents;
-            }
-            for (const entry of services.sessionRegistry.list()) {
-                if (!entry.window.isDestroyed() && entry.window.id === focused.id) {
-                    return entry.window.webContents;
-                }
-            }
-            return null;
-        },
-        getTargetSize: () => {
-            const focused = BrowserWindow.getFocusedWindow();
-            if (!focused || focused.isDestroyed()) return null;
-            const [width, height] = focused.getContentSize();
-            return { width, height };
-        },
         getActionPadAnchor: () => {
             // Pre1-Stub: hardcoded "unten Mitte" — typische Action-Pad-Position
             // im Default-HUD. Wird in pre2 durch Per-Profil-Lehrmodus ersetzt.

@@ -416,6 +416,8 @@ contextBridge.exposeInMainWorld("roiBridge", {
                 timestamp: gp.timestamp ?? performance.now(),
                 axes,
                 buttons,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
             });
         }
         catch {

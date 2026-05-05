@@ -1,16 +1,22 @@
-import type { BrowserWindow, WebContents } from "electron";
+import type { WebContents } from "electron";
 import { logInfo, logWarn } from "../../shared/logger";
 
 /**
  * Snapshot eines Gamepads, wie er aus dem Preload via IPC kommt. Strukturell
  * angelehnt an die Web-Gamepad-API (`navigator.getGamepads()[i]`), aber serialisiert
  * (keine Live-Referenz). Achsen sind in [-1, 1], Buttons sind boolesch.
+ *
+ * Der Preload liefert zusaetzlich die Viewport-Groesse (`window.innerWidth/Height`)
+ * der Page mit, weil der Frame in einer BrowserView lebt — `getContentSize()` der
+ * Parent-Window-WebContents wuerde uns nicht die BrowserView-Groesse geben.
  */
 export interface GamepadFrame {
     index: number;
     timestamp: number;
     axes: number[];
     buttons: boolean[];
+    viewportWidth: number;
+    viewportHeight: number;
 }
 
 /**
@@ -60,27 +66,13 @@ export interface ActionPadAnchor {
     y: number;  // 0..1
 }
 
-/** Liefert die aktuelle Action-Pad-Anker-Position fuer das Profil im gegebenen Window. */
-export type ActionPadResolver = (windowId: number) => ActionPadAnchor | null;
-
 export interface ControllerInputRouterDeps {
     /**
-     * Liefert die aktuell zu steuernde Window-WebContents — typischerweise die
-     * fokussierte Session-Window-WebContents. Wenn null, wird der Frame ignoriert.
+     * Liefert den Action-Pad-Anker (Bruchteil 0..1 der Window-Groesse) fuer die
+     * Sender-WebContents (z.B. anhand der Profil-ID, die ueber das Partition-
+     * Mapping gefunden wird). `null` falls nicht kalibriert.
      */
-    getTargetWebContents: () => WebContents | null;
-
-    /**
-     * Liefert die aktuelle Window-Groesse (in CSS-Pixeln) der Ziel-WebContents.
-     * Wird zur Umrechnung von Bruchteil-Anker auf Pixel-Position gebraucht.
-     */
-    getTargetSize: () => { width: number; height: number } | null;
-
-    /**
-     * Liefert den Action-Pad-Anker (Bruchteil 0..1 der Window-Groesse) fuer das
-     * Profil im aktuell fokussierten Window. `null` falls nicht kalibriert.
-     */
-    getActionPadAnchor: () => ActionPadAnchor | null;
+    getActionPadAnchor: (sender: WebContents) => ActionPadAnchor | null;
 
     /**
      * Optionale Toast-Anzeige (z.B. "Bitte erst Action-Pad kalibrieren").
@@ -116,20 +108,51 @@ export class ControllerInputRouter {
 
     /**
      * Verarbeitet einen einzelnen Gamepad-Frame. Aufgerufen vom IPC-Handler,
-     * der Frames vom Preload empfaengt.
+     * der Frames vom Preload empfaengt. `sender` ist die WebContents in der
+     * Flyff laeuft (BrowserView-WebContents) — Klicks und Tastendruecke werden
+     * direkt dorthin geschickt.
      */
-    handleFrame(frame: GamepadFrame): void {
+    handleFrame(frame: GamepadFrame, sender: WebContents): void {
         const buttons = frame.buttons;
         const prev = this.prevButtons;
 
-        // D-Pad-Up: Edge-Detect (nicht gedrueckt → gedrueckt) → Action-Pad-Trigger
-        if (this.isEdgeDown(prev, buttons, BTN.DPAD_UP)) {
-            this.triggerActionPad();
+        // D-Pad-Up: Edge-Detect (nicht gedrueckt → gedrueckt) → Action-Pad-Trigger.
+        // Manche Controller (SCUF DInput-Modus etc.) liefern D-Pad als HAT-Achse
+        // axes[9] (Standard-Mapping POV als fraktionalem Wert). Beide Pfade
+        // werden hier abgedeckt.
+        const dpadUpFromButtons = this.isEdgeDown(prev, buttons, BTN.DPAD_UP);
+        const dpadUpFromHat = this.isHatUpEdge(frame);
+        if (dpadUpFromButtons || dpadUpFromHat) {
+            this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
         }
 
         // (Stage 2: weitere Buttons + Sticks hier)
 
         this.prevButtons = buttons.slice();
+        this.prevAxes = frame.axes.slice();
+    }
+
+    /**
+     * Erkennt D-Pad-Up auf einer HAT-Achse. Standard-Mapping kennt kein POV-Hat
+     * direkt, aber im "non-standard"-Modus liefern viele Pads axes[9] (oder eine
+     * der hoeheren Achsen) mit einem POV-Wert -1..1, wobei -1 ungefaehr Up
+     * bedeutet. Wir erkennen Edge: Achse > -0.5 (kein Up) → Achse <= -0.7 (Up).
+     */
+    private prevAxes: number[] = [];
+
+    private isHatUpEdge(frame: GamepadFrame): boolean {
+        const axes = frame.axes;
+        const prev = this.prevAxes;
+        // axes[7] (Y) bei vielen Pads, axes[9] bei Standard-Web-Gamepad-API,
+        // oder axes[5] / axes[6] je nach Treiber. Wir scannen alle Achsen ab
+        // Index 4 (nach den zwei Sticks) auf eine, die jetzt <= -0.7 ist und
+        // vorher > -0.5 war.
+        for (let i = 4; i < axes.length; i++) {
+            const cur = axes[i];
+            const old = prev[i] ?? 0;
+            if (cur <= -0.7 && old > -0.5) return true;
+        }
+        return false;
     }
 
     private isEdgeDown(prev: boolean[], curr: boolean[], idx: number): boolean {
@@ -149,18 +172,17 @@ export class ControllerInputRouter {
      * Hardware-Input. OS-Cursor wird NICHT bewegt — User kann die Maus weiter
      * normal benutzen.
      */
-    private triggerActionPad(): void {
-        const wc = this.deps.getTargetWebContents();
-        if (!wc) return;
+    private triggerActionPad(wc: WebContents, viewportWidth: number, viewportHeight: number): void {
+        if (!wc || wc.isDestroyed()) return;
 
-        const anchor = this.deps.getActionPadAnchor();
+        const anchor = this.deps.getActionPadAnchor(wc);
         if (!anchor) {
             this.deps.notify?.("Bitte zuerst Action-Pad kalibrieren");
             return;
         }
 
-        const size = this.deps.getTargetSize();
-        if (!size || size.width <= 0 || size.height <= 0) return;
+        const size = { width: viewportWidth, height: viewportHeight };
+        if (size.width <= 0 || size.height <= 0) return;
 
         const now = Date.now();
         if (now - this.lastActionPadFireMs < ACTION_PAD_DEBOUNCE_MS) return;
@@ -207,18 +229,17 @@ export class ControllerInputRouter {
 
         // Mid-Move + Up nach randomisierter Druckdauer.
         setTimeout(() => {
-            const targetWc = this.deps.getTargetWebContents();
-            if (!targetWc) {
+            if (wc.isDestroyed()) {
                 this.actionPadInProgress = false;
                 return;
             }
             try {
-                targetWc.sendInputEvent({
+                wc.sendInputEvent({
                     type: "mouseMove",
                     x: Math.round(driftX),
                     y: Math.round(driftY),
                 });
-                targetWc.sendInputEvent({
+                wc.sendInputEvent({
                     type: "mouseUp",
                     x: Math.round(driftX),
                     y: Math.round(driftY),
@@ -236,6 +257,7 @@ export class ControllerInputRouter {
     /** Reset bei Window-Wechsel oder Disable, damit keine Edge-Phantome auftauchen. */
     reset(): void {
         this.prevButtons = [];
+        this.prevAxes = [];
         this.actionPadInProgress = false;
     }
 }
@@ -256,5 +278,3 @@ export function createControllerInputRouter(deps: ControllerInputRouterDeps): Co
     return new ControllerInputRouter(deps);
 }
 
-/** Type-Helper falls das Window-Lookup ueber die ID den Window-Helper braucht. */
-export type GetWindowById = (id: number) => BrowserWindow | null;

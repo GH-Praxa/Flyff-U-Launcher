@@ -14,10 +14,12 @@ export interface ControllerHandlerOptions {
 }
 
 export function registerControllerHandlers(opts: ControllerHandlerOptions): () => void {
-    const onFrame = (_event: IpcMainEvent, frame: unknown) => {
+    const onFrame = (event: IpcMainEvent, frame: unknown) => {
         try {
             if (!isGamepadFrame(frame)) return;
-            opts.router.handleFrame(frame);
+            // event.sender ist die WebContents der BrowserView, in der Flyff
+            // laeuft — genau dort sollen unsere synthetischen Klicks landen.
+            opts.router.handleFrame(frame, event.sender);
         }
         catch (err) {
             logErr("controller:frame handler failed: " + String(err));
@@ -57,5 +59,7 @@ function isGamepadFrame(value: unknown): value is GamepadFrame {
     return typeof v.index === "number"
         && typeof v.timestamp === "number"
         && Array.isArray(v.axes)
-        && Array.isArray(v.buttons);
+        && Array.isArray(v.buttons)
+        && typeof v.viewportWidth === "number"
+        && typeof v.viewportHeight === "number";
 }
