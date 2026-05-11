@@ -54,6 +54,16 @@ export interface ThemeVars {
     text: string;
     muted: string;
     accentRgb: string;
+    /**
+     * CSP-Nonce vom Main-Process (per Preload als window.__cspNonce exposed).
+     * MUSS auf alle inline `<style>`- und `<script>`-Tags der Pop-up-HTMLs
+     * gesetzt werden — sonst blockiert die CSP des Parent-Renderers (die
+     * `about:blank`-Pop-ups erben das CSP des Openers in Electron) das
+     * Styling. Effekt ohne Nonce: weisser Hintergrund, alles untereinander
+     * weil das `<style>`-Tag komplett verworfen wird. Im Dev-Build (kein
+     * Nonce, dafuer 'unsafe-inline') leer und harmlos.
+     */
+    nonce: string;
 }
 
 export function getThemeVars(): ThemeVars {
@@ -67,7 +77,14 @@ export function getThemeVars(): ThemeVars {
         text: pick("text", "#e6eefc"),
         muted: pick("muted", "#294093"),
         accentRgb: pick("accent-rgb", "44,107,255"),
+        nonce: (window as { __cspNonce?: string }).__cspNonce ?? "",
     };
+}
+
+/** Helper fuer Inline-Tags in den Pop-up-HTMLs. Liefert ` nonce="..."` wenn
+ *  ein Nonce vorhanden ist, sonst Leerstring (Dev-Build). */
+function nonceAttr(nonce: string | undefined): string {
+    return nonce ? ` nonce="${nonce}"` : "";
 }
 
 export function buildFcoinConverterHtml(locale: string, theme: ThemeVars): string {
@@ -88,12 +105,13 @@ export function buildFcoinConverterHtml(locale: string, theme: ThemeVars): strin
         }),
     };
     const ar = theme.accentRgb;
+    const nAttr = nonceAttr(theme.nonce);
     return `<!doctype html>
 <html lang="${intlLocale}">
 <head>
   <meta charset="utf-8" />
   <title>${fcoinTexts.title}</title>
-  <style>
+  <style${nAttr}>
     :root { color-scheme: dark; --ar: ${ar}; }
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: ${theme.bg}; color: ${theme.text}; display: flex; min-height: 100vh; }
     .card { margin: auto; width: 100%; max-width: 360px; padding: 24px 22px; }
@@ -116,7 +134,7 @@ export function buildFcoinConverterHtml(locale: string, theme: ThemeVars): strin
     <input id="penya" type="text" inputmode="decimal" value="${fmt.format(sampleResult)}" />
     <div class="hint" id="hint">${fcoinTexts.hint}</div>
   </div>
-  <script>
+  <script${nAttr}>
     const intlLocale='${intlLocale}';
     const rateInput=document.getElementById('rate');
     const amountInput=document.getElementById('amount');
@@ -209,10 +227,11 @@ export function buildShoppingListHtml(locale: string, theme: ThemeVars): string 
         totalTemplate: tr("tools.shopping.total" as TranslationKey),
     };
     const ar = theme.accentRgb;
+    const nAttr = nonceAttr(theme.nonce);
     const totalZero = shoppingTexts.totalTemplate.replace("{total}", fmt.format(0));
     return `<!doctype html>
 <html lang="${intlLocale}"><head><meta charset="utf-8"/><title>${shoppingTexts.title}</title>
-<style>
+<style${nAttr}>
 :root{color-scheme:dark;--ar:${ar};--bg:${theme.bg};--text:${theme.text}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -256,7 +275,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 <div class="list-header">${shoppingTexts.listHeader}</div>
 <div id="cart" class="cart"><div class="cart-empty">${shoppingTexts.empty}</div></div>
 <div id="totalBar" class="total-bar">${totalZero}</div>
-<script>
+<script${nAttr}>
 const api=window.opener?.api;
 const STR=${JSON.stringify({
             empty: shoppingTexts.empty,
@@ -468,10 +487,11 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
         owned:       T.owned,
     };
 
+    const nAttr = nonceAttr(theme.nonce);
     return `<!doctype html><html lang="${intlLocale}"><head>
   <meta charset="utf-8" />
   <title>🎲 Upgrade-Rechner</title>
-  <style>
+  <style${nAttr}>
     :root { color-scheme: dark; --ar: ${ar}; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: ${theme.bg}; color: ${theme.text}; display: flex; height: 100vh; overflow: hidden; }
@@ -964,7 +984,7 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
 
   </main>
 
-  <script>
+  <script${nAttr}>
     const GD    = ${JSON.stringify(GD)};
     const STR   = ${JSON.stringify(STR)};
     const ICONS = ${JSON.stringify(ICONS)};
