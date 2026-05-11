@@ -1,6 +1,28 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.6
+
+### 🐛 Fehlerbehebungen
+
+**Ringmaster: rechter Stick bewegte unsichtbaren Mauszeiger statt Kamera**
+- Wenn `mode=cursor` (z.B. weil der User L2-Default `@cursorHold` parallel
+  hielt), greift im rechten Stick die Cursor-Logik (mouseMove ohne
+  mouseDown) → User sah keine Kamera-Rotation, nur unsichtbare Maus
+- Fix: Cursor-Modus ist jetzt während `forwardActive` suspendiert. Camera-
+  Drag-Logik greift wieder wenn Ringmaster-Forward läuft. Cursor-Hold-
+  Tracking bleibt aber im `heldButtonActions` — beim @forwardHold-UP wird
+  Cursor-Mode wieder aktiv (falls Hold noch gehalten wird)
+- A-Taste-Sonderbehandlung im Cursor-Mode (Mouse-Click statt KeyDown) gilt
+  jetzt auch nur wenn nicht im Forward — A geht im Forward normal als
+  KeyDown an forwardTarget
+
+### Build-Fix
+- Vite/electron-forge Build-Cache war veraltet → mehrere v3.7.x-Releases
+  enthielten nicht die committeten Änderungen. Cache vor diesem Build
+  geleert (`.vite/` + `node_modules/.vite/` + `out/Flyff-U-Launcher-...`)
+
+---
 ## 🐛 Version 3.7.5
 
 ### 🐛 Fehlerbehebungen

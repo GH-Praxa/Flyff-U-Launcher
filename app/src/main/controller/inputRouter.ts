@@ -488,7 +488,9 @@ export class ControllerInputRouter {
         // Cursor-Modus: A → Maus-Klick links an aktueller Cursor-Position.
         // Andere Tasten gehen normal als KeyDown durch — User kann Skills
         // im Cursor-Modus nutzen.
-        if (this.mode === "cursor" && btnIdx === BTN.A) {
+        // Cursor-A-Tap nur wenn NICHT im Forward — sonst soll A normal als
+        // KeyDown gehen (an forwardTarget). Cursor ist beim Forward suspendiert.
+        if (this.mode === "cursor" && !this.forwardActive && btnIdx === BTN.A) {
             this.cursorMouseDown = true;
             this.dispatchCursorMouse(sender, "mouseDown");
             return;
@@ -796,8 +798,12 @@ export class ControllerInputRouter {
         // Cursor-Modus: rechter Stick bewegt synthetischen Cursor statt Camera-
         // Drag zu starten. Initialisiere Cursor wenn noch nicht gesetzt
         // (passiert wenn der User im Cursor-Modus startet ohne vorher Stick
-        // bewegt zu haben).
-        if (this.mode === "cursor") {
+        // bewegt zu haben). WICHTIG: Cursor-Mode ist suspendiert solange
+        // Ringmaster-Forward aktiv ist — der User will den Buffer-Char mit
+        // dem rechten Stick steuern (Kamera drehen), nicht eine unsichtbare
+        // Maus im Buffer-Tab bewegen. Cursor-Hold-Tracking bleibt im
+        // heldButtonActions, wird beim @forwardHold-UP wieder aktiv.
+        if (this.mode === "cursor" && !this.forwardActive) {
             if (!this.cursorInitialized && viewportWidth > 0 && viewportHeight > 0) {
                 this.cursorX = viewportWidth / 2;
                 this.cursorY = viewportHeight / 2;
