@@ -1,6 +1,29 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.5
+
+### 🐛 Fehlerbehebungen
+
+**Icon-Picker leer trotz vollem Cache (das Echte™)**
+- Ursache aller bisherigen Versuche: `safeHandle`-Wrapper im Main-Process
+  verpackt Handler-Result automatisch in `{ok: true, data: <result>}`
+- Mein gameIcons-Handler hat das selbst nochmal gemacht → Renderer las
+  `res.icons` aber tatsächlich kam `res.data.icons` an
+- Fix: Handler returnt jetzt direkt `{icons}`, Renderer liest `res.data.icons`
+- Pfade aus v3.7.3 (per-ID JSONs) und file://-URLs aus v3.7.3 sind korrekt
+  und bleiben — sind nur jetzt erstmals tatsächlich beim Renderer angekommen
+
+**Ringmaster-Forward: kein Update**
+- v3.7.4 prevButtons-Reset ist drin und sollte greifen. Falls's noch nicht
+  läuft: bitte mit DevTools-Console nachschauen ob `setForwardMode` mit
+  korrektem `holdBtnIdx` gerufen wird. Aber: Icon-Bug-Fix oben war
+  möglicherweise auch verantwortlich für scheinbare Verschlechterung,
+  weil der falsch-positive `apiUnavailable`-Branch im Renderer Memory-
+  Leaks von wiederholten Picker-Öffnungen produzierte. Erstmal v3.7.5
+  testen mit funktionierendem Icon-Picker.
+
+---
 ## 🐛 Version 3.7.4
 
 ### 🐛 Fehlerbehebungen

@@ -88,8 +88,12 @@ interface GameIcon {
 type IconPickResult = { path: string; previewUrl: string } | null;
 
 function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chosen: IconPickResult | undefined) => void): void {
+    // safeHandle-Wrapper im Main verpackt Handler-Result in
+    // `{ok: true, data: ...}` oder `{ok: false, error, code}`. Unser
+    // gameIcons:list-Handler returnt `{icons}`, also kommt's hier als
+    // `{ok: true, data: {icons}}` an.
     const ctrlApi = (window as unknown as {
-        controllerApi?: { listGameIcons?: () => Promise<{ ok: boolean; icons?: GameIcon[]; error?: string }> };
+        controllerApi?: { listGameIcons?: () => Promise<{ ok: boolean; data?: { icons?: GameIcon[] }; error?: string }> };
     }).controllerApi;
 
     const overlay = el("div", "modalOverlay iconPickerOverlay");
@@ -266,8 +270,8 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
 
     void ctrlApi.listGameIcons().then((res) => {
         loaded = true;
-        if (res?.ok && res.icons) {
-            allIcons = res.icons;
+        if (res?.ok && res.data?.icons) {
+            allIcons = res.data.icons;
         } else {
             allIcons = [];
         }

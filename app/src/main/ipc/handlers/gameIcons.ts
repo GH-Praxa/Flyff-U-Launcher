@@ -201,14 +201,13 @@ export async function listGameIcons(): Promise<GameIcon[]> {
 }
 
 export function registerGameIconsHandlers(safeHandle: SafeHandle): () => void {
+    // safeHandle wickelt das Return automatisch in `{ok: true, data: <result>}`
+    // — wir geben direkt die Icon-Liste zurueck und der Renderer liest aus
+    // `data`. Errors werden vom safeHandle abgefangen und als
+    // `{ok: false, error, code}` zurueckgegeben.
     safeHandle("gameIcons:list", async (_e: IpcEvent) => {
-        try {
-            const icons = await listGameIcons();
-            return { ok: true as const, icons };
-        } catch (err) {
-            logWarn("gameIcons", `list failed: ${(err as Error).message}`);
-            return { ok: false as const, error: (err as Error).message };
-        }
+        const icons = await listGameIcons();
+        return { icons };
     });
     return () => {
         ipcMain.removeHandler("gameIcons:list");
