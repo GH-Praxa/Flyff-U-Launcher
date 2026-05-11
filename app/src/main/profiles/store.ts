@@ -108,6 +108,15 @@ export type ProfileController = {
     buttons?: ProfileButtonMapping;
     icons?: ProfileControllerIcons;
     modifiers?: ProfileControllerModifiers;
+    /**
+     * Buffer-Forward-Ziel: solange die Special-Action `@forwardHold` gehalten
+     * wird, gehen alle Eingaben (Buttons + Sticks) an die WebContents dieses
+     * Ziel-Profils statt an die Vordergrund-View. Use-Case: Main im Vorder-
+     * grund weiterspielen, Buffer-Char (z.B. Ringmaster) im Hintergrund-Tab
+     * remote drueckt. `null`/`undefined` = Buffer-Forward fuer dieses Profil
+     * deaktiviert (Hold-Button no-op).
+     */
+    bufferTargetProfileId?: string | null;
 };
 export type Profile = {
     id: string;
@@ -301,6 +310,16 @@ function normalizeController(v: unknown): ProfileController | undefined {
             out.modifiers = outMods;
             any = true;
         }
+    }
+
+    const bufferTarget = obj.bufferTargetProfileId;
+    if (typeof bufferTarget === "string" && bufferTarget.length > 0) {
+        out.bufferTargetProfileId = bufferTarget;
+        any = true;
+    } else if (bufferTarget === null) {
+        // explizit auf null gesetzt → behalten als "deaktiviert"-Marker
+        out.bufferTargetProfileId = null;
+        any = true;
     }
 
     return any ? out : undefined;

@@ -233,6 +233,7 @@ app.whenReady().then(async () => {
             if (c?.buttons) reloadButtonMappingsForProfile(p.id, c.buttons);
             if (c?.modifiers) reloadModifierMappingsForProfile(p.id, c.modifiers);
             reloadIconsForProfile(p.id, c);
+            reloadBufferTargetForProfile(p.id, (c as { bufferTargetProfileId?: unknown } | undefined)?.bufferTargetProfileId);
         }
     }).catch(() => { /* ignore */ });
     const roiVisibilityStore = createRoiVisibilityStore();
@@ -719,6 +720,18 @@ app.whenReady().then(async () => {
     // Wird beim Start aus den Profilen befuellt und bei jedem Profil-Update
     // aktualisiert.
     const buttonMappings = new Map<string, ControllerButtonMapping>();
+
+    // Buffer-Forward-Ziele pro Profil: profileId → Ziel-profileId. Wird vom
+    // Router via getBufferTarget(sender) konsumiert wenn @forwardHold aktiv.
+    // Update bei jedem Profil-Save analog zu buttonMappings.
+    const bufferTargets = new Map<string, string>();
+    const reloadBufferTargetForProfile = (profileId: string, targetId: unknown) => {
+        if (typeof targetId === "string" && targetId.length > 0 && targetId !== profileId) {
+            bufferTargets.set(profileId, targetId);
+        } else {
+            bufferTargets.delete(profileId);
+        }
+    };
     const reloadButtonMappingsForProfile = (profileId: string, override: unknown) => {
         if (override && typeof override === "object") {
             buttonMappings.set(profileId, resolveButtonMapping(override as Record<string, string | null | undefined>));
@@ -795,6 +808,24 @@ app.whenReady().then(async () => {
             const profileId = webContentsToProfile.get(sender.id);
             if (!profileId) return null;
             return modifierMappings.get(profileId)?.get(slot) ?? null;
+        },
+        getBufferTarget: (sender) => {
+            // Buffer-Forward-Ziel aufloesen: vom sender → Profil-ID →
+            // Profil's `controller.bufferTargetProfileId` → Ziel-Profil-ID →
+            // dessen aktive WebContents (BrowserView im selben SessionWindow,
+            // oder in einem anderen Window). Wenn nicht konfiguriert oder
+            // Ziel nicht offen: null → Hold-Action no-op.
+            const senderProfileId = webContentsToProfile.get(sender.id);
+            if (!senderProfileId) return null;
+            const targetId = bufferTargets.get(senderProfileId);
+            if (!targetId) return null;
+            // Ziel-WebContents in der Reverse-Map suchen.
+            for (const [wcId, profId] of webContentsToProfile.entries()) {
+                if (profId !== targetId) continue;
+                const wc = webContents.fromId(wcId);
+                if (wc && !wc.isDestroyed()) return wc;
+            }
+            return null;
         },
         onLauncherAction: (action, sender) => {
             // Findet das Session-Window, in dem der Sender lebt, und dispatcht
@@ -1146,11 +1177,13 @@ app.whenReady().then(async () => {
                     buttons?: Record<string, string | null | undefined>;
                     modifiers?: Record<string, unknown>;
                     icons?: unknown;
+                    bufferTargetProfileId?: string | null;
                 };
             } | undefined)?.controller;
             reloadButtonMappingsForProfile(profileId, c?.buttons);
             reloadModifierMappingsForProfile(profileId, c?.modifiers);
             reloadIconsForProfile(profileId, c);
+            reloadBufferTargetForProfile(profileId, c?.bufferTargetProfileId);
             // Overlay aktualisieren — laufende Spiel-Views sehen die neuen
             // Bindings sofort, kein Reload noetig.
             pushOverlayToProfile(profileId);

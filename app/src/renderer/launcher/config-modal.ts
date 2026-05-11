@@ -1665,6 +1665,7 @@ export function openConfigModal(
         { key: "@actionPad",        labelKey: "controller.action.actionPad" },
         { key: "@cursorHold",       labelKey: "controller.action.cursorHold" },
         { key: "@cursorToggle",     labelKey: "controller.action.cursorToggle" },
+        { key: "@forwardHold",      labelKey: "controller.action.forwardHold" },
         { key: "@zoomIn",           labelKey: "controller.action.zoomIn" },
         { key: "@zoomOut",          labelKey: "controller.action.zoomOut" },
         { key: "@nextTab",          labelKey: "controller.action.nextTab" },
@@ -2243,6 +2244,64 @@ export function openConfigModal(
         profileRow.append(selectEl);
         controllerPane.append(profileRow);
 
+        // Ringmaster-Buffer-Target-Selector: Welches Profil bekommt die
+        // Inputs solange die Special-Action `@forwardHold` gehalten wird?
+        // None → Hold-Action no-op. Wird neben dem Profile-Selector angezeigt.
+        const bufferRow = el("div", "ctrlProfileRow");
+        bufferRow.append(el("span", "ctrlProfileLabel", t("controller.bufferTarget.label" as TranslationKey)));
+        const bufferSelect = document.createElement("select");
+        bufferSelect.className = "ctrlProfileSelect";
+        const noneOpt = document.createElement("option");
+        noneOpt.value = "";
+        noneOpt.textContent = t("controller.bufferTarget.none" as TranslationKey);
+        bufferSelect.append(noneOpt);
+        // Optionen werden in renderForProfile aktualisiert (alle anderen Profile
+        // ausser dem aktuellen).
+        const refreshBufferOptions = (currentId: string) => {
+            // Vorhandene non-none-Options entfernen.
+            while (bufferSelect.children.length > 1) bufferSelect.removeChild(bufferSelect.lastChild!);
+            for (const p of profiles) {
+                if (p.id === currentId) continue; // Selbst-Referenz blockieren
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = p.name;
+                bufferSelect.append(opt);
+            }
+            // Aktuellen Wert vom Profil setzen.
+            const profile = profiles.find((p) => p.id === currentId) as
+                | { controller?: { bufferTargetProfileId?: string | null } } | undefined;
+            const target = profile?.controller?.bufferTargetProfileId ?? "";
+            bufferSelect.value = profiles.some((p) => p.id === target) ? target : "";
+        };
+        bufferSelect.addEventListener("change", async () => {
+            if (!currentControllerProfileId) return;
+            const newTarget = bufferSelect.value || null;
+            // Profile-Cache lokal patchen, damit Re-Render konsistent ist.
+            const prof = profiles.find((p) => p.id === currentControllerProfileId);
+            if (prof) {
+                const root = prof as unknown as { controller?: Record<string, unknown> };
+                const c = (root.controller ??= {} as Record<string, unknown>);
+                if (newTarget) c.bufferTargetProfileId = newTarget;
+                else delete c.bufferTargetProfileId;
+            }
+            // Persistieren via profilesUpdate-IPC (gleicher Mechanismus wie
+            // Bindings/Modifier-Save).
+            try {
+                await api.profilesUpdate({
+                    id: currentControllerProfileId,
+                    controller: { bufferTargetProfileId: newTarget },
+                });
+                // Reload-Trigger an Main, damit der Cache fuer den naechsten
+                // Frame schon den neuen Target hat.
+                (window as unknown as { controllerApi?: { reloadMapping?: (id: string) => void } })
+                    .controllerApi?.reloadMapping?.(currentControllerProfileId);
+            } catch (err) {
+                showToast(`Save failed: ${err instanceof Error ? err.message : String(err)}`, "error");
+            }
+        });
+        bufferRow.append(bufferSelect);
+        controllerPane.append(bufferRow);
+
         controllerPane.append(el("div", "ctrlCalibrateHint", t("controller.calibrateHint" as TranslationKey)));
 
         // Spatial-Layout: 3 Spalten — links D-Pad + L3, mitte (Top-Strip mit
@@ -2500,6 +2559,7 @@ export function openConfigModal(
                 container.append(buildButtonCard(button));
             }
             rebuildModifierPanel();
+            refreshBufferOptions(profileId);
         };
 
         const buildButtonCard = (btnKey: ControllerButtonName): HTMLElement => {

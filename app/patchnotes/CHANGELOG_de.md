@@ -1,6 +1,55 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.7.0
+
+### ✨ Ringmaster-Forward — Hold-Taste leitet Eingaben an Hintergrund-Tab
+
+Synchron zur Android-App (v38+): eine Hold-Taste am Controller leitet alle
+Eingaben (Buttons + Sticks) an einen anderen Profile-Tab weiter, **ohne**
+dass die Vordergrund-View wechselt. Use-Case: Main im Vordergrund weiter-
+spielen, Buffer-Char (z. B. Ringmaster) im Hintergrund-Tab remote drücken.
+
+**Workflow:**
+1. Im Settings → Controller-Tab: oben den **Ringmaster-Ziel**-Selector
+   konfigurieren — wähle das Profil, das die geforwardeten Eingaben
+   bekommen soll.
+2. Im selben Tab: Special-Action **`Ringmaster (Forward)`** auf einen
+   Button mappen (z. B. R3 oder L1+△).
+3. Im Spiel: Hold-Taste drücken → alle weiteren Eingaben gehen an den
+   Ziel-Profile-Tab. Loslassen → Eingaben gehen wieder an den
+   Vordergrund.
+
+**Architektur:**
+- `Profile.controller.bufferTargetProfileId: string | null` — pro
+  Profil persistiert
+- `ControllerInputRouter`: forwarding-State + Routing zu Ziel-`WebContents`.
+  Cross-Profile-Routing ist auf Desktop einfacher als auf Android — alle
+  BrowserViews leben im selben Main-Process, `webContents.sendInputEvent()`
+  reicht direkt.
+- `getBufferTarget(sender)`-Dep: löst sender → Profil-ID → Ziel-Profil-ID
+  → Ziel-WebContents auf
+- `releaseLocalInputsExceptSpecials()` released bei Hold-Wechsel die
+  WASD/Skill-Tasten auf der jeweiligen Seite — verhindert Char-läuft-
+  endlos und WASD-stuck-Bugs (analog Android v41-Fix)
+
+**Page-Visibility-Override** (kritisch): Chromium setzt
+`document.hidden=true` für Hintergrund-Views, Flyff Universe würde unsere
+synthetischen KeyEvents droppen. Ein JS-Snippet wird beim
+`did-start-loading` und `did-finish-load` jeder Game-View injiziert, das
+`document.hidden`/`visibilityState`/`hasFocus()` permanent auf
+visible/focused zwingt und `addEventListener` für visibilitychange/blur/
+pagehide/freeze blockt.
+
+**Übersetzungen** für `controller.action.forwardHold` und
+`controller.bufferTarget.label`/`controller.bufferTarget.none` in allen
+8 Sprachen.
+
+**Caveat:** Buffer-Forward setzt voraus dass das Ziel-Profil offen UND
+eingeloggt ist. Wenn nicht: kein visueller Hinweis im aktuellen Build —
+Skills fliegen ins Leere. Banner-UI als Folge-Iteration falls's stört.
+
+---
 ## 🆕 Version 3.6.0
 
 ### ✨ Skill-Icon-Picker im Controller-Tab

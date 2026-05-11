@@ -257,6 +257,13 @@ export interface ControllerInputRouterDeps {
      * Main-Process (Session-Manager / Launcher-Window) verdrahtet.
      */
     onLauncherAction?: (action: string, sender: WebContents) => void;
+    /**
+     * Buffer-Forward-Ziel fuer ein Profil: solange `@forwardHold` gehalten wird,
+     * gehen alle Inputs an die hier zurueckgegebene WebContents statt an den
+     * Vordergrund-Sender. `null`/`undefined` = kein Forward-Ziel konfiguriert
+     * (Hold-Action zeigt nur Hinweis, keine Aktion).
+     */
+    getBufferTarget?: (sender: WebContents) => WebContents | null;
     notify?: (message: string) => void;
 }
 
@@ -319,6 +326,20 @@ export class ControllerInputRouter {
     private cameraLastY = 0;
     private cameraPumpTimer: ReturnType<typeof setInterval> | null = null;
 
+    /** Buffer-Forward-State: solange `@forwardHold` gehalten wird, route alle
+     *  Inputs an `forwardTarget` statt den `sender`. Hold-Button selbst muss
+     *  weiter lokal verarbeitet werden, damit das UP forwarding deaktiviert.
+     *
+     *  Aktivierung: dispatchSpecial(`@forwardHold`, down=true) bekommt vom Dep
+     *  `getBufferTarget(sender)` die Ziel-WebContents. Setzt forwardActive=true
+     *  + forwardTarget. Beim UP wird forwardActive=false + forwardTarget=null.
+     *
+     *  Cross-Profile-Routing einfacher als auf Android weil alle BrowserViews
+     *  im selben Main-Process leben — sender.sendInputEvent direkt an
+     *  forwardTarget reicht. */
+    private forwardActive = false;
+    private forwardTarget: WebContents | null = null;
+
     /** Cursor-Modus: rechter Stick wird zum Maus-Mover statt Camera-Drag.
      *  A im Cursor-Modus = Maus-Klick links an aktueller Cursor-Position. */
     private mode: "normal" | "cursor" = "normal";
@@ -339,20 +360,30 @@ export class ControllerInputRouter {
         const buttons = frame.buttons;
         const prev = this.prevButtons;
 
-        // 1) Linker Stick → WASD
+        // Buffer-Forward: solange `@forwardHold` aktiv ist, alle Sticks +
+        // Buttons (ausser dem Hold-Button selbst) an `forwardTarget` routen.
+        // Der "effektive sender" fuer Stick/Button-Output ist dann der Target
+        // statt der Vordergrund-Sender. Hold-Button wird unten in
+        // handleButtonDown/Up immer mit dem `sender` (Vordergrund) verarbeitet,
+        // damit das UP zuverlaessig ankommt.
+        const effectiveSender: WebContents = (this.forwardActive && this.forwardTarget && !this.forwardTarget.isDestroyed())
+            ? this.forwardTarget
+            : sender;
+
+        // 1) Linker Stick → WASD (an effectiveSender)
         const lx = applyDeadzone(frame.axes[0] ?? 0);
         const ly = applyDeadzone(frame.axes[1] ?? 0);
-        this.updateStickKey(sender, "A", lx < -STICK_KEY_THRESHOLD);
-        this.updateStickKey(sender, "D", lx > STICK_KEY_THRESHOLD);
-        this.updateStickKey(sender, "W", ly < -STICK_KEY_THRESHOLD);
-        this.updateStickKey(sender, "S", ly > STICK_KEY_THRESHOLD);
+        this.updateStickKey(effectiveSender, "A", lx < -STICK_KEY_THRESHOLD);
+        this.updateStickKey(effectiveSender, "D", lx > STICK_KEY_THRESHOLD);
+        this.updateStickKey(effectiveSender, "W", ly < -STICK_KEY_THRESHOLD);
+        this.updateStickKey(effectiveSender, "S", ly > STICK_KEY_THRESHOLD);
 
         // 2) Rechter Stick → Kamera-Drag (rechte Maustaste, gepumpt aus Mitte
         //    des Viewports). Solange ausgelenkt: Drag aktiv. Sobald neutral:
-        //    MouseUp.
+        //    MouseUp. Auch an effectiveSender geroutet.
         const rx = applyDeadzone(frame.axes[2] ?? 0);
         const ry = applyDeadzone(frame.axes[3] ?? 0);
-        this.updateCameraStick(sender, frame.viewportWidth, frame.viewportHeight, rx, ry);
+        this.updateCameraStick(effectiveSender, frame.viewportWidth, frame.viewportHeight, rx, ry);
 
         // 3) Buttons → Mapping (Tasten oder Special-Actions wie @actionPad).
         //    Modifier-Layer: wenn eine Schulter (L1/R1/L2/R2) mit eigenem
@@ -387,9 +418,18 @@ export class ControllerInputRouter {
             if (isDown && !wasDown) {
                 const action = resolveAction(i);
                 if (!action) continue;
-                this.handleButtonDown(sender, i, action, frame);
+                // Hold-Buttons fuer @forwardHold IMMER mit dem originalen
+                // Vordergrund-`sender` verarbeiten — sonst verliert die
+                // Mapping-Resolution beim UP den Bezug.
+                const isForwardHold = action === "@forwardHold";
+                const target = (this.forwardActive && !isForwardHold && this.forwardTarget && !this.forwardTarget.isDestroyed())
+                    ? this.forwardTarget
+                    : sender;
+                this.handleButtonDown(target, i, action, frame, sender);
             }
             else if (!isDown && wasDown) {
+                // UP geht an den Sender wo der DOWN registriert wurde — wird
+                // via heldButtonActions automatisch korrekt verfolgt.
                 this.handleButtonUp(sender, i);
             }
         }
@@ -405,7 +445,7 @@ export class ControllerInputRouter {
         this.prevAxes = frame.axes.slice();
     }
 
-    private handleButtonDown(sender: WebContents, btnIdx: number, action: string, frame: GamepadFrame): void {
+    private handleButtonDown(sender: WebContents, btnIdx: number, action: string, frame: GamepadFrame, originalSender?: WebContents): void {
         // Bereits getrackt? (Re-Press ohne Release zwischen den Frames — selten,
         // aber moeglich bei Frame-Drops.)
         if (this.heldButtonActions.has(btnIdx)) return;
@@ -414,7 +454,11 @@ export class ControllerInputRouter {
         // und (b) Hold-Specials beim UP sauber zurueckgesetzt werden.
         this.heldButtonActions.set(btnIdx, action);
         if (action.startsWith("@")) {
-            this.dispatchSpecial(action, sender, frame, true);
+            // Specials immer mit originalSender (Vordergrund-WebContents) —
+            // damit @forwardHold das forwarding-Ziel korrekt aufloesen kann
+            // (via getBufferTarget(originalSender)) und @nextTab/@reload etc.
+            // an der originalen Session-Window operieren statt am Buffer-Ziel.
+            this.dispatchSpecial(action, originalSender ?? sender, frame, true);
             return;
         }
         // Cursor-Modus: A → Maus-Klick links an aktueller Cursor-Position.
@@ -488,6 +532,9 @@ export class ControllerInputRouter {
             case "@cursorToggle":
                 if (down) this.setMode(this.mode === "cursor" ? "normal" : "cursor", sender, frame);
                 return;
+            case "@forwardHold":
+                this.setForwardMode(down, sender);
+                return;
             case "@actionPad":
                 if (down && frame) {
                     this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
@@ -506,6 +553,90 @@ export class ControllerInputRouter {
                 if (down) this.deps.onLauncherAction?.(action, sender);
                 return;
         }
+    }
+
+    /**
+     * Setzt den Buffer-Forward-Modus. Beim DOWN: Ziel-WebContents vom Dep
+     * abfragen; alle gerade gehaltenen lokalen Inputs (WASD/Camera/Skill)
+     * auf dem `sender` released, damit der Vordergrund-Char nicht weiter-
+     * laeuft. Beim UP: alle in der Forward-Phase gehaltenen Inputs werden
+     * auf dem Ziel released.
+     *
+     * Wichtig: heldButtonActions wird NICHT komplett geleert — der
+     * @forwardHold-Eintrag selbst bleibt drin, damit das UP korrekt findet
+     * dass der Hold ein Special war (analog Android v41-Fix).
+     */
+    private setForwardMode(activate: boolean, sender: WebContents): void {
+        if (activate) {
+            const target = this.deps.getBufferTarget?.(sender) ?? null;
+            if (!target || target.isDestroyed()) {
+                this.deps.notify?.("Kein Ringmaster-Ziel im Profil konfiguriert");
+                return;
+            }
+            // Lokale gehaltene Bindings auf sender loesen — aber nur Stick-
+            // Keys + Skill-Tasten, NICHT die Special-Hold-Trackings (sonst
+            // verlieren wir das @forwardHold-Tracking selbst und das UP findet
+            // es nicht mehr).
+            this.releaseLocalInputsExceptSpecials(sender);
+            this.forwardActive = true;
+            this.forwardTarget = target;
+        }
+        else {
+            // Forward-Phase beendet: alle Sticks/Tasten die WAEHREND der
+            // Forward-Phase auf den Target gegangen sind dort releasen, damit
+            // der Char dort nicht weiterlaeuft.
+            const target = this.forwardTarget;
+            if (target && !target.isDestroyed()) {
+                this.releaseLocalInputsExceptSpecials(target);
+            }
+            this.forwardActive = false;
+            this.forwardTarget = null;
+        }
+    }
+
+    /**
+     * Released gehaltene Tastatur-/Stick-Keys und Camera-Drag auf dem
+     * angegebenen WebContents — laesst aber Special-Hold-Trackings
+     * (@forwardHold, @cursorHold) im heldButtonActions stehen, damit deren
+     * UP-Events das Mapping noch finden und sauber dispatchSpecial(down=false)
+     * rufen koennen. Vermeidet den self-wipe-Bug aus Android v40.
+     */
+    private releaseLocalInputsExceptSpecials(target: WebContents): void {
+        // Skill-/Modifier-Tasten releasen — Specials lassen wir drin.
+        const toRemove: number[] = [];
+        for (const [btnIdx, action] of this.heldButtonActions.entries()) {
+            if (action.startsWith("@")) continue; // Special-Tracking behalten
+            toRemove.push(btnIdx);
+            // Refcount-aware: pruefen ob die action noch von einem anderen
+            // Button gehalten wird BEVOR wir keyUp dispatchen.
+            let stillHeldByOther = false;
+            for (const [otherIdx, otherAction] of this.heldButtonActions.entries()) {
+                if (otherIdx === btnIdx) continue;
+                if (otherAction === action) { stillHeldByOther = true; break; }
+            }
+            if (!stillHeldByOther && this.heldKeys.has(action)) {
+                this.heldKeys.delete(action);
+                if (!target.isDestroyed()) {
+                    try { target.sendInputEvent({ type: "keyUp", keyCode: action }); }
+                    catch { /* ignore */ }
+                }
+            }
+        }
+        for (const idx of toRemove) this.heldButtonActions.delete(idx);
+        // Stick-WASD-Tasten direkt releasen.
+        for (const stickKey of ["A", "D", "W", "S"]) {
+            if (this.heldKeys.has(stickKey)) {
+                this.heldKeys.delete(stickKey);
+                if (!target.isDestroyed()) {
+                    try { target.sendInputEvent({ type: "keyUp", keyCode: stickKey }); }
+                    catch { /* ignore */ }
+                }
+            }
+        }
+        // Camera-Drag stoppen wenn aktiv.
+        if (this.cameraActive) this.stopCameraDrag();
+        // Cursor-Pump stoppen, Cursor-Mode bleibt gesetzt (Special).
+        this.stopCursorPump();
     }
 
     /** Setzt den Stick-Mode um. Stoppt Camera-Drag wenn aktiv (Mode-Wechsel

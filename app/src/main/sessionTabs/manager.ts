@@ -1,4 +1,4 @@
-import { BrowserView, screen } from "electron";
+import { BrowserView, screen, type WebContents } from "electron";
 import type { ViewBounds } from "../../shared/types";
 import { hardenGameContents } from "../security/harden";
 import { registerUiPositionInjection } from "./uiPositionInjector";
@@ -319,6 +319,56 @@ export function createSessionTabsManager(opts: {
         view.webContents.on("did-finish-load", onFinishLoad);
         return () => {
             try { view.webContents.off("did-finish-load", onFinishLoad); } catch { /* destroyed */ }
+        };
+    }
+
+    /**
+     * Injiziert ein JS-Snippet das `document.hidden`, `document.visibilityState`
+     * und `document.hasFocus()` permanent auf "visible/focused" zwingt, plus
+     * blockt `addEventListener` fuer visibilitychange/blur/pagehide/freeze. Das
+     * ist Voraussetzung fuer das Ringmaster-Forward-Feature: ein im Hintergrund-
+     * Tab liegender Slot bekommt sonst `document.hidden=true` und das Spiel
+     * droppt unsere synthetischen Inputs.
+     *
+     * Idempotent via `window.__flyffuVisibilityOverrideApplied`-Flag.
+     * Aggressiv: einmal beim did-start-loading (vor jedem Spiel-JS), nochmal
+     * beim did-finish-load (Belt-and-Suspenders).
+     */
+    function registerVisibilityOverride(wc: WebContents): () => void {
+        const js = `(function() {
+            if (window.__flyffuVisibilityOverrideApplied) return;
+            try {
+                Object.defineProperty(document, 'hidden', { configurable: false, get: function() { return false; } });
+                Object.defineProperty(document, 'visibilityState', { configurable: false, get: function() { return 'visible'; } });
+                Object.defineProperty(document, 'webkitHidden', { configurable: false, get: function() { return false; } });
+                Object.defineProperty(document, 'webkitVisibilityState', { configurable: false, get: function() { return 'visible'; } });
+                document.hasFocus = function() { return true; };
+                var origAdd = EventTarget.prototype.addEventListener;
+                EventTarget.prototype.addEventListener = function(type, listener, options) {
+                    if (type === 'visibilitychange' || type === 'webkitvisibilitychange' ||
+                        type === 'blur' || type === 'pagehide' || type === 'freeze') {
+                        return;
+                    }
+                    return origAdd.call(this, type, listener, options);
+                };
+                ['visibilitychange', 'webkitvisibilitychange', 'blur', 'pagehide', 'freeze'].forEach(function(type) {
+                    document.addEventListener(type, function(e) { e.stopImmediatePropagation(); }, true);
+                    window.addEventListener(type, function(e) { e.stopImmediatePropagation(); }, true);
+                });
+                window.__flyffuVisibilityOverrideApplied = true;
+            } catch(e) {}
+        })();`;
+        const inject = () => {
+            try { wc.executeJavaScript(js).catch(() => {}); }
+            catch { /* destroyed */ }
+        };
+        wc.on("did-start-loading", inject);
+        wc.on("did-finish-load", inject);
+        return () => {
+            try {
+                wc.off("did-start-loading", inject);
+                wc.off("did-finish-load", inject);
+            } catch { /* destroyed */ }
         };
     }
     function setGameFont(font: string | null): void {
@@ -910,6 +960,15 @@ export function createSessionTabsManager(opts: {
         uiPositionCleanups.set(profileId, cleanup);
         const fontCleanup = registerFontForView(profileId, view);
         fontNavigateCleanups.set(profileId, fontCleanup);
+        // Page-Visibility-Override: kritisch fuer das Ringmaster-Forward-Feature
+        // (Buffer-Char im Hintergrund-Tab wird remote gedrueckt). Chromium
+        // markiert die WebView im Hintergrund als document.hidden=true, Flyff
+        // wuerde unsere synthetischen Inputs droppen. JS-Snippet zwingt
+        // document.hidden/visibilityState/hasFocus permanent auf
+        // visible/focused, blockt visibilitychange/blur-Listener-Registrierung.
+        // Aggressiv via did-frame-finish-load (vor Spiel-JS) + did-finish-load
+        // (Belt-and-suspenders).
+        const visibilityCleanup = registerVisibilityOverride(view.webContents);
         sessionViews.set(profileId, view);
         opts.registerWebContentsProfile?.(view.webContents.id, profileId);
         view.webContents.once("destroyed", () => {
