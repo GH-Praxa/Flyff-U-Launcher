@@ -966,12 +966,13 @@ contextBridge.exposeInMainWorld("controllerApi", {
         return ipcRenderer.invoke("controller:icon:clear", { profileId, face, layer });
     },
     /**
-     * Setzt das Icon direkt aus einer data:image-URI (vom Game-Icon-Picker
-     * gewaehlt). Skipt den Click-to-Capture-Flow — fuer User die kein Icon
-     * im Spiel haben oder schneller waehlen wollen.
+     * Setzt das Icon. Zwei Modi:
+     *   - `source.dataUri`: fertige data:image-URI (alter Click-to-Capture-Flow)
+     *   - `source.path`: relativer Cache-Pfad (Game-Icon-Picker) — Main liest
+     *     die Datei und konvertiert zu data: fuer Persistierung
      */
-    setIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null, dataUri: string) => {
-        return ipcRenderer.invoke("controller:icon:set", { profileId, face, layer, dataUri });
+    setIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null, source: { dataUri?: string; path?: string }) => {
+        return ipcRenderer.invoke("controller:icon:set", { profileId, face, layer, ...source });
     },
     /** Bricht einen laufenden Icon-Capture-Lehrmodus ab. */
     cancelCaptureIcon: () => {

@@ -1,6 +1,26 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.3
+
+### 🐛 Fehlerbehebungen
+
+**Icon-Picker: Cache-Layout korrigiert**
+- v3.7.2 las `item_parameter.json`/`skill_parameter.json` als monolithische
+  Dateien — die sind im neuen api-fetch-Layout aber oft abgeschnitten/leer
+- Tatsächlich liegen die Daten in einem Verzeichnis pro Item/Skill:
+  `userData/user/cache/item/item_parameter/<id>.json` (~18 000 Items),
+  `userData/user/cache/skill/skill_parameter/<id>.json` (~1 300 Skills)
+- Fix: liest jetzt alle einzelnen JSONs aus den per-ID-Verzeichnissen,
+  robuste Fehlertoleranz (kaputte Files werden geskippt, ganze Liste bleibt)
+- Icons werden via `file://`-URL ausgeliefert statt data-URL — bei 20k+
+  Icons wären die data-URLs hunderte MB IPC-Payload, file:// rendert
+  Browser-nativ via lazy-loading
+- Beim tatsächlichen Speichern (Profile-Persistierung) wird im Main aus
+  `path` die Datei gelesen und als data: in Profile geschrieben (Game-View-
+  CSP erlaubt nur data:, nicht file://)
+
+---
 ## 🐛 Version 3.7.2
 
 ### 🐛 Fehlerbehebungen

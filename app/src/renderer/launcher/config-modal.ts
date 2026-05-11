@@ -67,7 +67,11 @@ interface GameIcon {
     category: "skills" | "items" | "buffs" | "other";
     name: string;
     path: string;
-    dataUrl: string;
+    /** `file:///abs/path/to/icon.png` — direkt im `<img src>` einsetzbar.
+     *  Wir nutzen file:// statt data: weil 18k+ Icons sonst hunderte MB
+     *  IPC-Payload erzeugen wuerden. CSP `img-src 'self' data: ... file:`
+     *  erlaubt das. */
+    url: string;
 }
 
 /**
@@ -78,7 +82,12 @@ interface GameIcon {
  *
  * Nutzt `window.controllerApi.listGameIcons()` (Preload-Bridge).
  */
-function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chosen: string | null) => void): void {
+/** Picker-Auswahl-Result. `chosen=null` bedeutet "Icon entfernen".
+ *  `chosen.path` = relativer Cache-Pfad (Main konvertiert zu data:),
+ *  `chosen.previewUrl` = file://-URL fuer sofortige Anzeige im Picker. */
+type IconPickResult = { path: string; previewUrl: string } | null;
+
+function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chosen: IconPickResult | undefined) => void): void {
     const ctrlApi = (window as unknown as {
         controllerApi?: { listGameIcons?: () => Promise<{ ok: boolean; icons?: GameIcon[]; error?: string }> };
     }).controllerApi;
@@ -173,7 +182,7 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
     let allIcons: GameIcon[] = [];
     let loaded = false;
 
-    const close = (chosen: string | null | undefined) => {
+    const close = (chosen: IconPickResult | undefined) => {
         overlay.remove();
         document.removeEventListener("keydown", onKey);
         if (chosen !== undefined) onChoose(chosen);
@@ -224,14 +233,14 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
             cell.style.alignItems = "center";
             cell.style.justifyContent = "center";
             const img = document.createElement("img");
-            img.src = icon.dataUrl;
+            img.src = icon.url;
             img.alt = icon.name;
             img.loading = "lazy";
             img.style.maxWidth = "100%";
             img.style.maxHeight = "100%";
             img.style.objectFit = "contain";
             cell.append(img);
-            cell.addEventListener("click", () => close(icon.dataUrl));
+            cell.addEventListener("click", () => close({ path: icon.path, previewUrl: icon.url }));
             grid.append(cell);
         }
         if (filtered.length > 500) {
@@ -2759,29 +2768,28 @@ export function openConfigModal(
                 };
             }).controllerApi;
 
-            // Helper zum Schreiben des Icons ins Profile-Cache + Persistierung
-            // via captureIcon-IPC. Wir nutzen `captureIcon` mit einem virtuellen
-            // dataUri-Pfad indem wir den Capture-Mechanismus umgehen — eigentlich
-            // braucht's einen separaten IPC `controller:icon:set`. Pragmatisch:
-            // wir schreiben direkt in den Profile-Cache und lassen die normale
-            // profilesUpdate-Pipeline persistieren.
-            const persistIcon = async (dataUri: string | null) => {
+            // Setter: schreibt das Icon ins Profile-Cache + persistiert.
+            // - chosen=null → entfernen via clearIcon
+            // - chosen={path,...} → setIcon-IPC mit relativem Pfad (Main liest
+            //   die Datei und konvertiert zu data: fuer die Persistierung,
+            //   gibt die data:URI zurueck, die wir im Cache + Display nutzen)
+            const persistIcon = async (chosen: { path: string; previewUrl: string } | null) => {
                 if (!currentControllerProfileId || !ctrlApi) return;
-                if (dataUri === null) {
-                    // Loeschen geht ueber den existierenden clearIcon-IPC.
+                let resultDataUri: string | null = null;
+                if (chosen === null) {
                     await ctrlApi.clearIcon(currentControllerProfileId, face, layer);
                 } else {
-                    // Setzen geht ueber setIcon-IPC (siehe gameIcons-Handler-
-                    // Reuse-Strategie). Wenn der nicht existiert, fallback:
-                    // direkt via profile-update-IPC. Hier nutzen wir die
-                    // existierende Pipeline ueber `setIcon` — wenn sie spaeter
-                    // hinzukommt; aktuell setzen wir nur den Cache und lassen
-                    // den User auf "Speichern" druecken.
                     const setIconApi = ctrlApi as unknown as {
-                        setIcon?: (id: string, f: string, l: string | null, uri: string) => Promise<{ ok: boolean }>;
+                        setIcon?: (
+                            id: string,
+                            f: string,
+                            l: string | null,
+                            source: { dataUri?: string; path?: string },
+                        ) => Promise<{ ok: boolean; dataUri?: string }>;
                     };
                     if (setIconApi.setIcon) {
-                        await setIconApi.setIcon(currentControllerProfileId, face, layer, dataUri);
+                        const r = await setIconApi.setIcon(currentControllerProfileId, face, layer, { path: chosen.path });
+                        if (r?.ok && r.dataUri) resultDataUri = r.dataUri;
                     }
                 }
                 // profiles-Cache lokal patchen damit's beim Re-Render bleibt.
@@ -2792,8 +2800,8 @@ export function openConfigModal(
                     if (layer) {
                         const mods = (c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined) ?? {};
                         const lObj = mods[layer] ?? {};
-                        if (dataUri) {
-                            lObj.icons = { ...(lObj.icons ?? {}), [face]: dataUri };
+                        if (resultDataUri) {
+                            lObj.icons = { ...(lObj.icons ?? {}), [face]: resultDataUri };
                         } else if (lObj.icons) {
                             delete lObj.icons[face];
                         }
@@ -2801,15 +2809,18 @@ export function openConfigModal(
                         c.modifiers = mods;
                     } else {
                         const ic = (c.icons as Record<string, string> | undefined) ?? {};
-                        if (dataUri) {
-                            ic[face] = dataUri;
+                        if (resultDataUri) {
+                            ic[face] = resultDataUri;
                         } else {
                             delete ic[face];
                         }
                         c.icons = ic;
                     }
                 }
-                setDisplay(dataUri ?? undefined);
+                // Anzeige im Button: data: URI (sauber, gleicher Wert wie
+                // beim naechsten readCurrentIcon). Fallback auf previewUrl
+                // falls Main aus irgendeinem Grund keine zurueckliefert.
+                setDisplay(resultDataUri ?? chosen?.previewUrl ?? undefined);
             };
 
             btn.addEventListener("click", async (ev) => {
@@ -2822,8 +2833,9 @@ export function openConfigModal(
                     return;
                 }
                 // Normaler Klick = Picker oeffnen mit allen via Plugins
-                // gecachten Spiel-Icons. Suche + Tabs (skills/items/all).
+                // gecachten Spiel-Icons. Suche + Tabs (skills/items/all/buffs).
                 openGameIconPicker(readCurrentIcon(), async (chosen) => {
+                    if (chosen === undefined) return; // dialog dismissed without choice
                     btn.disabled = true;
                     try { await persistIcon(chosen); }
                     finally { btn.disabled = false; }

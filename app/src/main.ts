@@ -1143,16 +1143,47 @@ app.whenReady().then(async () => {
     // Direktes Setzen eines Icons aus dem Game-Icon-Picker (statt
     // Click-to-Capture aus dem Spiel). Payload enthaelt eine fertige
     // data:image-URI vom IPC-Picker; wir reichen sie nur durch persistIcon.
-    ipcMain.handle("controller:icon:set", async (_event, payload: unknown): Promise<{ ok: boolean }> => {
+    ipcMain.handle("controller:icon:set", async (_event, payload: unknown): Promise<{ ok: boolean; dataUri?: string }> => {
         if (!payload || typeof payload !== "object") return { ok: false };
         const p = payload as Record<string, unknown>;
         const profileId = typeof p.profileId === "string" ? p.profileId : null;
         const face = (p.face === "a" || p.face === "b" || p.face === "x" || p.face === "y") ? p.face : null;
         const layer = (p.layer === "l1" || p.layer === "r1" || p.layer === "r2") ? p.layer : null;
-        const dataUri = typeof p.dataUri === "string" ? p.dataUri : null;
-        if (!profileId || !face || !dataUri) return { ok: false };
-        if (!dataUri.startsWith("data:image/")) return { ok: false };
-        try { await persistIcon(profileId, face, layer, dataUri); return { ok: true }; }
+        if (!profileId || !face) return { ok: false };
+        // Zwei Quellen unterstuetzen:
+        //   - dataUri: fertige `data:image/...` URI (vom alten Click-to-Capture)
+        //   - path: relativer Cache-Pfad (vom neuen Game-Icon-Picker, z.B.
+        //     "user/cache/skill/icons/colored/foo.png"). Wir lesen die Datei
+        //     und konvertieren zu data: — die Game-View-CSP erlaubt nur
+        //     data:/blob: fuer img-src, file:// wuerde geblockt.
+        let dataUri = typeof p.dataUri === "string" ? p.dataUri : null;
+        const relPath = typeof p.path === "string" ? p.path : null;
+        if (!dataUri && relPath) {
+            // Pfad-Traversal-Schutz: relPath darf keine ".." Segmente enthalten
+            if (relPath.includes("..")) return { ok: false };
+            try {
+                const fs = await import("fs/promises");
+                const path = await import("path");
+                const userData = app.getPath("userData");
+                const absPath = path.join(userData, relPath);
+                // Sicherstellen dass abs unter userData liegt (Symlink-Schutz)
+                if (!absPath.startsWith(userData + path.sep) && absPath !== userData) return { ok: false };
+                const buf = await fs.readFile(absPath);
+                const ext = path.extname(absPath).toLowerCase();
+                const mime = ext === ".png" ? "image/png"
+                    : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg"
+                    : ext === ".webp" ? "image/webp"
+                    : ext === ".bmp" ? "image/bmp"
+                    : null;
+                if (!mime) return { ok: false };
+                dataUri = `data:${mime};base64,${buf.toString("base64")}`;
+            } catch (err) {
+                logErr(err, "controller:icon:set:fileRead");
+                return { ok: false };
+            }
+        }
+        if (!dataUri || !dataUri.startsWith("data:image/")) return { ok: false };
+        try { await persistIcon(profileId, face, layer, dataUri); return { ok: true, dataUri }; }
         catch (err) { logErr(err, "controller:icon:set"); return { ok: false }; }
     });
 
