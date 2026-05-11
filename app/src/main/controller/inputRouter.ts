@@ -350,6 +350,12 @@ export class ControllerInputRouter {
     private forwardActive = false;
     private forwardTarget: WebContents | null = null;
 
+    /** Schuetzt unseren prevButtons-Reset in setForwardMode davor, am Ende
+     *  des aktuellen handleFrame-Calls von `this.prevButtons = buttons.slice()`
+     *  wieder ueberschrieben zu werden. Wird nach dem Skip im naechsten
+     *  Frame zurueckgesetzt. */
+    private skipPrevButtonsUpdate = false;
+
     /** Cursor-Modus: rechter Stick wird zum Maus-Mover statt Camera-Drag.
      *  A im Cursor-Modus = Maus-Klick links an aktueller Cursor-Position. */
     private mode: "normal" | "cursor" = "normal";
@@ -451,7 +457,15 @@ export class ControllerInputRouter {
             this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
         }
 
-        this.prevButtons = buttons.slice();
+        // setForwardMode (in dispatchSpecial waehrend dieses Frames gerufen)
+        // hat moeglicherweise prevButtons gezielt zurueckgesetzt damit der
+        // NAECHSTE Frame Edges fuer noch-gehaltene Buttons sieht. Wenn das
+        // Flag gesetzt ist, ueberschreiben wir den Reset NICHT.
+        if (this.skipPrevButtonsUpdate) {
+            this.skipPrevButtonsUpdate = false;
+        } else {
+            this.prevButtons = buttons.slice();
+        }
         this.prevAxes = frame.axes.slice();
     }
 
@@ -468,7 +482,7 @@ export class ControllerInputRouter {
             // damit @forwardHold das forwarding-Ziel korrekt aufloesen kann
             // (via getBufferTarget(originalSender)) und @nextTab/@reload etc.
             // an der originalen Session-Window operieren statt am Buffer-Ziel.
-            this.dispatchSpecial(action, originalSender ?? sender, frame, true);
+            this.dispatchSpecial(action, originalSender ?? sender, frame, true, btnIdx);
             return;
         }
         // Cursor-Modus: A → Maus-Klick links an aktueller Cursor-Position.
@@ -507,7 +521,7 @@ export class ControllerInputRouter {
         if (!action) return;
         this.heldButtonActions.delete(btnIdx);
         if (action.startsWith("@")) {
-            this.dispatchSpecial(action, sender, null, false);
+            this.dispatchSpecial(action, sender, null, false, btnIdx);
             return;
         }
         // Cursor-Modus A-Tap-Release.
@@ -547,6 +561,7 @@ export class ControllerInputRouter {
         sender: WebContents,
         frame: GamepadFrame | null,
         down: boolean,
+        btnIdx: number = -1,
     ): void {
         switch (action) {
             case "@cursorHold":
@@ -556,7 +571,7 @@ export class ControllerInputRouter {
                 if (down) this.setMode(this.mode === "cursor" ? "normal" : "cursor", sender, frame);
                 return;
             case "@forwardHold":
-                this.setForwardMode(down, sender);
+                this.setForwardMode(down, sender, btnIdx);
                 return;
             case "@actionPad":
                 if (down && frame) {
@@ -597,7 +612,7 @@ export class ControllerInputRouter {
      * Hold-Button-Eintrag in heldButtonActions blockt seinen eigenen
      * Re-Trigger.
      */
-    private setForwardMode(activate: boolean, sender: WebContents): void {
+    private setForwardMode(activate: boolean, sender: WebContents, holdBtnIdx: number = -1): void {
         if (activate) {
             if (this.forwardActive) return; // idempotent
             const target = this.deps.getBufferTarget?.(sender) ?? null;
@@ -612,9 +627,18 @@ export class ControllerInputRouter {
             this.releaseLocalInputsExceptSpecials(sender);
             this.forwardActive = true;
             this.forwardTarget = target;
-            // Edge-Tracking nullen → naechster Frame triggert handleButtonDown
-            // fuer alle noch gehaltenen Buttons mit neuem Target=forwardTarget.
-            this.prevButtons = [];
+            // Edge-Tracking gezielt setzen: alle Buttons "false" markieren
+            // AUSSER dem Hold-Button selbst (der ist gerade aktiv und soll
+            // nicht als neuer Edge erkannt werden). Damit triggert der
+            // NAECHSTE Frame fuer alle noch-gehaltenen Buttons (z.B. X den
+            // der User schon vor dem Hold druckte) ein handleButtonDown am
+            // neuen Target=forwardTarget. skipPrevButtonsUpdate-Flag
+            // verhindert dass der Frame-End-Update unseren Reset gleich
+            // wieder ueberschreibt.
+            const newPrev: boolean[] = new Array(Math.max(16, holdBtnIdx + 1)).fill(false);
+            if (holdBtnIdx >= 0) newPrev[holdBtnIdx] = true;
+            this.prevButtons = newPrev;
+            this.skipPrevButtonsUpdate = true;
         }
         else {
             if (!this.forwardActive) return; // idempotent
@@ -628,8 +652,10 @@ export class ControllerInputRouter {
             this.forwardActive = false;
             this.forwardTarget = null;
             // Wieder Edge-Reset → noch gehaltene Buttons werden naechsten
-            // Frame neu an `sender` (Vordergrund) dispatched.
-            this.prevButtons = [];
+            // Frame neu an `sender` (Vordergrund) dispatched. Hold-Button
+            // ist beim UP eh false also kein Special-Handling noetig.
+            this.prevButtons = new Array(16).fill(false);
+            this.skipPrevButtonsUpdate = true;
         }
     }
 

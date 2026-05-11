@@ -1,6 +1,23 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.4
+
+### 🐛 Fehlerbehebungen
+
+**Ringmaster-Forward: prevButtons-Reset wurde überschrieben**
+- v3.7.2's Edge-Reset (`prevButtons = []` in setForwardMode) wurde am
+  Ende des selben handleFrame-Calls durch
+  `this.prevButtons = buttons.slice()` direkt wieder überschrieben →
+  nächster Frame sah keine frischen Edges → gehaltene Buttons (X etc.)
+  blieben weiterhin im Vordergrund-Tab statt an Ringmaster zu gehen
+- Fix: `skipPrevButtonsUpdate`-Flag schützt unseren Reset vor dem Frame-
+  End-Override. Plus setForwardMode setzt prev gezielt: alle Buttons false
+  AUSSER dem Hold-Button selbst (sonst würde der eigene Edge nochmal
+  triggern). Hold-Button-Index wird durch dispatchSpecial → setForwardMode
+  durchgereicht
+
+---
 ## 🐛 Version 3.7.3
 
 ### 🐛 Fehlerbehebungen
