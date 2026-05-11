@@ -1,6 +1,29 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.1
+
+### 🐛 Fehlerbehebungen
+
+**Icon-Picker leer obwohl Cache voll**
+- Mein Pfad war frei erfunden (`buff_icon_list.json`). cd-timer liest
+  tatsächlich `userData/user/cache/item/buff_icon_buffname.json` (oder
+  `item_parameter.json` als Live-Fallback). Pfade angeglichen, plus
+  `name`-Normalisierung für Multi-Language-Objekte (`{en: "...", de: "..."}`)
+
+**Ringmaster-Forward: Tasten-Spam nach Loslassen**
+- Bug: das `keyDown` ging während Hold an `forwardTarget` (Buffer-Tab),
+  das `keyUp` aber immer an `sender` (Vordergrund). Folge: Buffer-Tab
+  kriegt nie das Up → Taste bleibt gedrückt und feuert weiter
+- Fix: neue Map `heldKeyTarget` trackt pro Taste WO der Down hin ging.
+  Up wird genau dorthin geroutet, egal wie sich der Forward-Status
+  zwischenzeitlich geändert hat
+- Gilt für Stick-Keys (W/A/S/D) UND Button-Keys (Skills, Skill-Slots)
+- `releaseLocalInputsExceptSpecials()` ebenfalls umgestellt: jede Taste
+  wird auf ihren tatsächlichen Target released, nicht mehr blind auf den
+  Übergabe-Parameter
+
+---
 ## 🆕 Version 3.7.0
 
 ### ✨ Ringmaster-Forward — Hold-Taste leitet Eingaben an Hintergrund-Tab

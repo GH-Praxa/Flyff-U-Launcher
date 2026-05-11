@@ -307,6 +307,16 @@ export class ControllerInputRouter {
      *  doppeltes KeyDown wenn beide Quellen die gleiche Taste wollen. */
     private heldKeys: Set<string> = new Set();
 
+    /** Pro gehaltener Taste die WebContents an die das KeyDown gegangen ist.
+     *  Wichtig fuer Ringmaster-Forward: wenn das DOWN waehrend Hold an
+     *  forwardTarget ging, muss das UP AUCH an forwardTarget gehen — sonst
+     *  bleibt die Taste im Buffer-Tab "haengen" und feuert weiter (Stuck-Key
+     *  Bug). Sender (Vordergrund) kriegt sonst falsch das keyUp.
+     *  Wird parallel zu heldKeys gepflegt; gleiche Taste von zwei Quellen
+     *  (Stick UND Button) → letzter target gewinnt, refcount via heldKeys/
+     *  heldButtonActions weiterhin korrekt. */
+    private heldKeyTarget: Map<string, WebContents> = new Map();
+
     /** Pro Button-Index (0..15) die Aktion, die beim Press emittiert wurde.
      *  Wichtig fuer Modifier-Layer: wenn der User L1+A drueckt und dann L1
      *  loslaesst bevor A losgelassen ist, soll trotzdem die ModifierTaste
@@ -471,8 +481,16 @@ export class ControllerInputRouter {
         }
         // KeyDown nur emittieren wenn die Taste nicht schon anderweitig gehalten
         // wird (z.B. zweiter Button auf gleiche Taste, oder Stick-Key).
-        if (this.heldKeys.has(action)) return;
+        if (this.heldKeys.has(action)) {
+            // Refcount-Case: action wird schon gehalten (gleiche Taste von
+            // anderer Quelle). Wir senden kein zweites keyDown, aber wir
+            // updaten den Target auf den aktuellen sender — beim UP soll's
+            // dann an die zuletzt registrierte WebContents gehen.
+            this.heldKeyTarget.set(action, sender);
+            return;
+        }
         this.heldKeys.add(action);
+        this.heldKeyTarget.set(action, sender);
         try {
             sender.sendInputEvent({ type: "keyDown", keyCode: action });
         }
@@ -505,8 +523,13 @@ export class ControllerInputRouter {
         }
         if (!this.heldKeys.has(action)) return;
         this.heldKeys.delete(action);
+        // UP an dem WebContents wo der DOWN hingegangen ist (Ringmaster-Forward-
+        // Fix). `sender` ist der aktuelle Vordergrund — der kann nach Hold-
+        // Aktivierung/Deaktivierung anders sein als der target des DOWN-Events.
+        const target = this.heldKeyTarget.get(action) ?? sender;
+        this.heldKeyTarget.delete(action);
         try {
-            sender.sendInputEvent({ type: "keyUp", keyCode: action });
+            target.sendInputEvent({ type: "keyUp", keyCode: action });
         }
         catch (err) {
             logWarn("controller", `keyUp ${action} failed: ${(err as Error).message}`);
@@ -595,13 +618,33 @@ export class ControllerInputRouter {
     }
 
     /**
-     * Released gehaltene Tastatur-/Stick-Keys und Camera-Drag auf dem
-     * angegebenen WebContents — laesst aber Special-Hold-Trackings
-     * (@forwardHold, @cursorHold) im heldButtonActions stehen, damit deren
-     * UP-Events das Mapping noch finden und sauber dispatchSpecial(down=false)
-     * rufen koennen. Vermeidet den self-wipe-Bug aus Android v40.
+     * Released gehaltene Tastatur-/Stick-Keys und Camera-Drag — laesst aber
+     * Special-Hold-Trackings (@forwardHold, @cursorHold) im heldButtonActions
+     * stehen, damit deren UP-Events das Mapping noch finden und sauber
+     * dispatchSpecial(down=false) rufen koennen. Vermeidet den self-wipe-Bug.
+     *
+     * Wichtig: jede gehaltene Taste wird auf DEM WebContents released, an
+     * den ihr DOWN urspruenglich ging (via `heldKeyTarget`-Map). Beim
+     * Ringmaster-Wechsel kann das mid-stream sein: einige Keys gingen an
+     * Vordergrund (vor Hold-DOWN), andere an Forward-Target (nach Hold-DOWN).
+     * Beim Hold-UP muss jeder Key an seinen tatsaechlichen Target zurueck-
+     * geschickt werden, sonst bleibt der "haengen" und feuert weiter
+     * (Stuck-Key Bug aus User-Report v3.7.0).
+     *
+     * Der `fallbackSender`-Param ist nur Fallback wenn der heldKeyTarget keinen
+     * Eintrag fuer einen key hat (sollte nicht passieren, aber defensive).
      */
-    private releaseLocalInputsExceptSpecials(target: WebContents): void {
+    private releaseLocalInputsExceptSpecials(fallbackSender: WebContents): void {
+        const releaseKey = (action: string) => {
+            if (!this.heldKeys.has(action)) return;
+            this.heldKeys.delete(action);
+            const target = this.heldKeyTarget.get(action) ?? fallbackSender;
+            this.heldKeyTarget.delete(action);
+            if (!target.isDestroyed()) {
+                try { target.sendInputEvent({ type: "keyUp", keyCode: action }); }
+                catch { /* ignore */ }
+            }
+        };
         // Skill-/Modifier-Tasten releasen — Specials lassen wir drin.
         const toRemove: number[] = [];
         for (const [btnIdx, action] of this.heldButtonActions.entries()) {
@@ -614,25 +657,11 @@ export class ControllerInputRouter {
                 if (otherIdx === btnIdx) continue;
                 if (otherAction === action) { stillHeldByOther = true; break; }
             }
-            if (!stillHeldByOther && this.heldKeys.has(action)) {
-                this.heldKeys.delete(action);
-                if (!target.isDestroyed()) {
-                    try { target.sendInputEvent({ type: "keyUp", keyCode: action }); }
-                    catch { /* ignore */ }
-                }
-            }
+            if (!stillHeldByOther) releaseKey(action);
         }
         for (const idx of toRemove) this.heldButtonActions.delete(idx);
-        // Stick-WASD-Tasten direkt releasen.
-        for (const stickKey of ["A", "D", "W", "S"]) {
-            if (this.heldKeys.has(stickKey)) {
-                this.heldKeys.delete(stickKey);
-                if (!target.isDestroyed()) {
-                    try { target.sendInputEvent({ type: "keyUp", keyCode: stickKey }); }
-                    catch { /* ignore */ }
-                }
-            }
-        }
+        // Stick-WASD-Tasten direkt releasen — heldKeyTarget weiss wohin.
+        for (const stickKey of ["A", "D", "W", "S"]) releaseKey(stickKey);
         // Camera-Drag stoppen wenn aktiv.
         if (this.cameraActive) this.stopCameraDrag();
         // Cursor-Pump stoppen, Cursor-Mode bleibt gesetzt (Special).
@@ -701,11 +730,17 @@ export class ControllerInputRouter {
         const isHeld = this.heldKeys.has(keyCode);
         if (shouldBeHeld && !isHeld) {
             this.heldKeys.add(keyCode);
+            this.heldKeyTarget.set(keyCode, sender);
             try { sender.sendInputEvent({ type: "keyDown", keyCode }); } catch { /* ignore */ }
         }
         else if (!shouldBeHeld && isHeld) {
             this.heldKeys.delete(keyCode);
-            try { sender.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
+            // UP an dem WebContents wo der DOWN hingegangen ist (kann nach
+            // Ringmaster-Wechsel ein anderer sein als der aktuelle `sender`).
+            // Fallback auf sender wenn Map keinen Eintrag hat (Race / Cleanup).
+            const target = this.heldKeyTarget.get(keyCode) ?? sender;
+            this.heldKeyTarget.delete(keyCode);
+            try { target.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
         }
     }
 
@@ -1064,11 +1099,14 @@ export class ControllerInputRouter {
             }
         }
         this.heldKeys.clear();
+        this.heldKeyTarget.clear();
         this.heldButtonActions.clear();
         this.stopCameraDrag();
         this.stopCursorPump();
         this.cursorMouseDown = false;
         this.mode = "normal";
+        this.forwardActive = false;
+        this.forwardTarget = null;
         this.prevButtons = [];
         this.prevAxes = [];
         this.actionPadInProgress = false;

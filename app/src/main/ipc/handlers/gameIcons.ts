@@ -55,33 +55,63 @@ async function fileToDataUrl(absPath: string): Promise<string | null> {
 }
 
 /**
- * Liest die buff-icon-Liste aus dem api-fetch Plugin-Cache (item-Icons mit
- * Buff-Namen). Format ist eine JSON-Array von `{buffname, iconname}`.
+ * Liest die buff-icon-Liste aus dem api-fetch Plugin-Cache. Identische
+ * Logik zu cd-timer's `loadBuffIconListFromApiFetch`:
+ *   1. `userData/user/cache/item/buff_icon_buffname.json` (gemapped)
+ *   2. Fallback: `userData/user/cache/item/item_parameter.json` (Quelle,
+ *      filter auf category="buff", item.icon vorhanden)
+ *
+ * Liefert `{name, iconname}[]`.
  */
 async function loadBuffIconList(): Promise<Array<{ name: string; iconname: string }>> {
-    const userData = app.getPath("userData");
-    // api-fetch legt diese Datei typischerweise hier ab.
-    const candidates = [
-        path.join(userData, "user", "cache", "buff_icon_list.json"),
-        path.join(userData, "user", "cache", "item", "buff_icon_list.json"),
-    ];
-    for (const candidate of candidates) {
-        try {
-            const raw = await fs.readFile(candidate, "utf8");
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-                return parsed
-                    .map((item: { buffname?: string; iconname?: string }) => ({
-                        name: item?.buffname ?? "",
-                        iconname: item?.iconname ?? "",
-                    }))
-                    .filter((x) => x.name && x.iconname);
-            }
-        } catch {
-            // try next candidate
+    const baseDir = path.join(app.getPath("userData"), "user", "cache", "item");
+    const mappedPath = path.join(baseDir, "buff_icon_buffname.json");
+    const sourcePath = path.join(baseDir, "item_parameter.json");
+
+    const normalizeName = (n: unknown): string => {
+        if (!n) return "";
+        if (typeof n === "string") return n;
+        if (typeof n === "object") {
+            const o = n as Record<string, unknown>;
+            const en = o.en;
+            if (typeof en === "string") return en;
+            const first = Object.values(o).find((v) => typeof v === "string");
+            return (first as string) ?? "";
         }
+        return String(n);
+    };
+
+    // 1) gemapped, schnell
+    try {
+        const raw = await fs.readFile(mappedPath, "utf8");
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            return parsed
+                .map((item: Record<string, unknown>) => ({
+                    iconname: String(item.iconname ?? item.icon ?? item.iconName ?? ""),
+                    name: normalizeName(item.buffname ?? item.name),
+                }))
+                .filter((x: { iconname: string; name: string }) => x.iconname && x.name);
+        }
+    } catch {
+        // try fallback
     }
-    return [];
+
+    // 2) Live-Fallback aus item_parameter.json — alle Items mit category=buff
+    try {
+        const raw = await fs.readFile(sourcePath, "utf8");
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) return [];
+        return data
+            .filter((item: Record<string, unknown>) => item?.category === "buff" && item.icon)
+            .map((item: Record<string, unknown>) => ({
+                iconname: String(item.icon),
+                name: normalizeName(item.name),
+            }))
+            .filter((x: { iconname: string; name: string }) => x.iconname && x.name);
+    } catch {
+        return [];
+    }
 }
 
 async function listItemIcons(): Promise<GameIcon[]> {

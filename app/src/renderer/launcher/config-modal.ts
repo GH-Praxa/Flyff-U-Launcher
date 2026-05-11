@@ -206,7 +206,7 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
                 : t("controller.iconPicker.noMatches" as TranslationKey);
             return;
         }
-        status.textContent = t("controller.iconPicker.count" as TranslationKey, { count: String(filtered.length) });
+        status.textContent = `${filtered.length} ${t("controller.iconPicker.count" as TranslationKey)}`;
         // Cap auf 500 Icons sichtbar — sonst zerlegt's bei 5000+ Icons den DOM
         const slice = filtered.slice(0, 500);
         for (const icon of slice) {
@@ -241,7 +241,7 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
             more.style.color = "var(--muted)";
             more.style.textAlign = "center";
             more.style.padding = "6px";
-            more.textContent = t("controller.iconPicker.moreHidden" as TranslationKey, { count: String(filtered.length - 500) });
+            more.textContent = t("controller.iconPicker.moreHidden" as TranslationKey).replace("{count}", String(filtered.length - 500));
             grid.append(more);
         }
     };
@@ -2287,10 +2287,14 @@ export function openConfigModal(
             // Persistieren via profilesUpdate-IPC (gleicher Mechanismus wie
             // Bindings/Modifier-Save).
             try {
-                await api.profilesUpdate({
+                await window.api.profilesUpdate?.({
                     id: currentControllerProfileId,
                     controller: { bufferTargetProfileId: newTarget },
-                });
+                // store.ts ProfileController.bufferTargetProfileId existiert,
+                // aber das Type-File des Preload-IPC kennt's evtl. noch nicht —
+                // Cast ueber unknown bypasst den Typ-Check (gleicher Pattern
+                // wie weiter unten bei Icons).
+                } as unknown as Parameters<NonNullable<typeof window.api.profilesUpdate>>[0]);
                 // Reload-Trigger an Main, damit der Cache fuer den naechsten
                 // Frame schon den neuen Target hat.
                 (window as unknown as { controllerApi?: { reloadMapping?: (id: string) => void } })
