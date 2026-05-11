@@ -6,7 +6,6 @@ import { MakerRpm } from "@electron-forge/maker-rpm";
 import { MakerWix } from "@electron-forge/maker-wix";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
-import { MakerAppImage } from "@reforged/maker-appimage";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
@@ -256,14 +255,23 @@ const config: ForgeConfig = {
             },
         }),
         // AppImage: wird von electron-updater für Linux Auto-Updates benötigt
-        // Die interne Struktur (usr/lib/<name>/) ist gültig – AppRun und .desktop liegen korrekt im Root
-        new MakerAppImage({
-            options: {
-                categories: ["Game"],
-                icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
-                bin: "Flyff-U-Launcher",
+        // Die interne Struktur (usr/lib/<name>/) ist gültig – AppRun und .desktop liegen korrekt im Root.
+        // Resolvable-Target (string-name + config) statt direkter Maker-Instanz —
+        // letzteres reicht das `options`-Objekt nicht korrekt durch zu MakerBase
+        // (in @reforged/maker-appimage v5.2.0 + electron-forge v7+ kommt
+        // `this.config.options` als leeres Objekt an, bin-Lookup faellt auf
+        // sanitizedName zurueck und sucht "flyff-u-launcher" statt
+        // "Flyff-U-Launcher").
+        {
+            name: "@reforged/maker-appimage",
+            config: {
+                options: {
+                    categories: ["Game"],
+                    icon: path.resolve(__dirname, "src/assets/icons/flyff.png"),
+                    bin: "Flyff-U-Launcher",
+                },
             },
-        }),
+        },
     ],
     plugins: (() => {
         const plugins = [
