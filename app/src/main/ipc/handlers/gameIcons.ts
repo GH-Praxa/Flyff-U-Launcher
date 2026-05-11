@@ -55,83 +55,61 @@ async function fileToDataUrl(absPath: string): Promise<string | null> {
 }
 
 /**
- * Liest die buff-icon-Liste aus dem api-fetch Plugin-Cache. Identische
- * Logik zu cd-timer's `loadBuffIconListFromApiFetch`:
- *   1. `userData/user/cache/item/buff_icon_buffname.json` (gemapped)
- *   2. Fallback: `userData/user/cache/item/item_parameter.json` (Quelle,
- *      filter auf category="buff", item.icon vorhanden)
- *
- * Liefert `{name, iconname}[]`.
+ * Normalisiert das Multi-Language-`name`-Feld der Flyff-API-Daten:
+ * `{en: "...", de: "...", jp: "...", ...}` → wir nehmen `.en` zuerst,
+ * dann den ersten verfuegbaren String.
  */
-async function loadBuffIconList(): Promise<Array<{ name: string; iconname: string }>> {
-    const baseDir = path.join(app.getPath("userData"), "user", "cache", "item");
-    const mappedPath = path.join(baseDir, "buff_icon_buffname.json");
-    const sourcePath = path.join(baseDir, "item_parameter.json");
-
-    const normalizeName = (n: unknown): string => {
-        if (!n) return "";
-        if (typeof n === "string") return n;
-        if (typeof n === "object") {
-            const o = n as Record<string, unknown>;
-            const en = o.en;
-            if (typeof en === "string") return en;
-            const first = Object.values(o).find((v) => typeof v === "string");
-            return (first as string) ?? "";
+function normalizeName(n: unknown): string {
+    if (!n) return "";
+    if (typeof n === "string") return n;
+    if (typeof n === "object") {
+        const o = n as Record<string, unknown>;
+        if (typeof o.en === "string" && o.en) return o.en;
+        for (const v of Object.values(o)) {
+            if (typeof v === "string" && v) return v;
         }
-        return String(n);
-    };
-
-    // 1) gemapped, schnell
-    try {
-        const raw = await fs.readFile(mappedPath, "utf8");
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-            return parsed
-                .map((item: Record<string, unknown>) => ({
-                    iconname: String(item.iconname ?? item.icon ?? item.iconName ?? ""),
-                    name: normalizeName(item.buffname ?? item.name),
-                }))
-                .filter((x: { iconname: string; name: string }) => x.iconname && x.name);
-        }
-    } catch {
-        // try fallback
     }
+    return String(n);
+}
 
-    // 2) Live-Fallback aus item_parameter.json — alle Items mit category=buff
+/**
+ * Liest `item_parameter.json` aus dem api-fetch-Cache und liefert alle
+ * Items mit `icon`-Feld (alle Kategorien — Buffs, Consumables, Quest-
+ * Items, Equip etc.). Anders als cd-timer (das nur Buffs anzeigt) wollen
+ * wir im Controller-Picker alle Item-Icons verfuegbar haben — User koennte
+ * z.B. ein Skill-Slot mit einem Heiltrank-Icon markieren wollen.
+ */
+async function listItemIcons(): Promise<GameIcon[]> {
+    const userData = app.getPath("userData");
+    const sourcePath = path.join(userData, "user", "cache", "item", "item_parameter.json");
+    let data: Array<Record<string, unknown>> = [];
     try {
         const raw = await fs.readFile(sourcePath, "utf8");
-        const data = JSON.parse(raw);
-        if (!Array.isArray(data)) return [];
-        return data
-            .filter((item: Record<string, unknown>) => item?.category === "buff" && item.icon)
-            .map((item: Record<string, unknown>) => ({
-                iconname: String(item.icon),
-                name: normalizeName(item.name),
-            }))
-            .filter((x: { iconname: string; name: string }) => x.iconname && x.name);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) data = parsed;
+        else return [];
     } catch {
         return [];
     }
-}
-
-async function listItemIcons(): Promise<GameIcon[]> {
-    const userData = app.getPath("userData");
-    const buffs = await loadBuffIconList();
     const seen = new Set<string>();
     const icons: GameIcon[] = [];
-    // Pfad: user/cache/item/icons/<file>
-    for (const item of buffs) {
-        const relPath = path.join("user", "cache", "item", "icons", item.iconname).replace(/\\/g, "/");
+    for (const item of data) {
+        const iconFile = typeof item.icon === "string" ? item.icon : null;
+        if (!iconFile) continue;
+        const name = normalizeName(item.name);
+        if (!name) continue;
+        const relPath = path.join("user", "cache", "item", "icons", iconFile).replace(/\\/g, "/");
+        if (seen.has(relPath)) continue;
         const absPath = path.join(userData, relPath);
         if (!fsSync.existsSync(absPath)) continue;
-        if (seen.has(relPath)) continue;
         seen.add(relPath);
         const dataUrl = await fileToDataUrl(absPath);
         if (!dataUrl) continue;
+        const cat = item.category === "buff" ? "buffs" : "items";
         icons.push({
             id: `item:${relPath}`,
-            category: "items",
-            name: item.name,
+            category: cat,
+            name,
             path: relPath,
             dataUrl,
         });
@@ -139,25 +117,30 @@ async function listItemIcons(): Promise<GameIcon[]> {
     return icons;
 }
 
+/**
+ * Liest `skill_parameter.json` aus dem api-fetch-Cache und liefert alle
+ * Skills mit `icon`-Feld. Skill-Icons liegen entweder in `icons/colored/`
+ * oder `icons/old/` — wir nehmen den ersten existierenden.
+ */
 async function listSkillIcons(): Promise<GameIcon[]> {
     const userData = app.getPath("userData");
-    const root = path.join(userData, "user", "cache", "skill");
-    const mappingPath = path.join(root, "skill_icon_skillname.json");
-    let entries: Array<{ skillname?: string; name?: string; iconname?: string; icon?: string }> = [];
+    const sourcePath = path.join(userData, "user", "cache", "skill", "skill_parameter.json");
+    let data: Array<Record<string, unknown>> = [];
     try {
-        const raw = await fs.readFile(mappingPath, "utf8");
+        const raw = await fs.readFile(sourcePath, "utf8");
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) entries = parsed;
+        if (Array.isArray(parsed)) data = parsed;
+        else return [];
     } catch {
         return [];
     }
+    const seen = new Set<string>();
     const icons: GameIcon[] = [];
-    for (const entry of entries) {
-        const iconFile = entry?.iconname || entry?.icon || null;
-        const name = entry?.skillname || entry?.name || iconFile || "";
-        if (!iconFile || !name) continue;
-        // Skill-Icons koennen unter colored/ oder old/ liegen — wir nehmen
-        // die erste Variante, die existiert.
+    for (const skill of data) {
+        const iconFile = typeof skill.icon === "string" ? skill.icon : null;
+        if (!iconFile) continue;
+        const name = normalizeName(skill.name);
+        if (!name) continue;
         const relCandidates = [
             path.join("user", "cache", "skill", "icons", "colored", iconFile).replace(/\\/g, "/"),
             path.join("user", "cache", "skill", "icons", "old", iconFile).replace(/\\/g, "/"),
@@ -173,6 +156,8 @@ async function listSkillIcons(): Promise<GameIcon[]> {
             }
         }
         if (!absPath) continue;
+        if (seen.has(relPath)) continue;
+        seen.add(relPath);
         const dataUrl = await fileToDataUrl(absPath);
         if (!dataUrl) continue;
         icons.push({

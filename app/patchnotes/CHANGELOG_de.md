@@ -1,6 +1,34 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.2
+
+### 🐛 Fehlerbehebungen
+
+**Icon-Picker: weiterhin leer (v3.7.1-Versuch unzureichend)**
+- v3.7.1 las nur `category: "buff"` aus `item_parameter.json` (Annahme von
+  cd-timer übernommen) — das sind aber nur ~6 Items
+- Tatsächlich gibt es keine `buff_icon_buffname.json` und keine
+  `skill_icon_skillname.json` im neuen Cache-Layout — die Daten liegen
+  direkt in `item_parameter.json` und `skill_parameter.json`
+- Fix: liest jetzt **alle** Items mit `icon`-Feld + **alle** Skills aus
+  den `*_parameter.json`-Dateien. Tabs filtern: Alle / Skills / Items /
+  Buffs (Buffs = Subset von Items mit `category="buff"`)
+
+**Ringmaster-Forward: manche Tasten gehen nicht an Buffer**
+- Ursache: wenn der User eine Taste schon HÄLT bevor er den Ringmaster-
+  Trigger drückt, sieht der Edge-Detector im nächsten Frame keinen neuen
+  DOWN (`isDown=wasDown=true`) → `handleButtonDown` wird nicht aufgerufen
+  → der Buffer-Tab kriegt nie einen `keyDown` für diese Taste
+- Fix: `setForwardMode` setzt nach Mode-Switch `prevButtons = []` zurück.
+  Nächster Frame erkennt alle noch gehaltenen Buttons als frische Edges
+  und dispatcht sie an den neuen Target (Buffer beim Aktivieren,
+  Vordergrund beim Deaktivieren). Hold-Button-Tracking in
+  `heldButtonActions` blockt dabei seinen eigenen Re-Trigger
+- Plus `setForwardMode` ist jetzt idempotent (skipt wenn schon im
+  gewünschten Zustand) — verhindert doppelte Aktivierung beim Edge-Reset
+
+---
 ## 🐛 Version 3.7.1
 
 ### 🐛 Fehlerbehebungen

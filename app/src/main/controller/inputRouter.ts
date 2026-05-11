@@ -585,12 +585,21 @@ export class ControllerInputRouter {
      * laeuft. Beim UP: alle in der Forward-Phase gehaltenen Inputs werden
      * auf dem Ziel released.
      *
-     * Wichtig: heldButtonActions wird NICHT komplett geleert — der
+     * Wichtig 1: heldButtonActions wird NICHT komplett geleert — der
      * @forwardHold-Eintrag selbst bleibt drin, damit das UP korrekt findet
      * dass der Hold ein Special war (analog Android v41-Fix).
+     *
+     * Wichtig 2: prevButtons wird zurueckgesetzt, damit der naechste Frame
+     * fuer noch GEDRUECKT-GEHALTENE Buttons (z.B. X den der User schon vor
+     * dem Hold hielt) einen frischen Edge-Trigger sieht und sie an den NEUEN
+     * Target dispatcht. Ohne diesen Reset wuerde X stumm bleiben weil
+     * isDown=wasDown=true → kein Edge → kein neuer keyDown am Buffer-Tab.
+     * Hold-Button-Eintrag in heldButtonActions blockt seinen eigenen
+     * Re-Trigger.
      */
     private setForwardMode(activate: boolean, sender: WebContents): void {
         if (activate) {
+            if (this.forwardActive) return; // idempotent
             const target = this.deps.getBufferTarget?.(sender) ?? null;
             if (!target || target.isDestroyed()) {
                 this.deps.notify?.("Kein Ringmaster-Ziel im Profil konfiguriert");
@@ -603,8 +612,12 @@ export class ControllerInputRouter {
             this.releaseLocalInputsExceptSpecials(sender);
             this.forwardActive = true;
             this.forwardTarget = target;
+            // Edge-Tracking nullen → naechster Frame triggert handleButtonDown
+            // fuer alle noch gehaltenen Buttons mit neuem Target=forwardTarget.
+            this.prevButtons = [];
         }
         else {
+            if (!this.forwardActive) return; // idempotent
             // Forward-Phase beendet: alle Sticks/Tasten die WAEHREND der
             // Forward-Phase auf den Target gegangen sind dort releasen, damit
             // der Char dort nicht weiterlaeuft.
@@ -614,6 +627,9 @@ export class ControllerInputRouter {
             }
             this.forwardActive = false;
             this.forwardTarget = null;
+            // Wieder Edge-Reset → noch gehaltene Buttons werden naechsten
+            // Frame neu an `sender` (Vordergrund) dispatched.
+            this.prevButtons = [];
         }
     }
 
