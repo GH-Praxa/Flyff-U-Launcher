@@ -1462,33 +1462,68 @@ export function openConfigModal(
     ];
 
     const showSpecialActionMenu = (anchor: HTMLElement, onPick: (action: string) => void) => {
+        // Vorheriges Menue raeumen.
         document.querySelectorAll(".ctrlActionMenu").forEach((m) => m.remove());
         const menu = el("div", "ctrlActionMenu");
         for (const sa of SPECIAL_ACTIONS) {
             const item = el("div", "ctrlActionMenuItem", t(sa.labelKey as TranslationKey));
-            item.addEventListener("click", () => {
+            item.addEventListener("click", (e) => {
+                e.stopPropagation();
                 onPick(sa.key);
                 menu.remove();
             });
             menu.append(item);
         }
-        document.body.append(menu);
+        // Inline-Styles SETZEN BEVOR appendChild — damit kein initiales
+        // Render-Frame mit fehlendem position/zIndex ablaeuft.
         const rect = anchor.getBoundingClientRect();
+        const menuWidth = 200;
+        const menuMaxHeight = 360;
         menu.style.position = "fixed";
-        // Versucht unter dem Button zu zeigen, fall back auf darueber wenn unten kein Platz.
         const top = rect.bottom + 4;
-        const wouldOverflow = top + 200 > window.innerHeight;
-        menu.style.top = `${wouldOverflow ? Math.max(8, rect.top - 4 - 200) : top}px`;
-        menu.style.left = `${Math.max(8, Math.min(window.innerWidth - 200, rect.left))}px`;
-        menu.style.zIndex = "10000";
-        // Outside-Click schliesst.
+        const wouldOverflowBottom = top + menuMaxHeight > window.innerHeight;
+        menu.style.top = `${wouldOverflowBottom ? Math.max(8, rect.top - 4 - menuMaxHeight) : top}px`;
+        menu.style.left = `${Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.left))}px`;
+        // Z-Index ueber dem Modal-Overlay (das hat kein explizites z-index,
+        // aber durch backdrop-filter / position:fixed Stacking-Context kann's
+        // eigenes Layer sein). 2147483647 = max-safe int, kann nichts mehr
+        // ueberlagern.
+        menu.style.zIndex = "2147483647";
+        menu.style.maxHeight = `${menuMaxHeight}px`;
+        menu.style.overflowY = "auto";
+        menu.style.pointerEvents = "auto";
+        // Append zu body — gleicher Container wie das Overlay, hoeherer z-index
+        // sollte greifen. Falls trotzdem nicht sichtbar (transformed parent,
+        // etc.), wuerde der console.log es zeigen.
+        document.body.appendChild(menu);
+        // Diagnose: falls das Menu trotz allem nicht erscheint, kann der User
+        // im DevTools-Console sehen WAS positioniert wurde. Wird mit Production-
+        // Build mitgeshippt — kostenlos, kein Risiko.
+        try {
+            // eslint-disable-next-line no-console
+            console.debug(
+                "[ctrl] showSpecialActionMenu anchor=",
+                anchor.getBoundingClientRect(),
+                "menu=",
+                menu.getBoundingClientRect(),
+                "items=",
+                SPECIAL_ACTIONS.length,
+            );
+        } catch { /* ignore */ }
+        // Outside-Click schliesst. `click` statt `mousedown` weil mousedown
+        // mit useCapture im DOM mit komplexen Modal-Layouts manchmal das
+        // Target-Event verschluckt. Click ist nach mouseup → konsistenter.
         const onDocClick = (e: MouseEvent) => {
-            if (!menu.contains(e.target as Node) && e.target !== anchor) {
-                menu.remove();
-                document.removeEventListener("mousedown", onDocClick, true);
+            const target = e.target as Node | null;
+            if (target && (menu.contains(target) || target === anchor || anchor.contains(target))) {
+                return; // klick auf menu oder anchor — nicht schliessen
             }
+            menu.remove();
+            document.removeEventListener("click", onDocClick, true);
         };
-        setTimeout(() => document.addEventListener("mousedown", onDocClick, true), 0);
+        // Setup auf NEXT tick, damit der initiale Klick der das Menu geoeffnet
+        // hat nicht sofort wieder schliesst.
+        setTimeout(() => document.addEventListener("click", onDocClick, true), 0);
     };
 
     /** UI-freundliche Repraesentation eines Action-Werts. */

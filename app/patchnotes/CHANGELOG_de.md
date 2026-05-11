@@ -1,6 +1,23 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.5.1
+
+### 🐛 Fehlerbehebungen
+
+**Spezial-Aktion-Picker im Controller-Tab**
+- Klick auf den `@`-Button zum Auswählen einer Special-Action (Action-Pad,
+  Tab-Wechsel, Settings öffnen, …) öffnete in v3.5.0 keine Auswahl
+- Vermutung: Z-Index-Konflikt mit dem Modal-Overlay durch `backdrop-filter`
+  auf `.configPaneCard` (CSS-Stacking-Context-Falle)
+- Fix: Popover-Z-Index auf Maximum hochgezogen, Pointer-Events explizit
+  gesetzt, Outside-Click via `click` statt `mousedown` (konsistenter mit
+  komplexen Modal-Layouts)
+- Plus `console.debug`-Logging im DevTools, falls's bei dir trotzdem nicht
+  erscheint — dann steht die Position-Box im Console und wir können gezielt
+  weitersuchen
+
+---
 ## 🆕 Version 3.5.0
 
 ### ✨ Controller — neue Defaults & Cursor-Modus konfigurierbar
