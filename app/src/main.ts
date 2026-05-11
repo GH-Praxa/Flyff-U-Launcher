@@ -1187,6 +1187,22 @@ app.whenReady().then(async () => {
         catch (err) { logErr(err, "controller:icon:set"); return { ok: false }; }
     });
 
+    // Direkter Cache-Update fuer Ringmaster-Buffer-Target — umgeht die
+    // Disk-Read-Race im normalen controller:reloadMapping-Pfad (der via
+    // services.profiles.list() neu von Platte liest und bei noch nicht
+    // geflushtem Atomic-Write den stale Wert sieht). Renderer ruft das
+    // sofort beim Dropdown-Change — Cache ist innerhalb von ms aktualisiert,
+    // kein Wartezeit auf den "Speichern"-Button.
+    ipcMain.handle("controller:setBufferTarget", async (_event, payload: unknown): Promise<{ ok: boolean }> => {
+        if (!payload || typeof payload !== "object") return { ok: false };
+        const p = payload as Record<string, unknown>;
+        const profileId = typeof p.profileId === "string" ? p.profileId : null;
+        const targetId = typeof p.targetId === "string" && p.targetId.length > 0 ? p.targetId : null;
+        if (!profileId) return { ok: false };
+        reloadBufferTargetForProfile(profileId, targetId);
+        return { ok: true };
+    });
+
     registerControllerHandlers({
         router: controllerRouter,
         onControllerConnected: (info) => {

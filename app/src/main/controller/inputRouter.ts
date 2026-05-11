@@ -428,24 +428,48 @@ export class ControllerInputRouter {
             return baseMapping[i];
         };
 
+        // Two-Pass-Edge-Detection: erst alle @forwardHold-DOWN-Edges
+        // verarbeiten (aktiviert/deaktiviert forwarding), dann erst alle
+        // anderen Buttons. Sonst wuerden z.B. X (Index 2) und L2/Hold
+        // (Index 6) im selben Frame so verarbeitet werden, dass X *vor* L2
+        // läuft → X geht an Vordergrund-Sender statt an forwardTarget,
+        // obwohl der User L2 gleichzeitig gedrückt hatte.
+        // Plus UP-Edges für @forwardHold VOR den anderen UPs — damit der
+        // Forward-Modus rechtzeitig deaktiviert ist wenn andere Buttons im
+        // gleichen Frame losgelassen werden.
         for (let i = 0; i < buttons.length; i++) {
             const wasDown = prev[i] === true;
             const isDown = buttons[i] === true;
             if (isDown && !wasDown) {
                 const action = resolveAction(i);
-                if (!action) continue;
-                // Hold-Buttons fuer @forwardHold IMMER mit dem originalen
-                // Vordergrund-`sender` verarbeiten — sonst verliert die
-                // Mapping-Resolution beim UP den Bezug.
-                const isForwardHold = action === "@forwardHold";
-                const target = (this.forwardActive && !isForwardHold && this.forwardTarget && !this.forwardTarget.isDestroyed())
+                if (action === "@forwardHold") {
+                    this.handleButtonDown(sender, i, action, frame, sender);
+                }
+            }
+            else if (!isDown && wasDown) {
+                const heldAction = this.heldButtonActions.get(i);
+                if (heldAction === "@forwardHold") {
+                    this.handleButtonUp(sender, i);
+                }
+            }
+        }
+        // Pass 2: alle anderen Buttons mit aktualisiertem forwardActive-State.
+        for (let i = 0; i < buttons.length; i++) {
+            const wasDown = prev[i] === true;
+            const isDown = buttons[i] === true;
+            if (isDown && !wasDown) {
+                const action = resolveAction(i);
+                if (!action || action === "@forwardHold") continue; // schon in Pass 1
+                const target = (this.forwardActive && this.forwardTarget && !this.forwardTarget.isDestroyed())
                     ? this.forwardTarget
                     : sender;
                 this.handleButtonDown(target, i, action, frame, sender);
             }
             else if (!isDown && wasDown) {
+                const heldAction = this.heldButtonActions.get(i);
+                if (heldAction === "@forwardHold") continue; // schon in Pass 1
                 // UP geht an den Sender wo der DOWN registriert wurde — wird
-                // via heldButtonActions automatisch korrekt verfolgt.
+                // via heldKeyTarget automatisch korrekt verfolgt.
                 this.handleButtonUp(sender, i);
             }
         }
@@ -795,15 +819,24 @@ export class ControllerInputRouter {
         rx: number,
         ry: number,
     ): void {
+        // Im Ringmaster-Forward: rechter Stick komplett ignorieren. Camera-Drag
+        // (mouseDown rechts) ans unsichtbare BrowserView ist visuell nutzlos —
+        // der User sieht das Game im Hintergrund nicht, "Maus die nichts tut"-
+        // Effekt entsteht. Mit no-op bleibt der Stick einfach inaktiv waehrend
+        // Hold. Linker Stick (WASD) und Buttons funktionieren weiter, das
+        // reicht fuer Buffer-Skills.
+        if (this.forwardActive) {
+            // Stoppe laufende Camera/Cursor-Drags wenn vorhanden (von vor
+            // Hold-Aktivierung).
+            if (this.cameraActive) this.stopCameraDrag();
+            this.stopCursorPump();
+            return;
+        }
         // Cursor-Modus: rechter Stick bewegt synthetischen Cursor statt Camera-
         // Drag zu starten. Initialisiere Cursor wenn noch nicht gesetzt
         // (passiert wenn der User im Cursor-Modus startet ohne vorher Stick
-        // bewegt zu haben). WICHTIG: Cursor-Mode ist suspendiert solange
-        // Ringmaster-Forward aktiv ist — der User will den Buffer-Char mit
-        // dem rechten Stick steuern (Kamera drehen), nicht eine unsichtbare
-        // Maus im Buffer-Tab bewegen. Cursor-Hold-Tracking bleibt im
-        // heldButtonActions, wird beim @forwardHold-UP wieder aktiv.
-        if (this.mode === "cursor" && !this.forwardActive) {
+        // bewegt zu haben).
+        if (this.mode === "cursor") {
             if (!this.cursorInitialized && viewportWidth > 0 && viewportHeight > 0) {
                 this.cursorX = viewportWidth / 2;
                 this.cursorY = viewportHeight / 2;
@@ -1124,27 +1157,28 @@ export class ControllerInputRouter {
     /** Reset bei Window-Wechsel oder Disable: gehaltene Tasten lockerlassen,
      *  Camera-Drag beenden, Edge-Tracking nullen, Cursor-Modus zuruecksetzen. */
     reset(): void {
-        // Held-Keys sauber loslassen — sonst laeuft der Char weiter, weil ein
-        // KeyDown ohne KeyUp im Spiel haengen bleibt.
-        const sender = this.cameraSender ?? this.cursorSender;
-        if (sender && !sender.isDestroyed()) {
-            for (const keyCode of this.heldKeys) {
-                try { sender.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
+        // Held-Keys sauber loslassen — auf den jeweiligen Target wo der DOWN
+        // hin ging (via heldKeyTarget). Vorher wurde stumpf cameraSender als
+        // Fallback genommen, was bei Ringmaster-Forward die falsche View war.
+        for (const keyCode of this.heldKeys) {
+            const target = this.heldKeyTarget.get(keyCode);
+            if (target && !target.isDestroyed()) {
+                try { target.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
             }
-            // Falls A im Cursor-Modus gehalten war, Mouse-Up am letzten
-            // Cursor-Punkt — sonst bleibt linke Maustaste haengen.
-            if (this.cursorMouseDown) {
-                try {
-                    sender.sendInputEvent({
-                        type: "mouseUp",
-                        x: Math.round(this.cursorX),
-                        y: Math.round(this.cursorY),
-                        button: "left",
-                        clickCount: 1,
-                    });
-                }
-                catch { /* ignore */ }
+        }
+        // Falls A im Cursor-Modus gehalten war, Mouse-Up am letzten
+        // Cursor-Punkt — sonst bleibt linke Maustaste haengen.
+        if (this.cursorMouseDown && this.cursorSender && !this.cursorSender.isDestroyed()) {
+            try {
+                this.cursorSender.sendInputEvent({
+                    type: "mouseUp",
+                    x: Math.round(this.cursorX),
+                    y: Math.round(this.cursorY),
+                    button: "left",
+                    clickCount: 1,
+                });
             }
+            catch { /* ignore */ }
         }
         this.heldKeys.clear();
         this.heldKeyTarget.clear();

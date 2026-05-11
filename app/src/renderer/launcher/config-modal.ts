@@ -2297,21 +2297,24 @@ export function openConfigModal(
                 if (newTarget) c.bufferTargetProfileId = newTarget;
                 else delete c.bufferTargetProfileId;
             }
-            // Persistieren via profilesUpdate-IPC (gleicher Mechanismus wie
-            // Bindings/Modifier-Save).
+            // Direkter Cache-Update zuerst — keine Disk-Read-Race. Damit
+            // ist der Ringmaster-Forward sofort wirksam.
             try {
+                const directApi = (window as unknown as {
+                    controllerApi?: { setBufferTarget?: (id: string, t: string | null) => Promise<{ ok: boolean }> };
+                }).controllerApi;
+                if (directApi?.setBufferTarget) {
+                    await directApi.setBufferTarget(currentControllerProfileId, newTarget);
+                }
+                // Plus Persistierung in profiles.json (asynchron, weniger
+                // zeitkritisch).
                 await window.api.profilesUpdate?.({
                     id: currentControllerProfileId,
                     controller: { bufferTargetProfileId: newTarget },
                 // store.ts ProfileController.bufferTargetProfileId existiert,
                 // aber das Type-File des Preload-IPC kennt's evtl. noch nicht —
-                // Cast ueber unknown bypasst den Typ-Check (gleicher Pattern
-                // wie weiter unten bei Icons).
+                // Cast ueber unknown bypasst den Typ-Check.
                 } as unknown as Parameters<NonNullable<typeof window.api.profilesUpdate>>[0]);
-                // Reload-Trigger an Main, damit der Cache fuer den naechsten
-                // Frame schon den neuen Target hat.
-                (window as unknown as { controllerApi?: { reloadMapping?: (id: string) => void } })
-                    .controllerApi?.reloadMapping?.(currentControllerProfileId);
             } catch (err) {
                 showToast(`Save failed: ${err instanceof Error ? err.message : String(err)}`, "error");
             }

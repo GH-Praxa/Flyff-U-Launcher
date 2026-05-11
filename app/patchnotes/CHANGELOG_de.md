@@ -1,6 +1,42 @@
 # 📦 Patchnotes
 
 ---
+## 🐛 Version 3.7.7
+
+### 🐛 Drei Ringmaster-Bugs nach Code-Review
+
+**1. Ringmaster reagierte erst nach Klick auf „Speichern"**
+- Race: Dropdown-Change rief `profilesUpdate` (async Disk-Write) + danach
+  `reloadMapping`-IPC, der via `services.profiles.list()` neu von Platte las
+  → bei noch nicht geflushtem Write kam der stale Wert
+- Fix: neuer direkter IPC `controller:setBufferTarget` der den Cache
+  sofort setzt (kein Disk-Re-Read). Renderer ruft beim Dropdown-Change
+  zuerst diesen IPC, danach erst die Persistenz via profilesUpdate
+
+**2. X-Button unzuverlässig**
+- Ursache: wenn X (Button-Index 2) und Hold-Taste (Index 6+) im selben
+  Frame DOWN-Edge sind, lief X **vor** Hold im for-Loop durch → X ging
+  an Vordergrund-Sender, dann erst aktivierte Hold das Forwarding
+- Fix: Two-Pass-Loop in `handleFrame`. Pass 1 nur @forwardHold-DOWN/UPs
+  (aktiviert/deaktiviert Forwarding mit korrektem State). Pass 2 alle
+  anderen Buttons — sehen jetzt das schon aktualisierte
+  `forwardActive`-Flag
+
+**3. Rechter Stick = unsichtbarer Mauszeiger**
+- Wahre Ursache (per Review): Camera-Drag mit `mouseDown` rechts geht an
+  unsichtbare BrowserView, Flyff zeigt im Hintergrund-Tab nichts sichtbar.
+  Cursor-Mode-Suspension allein reicht nicht — auch der normale Camera-
+  Drag wirkt im unsichtbaren Tab "wie unsichtbare Maus"
+- Fix: rechter Stick im Forward-Modus komplett ignorieren. Linker Stick
+  (WASD) + Buttons funktionieren weiter → reicht für Skills/Buffs
+
+### Sonstiger Cleanup aus Review
+
+- `reset()` released gehaltene Keys jetzt am tatsächlichen Target (via
+  `heldKeyTarget`), nicht mehr blind am `cameraSender`. Verhindert
+  Stuck-Keys nach Window-Close während Ringmaster aktiv
+
+---
 ## 🐛 Version 3.7.6
 
 ### 🐛 Fehlerbehebungen

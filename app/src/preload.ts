@@ -966,6 +966,15 @@ contextBridge.exposeInMainWorld("controllerApi", {
         return ipcRenderer.invoke("controller:icon:clear", { profileId, face, layer });
     },
     /**
+     * Setzt das Ringmaster-Buffer-Target direkt im Main-Cache. Sofortig
+     * wirksam (kein Disk-Re-Read wie bei `reloadMapping`) — vermeidet die
+     * Race wo `services.profiles.list()` einen noch nicht geflushten
+     * Wert verpasst.
+     */
+    setBufferTarget: (profileId: string, targetId: string | null) => {
+        return ipcRenderer.invoke("controller:setBufferTarget", { profileId, targetId });
+    },
+    /**
      * Setzt das Icon. Zwei Modi:
      *   - `source.dataUri`: fertige data:image-URI (alter Click-to-Capture-Flow)
      *   - `source.path`: relativer Cache-Pfad (Game-Icon-Picker) — Main liest
