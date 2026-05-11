@@ -1109,6 +1109,22 @@ app.whenReady().then(async () => {
         catch (err) { logErr(err, "controller:icon:clear"); return { ok: false }; }
     });
 
+    // Direktes Setzen eines Icons aus dem Game-Icon-Picker (statt
+    // Click-to-Capture aus dem Spiel). Payload enthaelt eine fertige
+    // data:image-URI vom IPC-Picker; wir reichen sie nur durch persistIcon.
+    ipcMain.handle("controller:icon:set", async (_event, payload: unknown): Promise<{ ok: boolean }> => {
+        if (!payload || typeof payload !== "object") return { ok: false };
+        const p = payload as Record<string, unknown>;
+        const profileId = typeof p.profileId === "string" ? p.profileId : null;
+        const face = (p.face === "a" || p.face === "b" || p.face === "x" || p.face === "y") ? p.face : null;
+        const layer = (p.layer === "l1" || p.layer === "r1" || p.layer === "r2") ? p.layer : null;
+        const dataUri = typeof p.dataUri === "string" ? p.dataUri : null;
+        if (!profileId || !face || !dataUri) return { ok: false };
+        if (!dataUri.startsWith("data:image/")) return { ok: false };
+        try { await persistIcon(profileId, face, layer, dataUri); return { ok: true }; }
+        catch (err) { logErr(err, "controller:icon:set"); return { ok: false }; }
+    });
+
     registerControllerHandlers({
         router: controllerRouter,
         onControllerConnected: (info) => {

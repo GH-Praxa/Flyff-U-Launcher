@@ -1,6 +1,42 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.6.0
+
+### ✨ Skill-Icon-Picker im Controller-Tab
+
+Statt nur per Click-to-Capture aus dem laufenden Spiel kann das Skill-Icon
+für einen Face-Button (✕/○/△/□) jetzt aus den **bereits via Plugins
+gecachten Spiel-Icons** ausgewählt werden — analog zum Buff-Alarm-Picker
+in cd-timer.
+
+- Klick auf den Kamera-📷-Button im Controller-Tab öffnet ein Picker-Modal
+- Suche oben + Tab-Filter (Alle / Skills / Items / Buffs)
+- Grid mit allen Icons aus `userData/user/cache/{item,skill}/icons/` und
+  `userData/icons/{buffs,items,skills}/`
+- Klick auf ein Icon → wird sofort als Skill-Icon ins Profil persistiert
+- Shift+Klick auf den Kamera-Button = Icon entfernen (wie bisher)
+
+### 🛠 Implementation
+
+- Neuer IPC-Handler `gameIcons:list` im Main-Process (`gameIcons.ts`)
+  aggregiert alle Icons als `{id, category, name, dataUrl}` und liefert
+  data:image-URIs direkt im Picker einsetzbar
+- Neuer IPC-Handler `controller:icon:set` zum direkten Setzen einer
+  data:image-URI als Skill-Icon (umgeht den Click-to-Capture-Flow)
+- Preload-Bridge: `controllerApi.listGameIcons()` + `setIcon(...)`
+- Vollständige i18n in 8 Sprachen für die Picker-Strings
+
+### 📝 Caveat
+
+Wenn die api-fetch- oder cd-timer-Plugins nicht installiert/gestartet
+sind, ist der Cache leer und der Picker zeigt einen entsprechenden
+Hinweis. Click-to-Capture (über die alte Code-Pfad) ist im Backend
+weiterhin verfügbar via Preload-API; aktuell hat der Button im UI nur
+den Picker-Trigger — falls du Click-to-Capture als Fallback brauchst,
+sag bescheid und ich baue einen separaten Capture-Button daneben.
+
+---
 ## 🐛 Version 3.5.1
 
 ### 🐛 Fehlerbehebungen

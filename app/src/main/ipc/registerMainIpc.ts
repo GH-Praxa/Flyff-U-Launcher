@@ -13,6 +13,7 @@ import { registerFeatureHandlers, type FeatureStore } from "./handlers/features"
 import { registerClientSettingsHandlers } from "./handlers/clientSettings";
 import { registerPatchnotesHandlers } from "./handlers/patchnotes";
 import { registerDocumentationHandlers } from "./handlers/documentation";
+import { registerGameIconsHandlers } from "./handlers/gameIcons";
 import { registerShoppingListHandlers } from "./handlers/shoppingList";
 import { registerUpgradeCalcHandlers } from "./handlers/upgradeCalc";
 import { registerProfileTransferHandlers } from "./handlers/profiles-transfer";
@@ -119,6 +120,8 @@ export function registerMainIpc(opts: RegisterMainIpcOptions): void {
     registerPatchnotesHandlers(safeHandle);
 
     registerDocumentationHandlers(safeHandle);
+
+    registerGameIconsHandlers(safeHandle);
 
 registerShoppingListHandlers(safeHandle);
 

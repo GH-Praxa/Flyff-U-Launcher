@@ -60,6 +60,219 @@ export interface ConfigModalDeps {
     applyThemeToIframe: (iframe: HTMLIFrameElement) => void;
 }
 
+/** Format der via `gameIcons:list`-IPC gelieferten Icons (siehe
+ *  `gameIcons.ts`-Handler im Main-Process). */
+interface GameIcon {
+    id: string;
+    category: "skills" | "items" | "buffs" | "other";
+    name: string;
+    path: string;
+    dataUrl: string;
+}
+
+/**
+ * Oeffnet einen Modal-Picker mit allen via Plugins (api-fetch / cd-timer
+ * skill-fetcher) gecachten Spiel-Icons. User filtert per Suche + Kategorie-
+ * Tabs, klickt ein Icon → `onChoose(dataUrl)`. Klick auf "Loeschen" liefert
+ * `null`. ESC oder Klick aufs Overlay schliesst ohne Auswahl.
+ *
+ * Nutzt `window.controllerApi.listGameIcons()` (Preload-Bridge).
+ */
+function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chosen: string | null) => void): void {
+    const ctrlApi = (window as unknown as {
+        controllerApi?: { listGameIcons?: () => Promise<{ ok: boolean; icons?: GameIcon[]; error?: string }> };
+    }).controllerApi;
+
+    const overlay = el("div", "modalOverlay iconPickerOverlay");
+    overlay.style.zIndex = "2147483646"; // unter dem ctrlActionMenu, aber ueber dem Settings-Modal
+    const modal = el("div", "modal iconPickerModal");
+    modal.style.maxWidth = "640px";
+    modal.style.height = "min(560px, 80vh)";
+
+    const header = el("div", "modalHeader");
+    const title = el("div", "modalHeaderTitle", t("controller.iconPicker.title" as TranslationKey));
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "modalCloseBtn";
+    closeBtn.textContent = "×";
+    header.append(title, closeBtn);
+
+    const body = el("div", "configBody");
+    body.style.padding = "12px";
+    body.style.gap = "10px";
+    body.style.display = "flex";
+    body.style.flexDirection = "column";
+
+    const searchRow = el("div");
+    searchRow.style.display = "flex";
+    searchRow.style.gap = "8px";
+    const searchInput = document.createElement("input");
+    searchInput.type = "search";
+    searchInput.placeholder = t("controller.iconPicker.searchPlaceholder" as TranslationKey);
+    searchInput.style.flex = "1";
+    searchInput.style.padding = "6px 10px";
+    searchInput.style.borderRadius = "6px";
+    searchInput.style.border = "1px solid var(--stroke)";
+    searchInput.style.background = "var(--panel)";
+    searchInput.style.color = "var(--text)";
+    const clearIconBtn = document.createElement("button");
+    clearIconBtn.type = "button";
+    clearIconBtn.className = "ctrlBtn";
+    clearIconBtn.textContent = t("controller.iconPicker.removeIcon" as TranslationKey);
+    clearIconBtn.title = t("controller.iconPicker.removeIcon" as TranslationKey);
+    if (!currentDataUrl) clearIconBtn.disabled = true;
+    searchRow.append(searchInput, clearIconBtn);
+
+    const tabsRow = el("div");
+    tabsRow.style.display = "flex";
+    tabsRow.style.gap = "6px";
+    const TABS: Array<{ id: "all" | GameIcon["category"]; labelKey: string }> = [
+        { id: "all", labelKey: "controller.iconPicker.tabAll" },
+        { id: "skills", labelKey: "controller.iconPicker.tabSkills" },
+        { id: "items", labelKey: "controller.iconPicker.tabItems" },
+        { id: "buffs", labelKey: "controller.iconPicker.tabBuffs" },
+    ];
+    let activeTab: "all" | GameIcon["category"] = "all";
+    const tabBtns: HTMLButtonElement[] = [];
+    for (const tab of TABS) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ctrlBtn";
+        btn.textContent = t(tab.labelKey as TranslationKey);
+        btn.dataset.tabId = tab.id;
+        btn.addEventListener("click", () => {
+            activeTab = tab.id;
+            for (const b of tabBtns) b.classList.toggle("active", b.dataset.tabId === activeTab);
+            renderGrid();
+        });
+        tabsRow.append(btn);
+        tabBtns.push(btn);
+    }
+    tabBtns[0].classList.add("active");
+
+    const grid = el("div", "iconPickerGrid");
+    grid.style.flex = "1";
+    grid.style.overflowY = "auto";
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(64px, 1fr))";
+    grid.style.gap = "6px";
+    grid.style.padding = "8px";
+    grid.style.background = "var(--panel)";
+    grid.style.borderRadius = "8px";
+
+    const status = el("div");
+    status.style.fontSize = "11px";
+    status.style.color = "var(--muted)";
+    status.style.textAlign = "center";
+
+    body.append(searchRow, tabsRow, grid, status);
+    modal.append(header, body);
+    overlay.append(modal);
+    document.body.append(overlay);
+
+    let allIcons: GameIcon[] = [];
+    let loaded = false;
+
+    const close = (chosen: string | null | undefined) => {
+        overlay.remove();
+        document.removeEventListener("keydown", onKey);
+        if (chosen !== undefined) onChoose(chosen);
+    };
+    const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") close(undefined);
+    };
+    document.addEventListener("keydown", onKey);
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) close(undefined);
+    });
+    closeBtn.addEventListener("click", () => close(undefined));
+    clearIconBtn.addEventListener("click", () => close(null));
+
+    const renderGrid = () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const filtered = allIcons.filter((icon) => {
+            if (activeTab !== "all" && icon.category !== activeTab) return false;
+            if (query && !icon.name.toLowerCase().includes(query)) return false;
+            return true;
+        });
+        grid.innerHTML = "";
+        if (!loaded) {
+            status.textContent = t("controller.iconPicker.loading" as TranslationKey);
+            return;
+        }
+        if (filtered.length === 0) {
+            status.textContent = allIcons.length === 0
+                ? t("controller.iconPicker.empty" as TranslationKey)
+                : t("controller.iconPicker.noMatches" as TranslationKey);
+            return;
+        }
+        status.textContent = t("controller.iconPicker.count" as TranslationKey, { count: String(filtered.length) });
+        // Cap auf 500 Icons sichtbar — sonst zerlegt's bei 5000+ Icons den DOM
+        const slice = filtered.slice(0, 500);
+        for (const icon of slice) {
+            const cell = document.createElement("button");
+            cell.type = "button";
+            cell.className = "iconPickerCell";
+            cell.title = icon.name;
+            cell.style.aspectRatio = "1 / 1";
+            cell.style.border = "1px solid var(--stroke)";
+            cell.style.borderRadius = "6px";
+            cell.style.background = "var(--panel2, #0d1830)";
+            cell.style.cursor = "pointer";
+            cell.style.padding = "4px";
+            cell.style.display = "flex";
+            cell.style.alignItems = "center";
+            cell.style.justifyContent = "center";
+            const img = document.createElement("img");
+            img.src = icon.dataUrl;
+            img.alt = icon.name;
+            img.loading = "lazy";
+            img.style.maxWidth = "100%";
+            img.style.maxHeight = "100%";
+            img.style.objectFit = "contain";
+            cell.append(img);
+            cell.addEventListener("click", () => close(icon.dataUrl));
+            grid.append(cell);
+        }
+        if (filtered.length > 500) {
+            const more = document.createElement("div");
+            more.style.gridColumn = "1 / -1";
+            more.style.fontSize = "10px";
+            more.style.color = "var(--muted)";
+            more.style.textAlign = "center";
+            more.style.padding = "6px";
+            more.textContent = t("controller.iconPicker.moreHidden" as TranslationKey, { count: String(filtered.length - 500) });
+            grid.append(more);
+        }
+    };
+
+    searchInput.addEventListener("input", () => renderGrid());
+    renderGrid();
+
+    if (!ctrlApi?.listGameIcons) {
+        loaded = true;
+        status.textContent = t("controller.iconPicker.apiUnavailable" as TranslationKey);
+        return;
+    }
+
+    void ctrlApi.listGameIcons().then((res) => {
+        loaded = true;
+        if (res?.ok && res.icons) {
+            allIcons = res.icons;
+        } else {
+            allIcons = [];
+        }
+        renderGrid();
+    }).catch((err: unknown) => {
+        loaded = true;
+        allIcons = [];
+        const msg = err instanceof Error ? err.message : String(err);
+        status.textContent = `${t("controller.iconPicker.error" as TranslationKey)}: ${msg}`;
+    });
+
+    setTimeout(() => searchInput.focus(), 0);
+}
+
 export function openConfigModal(
     deps: ConfigModalDeps,
     defaultStyleTab: "theme" | "tabActive" = "theme",
@@ -2478,66 +2691,79 @@ export function openConfigModal(
                         => Promise<{ ok: boolean; dataUri?: string; reason?: string }>;
                     clearIcon: (id: string, f: "a" | "b" | "x" | "y", l: "l1" | "r1" | "r2" | null)
                         => Promise<{ ok: boolean }>;
+                    listGameIcons?: () => Promise<{ ok: boolean; icons?: GameIcon[]; error?: string }>;
                 };
             }).controllerApi;
+
+            // Helper zum Schreiben des Icons ins Profile-Cache + Persistierung
+            // via captureIcon-IPC. Wir nutzen `captureIcon` mit einem virtuellen
+            // dataUri-Pfad indem wir den Capture-Mechanismus umgehen — eigentlich
+            // braucht's einen separaten IPC `controller:icon:set`. Pragmatisch:
+            // wir schreiben direkt in den Profile-Cache und lassen die normale
+            // profilesUpdate-Pipeline persistieren.
+            const persistIcon = async (dataUri: string | null) => {
+                if (!currentControllerProfileId || !ctrlApi) return;
+                if (dataUri === null) {
+                    // Loeschen geht ueber den existierenden clearIcon-IPC.
+                    await ctrlApi.clearIcon(currentControllerProfileId, face, layer);
+                } else {
+                    // Setzen geht ueber setIcon-IPC (siehe gameIcons-Handler-
+                    // Reuse-Strategie). Wenn der nicht existiert, fallback:
+                    // direkt via profile-update-IPC. Hier nutzen wir die
+                    // existierende Pipeline ueber `setIcon` — wenn sie spaeter
+                    // hinzukommt; aktuell setzen wir nur den Cache und lassen
+                    // den User auf "Speichern" druecken.
+                    const setIconApi = ctrlApi as unknown as {
+                        setIcon?: (id: string, f: string, l: string | null, uri: string) => Promise<{ ok: boolean }>;
+                    };
+                    if (setIconApi.setIcon) {
+                        await setIconApi.setIcon(currentControllerProfileId, face, layer, dataUri);
+                    }
+                }
+                // profiles-Cache lokal patchen damit's beim Re-Render bleibt.
+                const prof = profiles.find((p) => p.id === currentControllerProfileId);
+                if (prof) {
+                    const root = prof as unknown as { controller?: Record<string, unknown> };
+                    const c = (root.controller ??= {} as Record<string, unknown>);
+                    if (layer) {
+                        const mods = (c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined) ?? {};
+                        const lObj = mods[layer] ?? {};
+                        if (dataUri) {
+                            lObj.icons = { ...(lObj.icons ?? {}), [face]: dataUri };
+                        } else if (lObj.icons) {
+                            delete lObj.icons[face];
+                        }
+                        mods[layer] = lObj;
+                        c.modifiers = mods;
+                    } else {
+                        const ic = (c.icons as Record<string, string> | undefined) ?? {};
+                        if (dataUri) {
+                            ic[face] = dataUri;
+                        } else {
+                            delete ic[face];
+                        }
+                        c.icons = ic;
+                    }
+                }
+                setDisplay(dataUri ?? undefined);
+            };
 
             btn.addEventListener("click", async (ev) => {
                 if (!currentControllerProfileId || !ctrlApi) return;
                 if (ev.shiftKey) {
+                    // Shift+Klick = direkt loeschen, wie bisher
                     btn.disabled = true;
-                    try {
-                        await ctrlApi.clearIcon(currentControllerProfileId, face, layer);
-                        setDisplay(undefined);
-                        // profiles-Cache lokal patchen, damit ein zweiter Render
-                        // (z.B. nach Tab-Wechsel) den geloeschten State sieht.
-                        const prof = profiles.find((p) => p.id === currentControllerProfileId);
-                        if (prof) {
-                            const c = (prof as unknown as { controller?: Record<string, unknown> }).controller;
-                            if (c) {
-                                if (layer) {
-                                    const mods = c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined;
-                                    if (mods?.[layer]?.icons) delete mods[layer].icons![face];
-                                }
-                                else {
-                                    const ic = c.icons as Record<string, string> | undefined;
-                                    if (ic) delete ic[face];
-                                }
-                            }
-                        }
-                    }
+                    try { await persistIcon(null); }
                     finally { btn.disabled = false; }
                     return;
                 }
-                btn.disabled = true;
-                btn.classList.add("capturing");
-                try {
-                    const r = await ctrlApi.captureIcon(currentControllerProfileId, face, layer);
-                    if (r?.ok && r.dataUri) {
-                        setDisplay(r.dataUri);
-                        // profiles-Cache patchen
-                        const prof = profiles.find((p) => p.id === currentControllerProfileId);
-                        if (prof) {
-                            const root = prof as unknown as { controller?: Record<string, unknown> };
-                            const c = (root.controller ??= {} as Record<string, unknown>);
-                            if (layer) {
-                                const mods = (c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined) ?? {};
-                                const lObj = mods[layer] ?? {};
-                                lObj.icons = { ...(lObj.icons ?? {}), [face]: r.dataUri };
-                                mods[layer] = lObj;
-                                c.modifiers = mods;
-                            }
-                            else {
-                                const ic = (c.icons as Record<string, string> | undefined) ?? {};
-                                ic[face] = r.dataUri;
-                                c.icons = ic;
-                            }
-                        }
-                    }
-                }
-                finally {
-                    btn.disabled = false;
-                    btn.classList.remove("capturing");
-                }
+                // Normaler Klick = Picker oeffnen mit allen via Plugins
+                // gecachten Spiel-Icons. Suche + Tabs (skills/items/all).
+                openGameIconPicker(readCurrentIcon(), async (chosen) => {
+                    btn.disabled = true;
+                    try { await persistIcon(chosen); }
+                    finally { btn.disabled = false; }
+                });
             });
             return btn;
         };

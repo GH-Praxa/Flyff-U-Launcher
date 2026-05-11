@@ -965,10 +965,27 @@ contextBridge.exposeInMainWorld("controllerApi", {
     clearIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null) => {
         return ipcRenderer.invoke("controller:icon:clear", { profileId, face, layer });
     },
+    /**
+     * Setzt das Icon direkt aus einer data:image-URI (vom Game-Icon-Picker
+     * gewaehlt). Skipt den Click-to-Capture-Flow — fuer User die kein Icon
+     * im Spiel haben oder schneller waehlen wollen.
+     */
+    setIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null, dataUri: string) => {
+        return ipcRenderer.invoke("controller:icon:set", { profileId, face, layer, dataUri });
+    },
     /** Bricht einen laufenden Icon-Capture-Lehrmodus ab. */
     cancelCaptureIcon: () => {
         try { ipcRenderer.send("controller:icon:capture:cancel"); }
         catch { /* ignore */ }
+    },
+    /**
+     * Listet alle via Plugins (api-fetch, cd-timer-skill-fetcher) gecachten
+     * Spiel-Icons. Liefert `{ok: true, icons: [{id, category, name, dataUrl}]}`
+     * — dataUrl ist direkt im `<img src>` einsetzbar. Im Picker-Dialog des
+     * Controller-Tabs verwendet als Alternative zum Click-to-Capture.
+     */
+    listGameIcons: () => {
+        return ipcRenderer.invoke("gameIcons:list");
     },
 });
 
