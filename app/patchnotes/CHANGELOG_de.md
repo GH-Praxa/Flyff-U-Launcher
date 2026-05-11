@@ -1,6 +1,30 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.5.0
+
+### ✨ Controller — neue Defaults & Cursor-Modus konfigurierbar
+
+Synchron zur Android-App (v33) bekommt der PC-Launcher die gleichen Controller-Verbesserungen:
+
+**Neue D-Pad-Defaults**
+- D-Pad ↑/↓ → **Zoom +/−** (synthetisches Mausrad in der Bildschirmmitte)
+- D-Pad ←/→ → **Slot-Wechsel** (`@prevTab`/`@nextTab` — wechselt zwischen offenen Tabs im selben Fenster)
+- D-Pad-Up war vorher hart auf Action-Pad — jetzt muss `@actionPad` explizit auf einen Button gemappt werden (z. B. Select)
+
+**Cursor-Modus (Maus-Steuerung) ist konfigurierbar**
+- L2 war vorher hardcoded auf "reserviert für Cursor-Modus"; ist jetzt eine Special-Action `@cursorHold` (Default für L2)
+- Solange `@cursorHold` gehalten wird: rechter Stick bewegt einen synthetischen Maus-Cursor, A-Taste = Maus-Klick links an aktueller Position
+- Alternative `@cursorToggle`: Tippen schaltet zwischen Normal- und Cursor-Modus um
+- Beide auf jeden Button mappbar — wer L2 als Skill-Slot will, legt den Cursor-Modus z. B. auf R2 oder L1
+- L2 ist jetzt auch als Modifier-Layer-Slot verfügbar (vorher ausgeschlossen)
+
+**Architektur**
+- Special-Actions können jetzt Down/Up-Events haben (Hold-Verhalten); Edge-Actions wie `@actionPad` ignorieren UP wie bisher
+- Neuer Cursor-Pump-Timer (60 Hz) für kontinuierliche Maus-Bewegung auch bei still gehaltenem Stick
+- `releaseAll`/`reset` setzt Cursor-Modus + Maus-Down sauber zurück, damit nichts beim Window-Wechsel "hängt"
+
+---
 ## 🐛 Version 3.4.1
 
 ### 🐛 Fehlerbehebungen

@@ -1,6 +1,25 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Wersja 3.5.0
+
+### ✨ Kontroler — nowe domyślne ustawienia i konfigurowalny tryb myszy
+
+Synchronicznie z aplikacją Android (v33), launcher PC otrzymuje te same ulepszenia kontrolera:
+
+**Nowe domyślne D-pad**
+- D-pad ↑/↓ → **Powiększenie / Pomniejszenie** (syntetyczne kółko myszy w środku ekranu)
+- D-pad ←/→ → **Przełączanie kart** (`@prevTab`/`@nextTab`)
+- D-pad-góra był wcześniej zaszyty na action-pad — teraz `@actionPad` musi być przypisany jawnie do dowolnego przycisku (np. Select)
+
+**Tryb myszy (kursor) jest teraz konfigurowalny**
+- L2 było wcześniej zaszyte jako „zarezerwowane dla trybu kursora"; teraz jest akcją specjalną `@cursorHold` (domyślnie dla L2)
+- Podczas przytrzymania `@cursorHold`: prawy drążek porusza syntetycznym kursorem myszy, przycisk A = lewy klik myszy w aktualnej pozycji
+- Alternatywa `@cursorToggle`: stuknięcie przełącza między trybem normalnym a kursorem
+- Oba można przypisać do dowolnego przycisku — jeśli chcesz L2 jako slot umiejętności, ustaw tryb kursora np. na R2 lub L1
+- L2 jest teraz również dostępne jako slot warstwy modyfikatora (wcześniej wykluczone)
+
+---
 ## 🐛 Wersja 3.4.1
 
 ### 🐛 Poprawki błędów

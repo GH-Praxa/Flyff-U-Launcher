@@ -145,6 +145,18 @@ export async function renderLauncher(root: HTMLElement) {
     function openConfigModal(defaultStyleTab: "theme" | "tabActive" = "theme", defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style") {
         return _openConfigModal({ snapshotThemeVars, applyThemeToIframe }, defaultStyleTab, defaultTab);
     }
+
+    // Controller-Launcher-Aktionen: nicht-Tab-Aktionen die nicht im Main
+    // selbst dispatched werden (z.B. @openConfig) kommen hier rein.
+    try {
+        const ctrlApi = (window as unknown as {
+            controllerApi?: { onLauncherAction?: (handler: (action: string) => void) => () => void };
+        }).controllerApi;
+        ctrlApi?.onLauncherAction?.((action) => {
+            if (action === "@openConfig") openConfigModal();
+        });
+    }
+    catch { /* ignore */ }
     const btnFlyffuniverse = el("button", "btn primary") as HTMLButtonElement;
     btnFlyffuniverse.title = "Flyffuniverse �ffnen";
     const flyffuniverseImg = document.createElement("img");

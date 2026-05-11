@@ -443,6 +443,21 @@ contextBridge.exposeInMainWorld("roiBridge", {
                 sendFrame(chosen);
                 prevButtons = buttons;
                 prevAxes = axes;
+
+                // Belegungs-Overlay: Layer-Wechsel auf gehaltenen Modifier-Slot.
+                // Reihenfolge L1 → R1 → L2 → R2 spiegelt MODIFIER_SLOTS im
+                // Router. Seit dem Cursor-Modus-Refactor ist L2 nicht mehr
+                // hardcoded fuer Cursor-Mode und kann als regulaerer Modifier
+                // genutzt werden. Setter ist ein No-Op falls noch kein Mapping
+                // gepushed wurde.
+                const heldL1 = buttons[4] === true;
+                const heldR1 = buttons[5] === true;
+                const heldL2 = buttons[6] === true;
+                const heldR2 = buttons[7] === true;
+                const newMod: "l1" | "r1" | "l2" | "r2" | null =
+                    heldL1 ? "l1" : heldR1 ? "r1" : heldL2 ? "l2" : heldR2 ? "r2" : null;
+                (window as unknown as { __flyffuSetActiveModifier?: (m: "l1" | "r1" | "l2" | "r2" | null) => void })
+                    .__flyffuSetActiveModifier?.(newMod);
             }
         }
         requestAnimationFrame(tick);
@@ -499,6 +514,422 @@ contextBridge.exposeInMainWorld("roiBridge", {
         calibrationTimeout = setTimeout(cancelCalibration, 10000);
     });
     ipcRenderer.on("controller:calibrate:cancel", cancelCalibration);
+
+    // Icon-Capture (Click-to-Capture): Main schickt `start` → naechster Klick
+    // wird mit Position gemeldet, Main captured 40x40 px um den Punkt herum.
+    // Visueller Hinweis: ein 40x40-Outline-Kreis folgt dem Cursor solange
+    // Capture aktiv ist, damit der User sieht was erfasst wird.
+    let iconCaptureHandler: ((e: MouseEvent) => void) | null = null;
+    let iconCaptureTimeout: ReturnType<typeof setTimeout> | null = null;
+    let iconCaptureCursor: HTMLDivElement | null = null;
+    let iconCursorMoveHandler: ((e: MouseEvent) => void) | null = null;
+    let iconKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+
+    const removeIconCursor = () => {
+        if (iconCaptureCursor && iconCaptureCursor.parentNode) {
+            iconCaptureCursor.parentNode.removeChild(iconCaptureCursor);
+        }
+        iconCaptureCursor = null;
+        if (iconCursorMoveHandler) {
+            document.removeEventListener("mousemove", iconCursorMoveHandler, true);
+            iconCursorMoveHandler = null;
+        }
+    };
+    const cancelIconCapture = () => {
+        if (iconCaptureHandler) {
+            document.removeEventListener("mousedown", iconCaptureHandler, true);
+            iconCaptureHandler = null;
+        }
+        if (iconCaptureTimeout) {
+            clearTimeout(iconCaptureTimeout);
+            iconCaptureTimeout = null;
+        }
+        if (iconKeyHandler) {
+            document.removeEventListener("keydown", iconKeyHandler, true);
+            iconKeyHandler = null;
+        }
+        removeIconCursor();
+    };
+    ipcRenderer.on("controller:icon:capture:start", () => {
+        cancelIconCapture();
+        // Visueller Cursor-Indikator: 40x40 px Goldborder um den Mauszeiger.
+        if (document.body) {
+            const cursor = document.createElement("div");
+            cursor.style.cssText = [
+                "position:fixed",
+                "width:40px",
+                "height:40px",
+                "border:2px solid rgba(212,175,55,0.95)",
+                "border-radius:6px",
+                "box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 2px 8px rgba(0,0,0,0.55)",
+                "pointer-events:none",
+                "z-index:2147483647",
+                "transform:translate(-21px,-21px)",
+                "left:-100px",
+                "top:-100px",
+            ].join(";");
+            document.body.appendChild(cursor);
+            iconCaptureCursor = cursor;
+            iconCursorMoveHandler = (e: MouseEvent) => {
+                if (!iconCaptureCursor) return;
+                iconCaptureCursor.style.left = `${e.clientX}px`;
+                iconCaptureCursor.style.top = `${e.clientY}px`;
+            };
+            document.addEventListener("mousemove", iconCursorMoveHandler, true);
+        }
+        const handler = (e: MouseEvent) => {
+            cancelIconCapture();
+            try {
+                ipcRenderer.send("controller:icon:capture:done", {
+                    x: e.clientX,
+                    y: e.clientY,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                });
+            }
+            catch { /* ignore */ }
+            // Klick NICHT zum Spiel durchreichen — wir wollen nur den Pixel-Pick,
+            // nicht versehentlich den Skill triggern.
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        iconCaptureHandler = handler;
+        document.addEventListener("mousedown", handler, true);
+        // Esc bricht ab (kein DONE-Signal an Main, dort laeuft der 10s-Timeout
+        // → Main schickt cancel zurueck wenn der ankommt).
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                cancelIconCapture();
+                try { ipcRenderer.send("controller:icon:capture:cancel"); } catch { /* ignore */ }
+            }
+        };
+        iconKeyHandler = onKey;
+        document.addEventListener("keydown", onKey, true);
+        iconCaptureTimeout = setTimeout(cancelIconCapture, 10000);
+    });
+    ipcRenderer.on("controller:icon:capture:cancel", cancelIconCapture);
+})();
+
+// =====================================================================
+// Belegungs-Overlay: kleine in-DOM-Anzeige der 4 Face-Button-Bindings
+// (△ ○ ✕ □) ohne Hintergrund, fixiert am rechten unteren Spielfeldrand.
+// Beim Halten von L1/R1/R2 wechselt das Overlay auf den jeweiligen
+// Modifier-Layer. Source-of-Truth fuer das Mapping ist der Hauptprozess
+// — wir empfangen die fertig aufgeloesten Labels via IPC.
+// =====================================================================
+type OverlayFaceLabels = {
+    y?: string | null;
+    b?: string | null;
+    a?: string | null;
+    x?: string | null;
+};
+type OverlayFaceIcons = {
+    y?: string;
+    b?: string;
+    a?: string;
+    x?: string;
+};
+type OverlayPayload = {
+    enabled: boolean;
+    base: OverlayFaceLabels;
+    baseIcons?: OverlayFaceIcons;
+    modifiers: {
+        l1?: OverlayFaceLabels;
+        r1?: OverlayFaceLabels;
+        r2?: OverlayFaceLabels;
+    };
+    modifierIcons?: {
+        l1?: OverlayFaceIcons;
+        r1?: OverlayFaceIcons;
+        r2?: OverlayFaceIcons;
+    };
+};
+
+(() => {
+    const isSessionWindow = (() => {
+        try {
+            return /(^|\.)flyff\.com$/i.test(window.location.hostname);
+        } catch {
+            return false;
+        }
+    })();
+    if (!isSessionWindow) return;
+
+    const POS_STORAGE_KEY = "flyffu_overlay_pos";
+    const OVERLAY_W = 160;
+    const OVERLAY_H = 120;
+
+    type SlotEls = { sym: HTMLDivElement; lab: HTMLDivElement; img: HTMLImageElement };
+    let payload: OverlayPayload | null = null;
+    let activeMod: "l1" | "r1" | "r2" | null = null;
+    let overlayEl: HTMLDivElement | null = null;
+    let slotEls: { y: SlotEls; b: SlotEls; a: SlotEls; x: SlotEls } | null = null;
+    let dragModeActive = false;
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    const loadPos = (): { x: number; y: number } => {
+        const fallback = {
+            x: Math.max(0, window.innerWidth - OVERLAY_W - 18),
+            y: Math.max(0, window.innerHeight - OVERLAY_H - 18),
+        };
+        try {
+            const raw = localStorage.getItem(POS_STORAGE_KEY);
+            if (!raw) return fallback;
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.x === "number" && typeof parsed.y === "number") {
+                // Clamp gegen Viewport-Resize seit dem letzten Save.
+                const x = Math.max(0, Math.min(parsed.x, window.innerWidth - OVERLAY_W));
+                const y = Math.max(0, Math.min(parsed.y, window.innerHeight - OVERLAY_H));
+                return { x, y };
+            }
+        }
+        catch { /* ignore corrupt JSON */ }
+        return fallback;
+    };
+
+    const savePos = (x: number, y: number) => {
+        try { localStorage.setItem(POS_STORAGE_KEY, JSON.stringify({ x, y })); }
+        catch { /* ignore quota / disabled storage */ }
+    };
+
+    const ensureOverlay = () => {
+        if (overlayEl || !document.body) return;
+        const root = document.createElement("div");
+        root.id = "flyffu-binding-overlay";
+        const pos = loadPos();
+        // Kein Hintergrund, keine Border — nur Text mit Shadow fuer Lesbarkeit.
+        // pointer-events:none verhindert dass das Overlay Klicks schluckt;
+        // bei Ctrl+Shift wird's temporaer auf auto geschaltet (Drag-Modus).
+        // left/top statt right/bottom, weil ein Flyff-Vorfahren mit transform
+        // das fixed-Positioning ans Element statt ans Viewport bindet —
+        // explizite Pixelwerte sind robust.
+        root.style.cssText = [
+            "position:fixed",
+            `left:${pos.x}px`,
+            `top:${pos.y}px`,
+            "z-index:2147483647",
+            "pointer-events:none",
+            "user-select:none",
+            "font-family:'Inter',system-ui,-apple-system,sans-serif",
+            `width:${OVERLAY_W}px`,
+            `height:${OVERLAY_H}px`,
+            "opacity:0.92",
+            // 3x3-Grid: △ oben Mitte, □ links Mitte, ○ rechts Mitte, ✕ unten Mitte.
+            // Mittelzelle bleibt leer → echter Diamond, jeder Knopf liegt seinem
+            // Pendant exakt gegenueber (△↔✕, □↔○) wie auf dem Pad.
+            "display:grid",
+            "grid-template-columns:1fr 1fr 1fr",
+            "grid-template-rows:1fr 1fr 1fr",
+            "transition:outline 80ms linear",
+        ].join(";");
+
+        const mkSlot = (
+            symbol: string,
+            glyphColor: string,
+            row: number,
+            col: number,
+            justify: string,
+            align: string,
+        ): SlotEls => {
+            const slot = document.createElement("div");
+            slot.style.cssText = [
+                "text-align:center",
+                `grid-row:${row}`,
+                `grid-column:${col}`,
+                `justify-self:${justify}`,
+                `align-self:${align}`,
+                "display:flex",
+                "flex-direction:column",
+                "align-items:center",
+                "gap:2px",
+            ].join(";");
+            const sym = document.createElement("div");
+            sym.textContent = symbol;
+            sym.style.cssText =
+                `color:${glyphColor};font-size:15px;font-weight:700;line-height:1;`
+                + "text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.85)";
+            const lab = document.createElement("div");
+            lab.style.cssText =
+                "color:#fff;font-size:11px;font-weight:600;line-height:1;"
+                + "text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.85)";
+            // Optional Skill-Icon — wird per Click-to-Capture-Lehrmodus gesetzt.
+            // Wenn vorhanden ersetzt es Symbol+Label, sonst hidden.
+            const img = document.createElement("img");
+            img.style.cssText = [
+                "width:26px",
+                "height:26px",
+                "image-rendering:auto",
+                "border-radius:4px",
+                "box-shadow:0 1px 3px rgba(0,0,0,.85)",
+                "display:none",
+            ].join(";");
+            slot.appendChild(sym);
+            slot.appendChild(lab);
+            slot.appendChild(img);
+            root.appendChild(slot);
+            return { sym, lab, img };
+        };
+
+        // Reihenfolge: y=oben, x=links, b=rechts, a=unten — so wie die Knoepfe
+        // physisch auf dem Pad liegen.
+        const yEl = mkSlot("△", "#5ad15a", 1, 2, "center", "start");
+        const xEl = mkSlot("□", "#ec73ff", 2, 1, "start", "center");
+        const bEl = mkSlot("○", "#ff6464", 2, 3, "end", "center");
+        const aEl = mkSlot("✕", "#73a8ff", 3, 2, "center", "end");
+
+        document.body.appendChild(root);
+        overlayEl = root;
+        slotEls = { y: yEl, b: bEl, a: aEl, x: xEl };
+
+        // Drag-Modus an/aus auf Ctrl+Shift. Der Modus aktiviert pointer-events
+        // und zeigt eine gestrichelte Outline — sonst ist das Overlay komplett
+        // transparent fuer Klicks. Maus-Buttons im Spiel werden nicht
+        // beeintraechtigt.
+        const setDragMode = (active: boolean) => {
+            if (active === dragModeActive) return;
+            // Mitten in einer Drag-Geste die Modifier loslassen → Drag erst
+            // beim mouseup beenden, sonst springt der Cursor weg.
+            if (!active && isDragging) return;
+            dragModeActive = active;
+            if (!overlayEl) return;
+            overlayEl.style.pointerEvents = active ? "auto" : "none";
+            overlayEl.style.outline = active
+                ? "1px dashed rgba(212,175,55,0.85)"
+                : "none";
+            overlayEl.style.outlineOffset = "4px";
+            overlayEl.style.cursor = active ? "move" : "default";
+        };
+
+        const onKey = (e: KeyboardEvent) => {
+            // Beide Modifier muessen gehalten sein. e.ctrlKey/e.shiftKey
+            // reflektiert den Status NACH dem Event, also funktioniert
+            // ein einzelner Listener fuer beide keydown- und keyup-Edges.
+            setDragMode(e.ctrlKey && e.shiftKey);
+        };
+        window.addEventListener("keydown", onKey, true);
+        window.addEventListener("keyup", onKey, true);
+        window.addEventListener("blur", () => setDragMode(false), true);
+
+        const onMouseDown = (e: MouseEvent) => {
+            if (!dragModeActive || !overlayEl) return;
+            const rect = overlayEl.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            isDragging = true;
+            // Klick darf NICHT zum Spiel durchfallen, sonst verliert der
+            // Char das Target o.ae.
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        const onMouseMove = (e: MouseEvent) => {
+            if (!isDragging || !overlayEl) return;
+            const x = Math.max(0, Math.min(e.clientX - dragOffsetX, window.innerWidth - OVERLAY_W));
+            const y = Math.max(0, Math.min(e.clientY - dragOffsetY, window.innerHeight - OVERLAY_H));
+            overlayEl.style.left = `${x}px`;
+            overlayEl.style.top = `${y}px`;
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        const onMouseUp = (e: MouseEvent) => {
+            if (!isDragging || !overlayEl) return;
+            isDragging = false;
+            const rect = overlayEl.getBoundingClientRect();
+            savePos(rect.left, rect.top);
+            // Wenn Modifier zwischendurch losgelassen wurden, Drag-Modus
+            // jetzt sauber abbauen.
+            if (!(e.ctrlKey && e.shiftKey)) setDragMode(false);
+        };
+        root.addEventListener("mousedown", onMouseDown, true);
+        window.addEventListener("mousemove", onMouseMove, true);
+        window.addEventListener("mouseup", onMouseUp, true);
+    };
+
+    const formatLabel = (raw: string | null | undefined): string => {
+        if (raw == null || raw === "") return "—";
+        if (raw.startsWith("@")) {
+            const trimmed = raw.slice(1);
+            // CamelCase → erstes Zeichen gross, Rest unveraendert (kompakt).
+            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        }
+        return raw;
+    };
+
+    const renderOverlay = () => {
+        if (!payload?.enabled) {
+            if (overlayEl) overlayEl.style.display = "none";
+            return;
+        }
+        ensureOverlay();
+        if (!overlayEl || !slotEls) return;
+        overlayEl.style.display = "grid";
+
+        const base = payload.base;
+        const baseIcons = payload.baseIcons ?? {};
+        const layer = activeMod ? payload.modifiers[activeMod] : undefined;
+        const layerIcons = activeMod ? payload.modifierIcons?.[activeMod] : undefined;
+        const pickLabel = (face: "y" | "b" | "a" | "x"): string | null | undefined => {
+            if (layer && face in layer) return layer[face];
+            return base[face];
+        };
+        const pickIcon = (face: "y" | "b" | "a" | "x"): string | undefined => {
+            // Layer-Icon hat Vorrang, sonst Base-Icon, sonst undefined (= Text-Fallback).
+            return layerIcons?.[face] ?? baseIcons[face];
+        };
+
+        const apply = (face: "y" | "b" | "a" | "x", el: SlotEls) => {
+            const icon = pickIcon(face);
+            if (icon) {
+                el.img.src = icon;
+                el.img.style.display = "block";
+                el.sym.style.display = "none";
+                el.lab.style.display = "none";
+            }
+            else {
+                el.img.style.display = "none";
+                el.sym.style.display = "block";
+                el.lab.style.display = "block";
+                el.lab.textContent = formatLabel(pickLabel(face));
+            }
+        };
+        apply("y", slotEls.y);
+        apply("b", slotEls.b);
+        apply("a", slotEls.a);
+        apply("x", slotEls.x);
+    };
+
+    ipcRenderer.on("controller:overlay:update", (_e, p: unknown) => {
+        if (!p || typeof p !== "object") {
+            payload = null;
+        }
+        else {
+            payload = p as OverlayPayload;
+        }
+        renderOverlay();
+    });
+
+    // Setter fuer den Polling-Loop (siehe oben). Aenderung loest Re-Render aus,
+    // gleicher Wert wird ignoriert (kein DOM-Trash).
+    (window as unknown as { __flyffuSetActiveModifier?: (m: "l1" | "r1" | "r2" | null) => void })
+        .__flyffuSetActiveModifier = (mod) => {
+        if (mod === activeMod) return;
+        activeMod = mod;
+        renderOverlay();
+    };
+
+    // Initial-Pull: sobald Preload laeuft, Mapping anfordern. Main antwortet
+    // mit `controller:overlay:update`. Falls Profil noch nicht aufgeloest ist,
+    // kommt nichts — und das ist OK, weil reloadButtonMapping spaeter pusht.
+    try { ipcRenderer.send("controller:overlay:request"); }
+    catch { /* ignore */ }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", renderOverlay, { once: true });
+    }
+    else {
+        renderOverlay();
+    }
 })();
 
 // Renderer-API fuer das Controller-Settings-Tab (Custom-Mapping-Editor): einmal
@@ -507,6 +938,36 @@ contextBridge.exposeInMainWorld("roiBridge", {
 contextBridge.exposeInMainWorld("controllerApi", {
     reloadMapping: (profileId: string) => {
         try { ipcRenderer.send("controller:reloadMapping", profileId); }
+        catch { /* ignore */ }
+    },
+    onLauncherAction: (handler: (action: string) => void) => {
+        const listener = (_e: unknown, payload: unknown) => {
+            try {
+                if (payload && typeof payload === "object") {
+                    const a = (payload as { action?: unknown }).action;
+                    if (typeof a === "string") handler(a);
+                }
+            }
+            catch { /* ignore */ }
+        };
+        ipcRenderer.on("controller:launcherAction", listener);
+        return () => ipcRenderer.removeListener("controller:launcherAction", listener);
+    },
+    /**
+     * Startet den Click-to-Capture-Lehrmodus fuer ein Skill-Icon. Auflöst zu
+     * `{ ok: true, dataUri }` sobald der User im Spiel auf das Icon geklickt
+     * hat, oder `{ ok: false, reason }` bei Timeout/Abbruch/keine-Spielview.
+     */
+    captureIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null) => {
+        return ipcRenderer.invoke("controller:icon:capture", { profileId, face, layer });
+    },
+    /** Loescht ein gesetztes Icon aus dem Profil. */
+    clearIcon: (profileId: string, face: "a" | "b" | "x" | "y", layer: "l1" | "r1" | "r2" | null) => {
+        return ipcRenderer.invoke("controller:icon:clear", { profileId, face, layer });
+    },
+    /** Bricht einen laufenden Icon-Capture-Lehrmodus ab. */
+    cancelCaptureIcon: () => {
+        try { ipcRenderer.send("controller:icon:capture:cancel"); }
         catch { /* ignore */ }
     },
 });

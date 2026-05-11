@@ -69,9 +69,45 @@ export type ProfileButtonMapping = {
     dpadLeft?: string | null;
     dpadRight?: string | null;
 };
+/**
+ * Modifier-Layer pro Schultertaste. `enabled` steuert ob der Layer im Router
+ * angewandt wird; `buttons` haelt die Override-Eintraege. Beide Felder werden
+ * persistiert — so bleiben Bindings erhalten wenn der User den Layer temporaer
+ * deaktiviert (Toggle-UX).
+ */
+/**
+ * Pro Face-Button (a/b/x/y) ein optionales Icon als data:image/png-URI.
+ * Wird vom Belegungs-Overlay statt Symbol+Text angezeigt, falls gesetzt.
+ * Ueber den Click-to-Capture-Lehrmodus aus dem laufenden Spiel erfasst.
+ */
+export type ProfileControllerIcons = {
+    a?: string;
+    b?: string;
+    x?: string;
+    y?: string;
+};
+export type ProfileControllerModifierLayer = {
+    enabled?: boolean;
+    buttons?: ProfileButtonMapping;
+    icons?: ProfileControllerIcons;
+};
+/**
+ * Modifier-Layer-Map: pro Schultertaste (l1/r1/l2/r2) ein optionales Override-
+ * Mapping. Wenn die Schulter gehalten wird, der Layer enabled ist UND der
+ * dort gemappte Knopf gedrueckt wird, kommt das Modifier-Mapping statt des
+ * Defaults zum Einsatz. Fehlender Slot oder enabled=false = kein Layer aktiv.
+ */
+export type ProfileControllerModifiers = {
+    l1?: ProfileControllerModifierLayer;
+    r1?: ProfileControllerModifierLayer;
+    l2?: ProfileControllerModifierLayer;
+    r2?: ProfileControllerModifierLayer;
+};
 export type ProfileController = {
     actionPad?: ProfileActionPadAnchor | null;
     buttons?: ProfileButtonMapping;
+    icons?: ProfileControllerIcons;
+    modifiers?: ProfileControllerModifiers;
 };
 export type Profile = {
     id: string;
@@ -154,6 +190,25 @@ const BUTTON_KEYS: Array<keyof ProfileButtonMapping> = [
     "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
 ];
 
+const FACE_KEYS: Array<keyof ProfileControllerIcons> = ["a", "b", "x", "y"];
+const ICON_DATA_URI_MAX_LEN = 200_000; // ~150 KB base64 = ~110 KB PNG; mehr brauchen Skill-Icons nie
+
+function normalizeIcons(v: unknown): ProfileControllerIcons | undefined {
+    if (!v || typeof v !== "object") return undefined;
+    const obj = v as Record<string, unknown>;
+    const out: ProfileControllerIcons = {};
+    let any = false;
+    for (const k of FACE_KEYS) {
+        const raw = obj[k];
+        if (typeof raw !== "string") continue;
+        if (!raw.startsWith("data:image/")) continue;
+        if (raw.length > ICON_DATA_URI_MAX_LEN) continue;
+        out[k] = raw;
+        any = true;
+    }
+    return any ? out : undefined;
+}
+
 function normalizeButtonMapping(v: unknown): ProfileButtonMapping | undefined {
     if (!v || typeof v !== "object") return undefined;
     const obj = v as Record<string, unknown>;
@@ -198,6 +253,54 @@ function normalizeController(v: unknown): ProfileController | undefined {
     if (buttons) {
         out.buttons = buttons;
         any = true;
+    }
+
+    const icons = normalizeIcons(obj.icons);
+    if (icons) {
+        out.icons = icons;
+        any = true;
+    }
+
+    const modRaw = obj.modifiers;
+    if (modRaw && typeof modRaw === "object") {
+        const mods = modRaw as Record<string, unknown>;
+        const outMods: ProfileControllerModifiers = {};
+        let anyMod = false;
+        for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+            const slotRaw = mods[slot];
+            if (!slotRaw || typeof slotRaw !== "object") continue;
+            // Format-Detection: wenn das Objekt direkt ButtonMapping-Keys
+            // enthaelt (a/b/x/...), ist es das alte flache Format → in den
+            // neuen Layer-Wrapper migrieren. Sonst hat's enabled/buttons
+            // Subkeys → neues Format direkt lesen.
+            const slotObj = slotRaw as Record<string, unknown>;
+            const hasLayerShape = "enabled" in slotObj || "buttons" in slotObj;
+            let layer: ProfileControllerModifierLayer | undefined;
+            if (hasLayerShape) {
+                const enabled = typeof slotObj.enabled === "boolean" ? slotObj.enabled : true;
+                const buttons = normalizeButtonMapping(slotObj.buttons);
+                const icons = normalizeIcons(slotObj.icons);
+                if (buttons || icons || enabled === false) {
+                    layer = {
+                        enabled,
+                        ...(buttons ? { buttons } : {}),
+                        ...(icons ? { icons } : {}),
+                    };
+                }
+            }
+            else {
+                const buttons = normalizeButtonMapping(slotRaw);
+                if (buttons) layer = { enabled: true, buttons };
+            }
+            if (layer) {
+                outMods[slot] = layer;
+                anyMod = true;
+            }
+        }
+        if (anyMod) {
+            out.modifiers = outMods;
+            any = true;
+        }
     }
 
     return any ? out : undefined;

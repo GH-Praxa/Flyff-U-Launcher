@@ -1,6 +1,25 @@
 # 📦 Yama Notları
 
 ---
+## 🆕 Sürüm 3.5.0
+
+### ✨ Kumanda — yeni varsayılanlar ve yapılandırılabilir fare modu
+
+Android uygulamasıyla (v33) eş zamanlı olarak, PC launcher aynı kumanda iyileştirmelerini alıyor:
+
+**Yeni D-pad varsayılanları**
+- D-pad ↑/↓ → **Yakınlaştır / Uzaklaştır** (ekran ortasında sentetik fare tekerleği)
+- D-pad ←/→ → **Sekme geçişi** (`@prevTab`/`@nextTab`)
+- D-pad-yukarı önceden action-pad için sabitlenmişti — `@actionPad` artık bir tuşa açıkça atanmalı (örn. Select)
+
+**Fare modu (imleç) artık yapılandırılabilir**
+- L2 önceden „imleç modu için ayrılmış" olarak sabitlenmişti; artık bu özel bir eylem `@cursorHold` (L2 için varsayılan)
+- `@cursorHold` basılı tutulurken: sağ çubuk sentetik fare imlecini hareket ettirir, A tuşu = mevcut konumda sol fare tıklaması
+- Alternatif `@cursorToggle`: dokunmak normal mod ile imleç modu arasında geçiş yapar
+- Her ikisi de herhangi bir tuşa atanabilir — L2'yi yetenek slotu olarak istiyorsanız, imleç modunu örn. R2 veya L1'e atayın
+- L2 artık modifier-katman slotu olarak da kullanılabilir (önceden hariç tutulmuştu)
+
+---
 ## 🐛 Sürüm 3.4.1
 
 ### 🐛 Hata düzeltmeleri

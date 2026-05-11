@@ -1835,3 +1835,684 @@
   color: var(--muted);
   font-style: italic;
 }
+
+/* ───────────── Controller-SVG-Diagramm ───────────── */
+
+.ctrlVisualWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--stroke);
+}
+.ctrlVisualTopRow {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ctrlVisualStyleSelect {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  cursor: pointer;
+}
+.ctrlVisualStyleSelect:hover { border-color: var(--accent); }
+.ctrlSvgHost {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.ctrlSvgGuide {
+  fill: rgba(58,58,62,0.90);
+  stroke: rgba(255,255,255,0.18);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.ctrlSvgGuideRing {
+  fill: rgba(0,0,0,0.30);
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 0.8;
+  pointer-events: none;
+}
+.ctrlSvgXboxLogo {
+  stroke: rgba(120,200,110,0.95);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  fill: none;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(120,200,110,0.55));
+}
+
+/* PS5: subtle light bar rim around touchpad — dezent statt dominant */
+.ctrlSvgLightBar {
+  fill: none;
+  stroke: rgba(110,170,255,0.35);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+/* PS5: subtle vertical click-zone divider on touchpad */
+.ctrlSvgTouchpadDivider {
+  stroke: rgba(255,255,255,0.10);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  pointer-events: none;
+}
+
+/* D-pad arrow triangles (replace unicode chars with crisp paths) */
+.ctrlSvgDpadArrow {
+  fill: rgba(255,255,255,0.65);
+  pointer-events: none;
+}
+
+/* Xbox: subtle diagonal grip texture lines */
+.ctrlSvgGripDetail {
+  fill: none;
+  stroke: rgba(255,255,255,0.10);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* Decorative wordmarks: "PlayStation" / "XBOX" */
+.ctrlSvgPsLogo {
+  fill: rgba(255,255,255,0.35);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+.ctrlSvgXboxWord {
+  fill: rgba(255,255,255,0.22);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.40em;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Xbox-Face-Buttons (Y/B/A/X) */
+.ctrlSvgXboxY { fill: rgba(232, 200, 60, 0.22); stroke: rgba(232, 200, 60, 0.65); }
+.ctrlSvgXboxB { fill: rgba(220, 76, 76, 0.22);  stroke: rgba(220, 76, 76, 0.65); }
+.ctrlSvgXboxA { fill: rgba(80, 180, 90, 0.22);  stroke: rgba(80, 180, 90, 0.65); }
+.ctrlSvgXboxX { fill: rgba(60, 130, 240, 0.22); stroke: rgba(60, 130, 240, 0.65); }
+
+.ctrlVisualStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  user-select: text;
+}
+.ctrlVisualStatus.connected { color: var(--accent); }
+.ctrlVisualStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.5;
+  display: inline-block;
+}
+.ctrlVisualStatus.connected .ctrlVisualStatusDot {
+  background: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.6);
+}
+
+.ctrlSvg {
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
+}
+
+.ctrlSvgBody {
+  fill: rgba(52,54,60,0.95);
+  stroke: rgba(255,255,255,0.30);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55));
+}
+.ctrlSvgStylePs .ctrlSvgBody {
+  fill: rgba(58,60,68,0.96);
+  stroke: rgba(255,255,255,0.34);
+}
+.ctrlSvgStyleXbox .ctrlSvgBody {
+  fill: rgba(38,40,44,0.96);
+  stroke: rgba(255,255,255,0.20);
+}
+.ctrlSvgTouchpad {
+  fill: rgba(0,0,0,0.45);
+  stroke: rgba(255,255,255,0.10);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.ctrlSvgDpadCenter {
+  fill: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+
+.ctrlSvgBtn {
+  fill: rgba(255,255,255,0.10);
+  stroke: rgba(255,255,255,0.18);
+  stroke-width: 1.2;
+  cursor: pointer;
+  transition: fill 0.12s ease, stroke 0.12s ease, transform 0.10s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ctrlSvgBtn:hover,
+.ctrlSvgBtn.ctrlSvgHover {
+  fill: rgba(var(--accent-rgb), 0.30);
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+.ctrlSvgBtn.ctrlSvgPressed {
+  fill: var(--accent);
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.7));
+}
+
+.ctrlSvgFaceY  { fill: rgba(58, 180, 92, 0.20);  stroke: rgba(58, 180, 92, 0.55); }
+.ctrlSvgFaceB  { fill: rgba(220, 76, 76, 0.22);  stroke: rgba(220, 76, 76, 0.60); }
+.ctrlSvgFaceA  { fill: rgba(60, 130, 240, 0.22); stroke: rgba(60, 130, 240, 0.60); }
+.ctrlSvgFaceX  { fill: rgba(216, 110, 200, 0.22); stroke: rgba(216, 110, 200, 0.60); }
+
+.ctrlSvgTrigger { stroke-width: 1.4; }
+.ctrlSvgShoulder { stroke-width: 1.2; }
+.ctrlSvgStickWell {
+  fill: rgba(15,15,18,0.85);
+  stroke: rgba(0,0,0,0.40);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.ctrlSvgStickWellInner {
+  fill: rgba(0,0,0,0.95);
+  pointer-events: none;
+}
+.ctrlSvgStick {
+  fill: rgba(48,50,55,0.96);
+  stroke: rgba(255,255,255,0.14);
+  stroke-width: 0.8;
+}
+.ctrlSvgStickRim {
+  fill: none;
+  stroke: rgba(255,255,255,0.18);
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+.ctrlSvgStickDot {
+  fill: rgba(255,255,255,0.55);
+  pointer-events: none;
+  transition: cx 0.06s linear, cy 0.06s linear;
+}
+
+.ctrlSvgLbl {
+  fill: rgba(255,255,255,0.85);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+.ctrlSvgLblFace { font-size: 16px; }
+.ctrlSvgLblTrigger,
+.ctrlSvgLblShoulder { font-size: 12px; letter-spacing: 0.04em; }
+.ctrlSvgLblDpad { font-size: 11px; opacity: 0.85; }
+.ctrlSvgLblStick {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  fill: rgba(255,255,255,0.55);
+}
+
+.ctrlSvgHint {
+  font-size: 11px;
+  text-align: center;
+  margin: 0 0 6px;
+  opacity: 0.7;
+}
+
+/* Card-Highlight bei SVG-Hover bzw. Card-Flash bei SVG-Click */
+.ctrlCard.ctrlCardHighlight {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.10);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.40) inset;
+}
+.ctrlCard.ctrlCardFlash {
+  animation: ctrlCardFlash 0.9s ease-out;
+}
+@keyframes ctrlCardFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55); background: rgba(var(--accent-rgb), 0.20); }
+  60%  { box-shadow: 0 0 0 8px rgba(var(--accent-rgb), 0); background: rgba(var(--accent-rgb), 0.10); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0); background: rgba(255,255,255,0.03); }
+}
+
+@media (max-width: 760px) {
+  .ctrlSvg { max-width: 100%; }
+}
+
+/* ───────────── Spatial-Layout (antimicrox-Style) ─────────────
+ * 3 Spalten: Cards links + Cards rechts mit dem SVG-Diagramm in der Mitte.
+ * Cards sitzen visuell da wo die zugehoerigen Knoepfe am echten Pad sind. */
+
+.ctrlSpatial {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(180px, 220px);
+  gap: 16px;
+  align-items: start;
+}
+.ctrlSpatialCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ctrlSpatialCenter {
+  align-items: stretch;
+}
+.ctrlSpatialCenter .ctrlVisualWrap {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Top-Strip: 4 Spalten — Row 1 hat L2 (col 1-2) + R2 (col 3-4),
+ * Row 2 hat L1, Select, Start, R1 (je 1 Spalte). */
+.ctrlSpatialTopStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ctrlSpatialTopStrip [data-button="l2"]     { grid-area: 1 / 1 / 2 / 3; }
+.ctrlSpatialTopStrip [data-button="r2"]     { grid-area: 1 / 3 / 2 / 5; }
+.ctrlSpatialTopStrip [data-button="l1"]     { grid-area: 2 / 1 / 3 / 2; }
+.ctrlSpatialTopStrip [data-button="select"] { grid-area: 2 / 2 / 3 / 3; }
+.ctrlSpatialTopStrip [data-button="start"]  { grid-area: 2 / 3 / 3 / 4; }
+.ctrlSpatialTopStrip [data-button="r1"]     { grid-area: 2 / 4 / 3 / 5; }
+
+/* Gruppen-Box mit kleinem Label oben links. */
+.ctrlSpatialGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.02);
+}
+.ctrlSpatialGroupTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+  padding: 0 2px 4px;
+  border-bottom: 1px dashed var(--stroke);
+}
+.ctrlSpatialGroupInner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Cards im Spatial-Layout: kompakter, weniger Padding, kleinere Symbole.
+ * Greift via Descendant-Selector — keine extra Card-Klasse noetig. */
+/* Spatial-Card: 2-Zeilen-Grid. Symbol links, Binding (klickbar als
+ * Capture-Trigger) oben rechts, kleine Action-Icons unten rechts.
+ * Verhindert Overflow auch in 110px-schmalen Top-Strip-Spalten. */
+.ctrlSpatial .ctrlCard {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 3px 6px;
+  padding: 4px 6px;
+  min-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ctrlSpatial .ctrlSymbol {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+/* Name komplett ausblenden — Symbol + Group-Titel reichen.
+ * Native title-Attribut auf der Card zeigt Vollnamen on hover. */
+.ctrlSpatial .ctrlCardName { display: none; }
+.ctrlSpatial .ctrlCardInfo {
+  grid-row: 1;
+  grid-column: 2;
+  min-width: 0;
+}
+.ctrlSpatial .ctrlCardBinding {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  transition: 0.12s ease;
+}
+.ctrlSpatial .ctrlCardBinding:hover,
+.ctrlSpatial .ctrlCardBinding:focus {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.10);
+  outline: none;
+}
+.ctrlSpatial .ctrlCardBinding.capturing {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.18);
+  animation: ctrlPulse 1s ease-in-out infinite;
+}
+.ctrlSpatial .ctrlDefaultTag { display: none; }
+.ctrlSpatial .ctrlCardActions {
+  grid-row: 2;
+  grid-column: 2;
+  gap: 2px;
+  justify-content: flex-end;
+}
+/* Capture-Button im Spatial-Mode ueberfluessig — Binding selbst ist Trigger. */
+.ctrlSpatial .ctrlBtnCapture { display: none; }
+.ctrlSpatial .ctrlBtn.ctrlBtnPad,
+.ctrlSpatial .ctrlBtn.ctrlBtnUnbind,
+.ctrlSpatial .ctrlBtn.ctrlBtnReset {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Wenn der Modal eng wird: Spalten untereinander stapeln. */
+@media (max-width: 920px) {
+  .ctrlSpatial {
+    grid-template-columns: 1fr;
+  }
+  .ctrlSpatialCenter { order: -1; }
+}
+
+/* ─── Inline-Modifier (unter dem Controller-SVG) ─── */
+.ctrlModifiersInline {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ctrlModifiersInlineTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.ctrlModToggleRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.ctrlModToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.03);
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.12s ease;
+  font-family: inherit;
+  font-size: 11px;
+}
+.ctrlModToggle:hover {
+  border-color: rgba(var(--accent-rgb), 0.40);
+  color: var(--text);
+}
+.ctrlModToggle.on {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent);
+}
+.ctrlModToggleLabel {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ctrlModToggleStatus {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+}
+.ctrlModToggle.on .ctrlModToggleStatus {
+  background: rgba(var(--accent-rgb), 0.30);
+  color: var(--accent);
+}
+.ctrlModBindings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ctrlModRow {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+.ctrlModRowLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ctrlModRowGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+/* Alte Panel-Variante (nicht mehr genutzt, falls jemand es als Fallback braucht). */
+.ctrlModifiersPanel {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.02);
+}
+.ctrlModifiersHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed var(--stroke);
+}
+.ctrlModifiersTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.ctrlModifiersHint {
+  font-size: 11px;
+  line-height: 1.35;
+}
+.ctrlModifiersBody {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 760px) {
+  .ctrlModifiersBody { grid-template-columns: 1fr; }
+}
+.ctrlModSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--stroke);
+}
+.ctrlModSectionHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.ctrlModSlotChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.ctrlModSectionLabel {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+.ctrlModCountBadge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+}
+.ctrlModCountBadge.active {
+  background: rgba(var(--accent-rgb), 0.20);
+  color: var(--accent);
+}
+.ctrlModGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.ctrlModCard {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 3px 6px;
+  padding: 4px 6px;
+  min-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ctrlModCard .ctrlSymbol {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+.ctrlModCard .ctrlCardInfo {
+  grid-row: 1;
+  grid-column: 2;
+  min-width: 0;
+}
+.ctrlModCard .ctrlCardBinding {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.04);
+  transition: 0.12s ease;
+}
+.ctrlModCard .ctrlCardBinding:hover,
+.ctrlModCard .ctrlCardBinding:focus {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.10);
+  outline: none;
+}
+.ctrlModCard .ctrlCardBinding.capturing {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.18);
+  animation: ctrlPulse 1s ease-in-out infinite;
+}
+.ctrlModCard .ctrlCardBinding.default {
+  font-style: italic;
+  opacity: 0.55;
+  font-weight: 400;
+}
+.ctrlModCard .ctrlCardActions {
+  grid-row: 2;
+  grid-column: 2;
+  gap: 2px;
+  justify-content: flex-end;
+}
+.ctrlModCard .ctrlBtn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Special-Action-Popover (Action-Pad / Launcher-Aktionen) */
+.ctrlActionMenu {
+  background: var(--bg, #1a1a1a);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+}
+.ctrlActionMenuItem {
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--text);
+  white-space: nowrap;
+  user-select: none;
+}
+.ctrlActionMenuItem:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+}

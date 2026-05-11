@@ -1389,6 +1389,11 @@ export function openConfigModal(
         if (id === "controller") {
             renderControllerTab().catch((e) => logErr(e, "ControllerTab"));
         }
+        else if (controllerLiveCleanup) {
+            // Tab verlassen → Live-Loop stoppen, sonst pollt das RAF weiter.
+            controllerLiveCleanup();
+            controllerLiveCleanup = null;
+        }
     }
     for (const [id, btn] of allSidebarBtns) {
         btn.addEventListener("click", () => selectSidebarItem(id));
@@ -1411,37 +1416,90 @@ export function openConfigModal(
         defaultAction: string | null;
     }
 
+    // Kurze Single-Token-Namen — die Card im Spatial-Layout ist eng. Lange
+    // Namen wie "Stick links (Klick)" zerbrechen das Layout. Symbol + Group-
+    // Titel ("D-PAD"/"FACE-BUTTONS") liefern den Kontext.
     const CONTROLLER_BUTTONS: Record<ControllerButtonName, ControllerButtonInfo> = {
-        a:         { key: "a",         symbol: "✕",  name: "Cross / A",      defaultAction: "Space" },
-        b:         { key: "b",         symbol: "◯",  name: "Circle / B",     defaultAction: "Escape" },
-        x:         { key: "x",         symbol: "☐",  name: "Square / X",     defaultAction: "Z" },
-        y:         { key: "y",         symbol: "△",  name: "Triangle / Y",   defaultAction: "Tab" },
-        l1:        { key: "l1",        symbol: "L1", name: "L1 / LB",         defaultAction: "1" },
-        r1:        { key: "r1",        symbol: "R1", name: "R1 / RB",         defaultAction: "2" },
-        l2:        { key: "l2",        symbol: "L2", name: "L2 / LT",         defaultAction: null },
-        r2:        { key: "r2",        symbol: "R2", name: "R2 / RT",         defaultAction: "3" },
-        select:    { key: "select",    symbol: "⊟",  name: "Share / Back",    defaultAction: null },
-        start:     { key: "start",     symbol: "≡",  name: "Options / Start", defaultAction: "Return" },
-        l3:        { key: "l3",        symbol: "L3", name: "Stick links (Klick)",  defaultAction: "I" },
-        r3:        { key: "r3",        symbol: "R3", name: "Stick rechts (Klick)", defaultAction: "C" },
-        dpadUp:    { key: "dpadUp",    symbol: "↑",  name: "D-Pad ↑",         defaultAction: "@actionPad" },
-        dpadDown:  { key: "dpadDown",  symbol: "↓",  name: "D-Pad ↓",         defaultAction: null },
-        dpadLeft:  { key: "dpadLeft",  symbol: "←",  name: "D-Pad ←",         defaultAction: null },
-        dpadRight: { key: "dpadRight", symbol: "→",  name: "D-Pad →",         defaultAction: null },
+        a:         { key: "a",         symbol: "✕",  name: "Cross",    defaultAction: "Space" },
+        b:         { key: "b",         symbol: "◯",  name: "Circle",   defaultAction: "Escape" },
+        x:         { key: "x",         symbol: "☐",  name: "Square",   defaultAction: "Z" },
+        y:         { key: "y",         symbol: "△",  name: "Triangle", defaultAction: "Tab" },
+        l1:        { key: "l1",        symbol: "L1", name: "L1",       defaultAction: "1" },
+        r1:        { key: "r1",        symbol: "R1", name: "R1",       defaultAction: "2" },
+        l2:        { key: "l2",        symbol: "L2", name: "L2",       defaultAction: "@cursorHold" },
+        r2:        { key: "r2",        symbol: "R2", name: "R2",       defaultAction: "3" },
+        select:    { key: "select",    symbol: "⊟",  name: "Share",    defaultAction: null },
+        start:     { key: "start",     symbol: "≡",  name: "Options",  defaultAction: "Return" },
+        l3:        { key: "l3",        symbol: "L3", name: "L3",       defaultAction: "I" },
+        r3:        { key: "r3",        symbol: "R3", name: "R3",       defaultAction: "C" },
+        dpadUp:    { key: "dpadUp",    symbol: "↑",  name: "Up",       defaultAction: "@zoomIn" },
+        dpadDown:  { key: "dpadDown",  symbol: "↓",  name: "Down",     defaultAction: "@zoomOut" },
+        dpadLeft:  { key: "dpadLeft",  symbol: "←",  name: "Left",     defaultAction: "@prevTab" },
+        dpadRight: { key: "dpadRight", symbol: "→",  name: "Right",    defaultAction: "@nextTab" },
     };
 
-    const CONTROLLER_SECTIONS: Array<{ titleKey: string; buttons: ControllerButtonName[] }> = [
-        { titleKey: "controller.section.face",      buttons: ["a", "b", "x", "y"] },
-        { titleKey: "controller.section.shoulders", buttons: ["l1", "r1", "l2", "r2"] },
-        { titleKey: "controller.section.dpad",      buttons: ["dpadUp", "dpadDown", "dpadLeft", "dpadRight"] },
-        { titleKey: "controller.section.system",    buttons: ["select", "start", "l3", "r3"] },
+    // Special-Actions die per Popover-Menu gewaehlt werden koennen. Alle starten
+    // mit `@` und werden vom Router speziell behandelt (statt Keyboard-Event):
+    //  - @actionPad        — kalibrierter Klick im Spielfenster (in-game HUD)
+    //  - @cursorHold       — solange gehalten: rechter Stick → Maus, A → Klick
+    //  - @cursorToggle     — Tippen schaltet Cursor-Modus um (statt Halten)
+    //  - @zoomIn/@zoomOut  — synthetisches mouseWheel (Bildschirm-Mitte)
+    //  - @nextTab/@prevTab — Tab-Wechsel im Session-Window
+    //  - @reloadView       — aktuelles Game-View neu laden
+    //  - @toggleFullscreen — Launcher-Window Vollbild togglen
+    //  - @openConfig       — Settings-Modal oeffnen
+    const SPECIAL_ACTIONS: ReadonlyArray<{ key: string; labelKey: string }> = [
+        { key: "@actionPad",        labelKey: "controller.action.actionPad" },
+        { key: "@cursorHold",       labelKey: "controller.action.cursorHold" },
+        { key: "@cursorToggle",     labelKey: "controller.action.cursorToggle" },
+        { key: "@zoomIn",           labelKey: "controller.action.zoomIn" },
+        { key: "@zoomOut",          labelKey: "controller.action.zoomOut" },
+        { key: "@nextTab",          labelKey: "controller.action.nextTab" },
+        { key: "@prevTab",          labelKey: "controller.action.prevTab" },
+        { key: "@reloadView",       labelKey: "controller.action.reloadView" },
+        { key: "@toggleFullscreen", labelKey: "controller.action.toggleFullscreen" },
+        { key: "@openConfig",       labelKey: "controller.action.openConfig" },
     ];
+
+    const showSpecialActionMenu = (anchor: HTMLElement, onPick: (action: string) => void) => {
+        document.querySelectorAll(".ctrlActionMenu").forEach((m) => m.remove());
+        const menu = el("div", "ctrlActionMenu");
+        for (const sa of SPECIAL_ACTIONS) {
+            const item = el("div", "ctrlActionMenuItem", t(sa.labelKey as TranslationKey));
+            item.addEventListener("click", () => {
+                onPick(sa.key);
+                menu.remove();
+            });
+            menu.append(item);
+        }
+        document.body.append(menu);
+        const rect = anchor.getBoundingClientRect();
+        menu.style.position = "fixed";
+        // Versucht unter dem Button zu zeigen, fall back auf darueber wenn unten kein Platz.
+        const top = rect.bottom + 4;
+        const wouldOverflow = top + 200 > window.innerHeight;
+        menu.style.top = `${wouldOverflow ? Math.max(8, rect.top - 4 - 200) : top}px`;
+        menu.style.left = `${Math.max(8, Math.min(window.innerWidth - 200, rect.left))}px`;
+        menu.style.zIndex = "10000";
+        // Outside-Click schliesst.
+        const onDocClick = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node) && e.target !== anchor) {
+                menu.remove();
+                document.removeEventListener("mousedown", onDocClick, true);
+            }
+        };
+        setTimeout(() => document.addEventListener("mousedown", onDocClick, true), 0);
+    };
 
     /** UI-freundliche Repraesentation eines Action-Werts. */
     function controllerActionLabel(action: string | null | undefined): string {
         if (action === null) return t("controller.binding.unbound" as TranslationKey);
         if (!action) return "";
-        if (action === "@actionPad") return t("controller.binding.actionPad" as TranslationKey);
+        if (action.startsWith("@")) {
+            const sa = SPECIAL_ACTIONS.find((x) => x.key === action);
+            if (sa) return t(sa.labelKey as TranslationKey);
+            return action;
+        }
         if (action === "Space") return "Leertaste";
         if (action === "Return" || action === "Enter") return "Enter";
         if (action === "Escape") return "Escape";
@@ -1452,7 +1510,385 @@ export function openConfigModal(
     let currentControllerProfileId: string | null = null;
     let currentControllerOverride: ControllerButtonOverride = {};
 
+    // Modifier-Layer: pro Schulter (l1/r1/l2/r2) ein Layer mit enabled-Flag +
+    // Override-Mapping fuer die Face-Buttons (a/b/x/y). UX: User toggelt pro
+    // Schulter on/off; bei "on" werden die 4 Face-Bindings angezeigt. Bindings
+    // bleiben auch bei toggle-off erhalten, damit man nicht neu zuweisen muss.
+    type ModifierSlotName = "l1" | "r1" | "l2" | "r2";
+    type ModifierLayerState = { enabled?: boolean; buttons?: ControllerButtonOverride };
+    let currentControllerModifiers: Partial<Record<ModifierSlotName, ModifierLayerState>> = {};
+
+    /** Cleanup-Hook fuer den Live-Gamepad-Polling-Loop des Controller-Diagramms.
+     *  Wird beim Tab-Wechsel oder Modal-Close aufgerufen, damit kein RAF-Leak. */
+    let controllerLiveCleanup: (() => void) | null = null;
+
+    /** "auto" bedeutet: erkannten Controller-Typ aus gamepad.id ableiten.
+     *  "ps"/"xbox" sind manuelle Overrides — bleiben ueber Connect/Disconnect
+     *  hinweg gesetzt, bis der User wieder umstellt. */
+    type ControllerStyle = "auto" | "ps" | "xbox";
+    /** Effektives Layout: "ps" oder "xbox". "generic" gibt es bewusst nicht —
+     *  wenn nichts erkennbar ist, faellt der Default auf "ps" zurueck (am
+     *  weitesten verbreitete Symbol-Belegung). */
+    type ControllerVisualStyle = "ps" | "xbox";
+
+    interface ControllerSvgRefs {
+        wrap: HTMLDivElement;
+        statusEl: HTMLElement;
+        styleSelectEl: HTMLSelectElement;
+        svgHost: HTMLDivElement;
+        /** Vom aktuellen Layout abhaengig — wird beim Style-Swap neu befuellt. */
+        buttonShapes: Map<ControllerButtonName, SVGElement>;
+        stickDots: { l: SVGCircleElement; r: SVGCircleElement };
+        /** Achsen-Basis-Koordinaten, layout-abhaengig. */
+        stickBases: { l: { cx: number; cy: number }; r: { cx: number; cy: number } };
+        /** Aktuell gerendertes Layout (ps oder xbox). */
+        effectiveStyle: ControllerVisualStyle;
+    }
+
+    /** Erkennt den Controller-Typ aus dem Web-Gamepad-API-`id`-String.
+     *  Sony-DualSense/DualShock und PlayStation-Branding -> ps.
+     *  Microsoft-Xbox/XInput-Strings und Vendor 045e -> xbox.
+     *  Default ist ps (PS-Symbole sind die mit Abstand verbreitetsten Defaults
+     *  in MMORPG-Tutorials, und unsere Standard-Belegung ist daran orientiert). */
+    function detectControllerStyle(id: string | null | undefined): ControllerVisualStyle {
+        if (!id) return "ps";
+        const lower = id.toLowerCase();
+        if (lower.includes("xbox") || lower.includes("xinput") || lower.includes("microsoft") || lower.includes("045e")) {
+            return "xbox";
+        }
+        if (lower.includes("dualsense") || lower.includes("dualshock") || lower.includes("playstation")
+            || lower.includes("sony") || lower.includes("054c")) {
+            return "ps";
+        }
+        return "ps";
+    }
+
+    const STICK_DEAD = 0.12;
+    const STICK_DOT_RANGE = 18;
+
+    /** Baut die SVG-Controller-Abbildung. ASCII-Kommentar zeigt die Layout-Bereiche:
+     *
+     *  ╭──L2──╮          ╭──R2──╮       y(0..70)   Trigger
+     *  ╭──L1──╮          ╭──R1──╮       y(56..76)  Shoulder
+     *  ╭───────────────────────────╮
+     *  │  ▲              △        │
+     *  │ ◀▶  Sel  Start □ ○      │    y(75..320)  Body
+     *  │  ▼  ▭ Touchpad   ✕      │
+     *  │      L3       R3         │
+     *  ╰───────────────────────────╯
+     */
+    /** PS-Layout (DualSense): Body mit M-fluegel-Silhouette + Bottom-Pinch,
+     *  Center-Band hinter Touchpad+Light-Bar, Stick-Wells konzentrisch fuer Tiefe.
+     *  Stick-Basis: L3=(240,272), R3=(360,272). */
+    function buildSvgPs(): string {
+        return `
+            <svg viewBox="0 0 600 360" class="ctrlSvg ctrlSvgStylePs" role="img" aria-label="DualSense controller">
+                <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="92" y="14" width="86" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="135" y="42">L2</text>
+                <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="422" y="14" width="86" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="465" y="42">R2</text>
+
+                <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="95" y="58" width="100" height="22" rx="11"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="145" y="71">L1</text>
+                <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="405" y="58" width="100" height="22" rx="11"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="455" y="71">R1</text>
+
+                <path class="ctrlSvgBody" d="M 124 80 L 476 80 C 520 82 552 110 556 158 C 560 198 552 236 535 270 C 518 297 495 316 470 327 C 442 340 410 342 384 335 C 363 329 348 320 335 312 C 322 305 312 300 302 300 L 298 300 C 288 300 278 305 265 312 C 252 320 237 329 216 335 C 190 342 158 340 130 327 C 105 316 82 297 65 270 C 48 236 40 198 44 158 C 48 110 80 82 124 80 Z"/>
+
+                <rect class="ctrlSvgTouchpad" x="245" y="148" width="110" height="44" rx="6"/>
+                <rect class="ctrlSvgLightBar" x="241" y="144" width="118" height="52" rx="9"/>
+                <line class="ctrlSvgTouchpadDivider" x1="300" y1="150" x2="300" y2="190"/>
+                <rect data-button="select" class="ctrlSvgBtn ctrlSvgPill" x="225" y="167" width="16" height="9" rx="4.5"/>
+                <rect data-button="start"  class="ctrlSvgBtn ctrlSvgPill" x="359" y="167" width="16" height="9" rx="4.5"/>
+
+                <rect class="ctrlSvgDpadCenter" x="161" y="171" width="18" height="18"/>
+                <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="161" y="146" width="18" height="25" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 165 162 L 170 154 L 175 162 Z"/>
+                <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="161" y="189" width="18" height="25" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 165 198 L 170 206 L 175 198 Z"/>
+                <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="136" y="171" width="25" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 152 176 L 144 180 L 152 184 Z"/>
+                <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="179" y="171" width="25" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 188 176 L 196 180 L 188 184 Z"/>
+
+                <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgFaceY" cx="430" cy="150" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="430" y="155">△</text>
+                <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgFaceB" cx="460" cy="180" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="460" y="185">○</text>
+                <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgFaceA" cx="430" cy="210" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="430" y="215">✕</text>
+                <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgFaceX" cx="400" cy="180" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="400" y="185">□</text>
+
+                <circle class="ctrlSvgStickWell"      cx="240" cy="272" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="240" cy="272" r="30"/>
+                <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="240" cy="272" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="240" cy="272" r="22"/>
+                <circle data-stick="l"  class="ctrlSvgStickDot" cx="240" cy="272" r="10"/>
+
+                <circle class="ctrlSvgStickWell"      cx="360" cy="272" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="360" cy="272" r="30"/>
+                <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="360" cy="272" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="360" cy="272" r="22"/>
+                <circle data-stick="r"  class="ctrlSvgStickDot" cx="360" cy="272" r="10"/>
+
+                <text class="ctrlSvgPsLogo" x="300" y="240">PlayStation</text>
+            </svg>
+        `;
+    }
+
+    /** Xbox-Layout (Series X): kompakter Body, asymmetrische Sticks (L3 oben links,
+     *  R3 unten rechts), D-Pad unter L-Stick, Guide-Button mit Halo + leuchtendem
+     *  X-Logo, Grip-Texture-Lines.
+     *  Stick-Basis: L3=(180,160), R3=(370,252). */
+    function buildSvgXbox(): string {
+        return `
+            <svg viewBox="0 0 600 360" class="ctrlSvg ctrlSvgStyleXbox" role="img" aria-label="Xbox controller">
+                <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="100" y="14" width="80" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="140" y="42">LT</text>
+                <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="420" y="14" width="80" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="460" y="42">RT</text>
+
+                <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="100" y="58" width="98" height="22" rx="11"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="149" y="71">LB</text>
+                <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="402" y="58" width="98" height="22" rx="11"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="451" y="71">RB</text>
+
+                <path class="ctrlSvgBody" d="M 130 80 L 470 80 C 502 82 524 106 530 140 C 535 178 524 220 506 252 C 488 282 462 300 432 310 C 408 316 384 314 364 306 C 348 298 334 290 322 284 C 312 280 304 278 300 278 L 300 278 C 296 278 288 280 278 284 C 266 290 252 298 236 306 C 216 314 192 316 168 310 C 138 300 112 282 94 252 C 76 220 65 178 70 140 C 76 106 98 82 130 80 Z"/>
+
+                <path class="ctrlSvgGripDetail" d="M 110 270 L 130 290 M 105 280 L 125 300 M 100 290 L 120 308"/>
+                <path class="ctrlSvgGripDetail" d="M 490 270 L 470 290 M 495 280 L 475 300 M 500 290 L 480 308"/>
+
+                <circle class="ctrlSvgGuideRing" cx="300" cy="120" r="22"/>
+                <circle class="ctrlSvgGuide"      cx="300" cy="120" r="16"/>
+                <path   class="ctrlSvgXboxLogo"   d="M 291 111 L 309 129 M 291 129 L 309 111"/>
+
+                <rect data-button="select" class="ctrlSvgBtn ctrlSvgPill" x="248" y="115" width="20" height="10" rx="5"/>
+                <rect data-button="start"  class="ctrlSvgBtn ctrlSvgPill" x="332" y="115" width="20" height="10" rx="5"/>
+
+                <circle class="ctrlSvgStickWell"      cx="180" cy="160" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="180" cy="160" r="30"/>
+                <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="180" cy="160" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="180" cy="160" r="22"/>
+                <circle data-stick="l"  class="ctrlSvgStickDot" cx="180" cy="160" r="10"/>
+
+                <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="430" cy="138" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="430" y="143">Y</text>
+                <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="462" cy="170" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="462" y="175">B</text>
+                <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="430" cy="202" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="430" y="207">A</text>
+                <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="398" cy="170" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="398" y="175">X</text>
+
+                <rect class="ctrlSvgDpadCenter" x="211" y="243" width="18" height="18"/>
+                <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="211" y="219" width="18" height="24" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 215 235 L 220 227 L 225 235 Z"/>
+                <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="211" y="261" width="18" height="24" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 215 269 L 220 277 L 225 269 Z"/>
+                <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="187" y="243" width="24" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 203 248 L 195 252 L 203 256 Z"/>
+                <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="229" y="243" width="24" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 237 248 L 245 252 L 237 256 Z"/>
+
+                <circle class="ctrlSvgStickWell"      cx="370" cy="252" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="370" cy="252" r="30"/>
+                <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="370" cy="252" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="370" cy="252" r="22"/>
+                <circle data-stick="r"  class="ctrlSvgStickDot" cx="370" cy="252" r="10"/>
+
+                <text class="ctrlSvgXboxWord" x="300" y="318">XBOX</text>
+            </svg>
+        `;
+    }
+
+    function svgMarkupFor(style: ControllerVisualStyle): string {
+        return style === "xbox" ? buildSvgXbox() : buildSvgPs();
+    }
+
+    function stickBasesFor(style: ControllerVisualStyle): { l: { cx: number; cy: number }; r: { cx: number; cy: number } } {
+        if (style === "xbox") {
+            return { l: { cx: 180, cy: 160 }, r: { cx: 370, cy: 252 } };
+        }
+        return { l: { cx: 240, cy: 272 }, r: { cx: 360, cy: 272 } };
+    }
+
+    /** Befuellt buttonShapes/stickDots aus dem aktuell im svgHost gemounteten
+     *  SVG. Bei einem Style-Swap rufen wir das erneut auf. */
+    function querySvgRefs(refs: ControllerSvgRefs): void {
+        const svg = refs.svgHost.querySelector("svg") as SVGSVGElement | null;
+        refs.buttonShapes.clear();
+        if (!svg) return;
+        for (const shape of Array.from(svg.querySelectorAll<SVGElement>("[data-button]"))) {
+            const name = shape.getAttribute("data-button") as ControllerButtonName;
+            refs.buttonShapes.set(name, shape);
+        }
+        refs.stickDots.l = svg.querySelector<SVGCircleElement>('[data-stick="l"]') as SVGCircleElement;
+        refs.stickDots.r = svg.querySelector<SVGCircleElement>('[data-stick="r"]') as SVGCircleElement;
+    }
+
+    /** Rendert ein neues Layout in den vorhandenen svgHost. Liefert true zurueck,
+     *  wenn tatsaechlich getauscht wurde (zum Re-Wiren der Hover-Listener). */
+    function applyControllerStyle(refs: ControllerSvgRefs, nextStyle: ControllerVisualStyle): boolean {
+        if (refs.effectiveStyle === nextStyle && refs.buttonShapes.size > 0) return false;
+        refs.effectiveStyle = nextStyle;
+        refs.svgHost.innerHTML = svgMarkupFor(nextStyle);
+        refs.stickBases = stickBasesFor(nextStyle);
+        querySvgRefs(refs);
+        return true;
+    }
+
+    function buildControllerSvg(initialStyle: ControllerVisualStyle): ControllerSvgRefs {
+        const wrap = el("div", "ctrlVisualWrap") as HTMLDivElement;
+        // Top-row: Status (links) + Style-Dropdown (rechts).
+        const topRow = el("div", "ctrlVisualTopRow");
+        const statusEl = el("div", "ctrlVisualStatus") as HTMLElement;
+        const styleSelectEl = document.createElement("select");
+        styleSelectEl.className = "ctrlVisualStyleSelect";
+        for (const [val, key] of [
+            ["auto", "controller.svg.style.auto"],
+            ["ps",   "controller.svg.style.ps"],
+            ["xbox", "controller.svg.style.xbox"],
+        ] as const) {
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = t(key as TranslationKey);
+            styleSelectEl.append(opt);
+        }
+        styleSelectEl.value = "auto";
+        topRow.append(statusEl, styleSelectEl);
+        wrap.append(topRow);
+
+        const svgHost = el("div", "ctrlSvgHost") as HTMLDivElement;
+        wrap.append(svgHost);
+
+        const refs: ControllerSvgRefs = {
+            wrap,
+            statusEl,
+            styleSelectEl,
+            svgHost,
+            buttonShapes: new Map<ControllerButtonName, SVGElement>(),
+            stickDots: { l: null as unknown as SVGCircleElement, r: null as unknown as SVGCircleElement },
+            stickBases: stickBasesFor(initialStyle),
+            effectiveStyle: initialStyle,
+        };
+        applyControllerStyle(refs, initialStyle);
+        return refs;
+    }
+
+    /** Startet den RAF-Loop fuer Live-Button-Anzeige im SVG. Liefert eine
+     *  Cleanup-Funktion zurueck; aktiviert auch den Status-Text (Controller-ID).
+     *
+     *  Wir lesen `navigator.getGamepads()` direkt im Renderer (Launcher-Window)
+     *  — der gleiche Loop, den der Preload fuer das Spiel nutzt, aber hier nur
+     *  zur Visualisierung. Triggers (L2/R2) zaehlen als gedrueckt ab value > 0.3,
+     *  damit Analog-Trigger sauber animieren. */
+    function startControllerLiveLoop(
+        refs: ControllerSvgRefs,
+        opts: {
+            getUserStyle: () => ControllerStyle;
+            onStyleSwapped: () => void;
+        },
+    ): () => void {
+        let cancelled = false;
+        let rafId: number | null = null;
+        let lastConnectedId: string | null = null;
+        let lastStatusKey: string | null = null;
+
+        const setStatus = (id: string | null, hint: string | null) => {
+            const key = (id ?? "") + "|" + (hint ?? "");
+            if (key === lastStatusKey) return;
+            lastStatusKey = key;
+            refs.statusEl.innerHTML = "";
+            const dot = el("span", "ctrlVisualStatusDot");
+            const txt = document.createTextNode(
+                id ? id : (hint ?? t("controller.svg.statusDisconnected" as TranslationKey)),
+            );
+            refs.statusEl.classList.toggle("connected", !!id);
+            refs.statusEl.append(dot, txt);
+        };
+
+        const applyDz = (v: number) => (Math.abs(v) < STICK_DEAD ? 0 : v);
+
+        const tick = () => {
+            if (cancelled) return;
+            const pads: Array<Gamepad | null> = navigator.getGamepads
+                ? Array.from(navigator.getGamepads())
+                : [];
+            const gp = pads.find((p): p is Gamepad => !!p) ?? null;
+
+            // Auto-Style: erkenntes Layout aus gamepad.id ableiten und das SVG
+            // tauschen — nur wenn der User keinen manuellen Override gesetzt hat.
+            const userStyle = opts.getUserStyle();
+            if (gp && userStyle === "auto") {
+                const detected = detectControllerStyle(gp.id);
+                if (detected !== refs.effectiveStyle) {
+                    if (applyControllerStyle(refs, detected)) {
+                        opts.onStyleSwapped();
+                    }
+                }
+            }
+
+            if (gp) {
+                if (gp.id !== lastConnectedId) {
+                    lastConnectedId = gp.id;
+                    setStatus(gp.id, null);
+                }
+                const buttonIndices: Array<{ idx: number; name: ControllerButtonName }> = [
+                    { idx: 0, name: "a" }, { idx: 1, name: "b" }, { idx: 2, name: "x" }, { idx: 3, name: "y" },
+                    { idx: 4, name: "l1" }, { idx: 5, name: "r1" }, { idx: 6, name: "l2" }, { idx: 7, name: "r2" },
+                    { idx: 8, name: "select" }, { idx: 9, name: "start" }, { idx: 10, name: "l3" }, { idx: 11, name: "r3" },
+                    { idx: 12, name: "dpadUp" }, { idx: 13, name: "dpadDown" }, { idx: 14, name: "dpadLeft" }, { idx: 15, name: "dpadRight" },
+                ];
+                for (const { idx, name } of buttonIndices) {
+                    const shape = refs.buttonShapes.get(name);
+                    if (!shape) continue;
+                    const btn = gp.buttons[idx];
+                    const pressed = !!(btn && (btn.pressed || (typeof btn.value === "number" && btn.value > 0.3)));
+                    shape.classList.toggle("ctrlSvgPressed", pressed);
+                }
+                const lx = applyDz(gp.axes[0] ?? 0);
+                const ly = applyDz(gp.axes[1] ?? 0);
+                refs.stickDots.l?.setAttribute("cx", String(refs.stickBases.l.cx + lx * STICK_DOT_RANGE));
+                refs.stickDots.l?.setAttribute("cy", String(refs.stickBases.l.cy + ly * STICK_DOT_RANGE));
+                const rx = applyDz(gp.axes[2] ?? 0);
+                const ry = applyDz(gp.axes[3] ?? 0);
+                refs.stickDots.r?.setAttribute("cx", String(refs.stickBases.r.cx + rx * STICK_DOT_RANGE));
+                refs.stickDots.r?.setAttribute("cy", String(refs.stickBases.r.cy + ry * STICK_DOT_RANGE));
+            }
+            else if (lastConnectedId !== null) {
+                lastConnectedId = null;
+                setStatus(null, null);
+                for (const shape of refs.buttonShapes.values()) {
+                    shape.classList.remove("ctrlSvgPressed");
+                }
+                refs.stickDots.l?.setAttribute("cx", String(refs.stickBases.l.cx));
+                refs.stickDots.l?.setAttribute("cy", String(refs.stickBases.l.cy));
+                refs.stickDots.r?.setAttribute("cx", String(refs.stickBases.r.cx));
+                refs.stickDots.r?.setAttribute("cy", String(refs.stickBases.r.cy));
+            }
+            rafId = requestAnimationFrame(tick);
+        };
+
+        setStatus(null, null);
+        rafId = requestAnimationFrame(tick);
+
+        return () => {
+            cancelled = true;
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+        };
+    }
+
     async function renderControllerTab(): Promise<void> {
+        // Falls beim Re-Open der gleiche Tab schon einen Live-Loop laufen
+        // hatte: erst sauber abreissen, sonst stapeln sich RAFs.
+        if (controllerLiveCleanup) {
+            controllerLiveCleanup();
+            controllerLiveCleanup = null;
+        }
         controllerPane.innerHTML = "";
         controllerPane.classList.add("controllerPaneInner");
 
@@ -1463,6 +1899,70 @@ export function openConfigModal(
             el("div", "ctrlIntro", t("controller.intro" as TranslationKey)),
         );
         controllerPane.append(head);
+
+        // SVG-Diagramm + Live-Status — beide Eingangsrichtungen (SVG → Card,
+        // Card → SVG) werden weiter unten verdrahtet, sobald die Cards stehen.
+        // Initial-Layout: einmal aktuelle Pads abfragen, davon erstes Layout
+        // ableiten. Spaeter kann der Live-Loop auto-swappen.
+        let userStyle: ControllerStyle = "auto";
+        const initialDetected: ControllerVisualStyle = (() => {
+            const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+            const gp = pads.find((p): p is Gamepad => !!p) ?? null;
+            return gp ? detectControllerStyle(gp.id) : "ps";
+        })();
+        const svgRefs = buildControllerSvg(initialDetected);
+        // SVG wird gleich in das Spatial-Layout (Mittelspalte) gehaengt — nicht
+        // mehr direkt in den Pane.
+
+        const cardRefs = new Map<ControllerButtonName, HTMLElement>();
+
+        const flashCard = (card: HTMLElement) => {
+            card.classList.remove("ctrlCardFlash");
+            // Force reflow, damit die Animation neu startet, falls schnell
+            // hintereinander auf den gleichen Button geklickt wird.
+            void card.offsetWidth;
+            card.classList.add("ctrlCardFlash");
+            window.setTimeout(() => card.classList.remove("ctrlCardFlash"), 900);
+        };
+
+        /** Listener-Bindung muss nach jedem Style-Swap neu passieren, weil das
+         *  innerHTML-Replace der SVG-Inhalte alle alten DOM-Listener killt. */
+        const wireSvgListeners = () => {
+            for (const [name, shape] of svgRefs.buttonShapes.entries()) {
+                shape.addEventListener("mouseenter", () => {
+                    shape.classList.add("ctrlSvgHover");
+                    cardRefs.get(name)?.classList.add("ctrlCardHighlight");
+                });
+                shape.addEventListener("mouseleave", () => {
+                    shape.classList.remove("ctrlSvgHover");
+                    cardRefs.get(name)?.classList.remove("ctrlCardHighlight");
+                });
+                shape.addEventListener("click", () => {
+                    const card = cardRefs.get(name);
+                    if (!card) return;
+                    card.scrollIntoView({ behavior: "smooth", block: "center" });
+                    flashCard(card);
+                });
+            }
+        };
+        wireSvgListeners();
+
+        // Style-Dropdown: User kann Auto/PS/Xbox waehlen. Bei Auto erkennt der
+        // Live-Loop selbststaendig und tauscht; bei manueller Wahl wird sofort
+        // geswappt und die Auto-Erkennung pausiert.
+        svgRefs.styleSelectEl.addEventListener("change", () => {
+            userStyle = svgRefs.styleSelectEl.value as ControllerStyle;
+            const target: ControllerVisualStyle = userStyle === "auto"
+                ? (() => {
+                    const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+                    const gp = pads.find((p): p is Gamepad => !!p) ?? null;
+                    return gp ? detectControllerStyle(gp.id) : "ps";
+                })()
+                : userStyle;
+            if (applyControllerStyle(svgRefs, target)) {
+                wireSvgListeners();
+            }
+        });
 
         // Profile dropdown
         const profiles = (await window.api.profilesList?.()) as Array<{
@@ -1497,28 +1997,275 @@ export function openConfigModal(
 
         controllerPane.append(el("div", "ctrlCalibrateHint", t("controller.calibrateHint" as TranslationKey)));
 
-        const sectionsContainer = el("div", "ctrlSections");
-        controllerPane.append(sectionsContainer);
+        // Spatial-Layout: 3 Spalten — links D-Pad + L3, mitte (Top-Strip mit
+        // Triggers/Shoulders/System + SVG-Diagramm), rechts Face-Buttons + R3.
+        // Jede Card sitzt da wo der reale Knopf am Pad sitzt — antimicrox-Style.
+        const spatialLayout = el("div", "ctrlSpatial");
+        const leftCol = el("div", "ctrlSpatialCol ctrlSpatialLeft");
+        const centerCol = el("div", "ctrlSpatialCol ctrlSpatialCenter");
+        const rightCol = el("div", "ctrlSpatialCol ctrlSpatialRight");
+        const topStrip = el("div", "ctrlSpatialTopStrip");
+        centerCol.append(topStrip, svgRefs.wrap);
+        centerCol.append(el("div", "ctrlSvgHint muted", t("controller.svg.hint" as TranslationKey)));
+
+        // Modifier-Inline-Bereich: direkt unter dem SVG. Toggle-Reihe + bedingte
+        // Binding-Reihen pro aktiviertem Slot. Container hier anlegen, befuellt
+        // wird von rebuildModifierPanel().
+        const modifiersInline = el("div", "ctrlModifiersInline");
+        const modifiersTitle = el("div", "ctrlModifiersInlineTitle", t("controller.modifiers.title" as TranslationKey));
+        const modToggleRow = el("div", "ctrlModToggleRow");
+        const modBindingsContainer = el("div", "ctrlModBindings");
+        modifiersInline.append(modifiersTitle, modToggleRow, modBindingsContainer);
+        centerCol.append(modifiersInline);
+
+        const buildGroup = (parent: HTMLElement, titleKey: string): HTMLElement => {
+            const group = el("div", "ctrlSpatialGroup");
+            group.append(el("div", "ctrlSpatialGroupTitle", t(titleKey as TranslationKey)));
+            const inner = el("div", "ctrlSpatialGroupInner");
+            group.append(inner);
+            parent.append(group);
+            return inner;
+        };
+        const dpadGroup = buildGroup(leftCol, "controller.section.dpad");
+        const lstickGroup = buildGroup(leftCol, "controller.section.lstick");
+        const faceGroup = buildGroup(rightCol, "controller.section.face");
+        const rstickGroup = buildGroup(rightCol, "controller.section.rstick");
+
+        spatialLayout.append(leftCol, centerCol, rightCol);
+        controllerPane.append(spatialLayout);
+
+        // Reihenfolge fuer das Top-Strip-Subgrid (CSS positioniert die einzelnen
+        // Cards via [data-button="..."] in 2 Reihen). Hier reicht die DOM-Order
+        // wie aufgelistet.
+        const buttonPlacements: Array<{ container: HTMLElement; button: ControllerButtonName }> = [
+            { container: topStrip, button: "l2" },
+            { container: topStrip, button: "r2" },
+            { container: topStrip, button: "l1" },
+            { container: topStrip, button: "select" },
+            { container: topStrip, button: "start" },
+            { container: topStrip, button: "r1" },
+            { container: dpadGroup,   button: "dpadUp" },
+            { container: dpadGroup,   button: "dpadDown" },
+            { container: dpadGroup,   button: "dpadLeft" },
+            { container: dpadGroup,   button: "dpadRight" },
+            { container: lstickGroup, button: "l3" },
+            { container: faceGroup,   button: "y" },
+            { container: faceGroup,   button: "x" },
+            { container: faceGroup,   button: "b" },
+            { container: faceGroup,   button: "a" },
+            { container: rstickGroup, button: "r3" },
+        ];
+        const groupContainers = [topStrip, dpadGroup, lstickGroup, faceGroup, rstickGroup];
+
+        // ── Modifier-UI ──────────────────────────────────────────────────────
+        // Toggle pro Schulter (L1/R1/L2/R2). Bei "on" wird die Binding-Reihe
+        // mit 4 Face-Button-Cards (△○✕□) eingeblendet. Bindings bleiben auch
+        // bei toggle-off erhalten — nur enabled-Flag wird umgeschaltet.
+
+        const MODIFIER_TARGETS: ControllerButtonName[] = ["y", "b", "a", "x"];
+
+        const buildModifierCard = (slot: ModifierSlotName, target: ControllerButtonName): HTMLElement => {
+            const info = CONTROLLER_BUTTONS[target];
+            const card = el("div", "ctrlCard ctrlModCard");
+            card.dataset.button = target;
+            card.dataset.modifier = slot;
+            card.title = `${slot.toUpperCase()} + ${info.name}`;
+
+            const symbol = el("div", "ctrlSymbol", info.symbol);
+            const meta = el("div", "ctrlCardInfo");
+            const binding = el("div", "ctrlCardBinding");
+            meta.append(binding);
+
+            const refreshBinding = () => {
+                binding.className = "ctrlCardBinding";
+                binding.innerHTML = "";
+                const value = currentControllerModifiers[slot]?.buttons?.[target];
+                if (typeof value === "string" && value.length > 0) {
+                    binding.classList.add("override");
+                    binding.textContent = controllerActionLabel(value);
+                }
+                else if (value === null) {
+                    binding.classList.add("unbound");
+                    binding.textContent = t("controller.binding.unbound" as TranslationKey);
+                }
+                else {
+                    binding.classList.add("default");
+                    binding.textContent = t("controller.modifiers.unset" as TranslationKey);
+                }
+            };
+
+            const writeBinding = (value: string | null) => {
+                if (!currentControllerModifiers[slot]) currentControllerModifiers[slot] = { enabled: true };
+                const layer = currentControllerModifiers[slot]!;
+                if (!layer.buttons) layer.buttons = {};
+                layer.buttons[target] = value;
+                refreshBinding();
+            };
+
+            let capturingActive = false;
+            const startCapture = () => {
+                if (capturingActive) return;
+                capturingActive = true;
+                binding.textContent = t("controller.capturing" as TranslationKey);
+                binding.classList.add("capturing");
+                const onKey = (ev: KeyboardEvent) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    document.removeEventListener("keydown", onKey, true);
+                    capturingActive = false;
+                    binding.classList.remove("capturing");
+                    if (ev.key === "Escape") {
+                        refreshBinding();
+                        return;
+                    }
+                    let code = ev.key;
+                    if (code.length === 1) code = code.toUpperCase();
+                    if (code === " ") code = "Space";
+                    if (code === "Enter") code = "Return";
+                    writeBinding(code);
+                };
+                document.addEventListener("keydown", onKey, true);
+            };
+
+            binding.tabIndex = 0;
+            binding.addEventListener("click", startCapture);
+            binding.addEventListener("keydown", (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    startCapture();
+                }
+            });
+
+            const actions = el("div", "ctrlCardActions");
+            const modPadBtn = document.createElement("button");
+            modPadBtn.type = "button";
+            modPadBtn.className = "ctrlBtn ctrlBtnPad";
+            modPadBtn.textContent = "@";
+            modPadBtn.title = t("controller.action.menuTitle" as TranslationKey);
+            modPadBtn.addEventListener("click", () => {
+                showSpecialActionMenu(modPadBtn, (action) => writeBinding(action));
+            });
+            const clearBtn = document.createElement("button");
+            clearBtn.type = "button";
+            clearBtn.className = "ctrlBtn ctrlBtnReset";
+            clearBtn.textContent = "↺";
+            clearBtn.title = t("controller.modifiers.clear" as TranslationKey);
+            clearBtn.addEventListener("click", () => {
+                const layer = currentControllerModifiers[slot];
+                if (layer?.buttons) {
+                    delete layer.buttons[target];
+                    if (Object.keys(layer.buttons).length === 0) delete layer.buttons;
+                }
+                refreshBinding();
+            });
+            actions.append(modPadBtn, clearBtn);
+            // Icon nur fuer aktive Modifier-Layer (l1/r1/r2 — l2 ist Cursor-Modus,
+            // wird hier nicht gerendert).
+            if (slot === "l1" || slot === "r1" || slot === "r2") {
+                if (target === "a" || target === "b" || target === "x" || target === "y") {
+                    actions.append(buildIconBtn(target, slot));
+                }
+            }
+
+            card.append(symbol, meta, actions);
+            refreshBinding();
+            return card;
+        };
+
+        const isModifierEnabled = (slot: ModifierSlotName): boolean => {
+            const layer = currentControllerModifiers[slot];
+            return !!layer && layer.enabled !== false;
+        };
+
+        const rebuildModifierPanel = () => {
+            // Toggle-Reihe
+            modToggleRow.innerHTML = "";
+            for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                const isOn = isModifierEnabled(slot);
+                const chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "ctrlModToggle";
+                if (isOn) chip.classList.add("on");
+                chip.append(
+                    el("span", "ctrlModToggleLabel", slot.toUpperCase()),
+                    el("span", "ctrlModToggleStatus", isOn
+                        ? t("controller.modifiers.toggleOn" as TranslationKey)
+                        : t("controller.modifiers.toggleOff" as TranslationKey)),
+                );
+                chip.addEventListener("click", () => {
+                    const cur = currentControllerModifiers[slot] ?? {};
+                    if (isOn) {
+                        currentControllerModifiers[slot] = { ...cur, enabled: false };
+                    }
+                    else {
+                        currentControllerModifiers[slot] = { ...cur, enabled: true };
+                    }
+                    rebuildModifierPanel();
+                });
+                modToggleRow.append(chip);
+            }
+            // Binding-Reihen pro aktiviertem Slot
+            modBindingsContainer.innerHTML = "";
+            for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                if (!isModifierEnabled(slot)) continue;
+                const row = el("div", "ctrlModRow");
+                row.append(el("div", "ctrlModRowLabel", `${slot.toUpperCase()} +`));
+                const grid = el("div", "ctrlModRowGrid");
+                for (const target of MODIFIER_TARGETS) {
+                    grid.append(buildModifierCard(slot, target));
+                }
+                row.append(grid);
+                modBindingsContainer.append(row);
+            }
+        };
 
         const renderForProfile = (profileId: string) => {
             const p = profiles.find((x) => x.id === profileId);
             currentControllerOverride = { ...(p?.controller?.buttons ?? {}) };
-            sectionsContainer.innerHTML = "";
-            for (const section of CONTROLLER_SECTIONS) {
-                const sec = el("div", "ctrlSection");
-                sec.append(el("div", "ctrlSectionTitle", t(section.titleKey as TranslationKey)));
-                const grid = el("div", "ctrlGrid");
-                for (const btnKey of section.buttons) {
-                    grid.append(buildButtonCard(btnKey));
+            // Modifier deep-clonen damit die Bearbeitung nicht in den Profile-
+            // List-Cache zurueckschlaegt. Beide Formate akzeptieren: das neue
+            // { enabled, buttons } und das alte flache { y, b, ... }, falls
+            // Profile noch nicht migriert sind.
+            const rawMods = (p as {
+                controller?: { modifiers?: Partial<Record<ModifierSlotName, unknown>> };
+            } | undefined)?.controller?.modifiers ?? {};
+            currentControllerModifiers = {};
+            for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                const raw = rawMods[slot];
+                if (!raw || typeof raw !== "object") continue;
+                const obj = raw as Record<string, unknown>;
+                const hasLayerShape = "enabled" in obj || "buttons" in obj;
+                if (hasLayerShape) {
+                    const enabled = typeof obj.enabled === "boolean" ? obj.enabled : true;
+                    const buttons = (obj.buttons && typeof obj.buttons === "object")
+                        ? { ...(obj.buttons as ControllerButtonOverride) }
+                        : undefined;
+                    currentControllerModifiers[slot] = { enabled, ...(buttons ? { buttons } : {}) };
                 }
-                sec.append(grid);
-                sectionsContainer.append(sec);
+                else {
+                    currentControllerModifiers[slot] = { enabled: true, buttons: { ...(raw as ControllerButtonOverride) } };
+                }
             }
+            for (const c of groupContainers) c.innerHTML = "";
+            cardRefs.clear();
+            for (const { container, button } of buttonPlacements) {
+                container.append(buildButtonCard(button));
+            }
+            rebuildModifierPanel();
         };
 
         const buildButtonCard = (btnKey: ControllerButtonName): HTMLElement => {
             const info = CONTROLLER_BUTTONS[btnKey];
             const card = el("div", "ctrlCard");
+            card.dataset.button = btnKey;
+            card.title = info.name;
+            cardRefs.set(btnKey, card);
+            card.addEventListener("mouseenter", () => {
+                svgRefs.buttonShapes.get(btnKey)?.classList.add("ctrlSvgHover");
+            });
+            card.addEventListener("mouseleave", () => {
+                svgRefs.buttonShapes.get(btnKey)?.classList.remove("ctrlSvgHover");
+            });
 
             const symbol = el("div", "ctrlSymbol", info.symbol);
             const meta = el("div", "ctrlCardInfo");
@@ -1553,8 +2300,18 @@ export function openConfigModal(
             captureBtn.type = "button";
             captureBtn.className = "ctrlBtn ctrlBtnCapture";
             captureBtn.textContent = t("controller.capture" as TranslationKey);
-            captureBtn.addEventListener("click", () => {
-                const orig = captureBtn.textContent || "";
+
+            // Capture-Logik: kann sowohl von der Binding-Zelle (Klick) als auch
+            // vom expliziten Capture-Button (in nicht-spatial Layouts) angestossen
+            // werden. Im Spatial-Mode ist die Binding selbst der Trigger — der
+            // Capture-Button wird per CSS versteckt.
+            let capturingActive = false;
+            const startCapture = () => {
+                if (capturingActive) return;
+                capturingActive = true;
+                const origText = binding.textContent || "";
+                binding.textContent = t("controller.capturing" as TranslationKey);
+                binding.classList.add("capturing");
                 captureBtn.textContent = t("controller.capturing" as TranslationKey);
                 captureBtn.disabled = true;
                 captureBtn.classList.add("capturing");
@@ -1562,10 +2319,15 @@ export function openConfigModal(
                     ev.preventDefault();
                     ev.stopPropagation();
                     document.removeEventListener("keydown", onKey, true);
-                    captureBtn.textContent = orig;
+                    capturingActive = false;
+                    captureBtn.textContent = t("controller.capture" as TranslationKey);
                     captureBtn.disabled = false;
                     captureBtn.classList.remove("capturing");
-                    if (ev.key === "Escape") return;
+                    binding.classList.remove("capturing");
+                    if (ev.key === "Escape") {
+                        binding.textContent = origText;
+                        return;
+                    }
                     let code = ev.key;
                     if (code.length === 1) code = code.toUpperCase();
                     if (code === " ") code = "Space";
@@ -1574,16 +2336,31 @@ export function openConfigModal(
                     refreshBinding();
                 };
                 document.addEventListener("keydown", onKey, true);
+            };
+
+            captureBtn.addEventListener("click", startCapture);
+            // Binding-Zelle ist im Spatial-Mode das Click-Target.
+            binding.tabIndex = 0;
+            binding.addEventListener("click", startCapture);
+            binding.addEventListener("keydown", (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    startCapture();
+                }
             });
 
+            // "@"-Button: oeffnet Popover mit Special-Actions (Action-Pad,
+            // Tab-Wechsel, Reload, Fullscreen, Open-Config).
             const padBtn = document.createElement("button");
             padBtn.type = "button";
             padBtn.className = "ctrlBtn ctrlBtnPad";
-            padBtn.textContent = "⊕";
-            padBtn.title = t("controller.bindActionPadHint" as TranslationKey);
+            padBtn.textContent = "@";
+            padBtn.title = t("controller.action.menuTitle" as TranslationKey);
             padBtn.addEventListener("click", () => {
-                currentControllerOverride[btnKey] = "@actionPad";
-                refreshBinding();
+                showSpecialActionMenu(padBtn, (action) => {
+                    currentControllerOverride[btnKey] = action;
+                    refreshBinding();
+                });
             });
 
             const unbindBtn = document.createElement("button");
@@ -1606,11 +2383,128 @@ export function openConfigModal(
                 refreshBinding();
             });
 
+            // Icon-Button — nur fuer Face-Buttons (a/b/x/y). Click-to-Capture aus
+            // dem laufenden Spiel; Shift+Klick loescht das Icon. Persistiert direkt
+            // (unabhaengig vom Save-Knopf), weil der Capture-Flow async ist und
+            // das Spiel bereits offen sein muss.
+            let iconBtn: HTMLButtonElement | null = null;
+            if (btnKey === "a" || btnKey === "b" || btnKey === "x" || btnKey === "y") {
+                iconBtn = buildIconBtn(btnKey, null);
+            }
+
             actions.append(captureBtn, padBtn, unbindBtn, resetBtn);
+            if (iconBtn) actions.append(iconBtn);
 
             card.append(symbol, meta, actions);
             refreshBinding();
             return card;
+        };
+
+        // Helfer: erzeugt einen Icon-Setter-Button fuer ein Face-Slot (Base-Layer
+        // oder Modifier-Layer). Liest aktuellen Icon-State vom Profil-Cache,
+        // ruft beim Klick `captureIcon`/`clearIcon` aus dem Preload und
+        // aktualisiert die Anzeige direkt mit der zurueckgegebenen Data-URI.
+        const buildIconBtn = (
+            face: "a" | "b" | "x" | "y",
+            layer: "l1" | "r1" | "r2" | null,
+        ): HTMLButtonElement => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "ctrlBtn ctrlBtnIcon";
+
+            const readCurrentIcon = (): string | undefined => {
+                if (!currentControllerProfileId) return undefined;
+                const profile = profiles.find((p) => p.id === currentControllerProfileId) as
+                    | { controller?: { icons?: Record<string, string>; modifiers?: Record<string, { icons?: Record<string, string> }> } }
+                    | undefined;
+                if (!profile?.controller) return undefined;
+                if (layer) return profile.controller.modifiers?.[layer]?.icons?.[face];
+                return profile.controller.icons?.[face];
+            };
+            const setDisplay = (uri: string | undefined) => {
+                if (uri) {
+                    btn.style.backgroundImage = `url("${uri}")`;
+                    btn.style.backgroundSize = "cover";
+                    btn.style.backgroundPosition = "center";
+                    btn.textContent = "";
+                    btn.title = t("controller.icon.replace" as TranslationKey);
+                }
+                else {
+                    btn.style.backgroundImage = "";
+                    btn.textContent = "📷";
+                    btn.title = t("controller.icon.set" as TranslationKey);
+                }
+            };
+            setDisplay(readCurrentIcon());
+
+            const ctrlApi = (window as unknown as {
+                controllerApi?: {
+                    captureIcon: (id: string, f: "a" | "b" | "x" | "y", l: "l1" | "r1" | "r2" | null)
+                        => Promise<{ ok: boolean; dataUri?: string; reason?: string }>;
+                    clearIcon: (id: string, f: "a" | "b" | "x" | "y", l: "l1" | "r1" | "r2" | null)
+                        => Promise<{ ok: boolean }>;
+                };
+            }).controllerApi;
+
+            btn.addEventListener("click", async (ev) => {
+                if (!currentControllerProfileId || !ctrlApi) return;
+                if (ev.shiftKey) {
+                    btn.disabled = true;
+                    try {
+                        await ctrlApi.clearIcon(currentControllerProfileId, face, layer);
+                        setDisplay(undefined);
+                        // profiles-Cache lokal patchen, damit ein zweiter Render
+                        // (z.B. nach Tab-Wechsel) den geloeschten State sieht.
+                        const prof = profiles.find((p) => p.id === currentControllerProfileId);
+                        if (prof) {
+                            const c = (prof as unknown as { controller?: Record<string, unknown> }).controller;
+                            if (c) {
+                                if (layer) {
+                                    const mods = c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined;
+                                    if (mods?.[layer]?.icons) delete mods[layer].icons![face];
+                                }
+                                else {
+                                    const ic = c.icons as Record<string, string> | undefined;
+                                    if (ic) delete ic[face];
+                                }
+                            }
+                        }
+                    }
+                    finally { btn.disabled = false; }
+                    return;
+                }
+                btn.disabled = true;
+                btn.classList.add("capturing");
+                try {
+                    const r = await ctrlApi.captureIcon(currentControllerProfileId, face, layer);
+                    if (r?.ok && r.dataUri) {
+                        setDisplay(r.dataUri);
+                        // profiles-Cache patchen
+                        const prof = profiles.find((p) => p.id === currentControllerProfileId);
+                        if (prof) {
+                            const root = prof as unknown as { controller?: Record<string, unknown> };
+                            const c = (root.controller ??= {} as Record<string, unknown>);
+                            if (layer) {
+                                const mods = (c.modifiers as Record<string, { icons?: Record<string, string> }> | undefined) ?? {};
+                                const lObj = mods[layer] ?? {};
+                                lObj.icons = { ...(lObj.icons ?? {}), [face]: r.dataUri };
+                                mods[layer] = lObj;
+                                c.modifiers = mods;
+                            }
+                            else {
+                                const ic = (c.icons as Record<string, string> | undefined) ?? {};
+                                ic[face] = r.dataUri;
+                                c.icons = ic;
+                            }
+                        }
+                    }
+                }
+                finally {
+                    btn.disabled = false;
+                    btn.classList.remove("capturing");
+                }
+            });
+            return btn;
         };
 
         renderForProfile(selectEl.value);
@@ -1627,6 +2521,7 @@ export function openConfigModal(
         resetAllBtn.textContent = t("controller.resetAll" as TranslationKey);
         resetAllBtn.addEventListener("click", () => {
             currentControllerOverride = {};
+            currentControllerModifiers = {};
             renderForProfile(selectEl.value);
         });
 
@@ -1640,17 +2535,45 @@ export function openConfigModal(
             try {
                 await window.api.profilesUpdate?.({
                     id: currentControllerProfileId,
-                    controller: { buttons: currentControllerOverride },
+                    controller: {
+                        buttons: currentControllerOverride,
+                        modifiers: currentControllerModifiers,
+                    },
                 } as unknown as Parameters<NonNullable<typeof window.api.profilesUpdate>>[0]);
                 const ctrlApi = (window as unknown as { controllerApi?: { reloadMapping: (id: string) => void } }).controllerApi;
                 ctrlApi?.reloadMapping(currentControllerProfileId);
                 showToast(t("controller.saved" as TranslationKey), "success");
                 const updated = (await window.api.profilesList?.()) as Array<{
                     id: string;
-                    controller?: { buttons?: ControllerButtonOverride };
+                    controller?: {
+                        buttons?: ControllerButtonOverride;
+                        modifiers?: Partial<Record<ModifierSlotName, unknown>>;
+                    };
                 }>;
                 const fresh = updated?.find((p) => p.id === currentControllerProfileId);
                 currentControllerOverride = { ...(fresh?.controller?.buttons ?? {}) };
+                const freshMods = fresh?.controller?.modifiers ?? {};
+                currentControllerModifiers = {};
+                // Format-Detection: alte (flache) und neue (Layer-Wrapper)
+                // Bindings akzeptieren — das Backend persistiert das neue
+                // Format, aber alte Profile koennten noch flach sein.
+                for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                    const raw = freshMods[slot];
+                    if (!raw || typeof raw !== "object") continue;
+                    const obj = raw as Record<string, unknown>;
+                    const hasLayerShape = "enabled" in obj || "buttons" in obj;
+                    if (hasLayerShape) {
+                        const enabled = typeof obj.enabled === "boolean" ? obj.enabled : true;
+                        const buttons = (obj.buttons && typeof obj.buttons === "object")
+                            ? { ...(obj.buttons as ControllerButtonOverride) }
+                            : undefined;
+                        currentControllerModifiers[slot] = { enabled, ...(buttons ? { buttons } : {}) };
+                    }
+                    else {
+                        currentControllerModifiers[slot] = { enabled: true, buttons: { ...(raw as ControllerButtonOverride) } };
+                    }
+                }
+                rebuildModifierPanel();
             }
             catch (err) {
                 logErr(err, "ControllerSave");
@@ -1663,6 +2586,15 @@ export function openConfigModal(
 
         footer.append(resetAllBtn, saveBtn);
         controllerPane.append(footer);
+
+        // Live-Anzeige: gepollt aus dem Renderer (Launcher-Window). Laeuft, bis
+        // der Tab gewechselt oder das Modal geschlossen wird. Der Loop swappt
+        // ggf. das SVG-Layout und ruft dann onStyleSwapped auf, damit wir die
+        // Hover-Listener neu binden.
+        controllerLiveCleanup = startControllerLiveLoop(svgRefs, {
+            getUserStyle: () => userStyle,
+            onStyleSwapped: () => wireSvgListeners(),
+        });
     }
 
     // Load and render plugins list
@@ -1797,6 +2729,10 @@ export function openConfigModal(
 
     const close = () => {
 
+        if (controllerLiveCleanup) {
+            controllerLiveCleanup();
+            controllerLiveCleanup = null;
+        }
         overlay.remove();
         document.removeEventListener("keydown", onKey);
         const currentHex = isTabActiveColorManual ? lastTabActiveHex : null;

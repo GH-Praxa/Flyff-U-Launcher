@@ -50,7 +50,7 @@ import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import type { ExtraWindowInfo, ExtraRowInfo } from "./main/ipc/handlers/memory";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
 import { registerControllerHandlers } from "./main/ipc/handlers/controller";
-import { createControllerInputRouter, DEFAULT_BUTTON_MAPPING, resolveButtonMapping, type ControllerButtonMapping } from "./main/controller/inputRouter";
+import { createControllerInputRouter, DEFAULT_BUTTON_MAPPING, resolveButtonMapping, type ControllerButtonMapping, type ModifierSlot } from "./main/controller/inputRouter";
 import { createSafeHandler } from "./main/ipc/common";
 import { applyCSP, getCSPNonce } from "./main/security/harden";
 import { logInfo, logErr, logWarn, setLogListener } from "./shared/logger";
@@ -215,7 +215,9 @@ app.whenReady().then(async () => {
     // Frame-Eingang sind Anker und Mapping dann sofort verfuegbar.
     void services.profiles.list().then((profiles) => {
         for (const p of profiles) {
-            const c = (p as {
+            // Cast via unknown — reloadModifierMappingsForProfile macht
+            // selber Format-Detection (alt vs. neuer Layer-Wrapper).
+            const c = (p as unknown as {
                 controller?: {
                     actionPad?: {
                         hAnchor: "left" | "center" | "right";
@@ -224,10 +226,13 @@ app.whenReady().then(async () => {
                         offsetY: number;
                     } | null;
                     buttons?: Record<string, string | null | undefined>;
+                    modifiers?: Record<string, unknown>;
                 };
             }).controller;
             if (c?.actionPad) actionPadAnchors.set(p.id, c.actionPad);
             if (c?.buttons) reloadButtonMappingsForProfile(p.id, c.buttons);
+            if (c?.modifiers) reloadModifierMappingsForProfile(p.id, c.modifiers);
+            reloadIconsForProfile(p.id, c);
         }
     }).catch(() => { /* ignore */ });
     const roiVisibilityStore = createRoiVisibilityStore();
@@ -723,6 +728,58 @@ app.whenReady().then(async () => {
         }
     };
 
+    // Modifier-Mappings: profileId → slot → resolved mapping. Wird parallel
+    // zu buttonMappings gepflegt; ist eine Schulter im Modifier-Modus, kommt
+    // beim Halten ihr Layer statt des Defaults zum Einsatz.
+    const modifierMappings = new Map<string, Map<ModifierSlot, ControllerButtonMapping>>();
+    // Symbol-Name → Button-Index. Modifier-Mappings haben Symbol-Namen als
+    // Keys (a, b, x, y, ...) wie auch das Default-Mapping; der Router will
+    // aber numerische Indizes als Keys, weil er buttons[i] adressiert.
+    const SYM_TO_IDX: Record<string, number> = {
+        a: 0, b: 1, x: 2, y: 3,
+        l1: 4, r1: 5, l2: 6, r2: 7,
+        select: 8, start: 9, l3: 10, r3: 11,
+        dpadUp: 12, dpadDown: 13, dpadLeft: 14, dpadRight: 15,
+    };
+    const reloadModifierMappingsForProfile = (profileId: string, modifiers: unknown) => {
+        if (!modifiers || typeof modifiers !== "object") {
+            modifierMappings.delete(profileId);
+            return;
+        }
+        const obj = modifiers as Record<string, unknown>;
+        const slotMap = new Map<ModifierSlot, ControllerButtonMapping>();
+        for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+            const raw = obj[slot];
+            if (!raw || typeof raw !== "object") continue;
+            // Layer kann das neue Format { enabled, buttons } oder das alte
+            // flache Format (direkt ButtonMapping) haben. Detection wie in
+            // store.normalizeController.
+            const slotObj = raw as Record<string, unknown>;
+            const hasLayerShape = "enabled" in slotObj || "buttons" in slotObj;
+            let buttons: Record<string, unknown> | null = null;
+            if (hasLayerShape) {
+                if (slotObj.enabled === false) continue; // disabled → uebergehen
+                if (slotObj.buttons && typeof slotObj.buttons === "object") {
+                    buttons = slotObj.buttons as Record<string, unknown>;
+                }
+            }
+            else {
+                buttons = slotObj;
+            }
+            if (!buttons) continue;
+            const sparse: ControllerButtonMapping = {};
+            for (const [sym, val] of Object.entries(buttons)) {
+                const idx = SYM_TO_IDX[sym];
+                if (idx === undefined) continue;
+                if (val === null) sparse[idx] = null;
+                else if (typeof val === "string" && val.length > 0) sparse[idx] = val;
+            }
+            if (Object.keys(sparse).length > 0) slotMap.set(slot, sparse);
+        }
+        if (slotMap.size > 0) modifierMappings.set(profileId, slotMap);
+        else modifierMappings.delete(profileId);
+    };
+
     const controllerRouter = createControllerInputRouter({
         getActionPadAnchor: (sender) => {
             const profileId = webContentsToProfile.get(sender.id);
@@ -734,8 +791,324 @@ app.whenReady().then(async () => {
             if (!profileId) return DEFAULT_BUTTON_MAPPING;
             return buttonMappings.get(profileId) ?? DEFAULT_BUTTON_MAPPING;
         },
+        getModifierMapping: (sender, slot) => {
+            const profileId = webContentsToProfile.get(sender.id);
+            if (!profileId) return null;
+            return modifierMappings.get(profileId)?.get(slot) ?? null;
+        },
+        onLauncherAction: (action, sender) => {
+            // Findet das Session-Window, in dem der Sender lebt, und dispatcht
+            // die `@<action>` direkt. Fallback: an die parent-WebContents senden,
+            // damit ein Renderer-seitiges Mapping (z.B. Open-Config) reagieren
+            // kann.
+            try {
+                const senderProfileId = webContentsToProfile.get(sender.id) ?? null;
+                let entry = null as null | { window: BrowserWindow; tabsManager: { getLoadedProfileIds(): string[]; getActiveId(): string | null; switchTo(id: string): void } };
+                for (const e of services.sessionRegistry.list()) {
+                    const tm = e.tabsManager;
+                    if (typeof tm.getLoadedProfileIds !== "function") continue;
+                    const ids = tm.getLoadedProfileIds();
+                    if (senderProfileId && ids.includes(senderProfileId)) {
+                        entry = e as typeof entry;
+                        break;
+                    }
+                }
+                if (action === "@nextTab" || action === "@prevTab") {
+                    if (!entry) return;
+                    const ids = entry.tabsManager.getLoadedProfileIds();
+                    if (ids.length < 2) return;
+                    const activeId = entry.tabsManager.getActiveId() ?? senderProfileId ?? ids[0];
+                    let idx = ids.indexOf(activeId);
+                    if (idx < 0) idx = 0;
+                    const next = action === "@nextTab"
+                        ? ids[(idx + 1) % ids.length]
+                        : ids[(idx - 1 + ids.length) % ids.length];
+                    entry.tabsManager.switchTo(next);
+                    return;
+                }
+                if (action === "@reloadView") {
+                    if (!sender.isDestroyed()) sender.reload();
+                    return;
+                }
+                if (action === "@toggleFullscreen") {
+                    const win = entry?.window ?? BrowserWindow.fromWebContents(sender);
+                    if (win && !win.isDestroyed()) win.setFullScreen(!win.isFullScreen());
+                    return;
+                }
+                // Unbekannte Aktion → an Renderer (Launcher-Window) durchreichen,
+                // dort kann ein Listener (z.B. fuer @openConfig) reagieren.
+                BrowserWindow.fromWebContents(sender)?.webContents
+                    .send("controller:launcherAction", { action });
+            }
+            catch (err) {
+                logErr(err, "controller:launcherAction");
+            }
+        },
         notify: (msg) => controllerToast(msg, "info"),
     });
+    // Belegungs-Overlay: kleine in-DOM-Anzeige in der Spiel-View, gefuettert vom
+    // Hauptprozess. Wir liefern fertig aufgeloeste Face-Button-Labels (y/b/a/x)
+    // fuer Base + jeden Modifier-Layer; der Preload entscheidet client-seitig
+    // welcher Layer gerade gehalten wird. Ergaenzend dazu pro Face optional ein
+    // Icon-Data-URI (vom Click-to-Capture-Lehrmodus erfasst).
+    type OverlayFaceLabels = { y: string | null; b: string | null; a: string | null; x: string | null };
+    type OverlayFaceIcons = { y?: string; b?: string; a?: string; x?: string };
+    const facesFromMapping = (m: ControllerButtonMapping): OverlayFaceLabels => ({
+        y: (m[3] ?? null),  // Triangle / Y
+        b: (m[1] ?? null),  // Circle / B
+        a: (m[0] ?? null),  // Cross / A
+        x: (m[2] ?? null),  // Square / X
+    });
+
+    // Parallele Icon-Caches zu buttonMappings/modifierMappings — werden vom
+    // Click-to-Capture-Lehrmodus befuellt und parallel zum Mapping persistiert.
+    const controllerIcons = new Map<string, OverlayFaceIcons>();
+    const modifierIcons = new Map<string, Map<ModifierSlot, OverlayFaceIcons>>();
+    const sanitizeIcons = (raw: unknown): OverlayFaceIcons => {
+        const out: OverlayFaceIcons = {};
+        if (!raw || typeof raw !== "object") return out;
+        const o = raw as Record<string, unknown>;
+        for (const k of ["a", "b", "x", "y"] as const) {
+            const v = o[k];
+            if (typeof v === "string" && v.startsWith("data:image/")) out[k] = v;
+        }
+        return out;
+    };
+    const reloadIconsForProfile = (profileId: string, controllerObj: unknown) => {
+        const c = (controllerObj && typeof controllerObj === "object")
+            ? controllerObj as Record<string, unknown>
+            : null;
+        const baseIcons = sanitizeIcons(c?.icons);
+        if (Object.keys(baseIcons).length > 0) controllerIcons.set(profileId, baseIcons);
+        else controllerIcons.delete(profileId);
+
+        const modMap = new Map<ModifierSlot, OverlayFaceIcons>();
+        const mods = (c?.modifiers && typeof c.modifiers === "object")
+            ? c.modifiers as Record<string, unknown>
+            : null;
+        if (mods) {
+            for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                const layer = mods[slot];
+                if (!layer || typeof layer !== "object") continue;
+                const icons = sanitizeIcons((layer as Record<string, unknown>).icons);
+                if (Object.keys(icons).length > 0) modMap.set(slot, icons);
+            }
+        }
+        if (modMap.size > 0) modifierIcons.set(profileId, modMap);
+        else modifierIcons.delete(profileId);
+    };
+
+    const buildOverlayPayload = (profileId: string) => {
+        const base = buttonMappings.get(profileId) ?? DEFAULT_BUTTON_MAPPING;
+        const mod = modifierMappings.get(profileId);
+        const baseIc = controllerIcons.get(profileId) ?? {};
+        const modIc = modifierIcons.get(profileId);
+        return {
+            enabled: true,
+            base: facesFromMapping(base),
+            baseIcons: baseIc,
+            modifiers: {
+                l1: mod?.has("l1") ? facesFromMapping(mod.get("l1")!) : undefined,
+                r1: mod?.has("r1") ? facesFromMapping(mod.get("r1")!) : undefined,
+                r2: mod?.has("r2") ? facesFromMapping(mod.get("r2")!) : undefined,
+            },
+            modifierIcons: {
+                l1: modIc?.get("l1"),
+                r1: modIc?.get("r1"),
+                r2: modIc?.get("r2"),
+            },
+        };
+    };
+    const pushOverlayToProfile = (profileId: string) => {
+        for (const [wcId, pid] of webContentsToProfile) {
+            if (pid !== profileId) continue;
+            const wc = webContents.fromId(wcId);
+            if (!wc || wc.isDestroyed()) continue;
+            try { wc.send("controller:overlay:update", buildOverlayPayload(profileId)); }
+            catch (err) { logErr(err, "controller:overlay:update"); }
+        }
+    };
+    // Initial-Pull aus dem Preload (sendet sobald die WebContents laeuft).
+    ipcMain.on("controller:overlay:request", (event) => {
+        const profileId = webContentsToProfile.get(event.sender.id);
+        if (!profileId) return;
+        try { event.sender.send("controller:overlay:update", buildOverlayPayload(profileId)); }
+        catch (err) { logErr(err, "controller:overlay:request reply"); }
+    });
+
+    // ---- Icon-Capture (Click-to-Capture aus dem laufenden Spiel) -------------
+    // Renderer (Config-Tab) ruft `controller:icon:capture` mit Profil/Face/Layer
+    // auf → wir schicken `start`-Hinweis an die Spiel-View, der Preload erfasst
+    // den naechsten Mausklick und meldet die Position. Wir capturen 40x40 px
+    // um diesen Punkt herum, speichern als Data-URI ins Profil und pushen das
+    // Overlay neu. Globaler Single-Slot-State — gleichzeitige Captures werden
+    // gestapelt (alter wird verworfen).
+    type FaceKey = "a" | "b" | "x" | "y";
+    type LayerKey = "l1" | "r1" | "r2" | null;
+    type CaptureResult = { ok: true; dataUri: string } | { ok: false; reason: string };
+    let pendingCapture: {
+        profileId: string;
+        face: FaceKey;
+        layer: LayerKey;
+        wcId: number;
+        resolve: (r: CaptureResult) => void;
+        timer: NodeJS.Timeout;
+    } | null = null;
+
+    const findGameWebContentsForProfile = (profileId: string): import("electron").WebContents | null => {
+        // Primary: sessionRegistry — die kanonische Quelle fuer aktive Spiel-
+        // Views ueber alle Session-Fenster hinweg.
+        try {
+            for (const entry of services.sessionRegistry.list()) {
+                const tm = entry.tabsManager as unknown as {
+                    getViewByProfile?: (id: string) => import("electron").BrowserView | null;
+                };
+                if (typeof tm.getViewByProfile !== "function") continue;
+                const view = tm.getViewByProfile(profileId);
+                const wc = view?.webContents;
+                if (wc && !wc.isDestroyed()) return wc;
+            }
+        }
+        catch (err) { logErr(err, "findGameWebContentsForProfile sessionRegistry"); }
+        // Fallback: reverse-lookup im webContentsToProfile-Cache (instanceWindow-
+        // Mode oder wenn die Registry-Methode nicht verfuegbar ist).
+        for (const [wcId, pid] of webContentsToProfile) {
+            if (pid !== profileId) continue;
+            const wc = webContents.fromId(wcId);
+            if (wc && !wc.isDestroyed()) return wc;
+        }
+        return null;
+    };
+
+    const cancelPendingCapture = (reason: string) => {
+        if (!pendingCapture) return;
+        clearTimeout(pendingCapture.timer);
+        const wc = webContents.fromId(pendingCapture.wcId);
+        if (wc && !wc.isDestroyed()) {
+            try { wc.send("controller:icon:capture:cancel"); } catch { /* ignore */ }
+        }
+        pendingCapture.resolve({ ok: false, reason });
+        pendingCapture = null;
+    };
+
+    const persistIcon = async (profileId: string, face: FaceKey, layer: LayerKey, dataUri: string | null) => {
+        const list = await services.profiles.list();
+        const p = list.find((x) => x.id === profileId);
+        if (!p) return;
+        const existing = ((p as unknown) as { controller?: Record<string, unknown> }).controller ?? {};
+        const e = existing as Record<string, unknown>;
+        if (!layer) {
+            const baseIcons = { ...((e.icons as Record<string, unknown> | undefined) ?? {}) };
+            if (dataUri == null) delete baseIcons[face]; else baseIcons[face] = dataUri;
+            await services.profiles.update({
+                id: profileId,
+                controller: { ...existing, icons: baseIcons },
+            } as Parameters<typeof services.profiles.update>[0]);
+        }
+        else {
+            const existingMods = { ...((e.modifiers as Record<string, unknown> | undefined) ?? {}) };
+            const existingLayer = { ...((existingMods[layer] as Record<string, unknown> | undefined) ?? {}) };
+            const layerIcons = { ...((existingLayer.icons as Record<string, unknown> | undefined) ?? {}) };
+            if (dataUri == null) delete layerIcons[face]; else layerIcons[face] = dataUri;
+            existingLayer.icons = layerIcons;
+            existingMods[layer] = existingLayer;
+            await services.profiles.update({
+                id: profileId,
+                controller: { ...existing, modifiers: existingMods },
+            } as Parameters<typeof services.profiles.update>[0]);
+        }
+        // Caches aktualisieren + Overlay pushen
+        const refreshed = await services.profiles.list();
+        const c = (refreshed.find((x) => x.id === profileId) as unknown as { controller?: unknown } | undefined)?.controller;
+        reloadIconsForProfile(profileId, c);
+        pushOverlayToProfile(profileId);
+    };
+
+    ipcMain.handle("controller:icon:capture", async (_event, payload: unknown): Promise<CaptureResult> => {
+        if (!payload || typeof payload !== "object") return { ok: false, reason: "invalid_payload" };
+        const p = payload as Record<string, unknown>;
+        const profileId = typeof p.profileId === "string" ? p.profileId : null;
+        const face = (p.face === "a" || p.face === "b" || p.face === "x" || p.face === "y") ? p.face : null;
+        const layer = (p.layer === "l1" || p.layer === "r1" || p.layer === "r2") ? p.layer : null;
+        if (!profileId || !face) return { ok: false, reason: "invalid_payload" };
+
+        cancelPendingCapture("superseded");
+
+        const wc = findGameWebContentsForProfile(profileId);
+        if (!wc) {
+            controllerToast("Icon-Capture: Spiel-Fenster nicht offen", "error");
+            return { ok: false, reason: "no_view" };
+        }
+
+        return await new Promise<CaptureResult>((resolve) => {
+            const timer = setTimeout(() => {
+                if (pendingCapture && pendingCapture.resolve === resolve) {
+                    cancelPendingCapture("timeout");
+                }
+            }, 10000);
+            pendingCapture = { profileId, face, layer, wcId: wc.id, resolve, timer };
+            try {
+                wc.send("controller:icon:capture:start", { face, layer });
+                controllerToast("Klicke im Spiel auf das Icon (10s)", "info");
+            }
+            catch (err) {
+                clearTimeout(timer);
+                pendingCapture = null;
+                logErr(err, "controller:icon:capture:start");
+                resolve({ ok: false, reason: "send_failed" });
+            }
+        });
+    });
+
+    ipcMain.on("controller:icon:capture:done", async (event, payload: unknown) => {
+        if (!pendingCapture) return;
+        if (event.sender.id !== pendingCapture.wcId) return;
+        if (!payload || typeof payload !== "object") return;
+        const p = payload as Record<string, unknown>;
+        const x = typeof p.x === "number" ? p.x : NaN;
+        const y = typeof p.y === "number" ? p.y : NaN;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+        const ctx = pendingCapture;
+        clearTimeout(ctx.timer);
+        pendingCapture = null;
+
+        try {
+            const SIZE = 40;
+            const rect = {
+                x: Math.max(0, Math.round(x - SIZE / 2)),
+                y: Math.max(0, Math.round(y - SIZE / 2)),
+                width: SIZE,
+                height: SIZE,
+            };
+            const img = await event.sender.capturePage(rect);
+            const dataUri = `data:image/png;base64,${img.toPNG().toString("base64")}`;
+            await persistIcon(ctx.profileId, ctx.face, ctx.layer, dataUri);
+            controllerToast("Icon erfasst", "success");
+            ctx.resolve({ ok: true, dataUri });
+        }
+        catch (err) {
+            logErr(err, "controller:icon:capture:done");
+            controllerToast("Icon-Capture fehlgeschlagen", "error");
+            ctx.resolve({ ok: false, reason: "capture_failed" });
+        }
+    });
+
+    ipcMain.on("controller:icon:capture:cancel", () => {
+        cancelPendingCapture("user_cancel");
+    });
+
+    ipcMain.handle("controller:icon:clear", async (_event, payload: unknown): Promise<{ ok: boolean }> => {
+        if (!payload || typeof payload !== "object") return { ok: false };
+        const p = payload as Record<string, unknown>;
+        const profileId = typeof p.profileId === "string" ? p.profileId : null;
+        const face = (p.face === "a" || p.face === "b" || p.face === "x" || p.face === "y") ? p.face : null;
+        const layer = (p.layer === "l1" || p.layer === "r1" || p.layer === "r2") ? p.layer : null;
+        if (!profileId || !face) return { ok: false };
+        try { await persistIcon(profileId, face, layer, null); return { ok: true }; }
+        catch (err) { logErr(err, "controller:icon:clear"); return { ok: false }; }
+    });
+
     registerControllerHandlers({
         router: controllerRouter,
         onControllerConnected: (info) => {
@@ -752,8 +1125,19 @@ app.whenReady().then(async () => {
         reloadButtonMapping: async (profileId) => {
             const list = await services.profiles.list();
             const p = list.find((x) => x.id === profileId);
-            const c = (p as { controller?: { buttons?: Record<string, string | null | undefined> } } | undefined)?.controller;
+            const c = (p as unknown as {
+                controller?: {
+                    buttons?: Record<string, string | null | undefined>;
+                    modifiers?: Record<string, unknown>;
+                    icons?: unknown;
+                };
+            } | undefined)?.controller;
             reloadButtonMappingsForProfile(profileId, c?.buttons);
+            reloadModifierMappingsForProfile(profileId, c?.modifiers);
+            reloadIconsForProfile(profileId, c);
+            // Overlay aktualisieren — laufende Spiel-Views sehen die neuen
+            // Bindings sofort, kein Reload noetig.
+            pushOverlayToProfile(profileId);
         },
         notify: (msg, tone) => controllerToast(msg, tone),
     });

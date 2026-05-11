@@ -155,24 +155,33 @@ export const BTN_INDEX_TO_NAME: Record<number, ButtonName> = {
 /**
  * Mapping von Button-Index → Aktion. Aktionen sind entweder Accelerator-Keys
  * ("W", "Space", "Escape", "1"...) oder Special-Actions mit `@`-Prefix:
- *   "@actionPad" — feuert den kalibrierten Action-Pad-Klick
- *   "@cursorMode" — toggelt Cursor-Modus (Stage 3, noch nicht implementiert)
+ *   "@actionPad"      — feuert den kalibrierten Action-Pad-Klick
+ *   "@zoomIn"/"@zoomOut" — synthetisches mouseWheel (Bildschirm-Mitte)
+ *   "@cursorHold"     — solange gehalten: rechter Stick → Maus, A → Klick
+ *   "@cursorToggle"   — Tippen schaltet Cursor-Modus um (statt Halten)
+ *   "@nextTab"/"@prevTab" — Slot-/Tab-Wechsel im Session-Window
+ *   "@reloadView"     — aktuelle Game-View neu laden
+ *   "@toggleFullscreen" — Launcher-Window Fullscreen togglen
+ *   "@openConfig"     — Launcher Settings-Modal oeffnen
  */
 export type ControllerButtonMapping = Record<number, string | null | undefined>;
 
 /**
- * Default-Mapping fuer Standard-Gamepads (PS4/Xbox/SCUF-XInput). Faces folgen
- * der typischen Belegung in 3D-MMORPGs:
+ * Default-Mapping fuer Standard-Gamepads (PS4/Xbox/SCUF-XInput). Synchron zur
+ * Android-App ab v33:
  *  - Cross/A → Space (Jump/Action)
  *  - Circle/B → Escape (Menue/Cancel)
  *  - Square/X → Z (Attack)
  *  - Triangle/Y → Tab (naechstes Ziel)
  *  - L1/R1/R2 → Skill-Slots 1/2/3
- *  - L3/R3 → Inventar / Char-Info
- *  - Start → Enter (Chat)
- *  - D-Pad-Up → Action-Pad-Trigger
+ *  - L2       → @cursorHold (rechter Stick wird zur Maus solange gehalten)
+ *  - L3/R3    → Inventar / Char-Info
+ *  - Start    → Enter (Chat)
+ *  - D-Pad ↑/↓ → Zoom +/− (mouseWheel)
+ *  - D-Pad ←/→ → Slot-/Tab-Wechsel (@prevTab/@nextTab)
  *
- * L2 ist absichtlich frei (reserviert fuer Cursor-Modus, Stage 3).
+ * Action-Pad-Trigger ist NICHT mehr Default — User muss `@actionPad`
+ * manuell auf einen Button legen (z.B. Select).
  */
 export const DEFAULT_BUTTON_MAPPING: ControllerButtonMapping = {
     [BTN.A]: "Space",
@@ -181,11 +190,15 @@ export const DEFAULT_BUTTON_MAPPING: ControllerButtonMapping = {
     [BTN.Y]: "Tab",
     [BTN.L1]: "1",
     [BTN.R1]: "2",
+    [BTN.L2]: "@cursorHold",
     [BTN.R2]: "3",
     [BTN.START]: "Return",
     [BTN.L3]: "I",
     [BTN.R3]: "C",
-    [BTN.DPAD_UP]: "@actionPad",
+    [BTN.DPAD_UP]: "@zoomIn",
+    [BTN.DPAD_DOWN]: "@zoomOut",
+    [BTN.DPAD_LEFT]: "@prevTab",
+    [BTN.DPAD_RIGHT]: "@nextTab",
 };
 
 /**
@@ -214,6 +227,17 @@ export function resolveButtonMapping(
     return out;
 }
 
+/** Schulter-Slot der als Modifier wirkt (gehalten + anderer Button → alternative
+ *  Aktion). */
+export type ModifierSlot = "l1" | "r1" | "l2" | "r2";
+
+const MODIFIER_SLOTS: Array<{ slot: ModifierSlot; index: number }> = [
+    { slot: "l1", index: BTN.L1 },
+    { slot: "r1", index: BTN.R1 },
+    { slot: "l2", index: BTN.L2 },
+    { slot: "r2", index: BTN.R2 },
+];
+
 export interface ControllerInputRouterDeps {
     getActionPadAnchor: (sender: WebContents) => ActionPadAnchor | null;
     /**
@@ -221,6 +245,18 @@ export interface ControllerInputRouterDeps {
      * spezielles Mapping konfiguriert ist, fallback auf DEFAULT_BUTTON_MAPPING.
      */
     getButtonMapping?: (sender: WebContents) => ControllerButtonMapping;
+    /**
+     * Liefert das Modifier-Mapping fuer eine Schulter (l1/r1/l2/r2). Wenn die
+     * Schulter gehalten wird und ein dort gemappter Button gedrueckt wird,
+     * ueberschreibt das Modifier-Mapping den Default-Eintrag fuer diesen Button.
+     */
+    getModifierMapping?: (sender: WebContents, slot: ModifierSlot) => ControllerButtonMapping | null;
+    /**
+     * Wird aufgerufen wenn ein Button auf eine `@<action>`-Special-Action gemappt
+     * ist, die nicht `@actionPad` ist (z.B. `@nextTab`). Implementierung im
+     * Main-Process (Session-Manager / Launcher-Window) verdrahtet.
+     */
+    onLauncherAction?: (action: string, sender: WebContents) => void;
     notify?: (message: string) => void;
 }
 
@@ -236,6 +272,9 @@ const CAMERA_INITIAL_DRAG_PX = 60;     // erster Mausschub in Stick-Richtung
 const CAMERA_SPEED_PX = 14;            // Pixel pro Pump-Tick bei voller Auslenkung
 const CAMERA_PUMP_INTERVAL_MS = 16;    // ~60 Hz
 const CAMERA_EDGE_BUFFER_PX = 80;
+const CURSOR_SPEED_PX = 12;            // Pixel pro Pump-Tick bei voller Auslenkung
+const CURSOR_PUMP_INTERVAL_MS = 16;    // ~60 Hz
+const ZOOM_DELTA_Y = 100;              // mouseWheel deltaY pro Zoom-Trigger
 
 function rand(min: number, max: number): number {
     return min + Math.random() * (max - min);
@@ -256,8 +295,18 @@ export class ControllerInputRouter {
     private actionPadInProgress = false;
     private lastActionPadFireMs = 0;
 
-    /** Aktuell als gehalten registrierte Tasten (KeyDown ohne KeyUp). */
+    /** Aktuell als gehalten registrierte Tasten (KeyDown ohne KeyUp). Wird
+     *  von Stick-Keys (W/A/S/D) UND Buttons gemeinsam genutzt — Set verhindert
+     *  doppeltes KeyDown wenn beide Quellen die gleiche Taste wollen. */
     private heldKeys: Set<string> = new Set();
+
+    /** Pro Button-Index (0..15) die Aktion, die beim Press emittiert wurde.
+     *  Wichtig fuer Modifier-Layer: wenn der User L1+A drueckt und dann L1
+     *  loslaesst bevor A losgelassen ist, soll trotzdem die ModifierTaste
+     *  freigegeben werden, nicht der Default. Ohne dieses Tracking wuerde
+     *  beim Release die *aktuelle* Effektiv-Aktion benutzt — falsch.
+     *  Refcounted: mehrere Buttons mit gleicher Aktion → KeyUp erst beim letzten. */
+    private heldButtonActions: Map<number, string> = new Map();
 
     /** Camera-Drag-State (rechter Stick). Nur eine Drag-Sequenz gleichzeitig. */
     private cameraActive = false;
@@ -269,6 +318,20 @@ export class ControllerInputRouter {
     private cameraLastX = 0;
     private cameraLastY = 0;
     private cameraPumpTimer: ReturnType<typeof setInterval> | null = null;
+
+    /** Cursor-Modus: rechter Stick wird zum Maus-Mover statt Camera-Drag.
+     *  A im Cursor-Modus = Maus-Klick links an aktueller Cursor-Position. */
+    private mode: "normal" | "cursor" = "normal";
+    private cursorX = 0;
+    private cursorY = 0;
+    private cursorInitialized = false;
+    private cursorMouseDown = false;
+    private cursorStickX = 0;
+    private cursorStickY = 0;
+    private cursorSender: WebContents | null = null;
+    private cursorViewportW = 0;
+    private cursorViewportH = 0;
+    private cursorPumpTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor(private readonly deps: ControllerInputRouterDeps) {}
 
@@ -292,19 +355,42 @@ export class ControllerInputRouter {
         this.updateCameraStick(sender, frame.viewportWidth, frame.viewportHeight, rx, ry);
 
         // 3) Buttons → Mapping (Tasten oder Special-Actions wie @actionPad).
+        //    Modifier-Layer: wenn eine Schulter (L1/R1/L2/R2) mit eigenem
+        //    Modifier-Mapping gehalten wird, ueberschreibt deren Eintrag das
+        //    Default-Mapping fuer den jeweiligen Button.
         //    D-Pad-Up-via-HAT bleibt zusaetzlich aktiv (manche Pads liefern
         //    D-Pad ausschliesslich als Achse).
-        const mapping = this.deps.getButtonMapping?.(sender) ?? DEFAULT_BUTTON_MAPPING;
+        const baseMapping = this.deps.getButtonMapping?.(sender) ?? DEFAULT_BUTTON_MAPPING;
+
+        // Aktive Modifier-Layer: Schultern die jetzt gerade gehalten werden
+        // UND ein nicht-leeres Modifier-Mapping haben. Reihenfolge entspricht
+        // MODIFIER_SLOTS — bei mehreren gleichzeitig haltenden Schultern
+        // gewinnt der erstdefinierte mit Override fuer den Button.
+        const activeModifiers: ControllerButtonMapping[] = [];
+        if (this.deps.getModifierMapping) {
+            for (const { slot, index } of MODIFIER_SLOTS) {
+                if (buttons[index] !== true) continue;
+                const mod = this.deps.getModifierMapping(sender, slot);
+                if (mod && Object.keys(mod).length > 0) activeModifiers.push(mod);
+            }
+        }
+        const resolveAction = (i: number): string | null | undefined => {
+            for (const mod of activeModifiers) {
+                if (i in mod) return mod[i]; // explizit gesetzt (auch null = unbind)
+            }
+            return baseMapping[i];
+        };
+
         for (let i = 0; i < buttons.length; i++) {
-            const action = mapping[i];
-            if (!action) continue;
             const wasDown = prev[i] === true;
             const isDown = buttons[i] === true;
             if (isDown && !wasDown) {
-                this.handleButtonDown(sender, action, frame);
+                const action = resolveAction(i);
+                if (!action) continue;
+                this.handleButtonDown(sender, i, action, frame);
             }
             else if (!isDown && wasDown) {
-                this.handleButtonUp(sender, action);
+                this.handleButtonUp(sender, i);
             }
         }
 
@@ -319,14 +405,28 @@ export class ControllerInputRouter {
         this.prevAxes = frame.axes.slice();
     }
 
-    private handleButtonDown(sender: WebContents, action: string, frame: GamepadFrame): void {
+    private handleButtonDown(sender: WebContents, btnIdx: number, action: string, frame: GamepadFrame): void {
+        // Bereits getrackt? (Re-Press ohne Release zwischen den Frames — selten,
+        // aber moeglich bei Frame-Drops.)
+        if (this.heldButtonActions.has(btnIdx)) return;
+        // Special-Actions auch tracken — damit (a) der Modifier-Loop in
+        // handleFrame die gehaltene Schulter sieht (auch bei `@cursorHold`)
+        // und (b) Hold-Specials beim UP sauber zurueckgesetzt werden.
+        this.heldButtonActions.set(btnIdx, action);
         if (action.startsWith("@")) {
-            if (action === "@actionPad") {
-                this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
-            }
-            // andere @-Actions (z.B. @cursorMode) folgen in Stage 3
+            this.dispatchSpecial(action, sender, frame, true);
             return;
         }
+        // Cursor-Modus: A → Maus-Klick links an aktueller Cursor-Position.
+        // Andere Tasten gehen normal als KeyDown durch — User kann Skills
+        // im Cursor-Modus nutzen.
+        if (this.mode === "cursor" && btnIdx === BTN.A) {
+            this.cursorMouseDown = true;
+            this.dispatchCursorMouse(sender, "mouseDown");
+            return;
+        }
+        // KeyDown nur emittieren wenn die Taste nicht schon anderweitig gehalten
+        // wird (z.B. zweiter Button auf gleiche Taste, oder Stick-Key).
         if (this.heldKeys.has(action)) return;
         this.heldKeys.add(action);
         try {
@@ -337,8 +437,28 @@ export class ControllerInputRouter {
         }
     }
 
-    private handleButtonUp(sender: WebContents, action: string): void {
-        if (action.startsWith("@")) return;
+    private handleButtonUp(sender: WebContents, btnIdx: number): void {
+        // Welche Aktion wurde fuer diesen Button beim Press emittiert? Nicht
+        // die aktuelle Effektiv-Aktion benutzen — die kann sich durch
+        // Modifier-Wechsel mid-press geaendert haben.
+        const action = this.heldButtonActions.get(btnIdx);
+        if (!action) return;
+        this.heldButtonActions.delete(btnIdx);
+        if (action.startsWith("@")) {
+            this.dispatchSpecial(action, sender, null, false);
+            return;
+        }
+        // Cursor-Modus A-Tap-Release.
+        if (this.mode === "cursor" && btnIdx === BTN.A && this.cursorMouseDown) {
+            this.cursorMouseDown = false;
+            this.dispatchCursorMouse(sender, "mouseUp");
+            return;
+        }
+        // Wird die Aktion noch von einem anderen Button gehalten? Refcounting
+        // ueber heldButtonActions.values() — nicht freigeben.
+        for (const a of this.heldButtonActions.values()) {
+            if (a === action) return;
+        }
         if (!this.heldKeys.has(action)) return;
         this.heldKeys.delete(action);
         try {
@@ -346,6 +466,103 @@ export class ControllerInputRouter {
         }
         catch (err) {
             logWarn("controller", `keyUp ${action} failed: ${(err as Error).message}`);
+        }
+    }
+
+    /**
+     * Zentraler Dispatch fuer `@`-Actions. `down`-Param erlaubt Hold-Specials
+     * wie `@cursorHold` UP zu sehen; Edge-Specials (@actionPad, @zoomIn,
+     * @nextTab, @openConfig, ...) ignorieren UP. `frame` ist nur bei DOWN noetig
+     * (fuer Viewport-Groesse beim Action-Pad/Zoom); bei UP optional.
+     */
+    private dispatchSpecial(
+        action: string,
+        sender: WebContents,
+        frame: GamepadFrame | null,
+        down: boolean,
+    ): void {
+        switch (action) {
+            case "@cursorHold":
+                this.setMode(down ? "cursor" : "normal", sender, frame);
+                return;
+            case "@cursorToggle":
+                if (down) this.setMode(this.mode === "cursor" ? "normal" : "cursor", sender, frame);
+                return;
+            case "@actionPad":
+                if (down && frame) {
+                    this.triggerActionPad(sender, frame.viewportWidth, frame.viewportHeight);
+                }
+                return;
+            case "@zoomIn":
+                if (down && frame) this.triggerZoom(sender, frame, -ZOOM_DELTA_Y);
+                return;
+            case "@zoomOut":
+                if (down && frame) this.triggerZoom(sender, frame, ZOOM_DELTA_Y);
+                return;
+            default:
+                // Externe Specials (@nextTab, @prevTab, @reloadView,
+                // @toggleFullscreen, @openConfig, ...) — DOWN only, dispatcht
+                // der Main-Process via onLauncherAction.
+                if (down) this.deps.onLauncherAction?.(action, sender);
+                return;
+        }
+    }
+
+    /** Setzt den Stick-Mode um. Stoppt Camera-Drag wenn aktiv (Mode-Wechsel
+     *  mid-stick), initialisiert Cursor-Position auf Bildschirm-Mitte beim
+     *  ersten Cursor-Eintritt. */
+    private setMode(mode: "normal" | "cursor", sender: WebContents, frame: GamepadFrame | null): void {
+        if (mode === this.mode) return;
+        // Wenn wir aus Cursor-Modus rausgehen und A noch gehalten ist,
+        // Mouse-Up senden — sonst bleibt die linke Maustaste haengen.
+        if (this.mode === "cursor" && this.cursorMouseDown) {
+            this.cursorMouseDown = false;
+            this.dispatchCursorMouse(sender, "mouseUp");
+        }
+        // Mode-Wechsel: laufende Camera-Drag stoppen, Cursor-Pump stoppen.
+        if (this.cameraActive) this.stopCameraDrag();
+        this.stopCursorPump();
+        this.mode = mode;
+        if (mode === "cursor" && frame && !this.cursorInitialized) {
+            this.cursorX = frame.viewportWidth / 2;
+            this.cursorY = frame.viewportHeight / 2;
+            this.cursorInitialized = true;
+        }
+    }
+
+    /** Synthetisches mouseWheel an der Bildschirm-Mitte. Flyff Universe hoert
+     *  auf wheel fuer Maus-Zoom. */
+    private triggerZoom(sender: WebContents, frame: GamepadFrame, deltaY: number): void {
+        if (frame.viewportWidth <= 0 || frame.viewportHeight <= 0) return;
+        try {
+            sender.sendInputEvent({
+                type: "mouseWheel",
+                x: Math.round(frame.viewportWidth / 2),
+                y: Math.round(frame.viewportHeight / 2),
+                deltaX: 0,
+                deltaY,
+                canScroll: true,
+            } as Electron.MouseWheelInputEvent);
+        }
+        catch (err) {
+            logWarn("controller", `zoom failed: ${(err as Error).message}`);
+        }
+    }
+
+    /** Maus-Down/Up an aktueller Cursor-Position (links). */
+    private dispatchCursorMouse(sender: WebContents, type: "mouseDown" | "mouseUp"): void {
+        if (sender.isDestroyed()) return;
+        try {
+            sender.sendInputEvent({
+                type,
+                x: Math.round(this.cursorX),
+                y: Math.round(this.cursorY),
+                button: "left",
+                clickCount: 1,
+            });
+        }
+        catch (err) {
+            logWarn("controller", `cursor ${type} failed: ${(err as Error).message}`);
         }
     }
 
@@ -368,6 +585,19 @@ export class ControllerInputRouter {
         rx: number,
         ry: number,
     ): void {
+        // Cursor-Modus: rechter Stick bewegt synthetischen Cursor statt Camera-
+        // Drag zu starten. Initialisiere Cursor wenn noch nicht gesetzt
+        // (passiert wenn der User im Cursor-Modus startet ohne vorher Stick
+        // bewegt zu haben).
+        if (this.mode === "cursor") {
+            if (!this.cursorInitialized && viewportWidth > 0 && viewportHeight > 0) {
+                this.cursorX = viewportWidth / 2;
+                this.cursorY = viewportHeight / 2;
+                this.cursorInitialized = true;
+            }
+            this.updateCursorStick(sender, viewportWidth, viewportHeight, rx, ry);
+            return;
+        }
         this.cameraStickX = rx;
         this.cameraStickY = ry;
         const isDeflected = rx !== 0 || ry !== 0;
@@ -495,6 +725,73 @@ export class ControllerInputRouter {
         this.cameraSender = null;
     }
 
+    /** Update der Cursor-Position via rechtem Stick im Cursor-Modus. Da der
+     *  Preload diff-basiert pollt (kein Frame bei stillem Stick), starten wir
+     *  einen Pump-Timer, sobald der Stick ausgelenkt wird — sonst wuerde der
+     *  Cursor nur bei Stick-Wert-Aenderung bewegt, nicht waehrend gehalten. */
+    private updateCursorStick(
+        sender: WebContents,
+        viewportWidth: number,
+        viewportHeight: number,
+        rx: number,
+        ry: number,
+    ): void {
+        this.cursorStickX = rx;
+        this.cursorStickY = ry;
+        this.cursorSender = sender;
+        this.cursorViewportW = viewportWidth;
+        this.cursorViewportH = viewportHeight;
+        const isDeflected = rx !== 0 || ry !== 0;
+        if (isDeflected && !this.cursorPumpTimer) {
+            this.cursorPumpTimer = setInterval(() => this.pumpCursor(), CURSOR_PUMP_INTERVAL_MS);
+        }
+        else if (!isDeflected && this.cursorPumpTimer) {
+            this.stopCursorPump();
+        }
+    }
+
+    private pumpCursor(): void {
+        const wc = this.cursorSender;
+        if (!wc || wc.isDestroyed()) {
+            this.stopCursorPump();
+            return;
+        }
+        if (this.cursorStickX === 0 && this.cursorStickY === 0) return;
+        if (this.cursorViewportW <= 0 || this.cursorViewportH <= 0) return;
+        this.cursorX = clamp(
+            this.cursorX + this.cursorStickX * CURSOR_SPEED_PX,
+            0,
+            this.cursorViewportW,
+        );
+        this.cursorY = clamp(
+            this.cursorY + this.cursorStickY * CURSOR_SPEED_PX,
+            0,
+            this.cursorViewportH,
+        );
+        try {
+            wc.sendInputEvent({
+                type: "mouseMove",
+                x: Math.round(this.cursorX),
+                y: Math.round(this.cursorY),
+            });
+            // Wenn A im Cursor-Modus gehalten wird, brauchen wir kontinuierliche
+            // mouseMove-Events damit Drag-Operationen im Spiel funktionieren
+            // (z.B. Items im Inventar verschieben). Der bereits gesendete
+            // mouseMove erfuellt das.
+        }
+        catch (err) {
+            logWarn("controller", `cursor pump failed: ${(err as Error).message}`);
+            this.stopCursorPump();
+        }
+    }
+
+    private stopCursorPump(): void {
+        if (this.cursorPumpTimer) {
+            clearInterval(this.cursorPumpTimer);
+            this.cursorPumpTimer = null;
+        }
+    }
+
     private isHatUpEdge(frame: GamepadFrame): boolean {
         const axes = frame.axes;
         if (axes.length < 2) return false;
@@ -611,18 +908,36 @@ export class ControllerInputRouter {
     }
 
     /** Reset bei Window-Wechsel oder Disable: gehaltene Tasten lockerlassen,
-     *  Camera-Drag beenden, Edge-Tracking nullen. */
+     *  Camera-Drag beenden, Edge-Tracking nullen, Cursor-Modus zuruecksetzen. */
     reset(): void {
         // Held-Keys sauber loslassen — sonst laeuft der Char weiter, weil ein
         // KeyDown ohne KeyUp im Spiel haengen bleibt.
-        const sender = this.cameraSender;
+        const sender = this.cameraSender ?? this.cursorSender;
         if (sender && !sender.isDestroyed()) {
             for (const keyCode of this.heldKeys) {
                 try { sender.sendInputEvent({ type: "keyUp", keyCode }); } catch { /* ignore */ }
             }
+            // Falls A im Cursor-Modus gehalten war, Mouse-Up am letzten
+            // Cursor-Punkt — sonst bleibt linke Maustaste haengen.
+            if (this.cursorMouseDown) {
+                try {
+                    sender.sendInputEvent({
+                        type: "mouseUp",
+                        x: Math.round(this.cursorX),
+                        y: Math.round(this.cursorY),
+                        button: "left",
+                        clickCount: 1,
+                    });
+                }
+                catch { /* ignore */ }
+            }
         }
         this.heldKeys.clear();
+        this.heldButtonActions.clear();
         this.stopCameraDrag();
+        this.stopCursorPump();
+        this.cursorMouseDown = false;
+        this.mode = "normal";
         this.prevButtons = [];
         this.prevAxes = [];
         this.actionPadInProgress = false;

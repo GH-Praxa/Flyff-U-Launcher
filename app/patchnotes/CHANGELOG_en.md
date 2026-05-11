@@ -1,6 +1,30 @@
 # 📦 Patchnotes
 
 ---
+## 🆕 Version 3.5.0
+
+### ✨ Controller — new defaults & configurable mouse mode
+
+In sync with the Android app (v33), the PC launcher gets the same controller improvements:
+
+**New D-pad defaults**
+- D-pad ↑/↓ → **Zoom in/out** (synthetic mouse wheel at the screen center)
+- D-pad ←/→ → **Slot switch** (`@prevTab`/`@nextTab` — switches between open tabs in the same window)
+- D-pad-up was previously hardcoded to action-pad — `@actionPad` now needs to be mapped explicitly to a button (e.g. Select)
+
+**Mouse mode (cursor) is now configurable**
+- L2 was previously hardcoded as "reserved for cursor mode"; it's now a special action `@cursorHold` (default for L2)
+- While `@cursorHold` is held: right stick moves a synthetic mouse cursor, A button = left mouse click at current position
+- Alternative `@cursorToggle`: tap to toggle between normal and cursor mode
+- Both can be mapped to any button — if you want L2 as a skill slot, map cursor mode to e.g. R2 or L1
+- L2 is now also available as a modifier-layer slot (previously excluded)
+
+**Architecture**
+- Special actions can now have down/up events (hold behavior); edge actions like `@actionPad` ignore UP as before
+- New cursor pump timer (60 Hz) for continuous mouse motion even when the stick is held still
+- `releaseAll`/`reset` cleanly resets cursor mode + mouse-down so nothing "sticks" when switching windows
+
+---
 ## 🐛 Version 3.4.1
 
 ### 🐛 Bug fixes

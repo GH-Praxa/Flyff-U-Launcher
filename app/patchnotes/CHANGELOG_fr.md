@@ -1,6 +1,25 @@
 # 📦 Notes de patch
 
 ---
+## 🆕 Version 3.5.0
+
+### ✨ Manette — nouvelles valeurs par défaut et mode souris configurable
+
+En synchronisation avec l'application Android (v33), le launcher PC reçoit les mêmes améliorations de manette :
+
+**Nouveaux mappings D-pad par défaut**
+- D-pad ↑/↓ → **Zoom +/−** (molette de souris synthétique au centre de l'écran)
+- D-pad ←/→ → **Changement d'onglet** (`@prevTab`/`@nextTab`)
+- D-pad-haut était auparavant codé en dur sur action-pad — `@actionPad` doit maintenant être assigné explicitement à un bouton (par ex. Select)
+
+**Mode souris (curseur) maintenant configurable**
+- L2 était auparavant codé en dur comme « réservé pour le mode curseur » ; c'est maintenant une action spéciale `@cursorHold` (par défaut pour L2)
+- Tant que `@cursorHold` est maintenu : le stick droit déplace un curseur de souris synthétique, le bouton A = clic gauche à la position actuelle
+- Alternative `@cursorToggle` : appuyer pour basculer entre mode normal et curseur
+- Les deux peuvent être assignés à n'importe quel bouton — si vous voulez L2 comme slot de compétence, mappez le mode curseur sur R2 ou L1
+- L2 est maintenant aussi disponible comme slot de couche modificatrice (auparavant exclu)
+
+---
 ## 🐛 Version 3.4.1
 
 ### 🐛 Corrections de bugs
