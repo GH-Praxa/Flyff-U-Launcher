@@ -38,6 +38,14 @@ function createStatsEngine(config, initialState) {
   let pendingSuspect = null;
   // Pending level drop candidate to distinguish OCR noise from real mode switches.
   let pendingLevelDrop = null;
+  // Pending exp-drop candidate: distinguishes a single OCR down-jitter (keep
+  // baseline) from a baseline that is genuinely too high (correct it down).
+  let pendingExpDrop = null;
+  // Lump-Splitting: geschaetzte EXP pro Einzel-Kill + zuletzt geeichtes
+  // Monster. Dient dazu, einen bei OCR-Haengern zusammengefassten EXP-Sprung
+  // wieder in die echte Anzahl Kills aufzuteilen.
+  let unitExp = null;
+  let lastUnitMonster = null;
 
   /**
    * Update config
@@ -60,6 +68,7 @@ function createStatsEngine(config, initialState) {
     state = schema.migrateProfileState(newState);
     pendingSuspect = null;
     pendingLevelDrop = null;
+    pendingExpDrop = null;
   }
 
   /**
@@ -79,6 +88,7 @@ function createStatsEngine(config, initialState) {
     state.lastUpdateTime = now;
     pendingSuspect = null;
     pendingLevelDrop = null;
+    pendingExpDrop = null;
   }
 
   /**
@@ -93,6 +103,7 @@ function createStatsEngine(config, initialState) {
     state.last3Kills = [];
     pendingSuspect = null;
     pendingLevelDrop = null;
+    pendingExpDrop = null;
   }
 
   /**
@@ -104,6 +115,7 @@ function createStatsEngine(config, initialState) {
     state.sessionStartTime = Date.now();
     pendingSuspect = null;
     pendingLevelDrop = null;
+    pendingExpDrop = null;
   }
 
   /**
@@ -214,6 +226,7 @@ function createStatsEngine(config, initialState) {
       state.lastLvl = lvl;
       state.lastExp = exp;
       pendingLevelDrop = null;
+      pendingExpDrop = null;
       return null;
     }
 
@@ -225,6 +238,7 @@ function createStatsEngine(config, initialState) {
       // Reset suspect if any
       pendingSuspect = null;
       pendingLevelDrop = null;
+      pendingExpDrop = null;
       state.lastLvl = lvl;
       state.lastExp = exp;
       return null;
@@ -265,14 +279,48 @@ function createStatsEngine(config, initialState) {
     // Same level - check for exp change
     const deltaExp = exp - prevExp;
 
-    // EXP decreased on same level - OCR noise, just update state
+    // EXP decreased on same level.
     if (deltaExp < 0) {
       pendingSuspect = null;
-      // Ignore negative OCR jumps and keep baseline to prevent false spikes/missed kills.
+      // Level-up-Erkennung bei GLEICHEM Level: Wenn das Spielerlevel per
+      // manuellem Override gepinnt ist (oder die lvl-OCR deaktiviert ist),
+      // feuert der `lvl > prevLvl`-Zweig nie. Ein echter Flyff-Level-up
+      // wickelt die EXP aber immer von ~95-100 % auf ~0-5 % um. Diese
+      // Umwicklung als Level-up behandeln: Baseline neu setzen (sonst bleibt
+      // `lastExp` auf dem Vor-Level-up-Wert haengen und alle weiteren Kills
+      // erzeugen ein negatives deltaExp und gehen verloren). Schwellwerte
+      // identisch zur `isLevelUpDrop`-Logik des Core-OCR.
+      const isLevelUpWrap = prevExp >= 85 && exp < 5 && (prevExp - exp) >= 80;
+      if (isLevelUpWrap) {
+        pendingLevelDrop = null;
+        pendingExpDrop = null;
+        state.lastLvl = lvl;
+        state.lastExp = exp;
+        return null;
+      }
+      // exp liegt unter der Baseline. Ein einzelner Ausreisser ist OCR-Rauschen
+      // → Baseline behalten (sonst entstehen falsche Spikes / verpasste Kills).
+      // Liegt exp aber mehrere Ticks IN FOLGE darunter, ist die Baseline selbst
+      // zu hoch: `lastExp` ratscht durch positive OCR-Jitter-Spitzen nur nach
+      // oben und kommt nie zurueck. Das erzeugt eine tote Zone — typisch direkt
+      // nach einem Neustart, wenn der gespeicherte High-Water-Mark geladen wird
+      // — in der echte Kills verschluckt werden. Nach 3 Bestaetigungen bzw.
+      // 1,2 s die Baseline nach unten korrigieren (nicht als Kill zaehlen).
+      if (!pendingExpDrop) {
+        pendingExpDrop = { firstSeenAt: now, confirmations: 1 };
+      } else {
+        pendingExpDrop.confirmations += 1;
+      }
+      if (pendingExpDrop.confirmations >= 3 || (now - pendingExpDrop.firstSeenAt) >= 1200) {
+        state.lastLvl = lvl;
+        state.lastExp = exp;
+        pendingExpDrop = null;
+      }
       return null;
     }
 
     // Non-negative same-level sample is safe: advance baseline.
+    pendingExpDrop = null;
     state.lastLvl = lvl;
     state.lastExp = exp;
 
@@ -283,6 +331,13 @@ function createStatsEngine(config, initialState) {
       // when the HP overlay briefly fails.
       if (!hasRecentEnemyHp && !allowWithoutHp) {
         pendingSuspect = null;
+        // Kill ohne HP-Bestaetigung: nicht zaehlen — aber die Baseline NICHT
+        // fortschreiben (zurueck auf prevExp). Sonst wird der EXP-Zuwachs in
+        // die Baseline geschluckt und der Kill geht ENDGUELTIG verloren.
+        // So bleibt der Zuwachs erhalten und wird beim naechsten HP-
+        // bestaetigten Tick (bzw. ueber den allowWithoutHp-Fallback nach
+        // ~2,25 s) nachgezaehlt — zusammengefasst statt verschluckt.
+        state.lastExp = prevExp;
         return null;
       }
 
@@ -326,13 +381,33 @@ function createStatsEngine(config, initialState) {
     const name = monsterName || 'Unknown';
     const rank = getMonsterRank(name, monsterMeta);
 
+    // Lump-Splitting: Bei OCR-Haengern (langsame/uebersprungene OCR) werden
+    // mehrere echte Kills zu EINEM EXP-Sprung zusammengefasst. Anhand der
+    // typischen Einzel-Kill-EXP (`unitExp`) schaetzen, wie viele Kills in
+    // diesem deltaExp stecken.
+    let killCount = 1;
+    if (unitExp === null || unitExp <= 0 || name !== lastUnitMonster) {
+      // Erstkill bzw. Monsterwechsel → neu eichen, konservativ als 1 zaehlen.
+      if (deltaExp > 0) unitExp = deltaExp;
+      lastUnitMonster = name;
+    } else {
+      killCount = Math.round(deltaExp / unitExp);
+      if (killCount < 1) killCount = 1;
+      if (killCount > 30) killCount = 30;
+      const impliedUnit = deltaExp / killCount;
+      // `unitExp` folgt dem kleinsten Einzel-Kill-Wert: schnell nach unten
+      // (ein Einzelkill enthuellt die echte Einheit; Lumps sind Vielfache),
+      // langsam nach oben (z. B. nach Level-up/leichtem Drift).
+      unitExp = impliedUnit < unitExp ? impliedUnit : unitExp * 0.9 + impliedUnit * 0.1;
+    }
+
     if (!state.sessionStartTime) {
       state.sessionStartTime = timestamp;
     }
 
-    // Increment counters
-    state.killsSession++;
-    state.killsTotal++;
+    // Increment counters (killCount > 1 = zusammengefasster OCR-Haenger)
+    state.killsSession += killCount;
+    state.killsTotal += killCount;
 
     // Add to exp totals
     state.expSession += deltaExp;
@@ -341,17 +416,19 @@ function createStatsEngine(config, initialState) {
     // Update last kill time
     state.lastKillTime = timestamp;
 
-    // Add to rolling window
-    state.rollingKills.push({
-      timestamp,
-      deltaExp
-    });
+    // Add to rolling window — je geschaetztem Kill ein Eintrag, damit
+    // Kills/Stunde und Kills/Min korrekt bleiben.
+    const unitDelta = deltaExp / killCount;
+    for (let i = 0; i < killCount; i++) {
+      state.rollingKills.push({ timestamp, deltaExp: unitDelta });
+    }
 
     // Update last 3 kills (for avg calculation)
     state.last3Kills.push({
       monsterName: name,
       deltaExp,
       timestamp,
+      killCount,
       monsterId: monsterMeta && monsterMeta.id,
       monsterElement: monsterMeta && monsterMeta.element,
       monsterLevel: monsterMeta && monsterMeta.level,
@@ -369,7 +446,7 @@ function createStatsEngine(config, initialState) {
         lastKillTime: null
       };
     }
-    state.monsters[name].count++;
+    state.monsters[name].count += killCount;
     state.monsters[name].lastKillTime = timestamp;
     // Update rank if we now have better info (e.g., was 'unknown', now resolved)
     if (rank !== schema.MONSTER_RANKS.UNKNOWN) {
@@ -381,7 +458,8 @@ function createStatsEngine(config, initialState) {
       monsterName: name,
       deltaExp,
       timestamp,
-      rank
+      rank,
+      killCount
     };
   }
 
@@ -394,24 +472,27 @@ function createStatsEngine(config, initialState) {
     if (state.last3Kills.length === 0) return false;
 
     const lastKill = state.last3Kills.pop();
+    const n = Math.max(1, Math.round(Number(lastKill.killCount) || 1));
 
-    state.killsSession = Math.max(0, state.killsSession - 1);
-    state.killsTotal = Math.max(0, state.killsTotal - 1);
+    state.killsSession = Math.max(0, state.killsSession - n);
+    state.killsTotal = Math.max(0, state.killsTotal - n);
     state.expSession = Math.max(0, state.expSession - lastKill.deltaExp);
     state.expTotal = Math.max(0, state.expTotal - lastKill.deltaExp);
 
-    // Remove matching entry from rolling window (last entry with same timestamp)
-    for (let i = state.rollingKills.length - 1; i >= 0; i--) {
+    // Remove the rolling-window entries for this kill (n Eintraege mit
+    // gleichem Timestamp — siehe Lump-Splitting in registerKill).
+    let removed = 0;
+    for (let i = state.rollingKills.length - 1; i >= 0 && removed < n; i--) {
       if (state.rollingKills[i].timestamp === lastKill.timestamp) {
         state.rollingKills.splice(i, 1);
-        break;
+        removed++;
       }
     }
 
     // Update monster tracking
     const name = lastKill.monsterName;
     if (state.monsters[name]) {
-      state.monsters[name].count--;
+      state.monsters[name].count -= n;
       if (state.monsters[name].count <= 0) {
         delete state.monsters[name];
       }

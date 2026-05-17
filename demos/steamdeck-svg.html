@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Steam Deck SVG — Demo</title>
+<style>
+  :root {
+    --bg: #1a1c20;
+    --panel: rgba(255,255,255,0.03);
+    --stroke: rgba(255,255,255,0.10);
+    --text: #e2e6ee;
+    --muted: #8c93a3;
+    --accent: #4ca0e8;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  header {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--stroke);
+  }
+  header h1 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  header p { margin: 0; font-size: 13px; color: var(--muted); }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel h2 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .panel .sub {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .svgHost { width: 100%; display: flex; justify-content: center; }
+  .ctrlSvg {
+    width: 100%; max-width: 560px; height: auto; display: block;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55));
+  }
+
+  /* ───── Shared button & label styles (taken from modal.css) ───── */
+  .ctrlSvgBtn {
+    fill: rgba(255,255,255,0.10);
+    stroke: rgba(255,255,255,0.18);
+    stroke-width: 1.2;
+    cursor: pointer;
+    transition: fill 0.12s ease, stroke 0.12s ease;
+  }
+  .ctrlSvgBtn:hover {
+    fill: rgba(76,160,232,0.30);
+    stroke: rgba(120,170,225,0.80);
+  }
+  .ctrlSvgTrigger { fill: rgba(40,45,52,0.92); }
+  .ctrlSvgShoulder { fill: rgba(50,55,62,0.92); }
+  .ctrlSvgPill { fill: rgba(60,65,72,0.85); }
+  .ctrlSvgDpad { fill: rgba(45,48,54,0.85); }
+  .ctrlSvgStick { fill: rgba(30,32,36,0.95); }
+  .ctrlSvgStickWell { fill: rgba(0,0,0,0.40); stroke: rgba(255,255,255,0.06); pointer-events: none; }
+  .ctrlSvgStickWellInner { fill: rgba(15,17,20,0.85); pointer-events: none; }
+  .ctrlSvgStickRim { fill: none; stroke: rgba(255,255,255,0.10); pointer-events: none; }
+  .ctrlSvgStickDot { fill: rgba(76,160,232,0.85); pointer-events: none; }
+  .ctrlSvgDpadCenter { fill: rgba(255,255,255,0.04); pointer-events: none; }
+  .ctrlSvgDpadArrow { fill: rgba(255,255,255,0.65); pointer-events: none; }
+  .ctrlSvgFace { /* base */ }
+  .ctrlSvgXboxY { fill: rgba(232,200,60,0.22); stroke: rgba(232,200,60,0.65); }
+  .ctrlSvgXboxB { fill: rgba(220,76,76,0.22);  stroke: rgba(220,76,76,0.65); }
+  .ctrlSvgXboxA { fill: rgba(80,180,90,0.22);  stroke: rgba(80,180,90,0.65); }
+  .ctrlSvgXboxX { fill: rgba(60,130,240,0.22); stroke: rgba(60,130,240,0.65); }
+  .ctrlSvgLbl {
+    fill: rgba(220,230,245,0.85);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+  .ctrlSvgLblFace { font-size: 12px; font-weight: 700; dominant-baseline: middle; }
+  .ctrlSvgLblTrigger { font-size: 11px; font-weight: 700; }
+  .ctrlSvgLblShoulder { font-size: 9px; font-weight: 700; }
+  .ctrlSvgLblPaddle { font-size: 7.5px; font-weight: 600; }
+
+  /* ───── Steam Deck specific styles (proposed) ───── */
+  .ctrlSvgStyleSteamdeck .ctrlSvgBody {
+    fill: rgba(28,30,34,0.96);
+    stroke: rgba(95,150,210,0.30);
+    stroke-width: 1.5;
+  }
+  .ctrlSvgScreen {
+    fill: rgba(0,0,0,0.92);
+    stroke: rgba(95,150,210,0.18);
+    stroke-width: 1;
+    pointer-events: none;
+  }
+  .ctrlSvgScreenInner {
+    fill: rgba(12,18,28,0.88);
+    pointer-events: none;
+  }
+  .ctrlSvgScreenGlow {
+    fill: url(#screenGradient);
+    pointer-events: none;
+  }
+  .ctrlSvgSteamWord {
+    fill: rgba(120,170,225,0.28);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.36em;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+  .ctrlSvgSteamButton {
+    fill: rgba(40,55,80,0.90);
+    stroke: rgba(120,170,225,0.55);
+    stroke-width: 1;
+    pointer-events: none;
+  }
+  .ctrlSvgSteamLogo {
+    stroke: rgba(160,200,240,0.85);
+    stroke-width: 1.1;
+    fill: none;
+    pointer-events: none;
+    filter: drop-shadow(0 0 2px rgba(120,170,225,0.55));
+  }
+  .ctrlSvgQuickAccess {
+    fill: rgba(40,55,80,0.90);
+    stroke: rgba(120,170,225,0.45);
+    stroke-width: 1;
+    pointer-events: none;
+  }
+  .ctrlSvgQuickAccessDot {
+    fill: rgba(180,210,240,0.85);
+    pointer-events: none;
+  }
+  .ctrlSvgTrackpad {
+    fill: rgba(20,25,32,0.92);
+    stroke: rgba(95,150,210,0.32);
+    stroke-width: 1.4;
+  }
+  .ctrlSvgTrackpadInner {
+    fill: rgba(35,40,50,0.55);
+    stroke: rgba(120,170,225,0.20);
+    stroke-width: 0.8;
+    pointer-events: none;
+  }
+  .ctrlSvgTrackpadCross {
+    stroke: rgba(255,255,255,0.05);
+    stroke-width: 0.8;
+    pointer-events: none;
+  }
+  .ctrlSvgPaddle {
+    fill: rgba(45,55,70,0.90);
+    stroke: rgba(120,170,225,0.50);
+    stroke-width: 1;
+  }
+  .ctrlSvgGripContour {
+    fill: none;
+    stroke: rgba(255,255,255,0.04);
+    stroke-width: 1;
+    pointer-events: none;
+  }
+  .ctrlSvgSysButton {
+    fill: rgba(50,55,62,0.85);
+    stroke: rgba(255,255,255,0.10);
+    stroke-width: 1;
+  }
+  .ctrlSvgSysIcon {
+    fill: rgba(200,210,225,0.65);
+    pointer-events: none;
+  }
+
+  .legendBox {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.20);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .legendBox b { color: var(--text); }
+  .legendBox kbd {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 10.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Steam-Deck-SVG — v5 (final, basiert auf Vorlagen-SVGs)</h1>
+  <p>v5 ist die finale Iteration. Quellen: <code>app/src/assets/svg/deck-front.svg</code> + <code>deck-back.svg</code>. Anatomisch korrekt zu Bild 74/75.</p>
+</header>
+
+<!-- ═════════════════════════════════════════════════════════════════════
+     v5 — TOP der Demo, basiert auf den neu angelegten SVG-Dateien
+     ═════════════════════════════════════════════════════════════════════ -->
+<div style="padding: 24px 24px 0;">
+  <div class="panel" style="max-width: 1100px; margin: 0 auto; border-color: rgba(76,160,232,0.45);">
+    <h2 style="color: var(--accent);">v5 — Empfohlen</h2>
+    <div class="sub">Beide Sticks <b>symmetrisch oben</b> (Bild 74), D-Pad/ABXY jeweils direkt darunter, Trackpads unten.</div>
+
+    <!-- ═════ VORDERSEITE ═════ -->
+    <h3 style="margin: 18px 0 6px; font-size: 13px; color: var(--accent); letter-spacing: 0.04em;">VORDERSEITE — deck-front.svg</h3>
+    <div class="svgHost">
+      <svg viewBox="0 0 1060 429" class="ctrlSvg ctrlSvgV3 ctrlSvgStyleSteamdeck" role="img" aria-label="Steam Deck Front">
+        <defs>
+          <radialGradient id="deckScreenGradV5" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"   stop-color="#1a3550" stop-opacity="0.50"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.95"/>
+          </radialGradient>
+        </defs>
+
+        <path class="ctrlSvgBody" d="M 24.687 158.986 C 24.078 104.857 23.773 77.792 37.395 58.774 C 41.792 52.634 47.135 47.231 53.224 42.765 C 72.087 28.930 99.154 28.930 153.288 28.930 H 911.302 C 965.435 28.930 992.502 28.930 1011.365 42.765 C 1017.454 47.231 1022.797 52.634 1027.195 58.774 C 1040.817 77.792 1040.512 104.857 1039.903 158.986 L 1038.873 250.404 C 1038.054 323.325 1037.644 359.786 1018.852 385.286 C 1012.781 393.525 1005.459 400.765 997.151 406.744 C 971.441 425.247 934.978 425.247 862.052 425.247 H 202.547 C 129.621 425.247 93.158 425.247 67.448 406.744 C 59.141 400.765 51.819 393.525 45.747 385.286 C 26.955 359.786 26.544 323.325 25.723 250.404 Z"/>
+        <path opacity="0.30" stroke="rgba(255,255,255,0.10)" stroke-width="1" fill="none" d="M 1040.376 119.357 L 1036.929 100.505 C 1030.521 65.512 1000.025 40.094 964.450 40.094 H 99.278 C 63.703 40.094 33.209 65.512 26.801 100.505 L 23.350 119.357"/>
+
+        <!-- Trigger + Bumper oben -->
+        <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="85"  y="2"  width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="162" y="17" style="font-size:13px;">L2</text>
+        <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="820" y="2"  width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="897" y="17" style="font-size:13px;">R2</text>
+        <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="85"  y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="162" y="36" style="font-size:10px;">L1</text>
+        <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="820" y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="897" y="36" style="font-size:10px;">R1</text>
+
+        <!-- LINKE SEITE: L-Stick → D-Pad → L-Trackpad -->
+        <circle class="ctrlSvgStickWell"      cx="155" cy="100" r="48"/>
+        <circle class="ctrlSvgStickWellInner" cx="155" cy="100" r="41"/>
+        <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="155" cy="100" r="34"/>
+        <circle class="ctrlSvgStickRim"       cx="155" cy="100" r="30"/>
+        <circle data-stick="l"  class="ctrlSvgStickDot" cx="155" cy="100" r="14"/>
+
+        <rect class="ctrlSvgDpadCenter" x="142" y="187" width="26" height="26"/>
+        <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="142" y="154" width="26" height="33" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 148 176 L 155 166 L 162 176 Z"/>
+        <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="142" y="213" width="26" height="33" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 148 224 L 155 234 L 162 224 Z"/>
+        <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="109" y="187" width="33" height="26" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 131 193 L 119 200 L 131 207 Z"/>
+        <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="168" y="187" width="33" height="26" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 179 193 L 191 200 L 179 207 Z"/>
+
+        <circle class="ctrlSvgTrackpad"      cx="155" cy="325" r="60"/>
+        <circle class="ctrlSvgTrackpadInner" cx="155" cy="325" r="52"/>
+        <line class="ctrlSvgTrackpadCross" x1="100" y1="325" x2="210" y2="325"/>
+        <line class="ctrlSvgTrackpadCross" x1="155" y1="270" x2="155" y2="380"/>
+
+        <!-- RECHTE SEITE: R-Stick → ABXY → R-Trackpad -->
+        <circle class="ctrlSvgStickWell"      cx="905" cy="100" r="48"/>
+        <circle class="ctrlSvgStickWellInner" cx="905" cy="100" r="41"/>
+        <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="905" cy="100" r="34"/>
+        <circle class="ctrlSvgStickRim"       cx="905" cy="100" r="30"/>
+        <circle data-stick="r"  class="ctrlSvgStickDot" cx="905" cy="100" r="14"/>
+
+        <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="905" cy="170" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="905" y="176" style="font-size:16px;">Y</text>
+        <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="940" cy="205" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="940" y="211" style="font-size:16px;">B</text>
+        <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="905" cy="240" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="905" y="246" style="font-size:16px;">A</text>
+        <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="870" cy="205" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="870" y="211" style="font-size:16px;">X</text>
+
+        <circle class="ctrlSvgTrackpad"      cx="905" cy="325" r="60"/>
+        <circle class="ctrlSvgTrackpadInner" cx="905" cy="325" r="52"/>
+        <line class="ctrlSvgTrackpadCross" x1="850" y1="325" x2="960" y2="325"/>
+        <line class="ctrlSvgTrackpadCross" x1="905" y1="270" x2="905" y2="380"/>
+
+        <!-- Zentrum: Display + System-Buttons -->
+        <rect class="ctrlSvgScreen" x="245" y="55" width="570" height="290" rx="10"/>
+        <rect class="ctrlSvgScreenGlow" x="253" y="63" width="554" height="274" rx="8" fill="url(#deckScreenGradV5)"/>
+        <text class="ctrlSvgSteamWord" x="530" y="205" style="font-size:18px; letter-spacing:0.42em;">STEAM DECK</text>
+
+        <rect data-button="select" class="ctrlSvgBtn ctrlSvgSysButton" x="265" y="352" width="40" height="16" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="272" y="358" width="26" height="2"/>
+        <rect class="ctrlSvgSysIcon" x="272" y="363" width="26" height="2"/>
+        <rect data-button="start" class="ctrlSvgBtn ctrlSvgSysButton" x="755" y="352" width="40" height="16" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="764" y="357" width="22" height="1.8"/>
+        <rect class="ctrlSvgSysIcon" x="764" y="361" width="15" height="1.8"/>
+        <rect class="ctrlSvgSysIcon" x="764" y="365" width="18" height="1.8"/>
+
+        <circle class="ctrlSvgSteamButton" cx="360" cy="377" r="14"/>
+        <path class="ctrlSvgSteamLogo" d="M 353 372 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0 M 361 369 L 367 364"/>
+        <circle class="ctrlSvgQuickAccess" cx="700" cy="377" r="14"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="693" cy="377" r="2"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="700" cy="377" r="2"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="707" cy="377" r="2"/>
+      </svg>
+    </div>
+
+    <!-- ═════ RÜCKSEITE ═════ -->
+    <h3 style="margin: 24px 0 6px; font-size: 13px; color: var(--accent); letter-spacing: 0.04em;">RÜCKSEITE — deck-back.svg (Paddles)</h3>
+    <div class="svgHost">
+      <svg viewBox="0 0 1060 429" class="ctrlSvg ctrlSvgV3 ctrlSvgStyleSteamdeck" role="img" aria-label="Steam Deck Back">
+
+        <path class="ctrlSvgBody" d="M 24.687 158.986 C 24.078 104.857 23.773 77.792 37.395 58.774 C 41.792 52.634 47.135 47.231 53.224 42.765 C 72.087 28.930 99.154 28.930 153.288 28.930 H 911.302 C 965.435 28.930 992.502 28.930 1011.365 42.765 C 1017.454 47.231 1022.797 52.634 1027.195 58.774 C 1040.817 77.792 1040.512 104.857 1039.903 158.986 L 1038.873 250.404 C 1038.054 323.325 1037.644 359.786 1018.852 385.286 C 1012.781 393.525 1005.459 400.765 997.151 406.744 C 971.441 425.247 934.978 425.247 862.052 425.247 H 202.547 C 129.621 425.247 93.158 425.247 67.448 406.744 C 59.141 400.765 51.819 393.525 45.747 385.286 C 26.955 359.786 26.544 323.325 25.723 250.404 Z"/>
+        <path opacity="0.20" stroke="rgba(255,255,255,0.20)" stroke-width="1" fill="none" d="M 100 130 C 90 180 95 250 130 320 M 960 130 C 970 180 965 250 930 320"/>
+
+        <!-- VALVE-Wordmark -->
+        <text x="530" y="170" style="fill:rgba(255,255,255,0.16); font-size:28px; font-weight:700; letter-spacing:0.28em; text-anchor:middle; font-family:ui-sans-serif,system-ui,sans-serif;">VALVE</text>
+
+        <!-- Lüftungsschlitze -->
+        <g opacity="0.30" stroke="rgba(255,255,255,0.30)" stroke-width="1.4" fill="none">
+          <line x1="440" y1="235" x2="440" y2="305"/>
+          <line x1="460" y1="235" x2="460" y2="305"/>
+          <line x1="480" y1="235" x2="480" y2="305"/>
+          <line x1="500" y1="235" x2="500" y2="305"/>
+          <line x1="520" y1="235" x2="520" y2="305"/>
+          <line x1="540" y1="235" x2="540" y2="305"/>
+          <line x1="560" y1="235" x2="560" y2="305"/>
+          <line x1="580" y1="235" x2="580" y2="305"/>
+          <line x1="600" y1="235" x2="600" y2="305"/>
+          <line x1="620" y1="235" x2="620" y2="305"/>
+        </g>
+
+        <!-- Schrauben (deko) -->
+        <g fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="0.5">
+          <circle cx="320" cy="80"  r="3"/>
+          <circle cx="740" cy="80"  r="3"/>
+          <circle cx="320" cy="380" r="3"/>
+          <circle cx="740" cy="380" r="3"/>
+        </g>
+
+        <!-- Back-Paddles -->
+        <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="162" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="206" style="font-size:14px; font-weight:700;">L4</text>
+        <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="243" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="287" style="font-size:14px; font-weight:700;">L5</text>
+        <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="162" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="206" style="font-size:14px; font-weight:700;">R4</text>
+        <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="243" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="287" style="font-size:14px; font-weight:700;">R5</text>
+
+      </svg>
+    </div>
+
+    <div class="legendBox">
+      <b>v5-Finale — Vorlagen 1:1 umgesetzt:</b><br>
+      <br>
+      <b>Front-Layout (Bild 74):</b><br>
+      • LINKS top → bottom: <kbd>L-Stick (155,100)</kbd> → <kbd>D-Pad (155,200)</kbd> → <kbd>L-Trackpad (155,325)</kbd><br>
+      • RECHTS top → bottom: <kbd>R-Stick (905,100)</kbd> → <kbd>ABXY (905,205)</kbd> → <kbd>R-Trackpad (905,325)</kbd><br>
+      • <b>Beide Sticks oben symmetrisch</b> — entspricht Bild 74 und dem Front-SVG aus der ZIP<br>
+      <br>
+      <b>Back-Layout (Bild 75):</b><br>
+      • L4 oben-links, L5 unten-links, R4 oben-rechts, R5 unten-rechts<br>
+      • Positionen exakt aus <code>steamdeckBack.svg</code><br>
+      • VALVE-Wordmark + Lüftungsschlitze als deko<br>
+      <br>
+      <b>SVG-Dateien:</b><br>
+      • <code>app/src/assets/svg/deck-front.svg</code><br>
+      • <code>app/src/assets/svg/deck-back.svg</code><br>
+      <br>
+      <b>Stick-Bases für Live-Animation:</b> <kbd>L=(155, 100)</kbd>, <kbd>R=(905, 100)</kbd>
+    </div>
+  </div>
+</div>
+
+
+<style>
+  /* v3 nutzt eigene viewBox 1060x429 (deck-typisches Aspect-Ratio). Damit
+     die Cards-Spalte gleich hoch wirkt wie bei v2, erlauben wir bis 700px. */
+  .ctrlSvgV3 { max-width: 680px; }
+</style>
+
+<main>
+
+<!-- ═════════ AKTUELL (= Vorschlag v1 aus voriger Iteration) ═════════ -->
+<div class="panel">
+  <h2>v1 (bisher)</h2>
+  <div class="sub">D-Pad/R-Stick zu weit innen, Trackpads zu klein</div>
+  <div class="svgHost">
+    <svg viewBox="0 0 600 360" class="ctrlSvg ctrlSvgStyleSteamdeck">
+      <rect class="ctrlSvgBtn ctrlSvgTrigger" x="58" y="14" width="92" height="46" rx="16"/>
+      <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="104" y="42">L2</text>
+      <rect class="ctrlSvgBtn ctrlSvgTrigger" x="450" y="14" width="92" height="46" rx="16"/>
+      <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="496" y="42">R2</text>
+
+      <rect class="ctrlSvgBtn ctrlSvgShoulder" x="62" y="58" width="104" height="20" rx="10"/>
+      <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="114" y="71">L1</text>
+      <rect class="ctrlSvgBtn ctrlSvgShoulder" x="434" y="58" width="104" height="20" rx="10"/>
+      <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="486" y="71">R1</text>
+
+      <path class="ctrlSvgBody" d="M 80 82 L 520 82 C 548 84 568 102 572 132 C 576 168 568 210 552 248 C 538 280 516 302 488 314 C 456 326 422 326 396 318 C 376 310 360 302 348 296 C 338 292 330 290 326 290 L 274 290 C 270 290 262 292 252 296 C 240 302 224 310 204 318 C 178 326 144 326 112 314 C 84 302 62 280 48 248 C 32 210 24 168 28 132 C 32 102 52 84 80 82 Z"/>
+
+      <circle class="ctrlSvgStickWell"      cx="160" cy="118" r="36"/>
+      <circle class="ctrlSvgStickWellInner" cx="160" cy="118" r="30"/>
+      <circle class="ctrlSvgBtn ctrlSvgStick" cx="160" cy="118" r="24"/>
+      <circle class="ctrlSvgStickRim"       cx="160" cy="118" r="22"/>
+      <circle class="ctrlSvgStickDot" cx="160" cy="118" r="10"/>
+
+      <circle class="ctrlSvgStickWell"      cx="440" cy="118" r="36"/>
+      <circle class="ctrlSvgStickWellInner" cx="440" cy="118" r="30"/>
+      <circle class="ctrlSvgBtn ctrlSvgStick" cx="440" cy="118" r="24"/>
+      <circle class="ctrlSvgStickRim"       cx="440" cy="118" r="22"/>
+      <circle class="ctrlSvgStickDot" cx="440" cy="118" r="10"/>
+
+      <rect class="ctrlSvgDpadCenter" x="151" y="200" width="18" height="18"/>
+      <rect class="ctrlSvgBtn ctrlSvgDpad" x="151" y="175" width="18" height="25" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 155 191 L 160 183 L 165 191 Z"/>
+      <rect class="ctrlSvgBtn ctrlSvgDpad" x="151" y="218" width="18" height="25" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 155 227 L 160 235 L 165 227 Z"/>
+      <rect class="ctrlSvgBtn ctrlSvgDpad" x="126" y="200" width="25" height="18" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 142 205 L 134 209 L 142 213 Z"/>
+      <rect class="ctrlSvgBtn ctrlSvgDpad" x="169" y="200" width="25" height="18" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 178 205 L 186 209 L 178 213 Z"/>
+
+      <circle class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="440" cy="180" r="14"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="440" y="185">Y</text>
+      <circle class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="472" cy="212" r="14"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="472" y="217">B</text>
+      <circle class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="440" cy="244" r="14"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="440" y="249">A</text>
+      <circle class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="408" cy="212" r="14"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="408" y="217">X</text>
+
+      <circle class="ctrlSvgTrackpad" cx="244" cy="216" r="26"/>
+      <circle class="ctrlSvgTrackpadInner" cx="244" cy="216" r="22"/>
+      <circle class="ctrlSvgTrackpad" cx="356" cy="216" r="26"/>
+      <circle class="ctrlSvgTrackpadInner" cx="356" cy="216" r="22"/>
+
+      <rect class="ctrlSvgBtn ctrlSvgPill" x="220" y="170" width="16" height="9" rx="4.5"/>
+      <rect class="ctrlSvgBtn ctrlSvgPill" x="364" y="170" width="16" height="9" rx="4.5"/>
+
+      <circle class="ctrlSvgSteamButton" cx="300" cy="174" r="9"/>
+
+      <rect class="ctrlSvgBtn ctrlSvgPaddle" x="84"  y="298" width="36" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="102" y="309">L4</text>
+      <rect class="ctrlSvgBtn ctrlSvgPaddle" x="124" y="298" width="36" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="142" y="309">L5</text>
+      <rect class="ctrlSvgBtn ctrlSvgPaddle" x="480" y="298" width="36" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="498" y="309">R4</text>
+      <rect class="ctrlSvgBtn ctrlSvgPaddle" x="440" y="298" width="36" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="458" y="309">R5</text>
+
+      <text class="ctrlSvgSteamWord" x="300" y="334">STEAM DECK</text>
+    </svg>
+  </div>
+  <div class="legendBox">
+    <b>Problem:</b> Sieht aus wie ein generischer Pad mit „STEAM DECK"-Schriftzug.
+    Keine echte Deck-Silhouette, keine prominenten Trackpads, kein Display in der Mitte.
+  </div>
+</div>
+
+<!-- ═════════ VORSCHLAG v2 ═════════ -->
+<div class="panel">
+  <h2>Vorschlag v2</h2>
+  <div class="sub">Sticks OUTER-TOP, D-Pad/R-Stick als eigene INBOARD-Spalte, größere Trackpads OUTER-BOTTOM</div>
+  <div class="svgHost">
+    <svg viewBox="0 0 600 360" class="ctrlSvg ctrlSvgStyleSteamdeck" aria-label="Steam Deck">
+      <defs>
+        <radialGradient id="screenGradient" cx="50%" cy="40%" r="60%">
+          <stop offset="0%"   stop-color="#1a3550" stop-opacity="0.65"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.95"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Triggers (hinten, oben) -->
+      <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="40"  y="6"  width="120" height="28" rx="12"/>
+      <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="100" y="25">L2</text>
+      <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="440" y="6"  width="120" height="28" rx="12"/>
+      <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="500" y="25">R2</text>
+
+      <!-- Bumpers -->
+      <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="44"  y="36" width="112" height="18" rx="9"/>
+      <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="100" y="49">L1</text>
+      <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="444" y="36" width="112" height="18" rx="9"/>
+      <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="500" y="49">R1</text>
+
+      <!--
+        Body-Silhouette v2: breite flache Hauptmitte, prominente rundliche
+        Griff-Wings unten an beiden Seiten (Bild 75-Style). Mehr Bottom-Wing.
+      -->
+      <path class="ctrlSvgBody" d="
+        M 110 60
+        H 490
+        C 524 60 552 78 558 110
+        L 568 160
+        C 572 188 568 215 558 240
+        C 578 250 588 275 580 305
+        C 568 335 532 348 498 343
+        C 462 338 432 322 410 305
+        C 396 294 386 285 376 280
+        L 376 270
+        L 224 270
+        L 224 280
+        C 214 285 204 294 190 305
+        C 168 322 138 338 102 343
+        C 68 348 32 335 20 305
+        C 12 275 22 250 42 240
+        C 32 215 28 188 32 160
+        L 42 110
+        C 48 78 76 60 110 60
+        Z
+      "/>
+
+      <!-- Subtle grip-Innen-Kontur -->
+      <path class="ctrlSvgGripContour" d="
+        M 70 200 C 60 240 75 285 115 315
+        M 530 200 C 540 240 525 285 485 315
+      "/>
+
+      <!-- ─────────── ZENTRUM: Display + System-Buttons ─────────── -->
+      <rect class="ctrlSvgScreen" x="215" y="78" width="170" height="115" rx="6"/>
+      <rect class="ctrlSvgScreenGlow" x="219" y="82" width="162" height="107" rx="4"/>
+      <text class="ctrlSvgSteamWord" x="300" y="135">STEAM DECK</text>
+
+      <!-- View / Menu (Select / Start) — oberhalb / seitlich des Displays -->
+      <rect data-button="select" class="ctrlSvgBtn ctrlSvgSysButton" x="218" y="200" width="22" height="12" rx="3"/>
+      <rect class="ctrlSvgSysIcon" x="222" y="204" width="14" height="1.6"/>
+      <rect class="ctrlSvgSysIcon" x="222" y="207" width="14" height="1.6"/>
+      <rect data-button="start"  class="ctrlSvgBtn ctrlSvgSysButton" x="360" y="200" width="22" height="12" rx="3"/>
+      <rect class="ctrlSvgSysIcon" x="365" y="203" width="12" height="1.4"/>
+      <rect class="ctrlSvgSysIcon" x="365" y="206" width="8"  height="1.4"/>
+      <rect class="ctrlSvgSysIcon" x="365" y="209" width="10" height="1.4"/>
+
+      <!-- Steam-Button (links unter Display) -->
+      <circle class="ctrlSvgSteamButton" cx="262" cy="225" r="9"/>
+      <path class="ctrlSvgSteamLogo" d="
+        M 258 222 a 4 4 0 1 0 8 0 a 4 4 0 1 0 -8 0
+        M 262.5 220 L 266 217
+      "/>
+      <!-- Quick-Access (3-dot) — rechts unter Display -->
+      <circle class="ctrlSvgQuickAccess" cx="338" cy="225" r="9"/>
+      <circle class="ctrlSvgQuickAccessDot" cx="334" cy="225" r="1.3"/>
+      <circle class="ctrlSvgQuickAccessDot" cx="338" cy="225" r="1.3"/>
+      <circle class="ctrlSvgQuickAccessDot" cx="342" cy="225" r="1.3"/>
+
+      <!--
+        ─── LINKE SEITE ───
+        L-Stick:    OUTER-TOP  (cx=95,  cy=110, r=24)  — am oberen Griff-Rand, weiter aussen
+        D-Pad:      INBOARD-MID (zentriert ~180,148)   — eigene Spalte zwischen Stick und Screen
+        L-Trackpad: OUTER-BOTTOM (cx=115, cy=240, r=44) — unter dem L-Stick, gross + prominent
+      -->
+      <!-- L-Stick (oben aussen) -->
+      <circle class="ctrlSvgStickWell"      cx="95" cy="110" r="32"/>
+      <circle class="ctrlSvgStickWellInner" cx="95" cy="110" r="27"/>
+      <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="95" cy="110" r="22"/>
+      <circle class="ctrlSvgStickRim"       cx="95" cy="110" r="20"/>
+      <circle data-stick="l"  class="ctrlSvgStickDot" cx="95" cy="110" r="9"/>
+
+      <!-- D-Pad (eigene Spalte rechts vom L-Stick, oben) -->
+      <rect class="ctrlSvgDpadCenter" x="171" y="139" width="18" height="18"/>
+      <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="171" y="116" width="18" height="23" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 175 133 L 180 125 L 185 133 Z"/>
+      <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="171" y="157" width="18" height="23" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 175 165 L 180 173 L 185 165 Z"/>
+      <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="148" y="139" width="23" height="18" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 163 144 L 155 148 L 163 152 Z"/>
+      <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="189" y="139" width="23" height="18" rx="3"/>
+      <path class="ctrlSvgDpadArrow" d="M 198 144 L 206 148 L 198 152 Z"/>
+
+      <!-- L-Trackpad (unten aussen — gross, dominant) -->
+      <circle class="ctrlSvgTrackpad"      cx="115" cy="240" r="44"/>
+      <circle class="ctrlSvgTrackpadInner" cx="115" cy="240" r="38"/>
+      <line class="ctrlSvgTrackpadCross" x1="79"  y1="240" x2="151" y2="240"/>
+      <line class="ctrlSvgTrackpadCross" x1="115" y1="204" x2="115" y2="276"/>
+
+      <!--
+        ─── RECHTE SEITE (Spiegel) ───
+        ABXY:       OUTER-TOP  (cluster center ~505, 110)
+        R-Stick:    INBOARD-MID (cx=420, cy=148, r=22) — eigene Spalte links von ABXY
+        R-Trackpad: OUTER-BOTTOM (cx=485, cy=240, r=44)
+      -->
+      <!-- ABXY (oben aussen, Y top — A bottom — X left — B right) -->
+      <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="505" cy="84"  r="13"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="505" y="89">Y</text>
+      <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="533" cy="112" r="13"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="533" y="117">B</text>
+      <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="505" cy="140" r="13"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="505" y="145">A</text>
+      <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="477" cy="112" r="13"/>
+      <text class="ctrlSvgLbl ctrlSvgLblFace" x="477" y="117">X</text>
+
+      <!-- R-Stick (eigene Spalte links von ABXY, mittig) -->
+      <circle class="ctrlSvgStickWell"      cx="420" cy="148" r="30"/>
+      <circle class="ctrlSvgStickWellInner" cx="420" cy="148" r="25"/>
+      <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="420" cy="148" r="20"/>
+      <circle class="ctrlSvgStickRim"       cx="420" cy="148" r="18"/>
+      <circle data-stick="r"  class="ctrlSvgStickDot" cx="420" cy="148" r="9"/>
+
+      <!-- R-Trackpad (unten aussen — gross, dominant) -->
+      <circle class="ctrlSvgTrackpad"      cx="485" cy="240" r="44"/>
+      <circle class="ctrlSvgTrackpadInner" cx="485" cy="240" r="38"/>
+      <line class="ctrlSvgTrackpadCross" x1="449" y1="240" x2="521" y2="240"/>
+      <line class="ctrlSvgTrackpadCross" x1="485" y1="204" x2="485" y2="276"/>
+
+      <!-- ─────────── BACK-PADDLES (Bild-75-Style — am unteren Griff-Rand) ─────────── -->
+      <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="22"  y="318" width="38" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="41"  y="329">L5</text>
+      <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="64"  y="318" width="38" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="83"  y="329">L4</text>
+      <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="498" y="318" width="38" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="517" y="329">R4</text>
+      <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="540" y="318" width="38" height="14" rx="7"/>
+      <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="559" y="329">R5</text>
+
+    </svg>
+  </div>
+  <div class="legendBox">
+    <b>Korrekturen ggü. v1 nach Vorlagen-Vergleich (Bild 74/75):</b><br>
+    • <b>L-Stick / ABXY</b> jetzt <kbd>OUTER-TOP</kbd> (näher am Griff-Rand, weiter weg von der Mitte)<br>
+    • <b>D-Pad / R-Stick</b> sitzen in einer eigenen <kbd>INBOARD-Spalte</kbd> zwischen Stick/ABXY und Display — nicht mehr direkt darunter<br>
+    • <b>Trackpads</b> deutlich grösser (r=38 → r=44) und auf <kbd>OUTER-BOTTOM</kbd> — direkt unter Stick/ABXY<br>
+    • <b>Body-Silhouette</b> mit ausgeprägteren rundlichen Griff-Wings unten (Bild-75-Look)<br>
+    • <b>Trigger</b> breiter und höher (deck-typisch ausladende Schultern)
+  </div>
+</div>
+
+</main>
+
+<!-- ═════════════════════════════════════════════════════════════════════
+     v3 — full-width Panel mit Front-SVG-basiertem Layout
+     ═════════════════════════════════════════════════════════════════════ -->
+<div style="padding: 0 24px 32px;">
+  <div class="panel" style="max-width: 1100px; margin: 0 auto;">
+    <h2>Vorschlag v3 — Front-SVG als Basis</h2>
+    <div class="sub">Body, Sticks, Trackpads &amp; Screen direkt aus <code>steamdeckFront.svg</code>. Interaktive Buttons (Trigger, Bumper, D-Pad, ABXY, Paddles) als Overlay.</div>
+    <div class="svgHost">
+      <svg viewBox="0 0 1060 429" class="ctrlSvg ctrlSvgV3 ctrlSvgStyleSteamdeck" aria-label="Steam Deck (v3)">
+        <defs>
+          <radialGradient id="screenGradient2" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"   stop-color="#1a3550" stop-opacity="0.50"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.95"/>
+          </radialGradient>
+        </defs>
+
+        <!-- ─────────── BODY (aus Front-SVG path #3) ─────────── -->
+        <path class="ctrlSvgBody" d="M 24.687 158.986 C 24.078 104.857 23.773 77.792 37.395 58.774 C 41.792 52.634 47.135 47.231 53.224 42.765 C 72.087 28.930 99.154 28.930 153.288 28.930 H 911.302 C 965.435 28.930 992.502 28.930 1011.365 42.765 C 1017.454 47.231 1022.797 52.634 1027.195 58.774 C 1040.817 77.792 1040.512 104.857 1039.903 158.986 L 1038.873 250.404 C 1038.054 323.325 1037.644 359.786 1018.852 385.286 C 1012.781 393.525 1005.459 400.765 997.151 406.744 C 971.441 425.247 934.978 425.247 862.052 425.247 H 202.547 C 129.621 425.247 93.158 425.247 67.448 406.744 C 59.141 400.765 51.819 393.525 45.747 385.286 C 26.955 359.786 26.544 323.325 25.723 250.404 Z"/>
+
+        <!-- Top-Innen-Schatten (aus Front-SVG path #4, opacity 0.3) -->
+        <path opacity="0.30" stroke="rgba(255,255,255,0.10)" stroke-width="1" fill="none" d="M 1040.376 119.357 L 1036.929 100.505 C 1030.521 65.512 1000.025 40.094 964.450 40.094 H 99.278 C 63.703 40.094 33.209 65.512 26.801 100.505 L 23.350 119.357"/>
+
+        <!-- ─────────── L-Stick (aus Front-SVG, cx=183, cy=110, r=47) ─────────── -->
+        <circle class="ctrlSvgStickWell"      cx="183" cy="110" r="55"/>
+        <circle class="ctrlSvgStickWellInner" cx="183" cy="110" r="47"/>
+        <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="183" cy="110" r="40"/>
+        <circle class="ctrlSvgStickRim"       cx="183" cy="110" r="36"/>
+        <circle data-stick="l"  class="ctrlSvgStickDot" cx="183" cy="110" r="16"/>
+
+        <!-- ─────────── R-Stick (aus Front-SVG, cx=880, cy=110) ─────────── -->
+        <circle class="ctrlSvgStickWell"      cx="880" cy="110" r="55"/>
+        <circle class="ctrlSvgStickWellInner" cx="880" cy="110" r="47"/>
+        <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="880" cy="110" r="40"/>
+        <circle class="ctrlSvgStickRim"       cx="880" cy="110" r="36"/>
+        <circle data-stick="r"  class="ctrlSvgStickDot" cx="880" cy="110" r="16"/>
+
+        <!-- ─────────── L-Trackpad (aus Front-SVG, x=132-226, y=169-276) ─────────── -->
+        <rect class="ctrlSvgTrackpad"      x="132" y="169" width="94" height="107" rx="14"/>
+        <rect class="ctrlSvgTrackpadInner" x="138" y="175" width="82" height="95"  rx="10"/>
+        <line class="ctrlSvgTrackpadCross" x1="132" y1="223" x2="226" y2="223"/>
+        <line class="ctrlSvgTrackpadCross" x1="179" y1="169" x2="179" y2="276"/>
+
+        <!-- ─────────── R-Trackpad (aus Front-SVG, x=851-945, y=169-276) ─────────── -->
+        <rect class="ctrlSvgTrackpad"      x="851" y="169" width="94" height="107" rx="14"/>
+        <rect class="ctrlSvgTrackpadInner" x="857" y="175" width="82" height="95"  rx="10"/>
+        <line class="ctrlSvgTrackpadCross" x1="851" y1="223" x2="945" y2="223"/>
+        <line class="ctrlSvgTrackpadCross" x1="898" y1="169" x2="898" y2="276"/>
+
+        <!-- ─────────── ZENTRUM: Display ─────────── -->
+        <!-- Realistischere Screen-Proportion (kleiner als die volle Front-SVG-Box) -->
+        <rect class="ctrlSvgScreen" x="270" y="80" width="520" height="270" rx="10"/>
+        <rect class="ctrlSvgScreenGlow" x="278" y="88" width="504" height="254" rx="8" fill="url(#screenGradient2)"/>
+        <text class="ctrlSvgSteamWord" x="530" y="155" style="font-size: 14px; letter-spacing: 0.42em;">STEAM DECK</text>
+
+        <!-- View / Menu (Select / Start) — über dem Screen, links/rechts -->
+        <rect data-button="select" class="ctrlSvgBtn ctrlSvgSysButton" x="278" y="356" width="36" height="14" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="284" y="361" width="24" height="1.8"/>
+        <rect class="ctrlSvgSysIcon" x="284" y="365" width="24" height="1.8"/>
+        <rect data-button="start" class="ctrlSvgBtn ctrlSvgSysButton" x="746" y="356" width="36" height="14" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="754" y="361" width="20" height="1.6"/>
+        <rect class="ctrlSvgSysIcon" x="754" y="365" width="14" height="1.6"/>
+        <rect class="ctrlSvgSysIcon" x="754" y="368" width="17" height="1.6"/>
+
+        <!-- Steam-Button (unter linkem Bildschirm-Rand) -->
+        <circle class="ctrlSvgSteamButton" cx="358" cy="364" r="12"/>
+        <path class="ctrlSvgSteamLogo" d="
+          M 352 360 a 6 6 0 1 0 12 0 a 6 6 0 1 0 -12 0
+          M 359 358 L 364 354
+        "/>
+        <!-- Quick-Access (3-dot) -->
+        <circle class="ctrlSvgQuickAccess" cx="702" cy="364" r="12"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="696" cy="364" r="1.8"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="702" cy="364" r="1.8"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="708" cy="364" r="1.8"/>
+
+        <!-- ─────────── D-PAD (zwischen L-Stick und Screen, oben-inboard) ─────────── -->
+        <rect class="ctrlSvgDpadCenter" x="251" y="92" width="20" height="20"/>
+        <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="251" y="65"  width="20" height="27" rx="3"/>
+        <path class="ctrlSvgDpadArrow" d="M 256 83 L 261 75 L 266 83 Z"/>
+        <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="251" y="112" width="20" height="27" rx="3"/>
+        <path class="ctrlSvgDpadArrow" d="M 256 121 L 261 129 L 266 121 Z"/>
+        <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="224" y="92"  width="27" height="20" rx="3"/>
+        <path class="ctrlSvgDpadArrow" d="M 242 98 L 232 102 L 242 106 Z"/>
+        <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="271" y="92"  width="27" height="20" rx="3"/>
+        <path class="ctrlSvgDpadArrow" d="M 280 98 L 290 102 L 280 106 Z"/>
+
+        <!-- ─────────── ABXY (zwischen R-Stick und Screen, oben-inboard) ─────────── -->
+        <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="785" cy="70"  r="15"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="785" y="75" style="font-size: 14px;">Y</text>
+        <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="815" cy="100" r="15"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="815" y="105" style="font-size: 14px;">B</text>
+        <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="785" cy="130" r="15"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="785" y="135" style="font-size: 14px;">A</text>
+        <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="755" cy="100" r="15"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="755" y="105" style="font-size: 14px;">X</text>
+
+        <!-- ─────────── L2 / R2 Trigger (über dem Body — repräsentiert die Rückseite-Oberkante) ─────────── -->
+        <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="115" y="2" width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="192" y="17" style="font-size: 13px;">L2</text>
+        <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="790" y="2" width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="867" y="17" style="font-size: 13px;">R2</text>
+
+        <!-- ─────────── L1 / R1 Bumper (unter den Triggern) ─────────── -->
+        <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="115" y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="192" y="36" style="font-size: 10px;">L1</text>
+        <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="790" y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="867" y="36" style="font-size: 10px;">R1</text>
+
+        <!-- ─────────── BACK-PADDLES (Skizze unter dem Body — repräsentiert die Rückseite) ─────────── -->
+        <!-- Aus Front-SVG path #2 (M119.026 182.007 …) Positionen extrahiert + nach unten projiziert -->
+        <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="40"  y="402" width="46" height="20" rx="10"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="63"  y="416" style="font-size: 10px;">L5</text>
+        <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="92"  y="402" width="46" height="20" rx="10"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="115" y="416" style="font-size: 10px;">L4</text>
+        <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="922" y="402" width="46" height="20" rx="10"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="945" y="416" style="font-size: 10px;">R4</text>
+        <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="974" y="402" width="46" height="20" rx="10"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="997" y="416" style="font-size: 10px;">R5</text>
+
+      </svg>
+    </div>
+    <div class="legendBox">
+      <b>Basis: <code>steamdeckFront.svg</code> aus der ZIP</b> — übernommen sind:<br>
+      • <b>Body-Silhouette</b> (anatomisch korrekt, breite Griff-Wings)<br>
+      • <b>Stick-Positionen</b> bei <kbd>cx=183/110</kbd> und <kbd>cx=880/110</kbd> — direkt aus der Vorlage<br>
+      • <b>Trackpad-Positionen</b> als rounded-Rects bei <kbd>x=132/169</kbd> und <kbd>x=851/169</kbd><br>
+      • <b>Top-Innen-Schatten</b> (subtil) für Tiefe<br>
+      <br>
+      <b>Overlays neu hinzugefügt:</b><br>
+      • <b>L2/R2/L1/R1</b> über dem Body, da auf der Frontansicht nicht sichtbar<br>
+      • <b>D-Pad</b> inboard vom L-Stick (zwischen Stick und Display)<br>
+      • <b>ABXY</b> inboard vom R-Stick<br>
+      • <b>View / Menu / Steam / Quick-Access</b> unter dem Display<br>
+      • <b>Paddles</b> als Pillen am unteren Body-Rand (Rückseiten-Hinweis)<br>
+      <br>
+      <b>Stick-Bases für Live-Animation:</b> <kbd>L=(183,110)</kbd>, <kbd>R=(880,110)</kbd>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════
+     v4 — Vorder- + Rückseite getrennt, korrigierte ABXY/D-Pad-Positionen
+     ═════════════════════════════════════════════════════════════════════ -->
+<div style="padding: 0 24px 32px;">
+  <div class="panel" style="max-width: 1100px; margin: 0 auto;">
+    <h2>Vorschlag v4 — Vorderseite + Rückseite getrennt</h2>
+    <div class="sub">
+      ABXY/D-Pad jetzt korrekt <b>unterhalb</b> ihrer Sticks (anatomisch wie echtes Deck).
+      Paddles auf separatem Back-SVG (aus <code>steamdeckBack.svg</code>).
+    </div>
+
+    <!-- ═════ VORDERSEITE ═════ -->
+    <h3 style="margin: 18px 0 6px; font-size: 13px; color: var(--accent); letter-spacing: 0.04em;">VORDERSEITE</h3>
+    <div class="svgHost">
+      <svg viewBox="0 0 1060 429" class="ctrlSvg ctrlSvgV3 ctrlSvgStyleSteamdeck" aria-label="Steam Deck Front">
+        <defs>
+          <radialGradient id="screenGrad4" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"   stop-color="#1a3550" stop-opacity="0.50"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.95"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Body-Silhouette (aus Front-SVG) -->
+        <path class="ctrlSvgBody" d="M 24.687 158.986 C 24.078 104.857 23.773 77.792 37.395 58.774 C 41.792 52.634 47.135 47.231 53.224 42.765 C 72.087 28.930 99.154 28.930 153.288 28.930 H 911.302 C 965.435 28.930 992.502 28.930 1011.365 42.765 C 1017.454 47.231 1022.797 52.634 1027.195 58.774 C 1040.817 77.792 1040.512 104.857 1039.903 158.986 L 1038.873 250.404 C 1038.054 323.325 1037.644 359.786 1018.852 385.286 C 1012.781 393.525 1005.459 400.765 997.151 406.744 C 971.441 425.247 934.978 425.247 862.052 425.247 H 202.547 C 129.621 425.247 93.158 425.247 67.448 406.744 C 59.141 400.765 51.819 393.525 45.747 385.286 C 26.955 359.786 26.544 323.325 25.723 250.404 Z"/>
+
+        <!-- Top-Innen-Schatten -->
+        <path opacity="0.30" stroke="rgba(255,255,255,0.10)" stroke-width="1" fill="none" d="M 1040.376 119.357 L 1036.929 100.505 C 1030.521 65.512 1000.025 40.094 964.450 40.094 H 99.278 C 63.703 40.094 33.209 65.512 26.801 100.505 L 23.350 119.357"/>
+
+        <!--
+          ─── LINKE SEITE — vertikale Stapelung ───
+          L-Stick (oben) → D-Pad (mitte) → L-Trackpad (unten, gross)
+        -->
+        <!-- L-Stick: TOP-LEFT -->
+        <circle class="ctrlSvgStickWell"      cx="155" cy="105" r="46"/>
+        <circle class="ctrlSvgStickWellInner" cx="155" cy="105" r="40"/>
+        <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="155" cy="105" r="34"/>
+        <circle class="ctrlSvgStickRim"       cx="155" cy="105" r="30"/>
+        <circle data-stick="l"  class="ctrlSvgStickDot" cx="155" cy="105" r="14"/>
+
+        <!-- D-Pad: MITTE-LEFT, direkt unter L-Stick (leicht inboard) -->
+        <rect class="ctrlSvgDpadCenter" x="178" y="186" width="26" height="26"/>
+        <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="178" y="153" width="26" height="33" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 184 175 L 191 165 L 198 175 Z"/>
+        <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="178" y="212" width="26" height="33" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 184 223 L 191 233 L 198 223 Z"/>
+        <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="145" y="186" width="33" height="26" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 167 192 L 155 199 L 167 206 Z"/>
+        <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="204" y="186" width="33" height="26" rx="4"/>
+        <path class="ctrlSvgDpadArrow" d="M 215 192 L 227 199 L 215 206 Z"/>
+
+        <!-- L-Trackpad: UNTEN-LEFT (gross, dominant) -->
+        <circle class="ctrlSvgTrackpad"      cx="175" cy="330" r="58"/>
+        <circle class="ctrlSvgTrackpadInner" cx="175" cy="330" r="50"/>
+        <line class="ctrlSvgTrackpadCross" x1="125" y1="330" x2="225" y2="330"/>
+        <line class="ctrlSvgTrackpadCross" x1="175" y1="280" x2="175" y2="380"/>
+
+        <!--
+          ─── RECHTE SEITE — vertikale Stapelung (gespiegelt) ───
+          ABXY (oben) → R-Stick (mitte) → R-Trackpad (unten, gross)
+        -->
+        <!-- ABXY-Cluster: TOP-RIGHT (Y top — A bottom — X left — B right) -->
+        <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="905" cy="70"  r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="905" y="76" style="font-size: 16px;">Y</text>
+        <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="940" cy="105" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="940" y="111" style="font-size: 16px;">B</text>
+        <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="905" cy="140" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="905" y="146" style="font-size: 16px;">A</text>
+        <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="870" cy="105" r="18"/>
+        <text class="ctrlSvgLbl ctrlSvgLblFace" x="870" y="111" style="font-size: 16px;">X</text>
+
+        <!-- R-Stick: MITTE-RIGHT, direkt unter ABXY-Cluster -->
+        <circle class="ctrlSvgStickWell"      cx="858" cy="200" r="42"/>
+        <circle class="ctrlSvgStickWellInner" cx="858" cy="200" r="36"/>
+        <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="858" cy="200" r="30"/>
+        <circle class="ctrlSvgStickRim"       cx="858" cy="200" r="26"/>
+        <circle data-stick="r"  class="ctrlSvgStickDot" cx="858" cy="200" r="12"/>
+
+        <!-- R-Trackpad: UNTEN-RIGHT (gross, dominant) -->
+        <circle class="ctrlSvgTrackpad"      cx="885" cy="330" r="58"/>
+        <circle class="ctrlSvgTrackpadInner" cx="885" cy="330" r="50"/>
+        <line class="ctrlSvgTrackpadCross" x1="835" y1="330" x2="935" y2="330"/>
+        <line class="ctrlSvgTrackpadCross" x1="885" y1="280" x2="885" y2="380"/>
+
+        <!-- ─────────── ZENTRUM: Display ─────────── -->
+        <rect class="ctrlSvgScreen" x="280" y="60" width="500" height="280" rx="10"/>
+        <rect class="ctrlSvgScreenGlow" x="288" y="68" width="484" height="264" rx="8" fill="url(#screenGrad4)"/>
+        <text class="ctrlSvgSteamWord" x="530" y="200" style="font-size: 18px; letter-spacing: 0.42em;">STEAM DECK</text>
+
+        <!-- View / Menu (Select / Start) — am unteren Display-Rand -->
+        <rect data-button="select" class="ctrlSvgBtn ctrlSvgSysButton" x="295" y="345" width="40" height="16" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="302" y="351" width="26" height="2"/>
+        <rect class="ctrlSvgSysIcon" x="302" y="356" width="26" height="2"/>
+        <rect data-button="start" class="ctrlSvgBtn ctrlSvgSysButton" x="725" y="345" width="40" height="16" rx="3"/>
+        <rect class="ctrlSvgSysIcon" x="734" y="350" width="22" height="1.8"/>
+        <rect class="ctrlSvgSysIcon" x="734" y="354" width="15" height="1.8"/>
+        <rect class="ctrlSvgSysIcon" x="734" y="358" width="18" height="1.8"/>
+
+        <!-- Steam-Button (unten links unter Screen) -->
+        <circle class="ctrlSvgSteamButton" cx="380" cy="370" r="14"/>
+        <path class="ctrlSvgSteamLogo" d="
+          M 373 365 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0
+          M 381 362 L 387 357
+        "/>
+        <!-- Quick-Access (3-dot) -->
+        <circle class="ctrlSvgQuickAccess" cx="680" cy="370" r="14"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="673" cy="370" r="2"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="680" cy="370" r="2"/>
+        <circle class="ctrlSvgQuickAccessDot" cx="687" cy="370" r="2"/>
+
+        <!-- ─────────── L2 / R2 Trigger (über dem Body) ─────────── -->
+        <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="85" y="2" width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="162" y="17" style="font-size: 13px;">L2</text>
+        <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="820" y="2" width="155" height="22" rx="9"/>
+        <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="897" y="17" style="font-size: 13px;">R2</text>
+
+        <!-- ─────────── L1 / R1 Bumper ─────────── -->
+        <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="85" y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="162" y="36" style="font-size: 10px;">L1</text>
+        <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="820" y="26" width="155" height="14" rx="7"/>
+        <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="897" y="36" style="font-size: 10px;">R1</text>
+      </svg>
+    </div>
+
+    <!-- ═════ RÜCKSEITE ═════ -->
+    <h3 style="margin: 24px 0 6px; font-size: 13px; color: var(--accent); letter-spacing: 0.04em;">RÜCKSEITE — BACK-PADDLES</h3>
+    <div class="svgHost">
+      <svg viewBox="0 0 1060 429" class="ctrlSvg ctrlSvgV3 ctrlSvgStyleSteamdeck" aria-label="Steam Deck Back">
+
+        <!-- Body-Silhouette (Rückseite, aus steamdeckBack.svg) -->
+        <path class="ctrlSvgBody" d="M 164.078 26.934 H 81.783 C 65.299 26.934 49.103 31.252 34.808 39.459 C 28.638 43.001 23.381 47.936 19.456 53.870 L 16.265 58.696 C 12.789 63.953 10.820 69.866 10.335 75.860 C 4.206 94.733 4.504 121.164 4.985 163.870 L 6.051 258.499 C 6.902 333.982 7.327 371.723 26.778 398.119 C 33.063 406.648 40.643 414.142 49.242 420.330 C 75.855 439.484 113.599 439.484 189.087 439.484 H 871.758 C 947.246 439.484 984.990 439.484 1011.601 420.330 C 1020.200 414.142 1027.780 406.648 1034.065 398.119 C 1053.520 371.723 1053.940 333.982 1054.790 258.499 L 1055.860 163.870 C 1056.340 121.164 1056.640 94.733 1050.510 75.860 C 1050.030 69.866 1048.060 63.953 1044.580 58.696 L 1041.390 53.870 C 1037.460 47.936 1032.210 43.001 1026.040 39.459 C 1011.740 31.252 995.545 26.934 979.062 26.934 H 896.767 C 895.507 26.934 894.504 27.988 894.566 29.245 H 166.279 C 166.341 27.988 165.338 26.934 164.078 26.934 Z" transform="translate(0, -20)"/>
+
+        <!-- Subtile horizontale Lüftungsschlitze in der Mitte (deko) -->
+        <g opacity="0.25" stroke="rgba(255,255,255,0.30)" stroke-width="1.2" fill="none">
+          <line x1="228" y1="253" x2="228" y2="313"/>
+          <line x1="262" y1="253" x2="262" y2="313"/>
+          <line x1="295" y1="253" x2="295" y2="313"/>
+          <line x1="329" y1="253" x2="329" y2="313"/>
+          <line x1="362" y1="253" x2="362" y2="313"/>
+          <line x1="396" y1="253" x2="396" y2="313"/>
+        </g>
+
+        <!-- VALVE-Wordmark (deko) -->
+        <text x="530" y="220" style="
+          fill: rgba(255,255,255,0.18);
+          font-size: 22px;
+          font-weight: 700;
+          letter-spacing: 0.28em;
+          text-anchor: middle;
+          pointer-events: none;
+        ">VALVE</text>
+
+        <!-- ─────────── BACK-PADDLES (Positionen aus steamdeckBack.svg) ─────────── -->
+        <!--
+          L4 = oben-links-back (oberer Paddle linke Hand)
+          L5 = unten-links-back (unterer Paddle linke Hand)
+          R4 = oben-rechts-back
+          R5 = unten-rechts-back
+        -->
+
+        <!-- L4 (upper-left back paddle) -->
+        <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="162" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="206" style="font-size: 14px; font-weight: 700;">L4</text>
+
+        <!-- L5 (lower-left back paddle) -->
+        <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="243" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="287" style="font-size: 14px; font-weight: 700;">L5</text>
+
+        <!-- R4 (upper-right back paddle) -->
+        <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="162" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="206" style="font-size: 14px; font-weight: 700;">R4</text>
+
+        <!-- R5 (lower-right back paddle) -->
+        <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="243" width="48" height="80" rx="14"/>
+        <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="287" style="font-size: 14px; font-weight: 700;">R5</text>
+
+      </svg>
+    </div>
+
+    <div class="legendBox">
+      <b>v4 Änderungen:</b><br>
+      • <b>ABXY</b> jetzt korrekt im <kbd>TOP-RIGHT</kbd> (cx ~ 905, cy ~ 105) — wo vorher fälschlicherweise ein R-Stick war<br>
+      • <b>R-Stick</b> jetzt <kbd>UNTER ABXY</kbd> bei (858, 200) — anatomisch korrekt<br>
+      • <b>D-Pad</b> jetzt <kbd>UNTER L-Stick</kbd> bei (191, 199) — vertikal gestapelt<br>
+      • <b>Trackpads</b> deutlich grösser (r=58) und am unteren Body-Rand bei cy=330<br>
+      • <b>Vorderseite</b> ohne Paddles → separates Back-SVG mit allen 4 Paddles<br>
+      <br>
+      <b>Stick-Bases für Live-Animation:</b> <kbd>L=(155, 105)</kbd>, <kbd>R=(858, 200)</kbd><br>
+      <br>
+      <b>Im echten Launcher</b> würden Front/Back beide gerendert, übereinander gestapelt, ggf. mit Toggle-Button.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

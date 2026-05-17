@@ -158,7 +158,7 @@ export class NativeOcrWorker {
 
         if (kind === "exp" || kind === "digits") {
             let [val, raw] = await this.ocrExp(bgr);
-            console.log(`[OCR-EXP-DEBUG] raw="${raw}" val=${val} lastExp=${this.lastExpVal}`);
+            debugLog("ocr", `[OCR-EXP-DEBUG] raw="${raw}" val=${val} lastExp=${this.lastExpVal}`);
 
             // Continuity guard: EXP only increases (or resets to ~0 on level-up).
             // Reject readings that drop significantly but aren't near zero.
@@ -261,6 +261,18 @@ export class NativeOcrWorker {
         const whitelist = "0123456789.,%";
         let fallbackRaw = "";
 
+        // Early-bail counters: a bad crop (wrong ROI / cell-resized to garbage)
+        // would otherwise run 12-18 Tesseract variants per tick at ~150ms each,
+        // blocking the global OCR concurrency gate for ~2s. With these guards
+        // a hopeless input bails after 4 or 8 attempts.
+        let attemptsDone = 0;
+        let maxDigitsSeen = 0;
+        const shouldEarlyBail = (): boolean => {
+            if (attemptsDone >= 4 && maxDigitsSeen === 0) return true;
+            if (attemptsDone >= 8 && maxDigitsSeen < 4) return true;
+            return false;
+        };
+
         // Crop: remove top cell border + left bar bleed-in, keep text area.
         // The white mask on this slice reliably reads "74.3795%" etc.
         // Occasional dropped leading digit is handled by continuity guard.
@@ -271,13 +283,15 @@ export class NativeOcrWorker {
 
         const tryImg = async (img: RawImage, name: string): Promise<[number | null, string]> => {
             await saveDebug(name, img);
+            attemptsDone++;
             let raw = await this.ocrLine(img, whitelist, 1.0);
             if (raw && !fallbackRaw) fallbackRaw = raw;
             if (!raw) return [null, raw];
 
             let v = parseExpPercent(raw);
             const digitsOnly = raw.replace(/[^0-9]/g, "");
-            console.log(`[OCR-EXP-PIPE] name="${name}" raw="${raw}" digits="${digitsOnly}" parsed=${v}`);
+            if (digitsOnly.length > maxDigitsSeen) maxDigitsSeen = digitsOnly.length;
+            debugLog("ocr", `[OCR-EXP-PIPE] name="${name}" raw="${raw}" digits="${digitsOnly}" parsed=${v}`);
             if (digitsOnly.length < 4) return [null, raw];
 
             // Handle spaces in OCR output
@@ -359,6 +373,7 @@ export class NativeOcrWorker {
                 [val, raw] = await tryImg(invert(whiteMask), `white_${scale}_inv${suffix}`);
                 if (val !== null) return [val, raw];
             }
+            if (shouldEarlyBail()) return [null, fallbackRaw];
 
             // Grayscale fallback
             const grayLocal = bgrToGray(target);
@@ -376,7 +391,9 @@ export class NativeOcrWorker {
                 if (val !== null) return [val, raw];
                 [val, raw] = await tryImg(invert(th2), `gray_clahe_${scale}_inv${suffix}`);
                 if (val !== null) return [val, raw];
+                if (shouldEarlyBail()) return [null, fallbackRaw];
             }
+            if (shouldEarlyBail()) return [null, fallbackRaw];
 
             // Gold text fallback
             for (const scale of [5.0, 7.0]) {

@@ -17,6 +17,11 @@ export interface ControllerHandlerOptions {
     getProfileForWebContents: (wc: WebContents) => string | null;
     setActionPadAnchor: (profileId: string, anchor: ActionPadAnchor) => Promise<void>;
     /**
+     * Schreibt den Klick-Anker fuer einen Buff-Empfaenger-Slot (0..NAME_SLOT_COUNT-1).
+     * Wird vom calibrate:done-Handler aufgerufen, wenn der Payload einen Slot-Index enthaelt.
+     */
+    setNameSlotAnchor?: (profileId: string, slot: number, anchor: ActionPadAnchor) => Promise<void>;
+    /**
      * Wird vom UI nach Save eines neuen Button-Mappings aufgerufen, damit der
      * In-Memory-Cache fuer den naechsten Frame schon den neuen Wert benutzt.
      */
@@ -29,6 +34,15 @@ interface CalibrateDonePayload {
     y: number;
     viewportWidth: number;
     viewportHeight: number;
+    /** Optional: bei gesetztem Slot-Index (0..7) wird statt Action-Pad-Anker
+     *  der Name-Slot-Anker im Profil geschrieben. */
+    slot?: number;
+    /** Optional: Ziel-Profil fuer den Anker. Wird vom Renderer beim
+     *  UI-getriggerten Slot-Calibrate mitgeschickt — der Anker wird damit
+     *  unabhaengig von der Sender-WebContents am gewuenschten Profil
+     *  gespeichert. Fehlt das Feld, faellt der Handler auf
+     *  `getProfileForWebContents(sender)` zurueck. */
+    profileId?: string;
 }
 
 export function registerControllerHandlers(opts: ControllerHandlerOptions): () => void {
@@ -66,7 +80,9 @@ export function registerControllerHandlers(opts: ControllerHandlerOptions): () =
                 opts.notify?.("Kalibrierung fehlgeschlagen (ungültige Daten)", "error");
                 return;
             }
-            const profileId = opts.getProfileForWebContents(event.sender);
+            // Bevorzugt das im Payload mitgeschickte Ziel-Profil (UI-Pfad);
+            // sonst Fallback auf die Sender-WebContents (Global-Shortcut-Pfad).
+            const profileId = payload.profileId ?? opts.getProfileForWebContents(event.sender);
             if (!profileId) {
                 opts.notify?.("Kalibrierung: Profil nicht erkannt", "error");
                 return;
@@ -78,6 +94,21 @@ export function registerControllerHandlers(opts: ControllerHandlerOptions): () =
                 return;
             }
             const anchor = deriveActionPadAnchor(payload.x, payload.y, w, h);
+            if (typeof payload.slot === "number" && Number.isInteger(payload.slot) && payload.slot >= 0 && payload.slot < 8) {
+                if (!opts.setNameSlotAnchor) {
+                    opts.notify?.("Name-Slot-Kalibrierung nicht verfügbar", "error");
+                    return;
+                }
+                await opts.setNameSlotAnchor(profileId, payload.slot, anchor);
+                opts.notify?.(
+                    `Slot ${payload.slot + 1} kalibriert: ${anchor.vAnchor}-${anchor.hAnchor} `
+                    + `(${anchor.offsetX >= 0 ? "+" : ""}${anchor.offsetX.toFixed(0)}, `
+                    + `${anchor.offsetY >= 0 ? "+" : ""}${anchor.offsetY.toFixed(0)})`,
+                    "success",
+                );
+                logInfo("controller", `Name-slot ${payload.slot} calibrated for profile ${profileId}: ${anchor.vAnchor}-${anchor.hAnchor} offset (${anchor.offsetX.toFixed(1)}, ${anchor.offsetY.toFixed(1)})`);
+                return;
+            }
             await opts.setActionPadAnchor(profileId, anchor);
             opts.notify?.(
                 `Action-Pad kalibriert: ${anchor.vAnchor}-${anchor.hAnchor} `
@@ -130,9 +161,18 @@ function isGamepadFrame(value: unknown): value is GamepadFrame {
 function isCalibrateDonePayload(value: unknown): value is CalibrateDonePayload {
     if (!value || typeof value !== "object") return false;
     const v = value as Record<string, unknown>;
-    return typeof v.x === "number"
-        && typeof v.y === "number"
-        && typeof v.viewportWidth === "number"
-        && typeof v.viewportHeight === "number";
+    if (typeof v.x !== "number"
+        || typeof v.y !== "number"
+        || typeof v.viewportWidth !== "number"
+        || typeof v.viewportHeight !== "number") {
+        return false;
+    }
+    if (v.slot !== undefined && (typeof v.slot !== "number" || !Number.isInteger(v.slot))) {
+        return false;
+    }
+    if (v.profileId !== undefined && typeof v.profileId !== "string") {
+        return false;
+    }
+    return true;
 }
 

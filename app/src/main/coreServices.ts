@@ -60,6 +60,12 @@ export type CreateCoreServicesOptions = {
      */
     registerWebContentsProfile?: (webContentsId: number, profileId: string) => void;
     unregisterWebContentsProfile?: (webContentsId: number) => void;
+    /**
+     * Liefert das "input-aktive" Profil — wird in den TabsManager
+     * durchgereicht und gibt Plan-B-Polling-Pushes Bescheid welcher Tab pollen
+     * darf. main.ts implementiert das mit Buffer-Target-Ausschluss.
+     */
+    getInputActiveProfile?: (sessionActiveId: string | null) => string | null;
 };
 
 // ============================================================================
@@ -95,6 +101,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
         preloadPath: opts.preloadPath,
         registerWebContentsProfile: opts.registerWebContentsProfile,
         unregisterWebContentsProfile: opts.unregisterWebContentsProfile,
+        getInputActiveProfile: opts.getInputActiveProfile,
     });
 
     // Reset tabs when session window is closed and restore visibility for next launch
@@ -175,6 +182,7 @@ export function createCoreServices(opts: CreateCoreServicesOptions): CoreService
             preloadPath: opts.preloadPath,
             registerWebContentsProfile: opts.registerWebContentsProfile,
             unregisterWebContentsProfile: opts.unregisterWebContentsProfile,
+            getInputActiveProfile: opts.getInputActiveProfile,
         });
 
         // Inherit UI position persistence setting from client settings

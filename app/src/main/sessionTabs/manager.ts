@@ -4,7 +4,7 @@ import { hardenGameContents } from "../security/harden";
 import { registerUiPositionInjection } from "./uiPositionInjector";
 import type { SessionWindowController } from "../windows/sessionWindow";
 import { GRID_CONFIGS, LAYOUT, TIMINGS } from "../../shared/constants";
-import { logErr } from "../../shared/logger"; // Added import
+import { logErr, logInfo } from "../../shared/logger";
 import type { CustomCell, GridCell, MultiViewLayout } from "../../shared/schemas";
 import { getBundledFontParts } from "./bundledFonts";
 export function createSessionTabsManager(opts: {
@@ -24,6 +24,17 @@ export function createSessionTabsManager(opts: {
      */
     registerWebContentsProfile?: (webContentsId: number, profileId: string) => void;
     unregisterWebContentsProfile?: (webContentsId: number) => void;
+    /**
+     * Liefert das fuer Gamepad-Input "effektiv aktive" Profil basierend auf
+     * dem aktuellen sessionActiveId. Wird vom Plan-B-Push (`session:setActive`)
+     * benutzt, um RM-Klicks o.ae. von der Steuerung zu trennen — wenn der User
+     * versehentlich auf einen Buffer-Target klickt, soll das den Gamepad-Input
+     * NICHT abreissen. Implementierung in main.ts mappt Buffer-Target zurueck
+     * auf seinen Source-Profile.
+     *
+     * Optional: wenn nicht gesetzt, faellt's auf sessionActiveId zurueck.
+     */
+    getInputActiveProfile?: (sessionActiveId: string | null) => string | null;
 }) {
     const windowId = opts.windowId ?? "default";
     const sessionViews = new Map<string, BrowserView>();
@@ -746,6 +757,53 @@ export function createSessionTabsManager(opts: {
         catch (err) {
             logErr(err, "SessionTabs");
         }
+        // Auch jeder einzelnen Session-View ihren Aktiv-Status pushen — das
+        // Preload-Gamepad-Polling stuetzt sich darauf, statt auf das
+        // unzuverlaessige `document.hasFocus()` (CDP-Attach triggert dort
+        // faelschlich `focus`-Events an Hintergrund-Tabs).
+        //
+        // `getInputActiveProfile` mappt sessionActiveId zurueck auf die
+        // "echte" input-aktive Tab — wenn der User auf einen Buffer-Target
+        // klickt, bleibt der Gamepad-Input am Source-Profile (Main).
+        // Fallback: roh sessionActiveId benutzen.
+        const inputActiveId = opts.getInputActiveProfile
+            ? opts.getInputActiveProfile(sessionActiveId)
+            : sessionActiveId;
+        logInfo(`[active-change] sessionActive=${sessionActiveId} inputActive=${inputActiveId}`, "SessionTabs");
+        for (const [pid, view] of sessionViews) {
+            if (view.webContents.isDestroyed()) continue;
+            try {
+                view.webContents.send("session:setActive", pid === inputActiveId);
+            } catch (err) {
+                logErr(err, "SessionTabs");
+            }
+        }
+    }
+
+    /**
+     * Schickt jeder Session-View ihren initialen Aktiv-Status — wichtig nach
+     * dem Erstellen einer neuen View, damit ihr Preload weiss ob es pollen darf
+     * ohne erst auf einen Tab-Switch warten zu muessen.
+     */
+    function pushInitialActiveState(view: BrowserView, profileId: string): void {
+        if (view.webContents.isDestroyed()) return;
+        const inputActiveId = opts.getInputActiveProfile
+            ? opts.getInputActiveProfile(sessionActiveId)
+            : sessionActiveId;
+        const isActive = profileId === inputActiveId;
+        const send = () => {
+            if (view.webContents.isDestroyed()) return;
+            try { view.webContents.send("session:setActive", isActive); }
+            catch (err) { logErr(err, "SessionTabs"); }
+        };
+        // Wenn der Renderer schon geladen ist: sofort senden. Sonst nach
+        // dom-ready — sonst geht der Event ins Leere (Preload-Listener nicht
+        // installiert).
+        if (view.webContents.isLoading()) {
+            view.webContents.once("dom-ready", send);
+        } else {
+            send();
+        }
     }
     function focusActiveView() {
         if (!sessionActiveId)
@@ -974,6 +1032,9 @@ export function createSessionTabsManager(opts: {
         view.webContents.once("destroyed", () => {
             opts.unregisterWebContentsProfile?.(view.webContents.id);
         });
+        // Initialen Aktiv-Status pushen — bei dom-ready, sonst geht der Event
+        // ins Leere weil der Preload-IPC-Listener noch nicht steht.
+        pushInitialActiveState(view, profileId);
         return view;
     }
     /** Returns true if a load was actually started, false if already loaded or skipped. */

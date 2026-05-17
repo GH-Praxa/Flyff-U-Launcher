@@ -31,7 +31,7 @@ import {
 } from "../settings";
 import { type Profile, qs, el, clear, createJobIcon, showToast, withTimeout, fetchTabLayouts } from "../dom-utils";
 import { layoutTooltips, generateCustomAscii } from "../launcher/profile-selectors";
-import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUnifiedUpgradeCalculatorHtml, getThemeVars } from "./tools-html";
+import { tr, buildFcoinConverterHtml, buildShoppingListHtml, buildUnifiedUpgradeCalculatorHtml, getThemeVars, injectControllerNav } from "./tools-html";
 import { setRootVar } from "../cssVarsManager";
 import { applyStoredTabActiveColor } from "../theme";
 
@@ -1018,6 +1018,27 @@ export async function renderSession(root: HTMLElement) {
         if (hotkeysMenuOpen) closeHotkeysMenu();
         else void openHotkeysMenu();
     };
+
+    // Controller-Settings-Button: oeffnet die Launcher-Settings direkt im
+    // Controller-Tab. Nuetzlich um Mapping mid-Game anzupassen ohne erst zum
+    // Launcher zurueck und durch die Sidebar zu navigieren.
+    const btnController = el("button", "tabBtn iconBtn controllerToggle") as HTMLButtonElement;
+    btnController.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 6h9a4.5 4.5 0 0 1 4.5 4.5v3a4.5 4.5 0 0 1-7.6 3.27l-.4-.4a2 2 0 0 0-2.83 0l-.4.4A4.5 4.5 0 0 1 3 13.5v-3A4.5 4.5 0 0 1 7.5 6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8.5" cy="11.5" r="1" fill="currentColor"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><path d="M7 10v3M5.5 11.5h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+    btnController.title = "Controller-Belegung";
+    btnController.draggable = false;
+    btnController.setAttribute("aria-label", "Controller-Belegung");
+    btnController.onclick = () => {
+        try {
+            const ipc = (window as unknown as {
+                ipc?: { send: (channel: string, payload?: unknown) => void };
+            }).ipc;
+            ipc?.send("launcher:openConfigSection", { section: "controller", compact: true });
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn("controller-button: open failed", err);
+        }
+    };
+
     const btnTools = el("button", "tabBtn iconBtn toolsToggle", "★") as HTMLButtonElement;
     btnTools.title = "Tools";
     btnTools.draggable = false;
@@ -1112,7 +1133,7 @@ export async function renderSession(root: HTMLElement) {
         const win = window.open("", "fcoinConverter", "width=420,height=460,menubar=no,toolbar=no,resizable=yes");
         if (!win) { alert(tr("popup.blocked" as TranslationKey)); return; }
         win.document.open();
-        win.document.write(buildFcoinConverterHtml(currentLocale, theme));
+        win.document.write(injectControllerNav(buildFcoinConverterHtml(currentLocale, theme), theme.nonce));
         win.document.close();
     };
 
@@ -1122,7 +1143,7 @@ export async function renderSession(root: HTMLElement) {
         const win = window.open("", "premiumShoppingList", "width=520,height=650,menubar=no,toolbar=no,location=no,status=no,resizable=yes");
         if (!win) { alert(tr("popup.blocked" as TranslationKey)); return; }
         win.document.open();
-        win.document.write(buildShoppingListHtml(currentLocale, theme));
+        win.document.write(injectControllerNav(buildShoppingListHtml(currentLocale, theme), theme.nonce));
         win.document.close();
     };
 
@@ -1131,7 +1152,11 @@ export async function renderSession(root: HTMLElement) {
         const win = window.open("", "upgradeCalculator", "width=980,height=760,menubar=no,toolbar=no,location=no,status=no,resizable=yes");
         if (!win) { alert(tr("popup.blocked" as TranslationKey)); return; }
         win.document.open();
-        win.document.write(buildUnifiedUpgradeCalculatorHtml(currentLocale, getThemeVars()));
+        {
+            const themeVars = getThemeVars();
+            win.document.write(injectControllerNav(
+                buildUnifiedUpgradeCalculatorHtml(currentLocale, themeVars), themeVars.nonce));
+        }
         win.document.close();
     };
     type ToolSection = { header: string; entries: ToolEntry[] };
@@ -1323,7 +1348,7 @@ export async function renderSession(root: HTMLElement) {
         }
     });
 
-    tabsBar.append(tabsSpacer, tabsProgress, splitControls, ramBtn, btnSidePanel, btnTabHeight, btnLogs, btnHotkeys, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
+    tabsBar.append(tabsSpacer, tabsProgress, splitControls, ramBtn, btnSidePanel, btnTabHeight, btnLogs, btnHotkeys, btnController, btnTools, btnEditMode, btnSaveLayout, btnLayouts, btnSplit);
     document.body.append(toolsMenu, hotkeysMenu);
 
     function isOpen(profileId: string) {

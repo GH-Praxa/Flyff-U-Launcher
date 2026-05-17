@@ -102,6 +102,8 @@ export const ProfileSchema = z.object({
     name: NameSchema,
     createdAt: z.string(),
     characterJobs: z.record(z.string(), z.string()).optional(),
+    server: z.string().optional(),
+    characterServers: z.record(z.string(), z.string()).optional(),
     launchMode: LaunchModeSchema,
     overlayTarget: z.boolean().optional(),
     overlaySupportTarget: z.boolean().optional(),

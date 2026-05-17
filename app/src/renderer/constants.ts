@@ -192,6 +192,46 @@ export const FLAG_ICONS: Record<string, string> = {
 
 };
 
+/**
+ * Server-Tag-Liste fuer Profile/Charaktere. Reihenfolge bleibt stabil, weil
+ * sie die Anzeige-Reihenfolge in der Combobox bestimmt. Persistiert als
+ * exakter String — Vergleich case-sensitive.
+ */
+export const SERVER_NAMES = [
+    "Lawolf",
+    "Mia",
+    "Glaphan",
+    "Rhisis",
+    "Mushpoie",
+    "데미안",
+    "Totemia",
+    "Burudeng",
+    "Flarine",
+    "リシス",
+    "獨眼蝙蝠",
+    "FWC",
+] as const;
+export type ServerName = typeof SERVER_NAMES[number];
+
+/**
+ * Farbcode pro Server fuer Badge-Hintergrund. Werte mit ausreichendem
+ * Kontrast zu weisser Schrift gewaehlt.
+ */
+export const SERVER_COLORS: Record<string, string> = {
+    "Lawolf":    "#b8410e",
+    "Mia":       "#d63384",
+    "Glaphan":   "#198754",
+    "Rhisis":    "#0d6efd",
+    "Mushpoie":  "#fd7e14",
+    "데미안":     "#6f42c1",
+    "Totemia":   "#8b5a2b",
+    "Burudeng":  "#0dcaf0",
+    "Flarine":   "#dc3545",
+    "リシス":     "#20c997",
+    "獨眼蝙蝠":   "#343a40",
+    "FWC":       "#ffc107",
+};
+
 export const JOB_ICONS: Record<string, string> = {
 
     Vagrant: vagrantIcon,

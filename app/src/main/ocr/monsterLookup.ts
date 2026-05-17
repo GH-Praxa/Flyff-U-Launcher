@@ -140,8 +140,12 @@ export function createMonsterLookup() {
             if (new Set(entries.map((m) => m.name)).size === 1) return entries[0]!.name;
         }
 
-        // Still multiple → return best match (sorted by rank priority)
-        return entries[0]!.name;
+        // Still multiple → genuinely ambiguous: HP-Zwillinge wie Small Tigar /
+        // Captain Artrox haben identische HP UND Level, nur das Element trennt
+        // sie. Liegt kein (verlaesslicher) Element-Hint vor, NICHT per Rang
+        // raten — null liefern, damit der Aufrufer den zuletzt bestaetigten
+        // (Hold-)Monsternamen behaelt statt faelschlich umzuschalten.
+        return null;
     }
 
     /**

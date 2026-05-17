@@ -1,5 +1,6 @@
 import { el } from "./dom-utils";
 import { t } from "./i18n";
+import { pushScope, popScope } from "./controller-nav";
 
 export type CustomEditorCell = { x: number; y: number; width: number; height: number };
 export type SliderLineResult = { axis: "x" | "y"; pos: number };
@@ -93,6 +94,7 @@ export async function showCustomLayoutEditor(
         document.body.append(overlay);
 
         function close(result: CustomLayoutResult | null) {
+            popScope(overlay);
             overlay.remove();
             window.removeEventListener("keydown", onKey);
             resolve(result);
@@ -101,6 +103,8 @@ export async function showCustomLayoutEditor(
             if (e.key === "Escape") close(null);
         }
         window.addEventListener("keydown", onKey);
+        // Controller-Navigation auf den Layout-Editor eingrenzen; ◯ schließt.
+        pushScope({ el: overlay, onBack: () => close(null) });
         closeBtn.onclick = () => close(null);
         cancelBtn.onclick = () => close(null);
         overlay.addEventListener("click", (e) => { if (e.target === overlay) close(null); });

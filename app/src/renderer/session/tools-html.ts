@@ -1,5 +1,8 @@
 import type { TranslationKey } from "../../i18n/translations";
 import { t } from "../i18n";
+// Kompakte Controller-Navigation als Roh-Quelltext — wird in die Pop-up-HTMLs
+// injiziert (siehe injectControllerNav).
+import popupControllerNavJs from "./popup-controller-nav.js?raw";
 import penyaIcon from "../../assets/penya.png";
 import mineralsIcon from "../../assets/minerals.png";
 import eronsIcon from "../../assets/erons.png";
@@ -85,6 +88,17 @@ export function getThemeVars(): ThemeVars {
  *  ein Nonce vorhanden ist, sonst Leerstring (Dev-Build). */
 function nonceAttr(nonce: string | undefined): string {
     return nonce ? ` nonce="${nonce}"` : "";
+}
+
+/**
+ * Hängt die kompakte Controller-Navigation an ein Pop-up-HTML an. Das Skript
+ * wird mit dem CSP-Nonce des Popups vor `</body>` injiziert.
+ */
+export function injectControllerNav(html: string, nonce: string | undefined): string {
+    const tag = `<script${nonceAttr(nonce)}>${popupControllerNavJs}</script>`;
+    return html.includes("</body>")
+        ? html.replace("</body>", `${tag}</body>`)
+        : html + tag;
 }
 
 export function buildFcoinConverterHtml(locale: string, theme: ThemeVars): string {
@@ -1058,7 +1072,13 @@ export function buildUnifiedUpgradeCalculatorHtml(locale: string, theme: ThemeVa
     function applyBonus(probs) {
       const b = bonusTotal();
       if (b === 0) return probs;
-      return probs.map(p => Math.min(p + b, 1.0));
+      // FWC und Event wirken RELATIV auf die Basis-Wahrscheinlichkeit
+      // (Flyff-Konvention: "+100% Chance" = Verdopplung). Frueher wurde
+      // additiv gerechnet (p + b), was bei FWC=100 jede Basis-P auf >= 100%
+      // pinnte — Bug: 5% wurde nicht zu 10% sondern zu 100/saturiert.
+      // Stacking: fwc+event addieren sich erst zum Gesamt-Multiplikator,
+      // dann einmalig auf p anwenden (1+b)*p.
+      return probs.map(p => Math.min(p * (1 + b), 1.0));
     }
 
     function bonusUpdateUI() {

@@ -45,6 +45,8 @@ export type ProfileActionPadAnchor = {
     offsetX: number;
     offsetY: number;
 };
+/** Anzahl Name-Slots im Buff-Empfaenger-Panel (Party-Max in Flyff = 8). */
+export const NAME_SLOT_COUNT = 8;
 /**
  * Per-Button-Override. `null` = explizit "nicht belegt" (auch nicht Default).
  * Fehlender Key (undefined) = Default-Mapping benutzen. Werte sind entweder
@@ -68,6 +70,12 @@ export type ProfileButtonMapping = {
     dpadDown?: string | null;
     dpadLeft?: string | null;
     dpadRight?: string | null;
+    // Steam-Deck Back-Paddles (Indizes 16–19). Auf Standard-Controllern werden
+    // diese Bindings nie ausgeloest, weil das Gamepad sie nicht liefert.
+    l4?: string | null;
+    r4?: string | null;
+    l5?: string | null;
+    r5?: string | null;
 };
 /**
  * Modifier-Layer pro Schultertaste. `enabled` steuert ob der Layer im Router
@@ -103,11 +111,26 @@ export type ProfileControllerModifiers = {
     l2?: ProfileControllerModifierLayer;
     r2?: ProfileControllerModifierLayer;
 };
+/**
+ * Vom User gewaehlter Controller-Style. Steuert sowohl die SVG-Darstellung im
+ * Controller-Tab als auch das Default-Mapping (Steam Deck nutzt
+ * STEAMDECK_BUTTON_MAPPING mit Paddles vorbelegt, alle anderen das Standard-
+ * DEFAULT_BUTTON_MAPPING). `"auto"` (oder fehlend) = Auto-Detect via gamepad.id,
+ * Defaults bleiben Standard.
+ */
+export type ProfileControllerStyle = "auto" | "ps" | "xbox" | "steamdeck";
 export type ProfileController = {
     actionPad?: ProfileActionPadAnchor | null;
+    /**
+     * Pro Buff-Empfaenger-Slot (0..NAME_SLOT_COUNT-1) ein Klick-Anker im
+     * Party-Panel. `null` an einem Index = Slot nicht kalibriert. Tail-Slots
+     * koennen weggelassen werden (Array kuerzer als NAME_SLOT_COUNT).
+     */
+    nameSlots?: Array<ProfileActionPadAnchor | null>;
     buttons?: ProfileButtonMapping;
     icons?: ProfileControllerIcons;
     modifiers?: ProfileControllerModifiers;
+    style?: ProfileControllerStyle;
     /**
      * Buffer-Forward-Ziel: solange die Special-Action `@forwardHold` gehalten
      * wird, gehen alle Eingaben (Buttons + Sticks) an die WebContents dieses
@@ -117,12 +140,23 @@ export type ProfileController = {
      * deaktiviert (Hold-Button no-op).
      */
     bufferTargetProfileId?: string | null;
+    /**
+     * Vom User im Controller-Tab gewaehlter Controller fuer dieses Profil —
+     * der `gamepad.id`-String der Web-Gamepad-API. Der Preload-Polling-Loop
+     * bevorzugt den Pad mit genau diesem `id` statt blind den ersten
+     * verbundenen zu nehmen. Damit laesst sich z.B. ein zweites Session-
+     * Fenster gezielt mit einem zweiten Controller steuern. `null`/`undefined`
+     * = Automatik (erster verbundener Pad, bisheriges Verhalten).
+     */
+    gamepadId?: string | null;
 };
 export type Profile = {
     id: string;
     name: string;
     createdAt: string;
     characterJobs?: Record<string, string>;
+    server?: string;
+    characterServers?: Record<string, string>;
     launchMode: LaunchMode;
     overlayTarget?: boolean;
     overlaySupportTarget?: boolean;
@@ -197,6 +231,7 @@ const BUTTON_KEYS: Array<keyof ProfileButtonMapping> = [
     "l1", "r1", "l2", "r2",
     "select", "start", "l3", "r3",
     "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
+    "l4", "r4", "l5", "r5",
 ];
 
 const FACE_KEYS: Array<keyof ProfileControllerIcons> = ["a", "b", "x", "y"];
@@ -243,17 +278,38 @@ function normalizeController(v: unknown): ProfileController | undefined {
     const out: ProfileController = {};
     let any = false;
 
-    const padRaw = obj.actionPad;
-    if (padRaw && typeof padRaw === "object") {
-        const p = padRaw as Record<string, unknown>;
+    const parseAnchor = (raw: unknown): ProfileActionPadAnchor | null => {
+        if (!raw || typeof raw !== "object") return null;
+        const p = raw as Record<string, unknown>;
         const hAnchor = p.hAnchor === "left" || p.hAnchor === "center" || p.hAnchor === "right"
             ? p.hAnchor : null;
         const vAnchor = p.vAnchor === "top" || p.vAnchor === "middle" || p.vAnchor === "bottom"
             ? p.vAnchor : null;
         const offsetX = typeof p.offsetX === "number" && Number.isFinite(p.offsetX) ? p.offsetX : null;
         const offsetY = typeof p.offsetY === "number" && Number.isFinite(p.offsetY) ? p.offsetY : null;
-        if (hAnchor !== null && vAnchor !== null && offsetX !== null && offsetY !== null) {
-            out.actionPad = { hAnchor, vAnchor, offsetX, offsetY };
+        if (hAnchor === null || vAnchor === null || offsetX === null || offsetY === null) return null;
+        return { hAnchor, vAnchor, offsetX, offsetY };
+    };
+
+    const padAnchor = parseAnchor(obj.actionPad);
+    if (padAnchor) {
+        out.actionPad = padAnchor;
+        any = true;
+    }
+
+    if (Array.isArray(obj.nameSlots)) {
+        const slots: Array<ProfileActionPadAnchor | null> = [];
+        let anySlot = false;
+        const max = Math.min(obj.nameSlots.length, NAME_SLOT_COUNT);
+        for (let i = 0; i < max; i++) {
+            const anchor = parseAnchor(obj.nameSlots[i]);
+            slots.push(anchor);
+            if (anchor) anySlot = true;
+        }
+        // Tail-Trim: trailing nulls weglassen, damit die JSON kompakt bleibt.
+        while (slots.length > 0 && slots[slots.length - 1] === null) slots.pop();
+        if (anySlot && slots.length > 0) {
+            out.nameSlots = slots;
             any = true;
         }
     }
@@ -322,6 +378,22 @@ function normalizeController(v: unknown): ProfileController | undefined {
         any = true;
     }
 
+    const styleRaw = obj.style;
+    if (styleRaw === "auto" || styleRaw === "ps" || styleRaw === "xbox" || styleRaw === "steamdeck") {
+        out.style = styleRaw;
+        any = true;
+    }
+
+    const gamepadIdRaw = obj.gamepadId;
+    if (typeof gamepadIdRaw === "string" && gamepadIdRaw.length > 0) {
+        out.gamepadId = gamepadIdRaw;
+        any = true;
+    } else if (gamepadIdRaw === null) {
+        // explizit auf null gesetzt → Automatik-Marker behalten
+        out.gamepadId = null;
+        any = true;
+    }
+
     return any ? out : undefined;
 }
 
@@ -361,6 +433,17 @@ function normalizeProfile(v: unknown): Profile | null {
                 if (chars.length > 0) {
                     return { [chars[0]]: p.job };
                 }
+            }
+            return undefined;
+        })(),
+        server: typeof p.server === "string" && p.server.length > 0 ? p.server : undefined,
+        characterServers: (() => {
+            if (p.characterServers && typeof p.characterServers === "object" && !Array.isArray(p.characterServers)) {
+                const cs: Record<string, string> = {};
+                for (const [k, v] of Object.entries(p.characterServers as Record<string, unknown>)) {
+                    if (typeof v === "string" && v) cs[k] = v;
+                }
+                return Object.keys(cs).length > 0 ? cs : undefined;
             }
             return undefined;
         })(),

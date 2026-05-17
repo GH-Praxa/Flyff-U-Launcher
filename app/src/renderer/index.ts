@@ -23,6 +23,7 @@ import { loadFeatureFlags, loadClientSettings } from "./settings";
 import { qs, clear, createWebview, showToast } from "./dom-utils";
 import { renderLauncher } from "./launcher";
 import { renderSession } from "./session";
+import { initControllerNav } from "./controller-nav";
 
 // Global error diagnostics to catch runtime issues in renderer/settings UI
 
@@ -99,6 +100,14 @@ async function main() {
             applyStoredTabActiveColor();
     });
     const view = qs().get("view") ?? "launcher";
+    // Controller-Navigation für die Launcher-Oberfläche aktivieren. Im
+    // Launcher-Fenster immer aktiv, in Spiel-Fenstern nur wenn ein Overlay
+    // (Layout-Editor o. ä.) offen ist — siehe controller-nav/index.ts.
+    try {
+        initControllerNav({ view });
+    } catch (err) {
+        logErr(err, "controller-nav init");
+    }
     if (view === "launcher")
         return renderLauncher(root);
     if (view === "session")

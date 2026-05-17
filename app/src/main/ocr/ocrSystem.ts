@@ -8,10 +8,11 @@ import { app, BrowserWindow, ipcMain, nativeImage, type NativeImage } from "elec
 import path from "path";
 import fsp from "fs/promises";
 import { logWarn, logErr } from "../../shared/logger";
-import { acquireSharedOcrWorker, releaseAllOcrWorkers } from "./workerPool";
+import { acquireSharedOcrWorker, releaseAllOcrWorkers, releaseSharedOcrWorker } from "./workerPool";
 import { OcrTimerScheduler } from "./timerScheduler";
 import type { OcrKind } from "./ocrTypes";
 import type { NativeOcrWorker } from "./nativeWorker";
+import { discoverExpRoi, isExpPercentMatch, setDiscoveryDebugDumpDir } from "./autoDiscoverRoi";
 import {
     getDefaultOcrTimers,
     loadAllOcrTimers,
@@ -51,6 +52,7 @@ export interface OcrSystemDeps {
     services: {
         roiStore: {
             get(profileId: string): Promise<Record<string, { x: number; y: number; w: number; h: number }> | null>;
+            set(profileId: string, rois: Record<string, { x: number; y: number; w: number; h: number }>): Promise<void>;
         };
         sessionTabs: SessionTabsLike;
         sessionWindow: SessionWindowLike;
@@ -100,8 +102,8 @@ const STALE_CLEAR_MS = 900;
 const EXP_MAX_DROP_PER_TICK = 0.3;
 const EXP_LEVEL_DROP_GRACE_MS = 6000;
 const EXP_LEVELUP_THRESHOLD = 99.9999;
-const EXP_LEVELUP_RESET_THRESHOLD = 10;
-const EXP_LEVELUP_DROP_MIN = 10;
+const EXP_LEVELUP_RESET_THRESHOLD = 5;
+const EXP_LEVELUP_DROP_MIN = 80;
 const EXP_LEVELUP_LOCK_MS = 2500;
 
 const KEY_TO_OCR_KIND: Record<OcrTimerKey, OcrKind> = {
@@ -173,11 +175,20 @@ function detectElement(img: NativeImage): string | null {
         const buf = img.getBitmap() as unknown as Buffer | null | undefined;
         if (!buf || buf.length < 4) return null;
         let sumR = 0, sumG = 0, sumB = 0, totalWeight = 0, survivedPixels = 0;
+        // Das Element ist die farbige Fuellung des Level-Kreises — im mittleren
+        // ROI-Bereich messen (Kreisfuellung + Ziffern), die Ecken (Spielwelt-
+        // Hintergrund) bleiben aussen vor.
         const startX = Math.floor(width * 0.25);
         const endX = Math.ceil(width * 0.75);
         const startY = Math.floor(height * 0.25);
         const endY = Math.ceil(height * 0.75);
         const totalCenterPixels = (endX - startX) * (endY - startY);
+        // Praesenz-Check ueber die weissen Level-Ziffern: Die "142" ist nur da,
+        // wenn ueberhaupt ein Monster anvisiert ist. Fehlen die weissen Pixel,
+        // sieht der ROI nur Spielwelt-Boden (olivgruen) — dann KEIN Element
+        // raten, sondern null liefern, damit der Aufrufer das zuletzt
+        // bestaetigte Monster haelt statt es faelschlich umzuschalten.
+        let whitePixels = 0;
         for (let y = startY; y < endY; y++) {
             for (let x = startX; x < endX; x++) {
                 const idx = (y * width + x) * 4;
@@ -186,7 +197,7 @@ function detectElement(img: NativeImage): string | null {
                 const r = buf[idx + 2] ?? 0;
                 const { h: pH, s: pS, v: pV } = rgbToHsv(r, g, b);
                 // Skip white text pixels (high brightness, low saturation)
-                if (pV > 0.78 && pS < 0.15) continue;
+                if (pV > 0.78 && pS < 0.15) { whitePixels++; continue; }
                 // Skip dark edge/shadow pixels
                 if (pV < 0.10) continue;
                 // Skip golden ring pixels (hue 20-50°, low saturation)
@@ -197,6 +208,8 @@ function detectElement(img: NativeImage): string | null {
                 survivedPixels++;
             }
         }
+        // No white level digits visible → no monster targeted → don't guess
+        if (totalCenterPixels > 0 && whitePixels / totalCenterPixels < 0.04) return null;
         if (totalWeight === 0) return null;
         // If too few pixels survived filtering, this is likely background, not an element circle
         if (totalCenterPixels > 0 && survivedPixels / totalCenterPixels < 0.15) return null;
@@ -491,6 +504,16 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         const liveBounds = view.getBounds();
         const viewBounds = tabs.getBounds(profileId);
         if (liveBounds.width <= 0 || liveBounds.height <= 0 || viewBounds.width <= 0 || viewBounds.height <= 0) return null;
+
+        // Bounds sanity: liveBounds (BrowserView) and viewBounds (TabsManager
+        // cell) should agree to within ~10%. If they diverge, the view is in
+        // a mid-resize / tab-switch transition — capturing now would yield a
+        // crop based on stale dimensions and Math.min(below) would pick the
+        // wrong (shrunken) value. Skip and let the next tick get a stable read.
+        const widthRatio = Math.min(liveBounds.width, viewBounds.width) / Math.max(liveBounds.width, viewBounds.width);
+        const heightRatio = Math.min(liveBounds.height, viewBounds.height) / Math.max(liveBounds.height, viewBounds.height);
+        if (widthRatio < 0.9 || heightRatio < 0.9) return null;
+
         return {
             win: hostWin,
             width: Math.min(viewBounds.width, liveBounds.width),
@@ -658,7 +681,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             if (!roi || roi.w <= 0 || roi.h <= 0) {
                 if (diagShouldLog(key)) {
                     const allKeys = rois ? Object.keys(rois) : [];
-                    console.log(`[OCR DIAG] key=${key} → no ROI set. Available ROIs: [${allKeys.join(",")}]`);
+                    console.log(`[OCR DIAG] key=${key} profile=${profileId} → no ROI set. Available ROIs: [${allKeys.join(",")}]`);
                 }
                 return "";
             }
@@ -679,6 +702,20 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             const isExpLike = key === "exp" || key === "rmExp";
             if (isExpLike) {
                 const padded = padExpRoi(x, y, width, height, captureCtx.width, captureCtx.height);
+                // Width-padding is the "view instable" signal: it means the raw
+                // crop was below 80 px wide, which only happens when
+                // captureCtx.width has shrunk mid-resize. Height-padding (17→22)
+                // is legitimate — Flyff's EXP bar is often <22 px tall depending
+                // on window size — and the padded crop reads fine.
+                // Return "" so E4's hold-on-empty preserves the last good value
+                // (returning null would trigger stale-clear after 900 ms and
+                // wipe even manually-set EXP values).
+                if (padded.width !== width) {
+                    if (diagShouldLog(key)) {
+                        console.log(`[OCR DIAG] key=${key} profile=${profileId} → skip: crop width ${width}→${padded.width} (view unstable, ctx=${captureCtx.width}x${captureCtx.height})`);
+                    }
+                    return "";
+                }
                 width = padded.width; height = padded.height;
             }
 
@@ -693,7 +730,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             const screenshotSize = screenshot.isEmpty() ? { width: 0, height: 0 } : screenshot.getSize();
             if (screenshotSize.width <= 0 || screenshotSize.height <= 0) {
                 if (diagShouldLog(key)) {
-                    console.log(`[OCR DIAG] key=${key} → empty capture. roi={x:${roi.x.toFixed(3)},y:${roi.y.toFixed(3)},w:${roi.w.toFixed(3)},h:${roi.h.toFixed(3)}} ctx=${captureCtx.width}x${captureCtx.height} crop=${x},${y},${width}x${height}`);
+                    console.log(`[OCR DIAG] key=${key} profile=${profileId} → empty capture. roi={x:${roi.x.toFixed(3)},y:${roi.y.toFixed(3)},w:${roi.w.toFixed(3)},h:${roi.h.toFixed(3)}} ctx=${captureCtx.width}x${captureCtx.height} crop=${x},${y},${width}x${height}`);
                 }
                 return "";
             }
@@ -778,7 +815,7 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
             // Diagnostic log (throttled per key)
             if (diagShouldLog(`result:${key}`)) {
-                console.log(`[OCR DIAG] key=${key} img=${screenshotSize.width}x${screenshotSize.height} ok=${response.ok} raw="${(response.raw ?? "").slice(0, 40)}" val="${(response.value ?? "").slice(0, 20)}" ${durTotal}ms`);
+                console.log(`[OCR DIAG] key=${key} profile=${profileId} img=${screenshotSize.width}x${screenshotSize.height} ctx=${captureCtx.width}x${captureCtx.height} ok=${response.ok} raw="${(response.raw ?? "").slice(0, 40)}" val="${(response.value ?? "").slice(0, 20)}" ${durTotal}ms`);
             }
 
             if (durTotal > 500) {
@@ -903,6 +940,15 @@ export function createOcrSystem(deps: OcrSystemDeps) {
         const now = Date.now();
         let shouldUpdate = true;
 
+        // Hold-on-empty for EXP keys: a transient empty result (skipped tick
+        // via padded-ROI skip, blank crop, OCR worker glitch) must not wipe a
+        // valid last reading — killfeed's delta logic would mis-detect a kill
+        // or rollback. Genuinely stale data is cleared by the null-result path
+        // in handleScheduledOcr after STALE_CLEAR_MS.
+        if ((key === "exp" || key === "rmExp") && result === "" && typeof prevValue === "string" && prevValue !== "") {
+            return;
+        }
+
         const isExpLike = key === "exp" || key === "rmExp";
         if (isExpLike && result !== "" && typeof result === "string") {
             if (typeof prevValue === "string" && prevValue !== "") {
@@ -912,7 +958,12 @@ export function createOcrSystem(deps: OcrSystemDeps) {
                     const drop = prevVal - newVal;
                     const rise = newVal - prevVal;
                     const lastLvlChange = lastLevelChangeAt.get(profileId) ?? 0;
-                    const isLevelUpDrop = drop >= EXP_LEVELUP_DROP_MIN && newVal <= EXP_LEVELUP_RESET_THRESHOLD && prevVal >= EXP_LEVELUP_DROP_MIN;
+                    // Tight level-up detection: a real Flyff level-up always goes
+                    // from ~95-100% to ~0-5%. The 63→3 OCR glitch (leading-digit
+                    // loss) must NOT be mistaken for a level-up, otherwise the
+                    // stabilizer "infects" lastExpVal with the bad value and then
+                    // rejects every subsequent correct reading as "rise too large".
+                    const isLevelUpDrop = drop >= 80 && newVal < 5 && prevVal >= 85;
                     const allowDrop = (lastLvlChange > 0 && (now - lastLvlChange) <= EXP_LEVEL_DROP_GRACE_MS) || isLevelUpDrop;
                     if (!allowDrop && drop > EXP_MAX_DROP_PER_TICK) shouldUpdate = false;
                     if (key === "exp" && prevVal >= 90 && prevVal < 100 && newVal >= 80 && newVal < 90) shouldUpdate = false;
@@ -979,6 +1030,210 @@ export function createOcrSystem(deps: OcrSystemDeps) {
     let ocrTimerScheduler: OcrTimerScheduler | null = null;
     const primedProfiles = new Set<string>();
 
+    // ── Auto-Discovery state ────────────────────────────────────
+    // Two failure tracks per profile:
+    //   - `transientRetries`: capture-context absent / frame all-black /
+    //     capture rate-limited. These are temporary states (tab still
+    //     loading, game in background, etc.) — fast retry, don't escalate.
+    //   - `attemptCount`: real "no match" after a valid frame was analyzed.
+    //     This is permanent until either ROIs change or HUD moves; escalate
+    //     with exponential backoff.
+    // After 12 transient retries (≈1 min) we escalate to permanent track.
+    const discoveryState = new Map<string, {
+        lastAttemptAt: number;
+        attemptCount: number;
+        transientRetries: number;
+        running: boolean;
+    }>();
+    const TRANSIENT_RETRY_MS = 5_000;
+    const MAX_TRANSIENT_RETRIES = 12;
+    const PERMANENT_BACKOFFS_MS = [10_000, 30_000, 60_000, 300_000];
+
+    // Enable disk debug dumps so we can inspect what Discovery sees on failure.
+    try {
+        const dumpDir = path.join(app.getPath("userData"), "user", "logs", "ocr-discovery");
+        setDiscoveryDebugDumpDir(dumpDir);
+        console.log(`[OCR Discovery] debug PNG dump dir: ${dumpDir}`);
+    } catch (err) {
+        logErr(err, "AutoDiscover dump dir");
+    }
+
+
+    // Phase 2: Re-Discovery trigger via sliding-window match-rate.
+    //
+    // When the user moves the HUD, the stored ROI typically lands on a region
+    // that partially overlaps the EXP bar — OCR oscillates between matches
+    // ("68.50%") and garbage (",", "."). A strict consecutive-failure counter
+    // would never trigger because each success resets it.
+    //
+    // We track the last N non-empty results (true=EXP-shaped, false=garbage)
+    // and trigger re-discovery if the match rate falls below MIN_MATCH_RATIO.
+    // Empty/null results are ambiguous (game in menu, capture unavailable) and
+    // do not enter the window.
+    const expScanHistory = new Map<string, boolean[]>();
+    const EXP_HISTORY_SIZE = 20;
+    const EXP_MIN_SAMPLES = 10;
+    const EXP_MIN_MATCH_RATIO = 0.5;
+
+    const recordExpScanResult = (profileId: string, result: string | null): void => {
+        if (result === null || result === "") return;
+        const isMatch = isExpPercentMatch(result);
+        let history = expScanHistory.get(profileId);
+        if (!history) {
+            history = [];
+            expScanHistory.set(profileId, history);
+        }
+        history.push(isMatch);
+        while (history.length > EXP_HISTORY_SIZE) history.shift();
+
+        if (history.length < EXP_MIN_SAMPLES) return;
+        const matchCount = history.filter((h) => h).length;
+        const ratio = matchCount / history.length;
+        if (ratio >= EXP_MIN_MATCH_RATIO) return;
+
+        // Below threshold → trigger re-discovery and clear history so a single
+        // run is enough; a second below-threshold check will not fire until
+        // we've accumulated EXP_MIN_SAMPLES new results.
+        expScanHistory.delete(profileId);
+        logWarn(`Re-Discovery triggered for ${profileId} — match rate ${Math.round(ratio * 100)}% (${matchCount}/${history.length})`, "OCR Discovery");
+        discoveryState.delete(profileId);
+        void runAutoDiscovery(profileId).then((found) => {
+            if (found) scheduleTimersForProfile(profileId);
+        });
+    };
+
+    // Schedules a fresh runAutoDiscovery + scheduleTimersForProfile call after
+    // a delay. Used by markFailure for self-driven retry without needing an
+    // external scheduleTimersForProfile trigger.
+    const scheduleDiscoveryRetry = (profileId: string, delayMs: number): void => {
+        setTimeout(() => {
+            void runAutoDiscovery(profileId).then((found) => {
+                if (found) scheduleTimersForProfile(profileId);
+            });
+        }, delayMs);
+    };
+
+    const runAutoDiscovery = async (profileId: string): Promise<boolean> => {
+        const state = discoveryState.get(profileId) ?? { lastAttemptAt: 0, attemptCount: 0, transientRetries: 0, running: false };
+        if (state.running) {
+            console.log(`[OCR Discovery] skip ${profileId} — already running`);
+            return false;
+        }
+        const now = Date.now();
+        // Backoff only applies to permanent failures. Transient retries use
+        // their own fast cadence via scheduleDiscoveryRetry.
+        if (state.attemptCount > 0) {
+            const backoffIdx = Math.min(state.attemptCount - 1, PERMANENT_BACKOFFS_MS.length - 1);
+            const requiredWait = PERMANENT_BACKOFFS_MS[backoffIdx]!;
+            if (now - state.lastAttemptAt < requiredWait) {
+                console.log(`[OCR Discovery] skip ${profileId} — in backoff (attempt ${state.attemptCount}, next in ${Math.round((requiredWait - (now - state.lastAttemptAt)) / 1000)}s)`);
+                return false;
+            }
+        }
+        state.running = true;
+        state.lastAttemptAt = now;
+        discoveryState.set(profileId, state);
+        console.log(`[OCR Discovery] starting for profile=${profileId} (attempts: ${state.attemptCount} permanent / ${state.transientRetries} transient)`);
+
+        const markTransient = (reason: string) => {
+            const cur = discoveryState.get(profileId) ?? state;
+            cur.transientRetries++;
+            cur.running = false;
+            // After many transients, escalate to permanent.
+            if (cur.transientRetries >= MAX_TRANSIENT_RETRIES) {
+                cur.transientRetries = 0;
+                cur.attemptCount++;
+                const delay = PERMANENT_BACKOFFS_MS[Math.min(cur.attemptCount - 1, PERMANENT_BACKOFFS_MS.length - 1)]!;
+                discoveryState.set(profileId, cur);
+                console.log(`[OCR Discovery] FAILED profile=${profileId} — ${reason} (${MAX_TRANSIENT_RETRIES}× transient, escalating; retry in ${delay / 1000}s)`);
+                scheduleDiscoveryRetry(profileId, delay);
+            } else {
+                discoveryState.set(profileId, cur);
+                console.log(`[OCR Discovery] TRANSIENT profile=${profileId} — ${reason} (${cur.transientRetries}/${MAX_TRANSIENT_RETRIES}, retry in ${TRANSIENT_RETRY_MS / 1000}s)`);
+                scheduleDiscoveryRetry(profileId, TRANSIENT_RETRY_MS);
+            }
+        };
+
+        const markPermanent = (reason: string) => {
+            const cur = discoveryState.get(profileId) ?? state;
+            cur.attemptCount++;
+            cur.transientRetries = 0;
+            cur.running = false;
+            const delay = PERMANENT_BACKOFFS_MS[Math.min(cur.attemptCount - 1, PERMANENT_BACKOFFS_MS.length - 1)]!;
+            discoveryState.set(profileId, cur);
+            console.log(`[OCR Discovery] FAILED profile=${profileId} — ${reason} (permanent, retry in ${delay / 1000}s)`);
+            scheduleDiscoveryRetry(profileId, delay);
+        };
+
+        try {
+            const captureCtx = buildCaptureCtx(profileId);
+            if (!captureCtx || captureCtx.width <= 0 || captureCtx.height <= 0) {
+                markTransient(`no capture context (ctx=${captureCtx ? `${captureCtx.width}x${captureCtx.height}` : "null"})`);
+                return false;
+            }
+            console.log(`[OCR Discovery] capture ctx=${captureCtx.width}x${captureCtx.height}`);
+
+            // safeCaptureWindow has a strict 2/sec rate limit; full-frame
+            // captures get throttled to empty. Retry with sleeps past the
+            // rate-limit window.
+            let png: Buffer | null = null;
+            const MAX_CAPTURE_ATTEMPTS = 6;
+            for (let attempt = 0; attempt < MAX_CAPTURE_ATTEMPTS; attempt++) {
+                if (attempt > 0) await new Promise((r) => setTimeout(r, 550));
+                try {
+                    const img = await captureCtx.grab({ x: 0, y: 0, width: captureCtx.width, height: captureCtx.height });
+                    if (!img.isEmpty()) {
+                        const buf = img.toPNG();
+                        if (buf.length > 256) {
+                            png = buf;
+                            console.log(`[OCR Discovery] captured ${png.length} bytes (${img.getSize().width}x${img.getSize().height}) on attempt ${attempt + 1}`);
+                            break;
+                        }
+                    }
+                } catch (err) {
+                    logErr(err, "AutoDiscover capture");
+                }
+            }
+            if (!png) {
+                markTransient(`${MAX_CAPTURE_ATTEMPTS} capture attempts empty (rate-limited or no frame)`);
+                return false;
+            }
+
+            const worker = await acquireSharedOcrWorker(undefined, undefined, "discovery");
+            let outcome;
+            try {
+                outcome = await discoverExpRoi({ capturePng: png, ocrWorker: worker, profileId });
+            } finally {
+                await releaseSharedOcrWorker("discovery").catch((err) => logErr(err, "AutoDiscover release"));
+            }
+
+            if (outcome.kind === "matched") {
+                const existing = await services.roiStore.get(profileId);
+                const next: Record<string, { x: number; y: number; w: number; h: number }> = { ...(existing ?? {}) };
+                next.exp = outcome.result.roi;
+                await services.roiStore.set(profileId, next);
+                console.log(`[OCR Discovery] SUCCESS profile=${profileId} sample="${outcome.result.rawSample}" box=${outcome.result.sourceBox.x},${outcome.result.sourceBox.y} ${outcome.result.sourceBox.w}x${outcome.result.sourceBox.h} roi=(${outcome.result.roi.x.toFixed(4)},${outcome.result.roi.y.toFixed(4)},${outcome.result.roi.w.toFixed(4)},${outcome.result.roi.h.toFixed(4)})`);
+                discoveryState.delete(profileId);
+                return true;
+            }
+
+            if (outcome.kind === "frame-blank") {
+                markTransient(`frame blank (${outcome.maskFg} white px — tab inactive or loading)`);
+                return false;
+            }
+            if (outcome.kind === "no-shape-valid") {
+                markPermanent(`no shape-valid candidates (${outcome.componentsScanned} comps, ${outcome.maskFg} mask px)`);
+                return false;
+            }
+            markPermanent(`no candidate matched EXP regex (${outcome.candidatesScanned} probed)`);
+            return false;
+        } catch (err) {
+            logErr(err, "AutoDiscover");
+            markPermanent(`exception: ${err instanceof Error ? err.message : String(err)}`);
+            return false;
+        }
+    };
+
     async function handleScheduledOcr(profileId: string, key: OcrTimerKey) {
         const globalToken = `${KEY_TO_OCR_KIND[key]}:${profileId}`;
         const inflight = pendingOcrTicks.get(globalToken) ?? 0;
@@ -1035,6 +1290,11 @@ export function createOcrSystem(deps: OcrSystemDeps) {
             }
 
             ocrErrorCounts.set(`${profileId}:${key}`, 0);
+            // Phase 2 Re-Discovery: if EXP OCR returns garbage (non-empty but
+            // not EXP-shaped), the stored ROI has likely been invalidated by
+            // a HUD move. recordExpScanResult tracks the failure rate and
+            // triggers runAutoDiscovery when it crosses threshold.
+            if (key === "exp") recordExpScanResult(profileId, result);
             applyOcrResult(profileId, key, result);
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -1070,15 +1330,44 @@ export function createOcrSystem(deps: OcrSystemDeps) {
 
     restartOcrScheduler();
 
-    const scheduleTimersForProfile = (profileId: string) => {
-        if (!ocrTimerScheduler) restartOcrScheduler();
-        ocrTimerScheduler?.update(profileId, getOcrTimers(profileId));
-        if (!primedProfiles.has(profileId)) {
-            primedProfiles.add(profileId);
-            for (const key of OCR_KEYS) {
-                void handleScheduledOcr(profileId, key);
+    const scheduleTimersForProfile = (profileId: string): void => {
+        // Pre-check ROIs asynchronously. If EXP is missing, trigger
+        // auto-discovery in the background — on success it re-invokes this
+        // function. Profiles without ANY ROI are not primed (E1); profiles
+        // with some ROIs (e.g. only `lvl`) schedule normally and Discovery
+        // runs alongside for EXP.
+        void (async () => {
+            try {
+                const rois = await services.roiStore.get(profileId);
+                const hasAnyRoi = !!rois && Object.values(rois).some((r) => r && r.w > 0 && r.h > 0);
+                const hasExpRoi = !!rois?.exp && rois.exp.w > 0 && rois.exp.h > 0;
+
+                if (!hasExpRoi) {
+                    console.log(`[OCR Discovery] scheduleTimersForProfile profile=${profileId}: no EXP ROI in store → triggering discovery`);
+                    void runAutoDiscovery(profileId).then((found) => {
+                        if (found) scheduleTimersForProfile(profileId);
+                    });
+                } else {
+                    console.log(`[OCR Discovery] scheduleTimersForProfile profile=${profileId}: EXP ROI in store (${rois!.exp!.x.toFixed(3)},${rois!.exp!.y.toFixed(3)},${rois!.exp!.w.toFixed(3)},${rois!.exp!.h.toFixed(3)}) — discovery NOT triggered`);
+                }
+
+                if (!hasAnyRoi) {
+                    primedProfiles.delete(profileId);
+                    return;
+                }
+            } catch (err) {
+                logErr(err, "OCR scheduleTimersForProfile ROI precheck");
+                // Fall through and schedule anyway — safer than stalling.
             }
-        }
+            if (!ocrTimerScheduler) restartOcrScheduler();
+            ocrTimerScheduler?.update(profileId, getOcrTimers(profileId));
+            if (!primedProfiles.has(profileId)) {
+                primedProfiles.add(profileId);
+                for (const key of OCR_KEYS) {
+                    void handleScheduledOcr(profileId, key);
+                }
+            }
+        })();
     };
 
     const runImmediateOcr = async (profileId: string) => {

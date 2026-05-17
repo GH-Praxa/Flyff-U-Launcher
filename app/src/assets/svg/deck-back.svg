@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Steam-Deck Back-View für den Controller-Tab im Launcher.
+  Zeigt die 4 Back-Paddles (L4/L5/R4/R5), Lüftungsschlitze und den VALVE-Wordmark.
+
+  Naming-Convention (Steam-Deck-Standard):
+    L4 = oberer Paddle links (Zeigefinger-Reichweite)
+    L5 = unterer Paddle links (Mittelfinger-Reichweite)
+    R4 = oberer Paddle rechts
+    R5 = unterer Paddle rechts
+
+  Paddle-Positionen direkt aus steamdeckBack.svg übernommen:
+    L4/L5: x=119-167  (48 wide)
+    R4/R5: x=893-941  (48 wide)
+    oben:  y=162-242  (80 tall)
+    unten: y=243-323  (80 tall)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 429" role="img" aria-label="Steam Deck (Rückseite)" class="ctrlSvg ctrlSvgStyleSteamdeck">
+
+  <!-- ═══ Body-Silhouette (aus steamdeckBack.svg path #4) ═══ -->
+  <!-- Same outer shape as front, since back has identical outline -->
+  <path class="ctrlSvgBody" d="M 24.687 158.986 C 24.078 104.857 23.773 77.792 37.395 58.774 C 41.792 52.634 47.135 47.231 53.224 42.765 C 72.087 28.930 99.154 28.930 153.288 28.930 H 911.302 C 965.435 28.930 992.502 28.930 1011.365 42.765 C 1017.454 47.231 1022.797 52.634 1027.195 58.774 C 1040.817 77.792 1040.512 104.857 1039.903 158.986 L 1038.873 250.404 C 1038.054 323.325 1037.644 359.786 1018.852 385.286 C 1012.781 393.525 1005.459 400.765 997.151 406.744 C 971.441 425.247 934.978 425.247 862.052 425.247 H 202.547 C 129.621 425.247 93.158 425.247 67.448 406.744 C 59.141 400.765 51.819 393.525 45.747 385.286 C 26.955 359.786 26.544 323.325 25.723 250.404 Z"/>
+
+  <!-- Subtiler Grip-Schatten (innere Vertiefung links/rechts) -->
+  <path opacity="0.20" stroke="rgba(255,255,255,0.20)" stroke-width="1" fill="none" d="M 100 130 C 90 180 95 250 130 320 M 960 130 C 970 180 965 250 930 320"/>
+
+  <!-- ═══ VALVE-Wordmark (mittig oben) ═══ -->
+  <text x="530" y="170" style="
+    fill: rgba(255,255,255,0.16);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-anchor: middle;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    pointer-events: none;
+    user-select: none;
+  ">VALVE</text>
+
+  <!-- ═══ Lüftungsschlitze (unter dem Wordmark) ═══ -->
+  <g opacity="0.30" stroke="rgba(255,255,255,0.30)" stroke-width="1.4" fill="none">
+    <line x1="440" y1="235" x2="440" y2="305"/>
+    <line x1="460" y1="235" x2="460" y2="305"/>
+    <line x1="480" y1="235" x2="480" y2="305"/>
+    <line x1="500" y1="235" x2="500" y2="305"/>
+    <line x1="520" y1="235" x2="520" y2="305"/>
+    <line x1="540" y1="235" x2="540" y2="305"/>
+    <line x1="560" y1="235" x2="560" y2="305"/>
+    <line x1="580" y1="235" x2="580" y2="305"/>
+    <line x1="600" y1="235" x2="600" y2="305"/>
+    <line x1="620" y1="235" x2="620" y2="305"/>
+  </g>
+
+  <!-- Kleine Schrauben (deko) -->
+  <g fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="0.5">
+    <circle cx="320" cy="80"  r="3"/>
+    <circle cx="740" cy="80"  r="3"/>
+    <circle cx="320" cy="380" r="3"/>
+    <circle cx="740" cy="380" r="3"/>
+  </g>
+
+  <!-- ═══ BACK-PADDLES (Positionen aus steamdeckBack.svg) ═══ -->
+
+  <!-- L4 — oberer Paddle links (Zeigefinger) -->
+  <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="162" width="48" height="80" rx="14"/>
+  <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="206" style="font-size:14px; font-weight:700;">L4</text>
+
+  <!-- L5 — unterer Paddle links (Mittelfinger) -->
+  <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="119" y="243" width="48" height="80" rx="14"/>
+  <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="143" y="287" style="font-size:14px; font-weight:700;">L5</text>
+
+  <!-- R4 — oberer Paddle rechts (Zeigefinger) -->
+  <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="162" width="48" height="80" rx="14"/>
+  <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="206" style="font-size:14px; font-weight:700;">R4</text>
+
+  <!-- R5 — unterer Paddle rechts (Mittelfinger) -->
+  <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="893" y="243" width="48" height="80" rx="14"/>
+  <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="917" y="287" style="font-size:14px; font-weight:700;">R5</text>
+
+</svg>

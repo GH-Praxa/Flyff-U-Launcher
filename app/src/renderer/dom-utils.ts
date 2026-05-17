@@ -1,5 +1,5 @@
 import type { TabLayout } from "../shared/schemas";
-import { JOB_ICONS, FLYFF_URL } from "./constants";
+import { JOB_ICONS, FLYFF_URL, SERVER_COLORS } from "./constants";
 import { t } from "./i18n";
 import { toastBaseTtlMs } from "./settings";
 
@@ -14,6 +14,10 @@ export type Profile = {
     createdAt: string;
 
     characterJobs?: Record<string, string>;
+
+    server?: string;
+
+    characterServers?: Record<string, string>;
 
     launchMode: "tabs" | "window";
 
@@ -120,6 +124,114 @@ export function createJobBadge(job?: string | null): HTMLElement | null {
     badge.append(text);
 
     return badge;
+
+}
+
+// ── Launch Mode Badge ────────────────────────────────────────────────
+
+export function createLaunchModeBadge(mode: "tabs" | "window"): HTMLElement {
+
+    const label = mode === "tabs" ? t("profile.mode.tabs") : t("profile.mode.window");
+
+    const badge = el("span", `badge launchModeBadge ${mode === "tabs" ? "launchModeTabs" : "launchModeWindow"}`);
+
+    badge.textContent = label;
+
+    return badge;
+
+}
+
+// ── Server Tags ──────────────────────────────────────────────────────
+
+export function serverColor(server?: string | null): string | null {
+
+    if (!server) return null;
+
+    return SERVER_COLORS[server.trim()] ?? null;
+
+}
+
+function readableTextColor(hex: string): string {
+
+    // Simple luminance heuristic: pick black/white text depending on bg.
+
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+
+    if (!m) return "#fff";
+
+    const n = parseInt(m[1], 16);
+
+    const r = (n >> 16) & 0xff;
+
+    const g = (n >> 8) & 0xff;
+
+    const b = n & 0xff;
+
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return lum > 0.6 ? "#1a1a1a" : "#fff";
+
+}
+
+export function createServerBadge(server?: string | null, className = "badge serverBadge"): HTMLElement | null {
+
+    const label = server?.trim();
+
+    if (!label) return null;
+
+    const badge = el("span", className);
+
+    const color = serverColor(label);
+
+    if (color) {
+
+        badge.style.backgroundColor = color;
+
+        badge.style.borderColor = color;
+
+        badge.style.color = readableTextColor(color);
+
+    }
+
+    badge.textContent = label;
+
+    return badge;
+
+}
+
+export function decorateServerSelect(select: HTMLSelectElement) {
+
+    select.classList.add("serverSelect");
+
+    const sync = () => {
+
+        const color = serverColor(select.value);
+
+        if (color) {
+
+            select.style.backgroundColor = color;
+
+            select.style.borderColor = color;
+
+            select.style.color = readableTextColor(color);
+
+        }
+
+        else {
+
+            select.style.backgroundColor = "";
+
+            select.style.borderColor = "";
+
+            select.style.color = "";
+
+        }
+
+    };
+
+    sync();
+
+    select.addEventListener("change", sync);
 
 }
 

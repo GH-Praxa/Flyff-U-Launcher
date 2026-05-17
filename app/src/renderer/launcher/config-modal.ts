@@ -1,6 +1,7 @@
 import { THEMES, type ThemeDefinition } from "../../themes";
 import pkg from "../../../package.json";
 import { DEFAULT_LOCALE, type Locale, type TranslationKey } from "../../i18n/translations";
+import { pushScope, popScope } from "../controller-nav";
 import type { TabLayout, ClientSettings } from "../../shared/schemas";
 import { DEFAULT_HOTKEYS, formatHotkey, normalizeHotkeySettings, sanitizeHotkeyChord } from "../../shared/hotkeys";
 import { logErr } from "../../shared/logger";
@@ -187,10 +188,13 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
     let loaded = false;
 
     const close = (chosen: IconPickResult | undefined) => {
+        popScope(overlay);
         overlay.remove();
         document.removeEventListener("keydown", onKey);
         if (chosen !== undefined) onChoose(chosen);
     };
+    // Controller-Navigation auf den Icon-Picker eingrenzen; ◯ schließt.
+    pushScope({ el: overlay, onBack: () => close(undefined) });
     const onKey = (e: KeyboardEvent) => {
         if (e.key === "Escape") close(undefined);
     };
@@ -286,10 +290,29 @@ function openGameIconPicker(currentDataUrl: string | undefined, onChoose: (chose
     setTimeout(() => searchInput.focus(), 0);
 }
 
+export type ConfigModalSidebarId =
+    | "client.display" | "client.layout" | "client.behavior"
+    | "client.theme" | "client.tabcolor" | "client.font" | "client.hotkeys"
+    | "controller"
+    | "plugins" | "patchnotes" | "docs" | "support";
+
 export function openConfigModal(
     deps: ConfigModalDeps,
     defaultStyleTab: "theme" | "tabActive" = "theme",
     defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style",
+    /**
+     * Aktiviert direkt einen bestimmten Sidebar-Eintrag nach dem Aufbau. Wird
+     * z.B. vom Tab-Bar-Controller-Button benutzt um direkt in den Controller-
+     * Tab zu springen statt durch die Hauptkategorien zu navigieren.
+     */
+    initialSidebarId?: ConfigModalSidebarId,
+    /**
+     * Compact-Mode: Sidebar wird ausgeblendet, der Modal-Titel wechselt auf
+     * den jeweiligen Section-Namen, und die Breite wird etwas verringert.
+     * Verwendung: vom Tab-Bar-Button im Game, wo der User nur das Controller-
+     * Menue sehen will — nicht die kompletten Settings.
+     */
+    compactMode: boolean = false,
 ) {
     const { snapshotThemeVars, applyThemeToIframe } = deps;
     const overlay = el("div", "modalOverlay");
@@ -325,6 +348,8 @@ export function openConfigModal(
         const iconSpan = el("span", "sidebarIcon", icon);
         const labelSpan = el("span", "sidebarLabel", label);
         btn.append(iconSpan, labelSpan);
+        // Controller: L1/R1 wechselt zwischen den Sidebar-Sektionen.
+        btn.setAttribute("data-cnav-tab", "");
         globalSidebar.append(btn);
         allSidebarBtns.set(id, btn);
     };
@@ -1624,6 +1649,22 @@ export function openConfigModal(
     for (const [id, btn] of allSidebarBtns) {
         btn.addEventListener("click", () => selectSidebarItem(id));
     }
+    // Direkt-Navigation: wenn der Aufrufer einen Sidebar-Eintrag uebergeben
+    // hat (z.B. vom Tab-Bar-Controller-Button), aktivieren wir den jetzt.
+    if (initialSidebarId && allSidebarBtns.has(initialSidebarId)) {
+        selectSidebarItem(initialSidebarId);
+    }
+    // Compact-Mode: Sidebar verstecken, Modal-Titel auf die Section anpassen.
+    // User-Workflow: Klick auf den Controller-Button im Game → er erwartet ein
+    // fokussiertes Controller-Menue ohne die ganzen anderen Settings-
+    // Kategorien drumherum.
+    if (compactMode) {
+        modal.classList.add("configModal--compact");
+        if (initialSidebarId === "controller") {
+            try { headerTitle.textContent = t("controller.title" as TranslationKey); }
+            catch { headerTitle.textContent = "Controller-Belegung"; }
+        }
+    }
     // ====================================================================
     // Controller-Tab: Per-Profil-Mapping-Editor (kompakt, Sektionen, Grid)
     // ====================================================================
@@ -1631,7 +1672,8 @@ export function openConfigModal(
         | "a" | "b" | "x" | "y"
         | "l1" | "r1" | "l2" | "r2"
         | "select" | "start" | "l3" | "r3"
-        | "dpadUp" | "dpadDown" | "dpadLeft" | "dpadRight";
+        | "dpadUp" | "dpadDown" | "dpadLeft" | "dpadRight"
+        | "l4" | "r4" | "l5" | "r5";
 
     type ControllerButtonOverride = Partial<Record<ControllerButtonName, string | null>>;
 
@@ -1662,6 +1704,13 @@ export function openConfigModal(
         dpadDown:  { key: "dpadDown",  symbol: "↓",  name: "Down",     defaultAction: "@zoomOut" },
         dpadLeft:  { key: "dpadLeft",  symbol: "←",  name: "Left",     defaultAction: "@prevTab" },
         dpadRight: { key: "dpadRight", symbol: "→",  name: "Right",    defaultAction: "@nextTab" },
+        // Steam-Deck Back-Paddles. defaultAction nur als visueller Hint
+        // ("Default: 4") — der echte Default wird im Router via
+        // STEAMDECK_BUTTON_MAPPING gesetzt, sobald Style "steamdeck" ist.
+        l4: { key: "l4", symbol: "L4", name: "Left Back Inner",  defaultAction: "4" },
+        r4: { key: "r4", symbol: "R4", name: "Right Back Inner", defaultAction: "5" },
+        l5: { key: "l5", symbol: "L5", name: "Left Back Outer",  defaultAction: "6" },
+        r5: { key: "r5", symbol: "R5", name: "Right Back Outer", defaultAction: "7" },
     };
 
     // Special-Actions die per Popover-Menu gewaehlt werden koennen. Alle starten
@@ -1676,6 +1725,14 @@ export function openConfigModal(
     //  - @openConfig       — Settings-Modal oeffnen
     const SPECIAL_ACTIONS: ReadonlyArray<{ key: string; labelKey: string }> = [
         { key: "@actionPad",        labelKey: "controller.action.actionPad" },
+        { key: "@nameSlot:0",       labelKey: "controller.action.nameSlot.1" },
+        { key: "@nameSlot:1",       labelKey: "controller.action.nameSlot.2" },
+        { key: "@nameSlot:2",       labelKey: "controller.action.nameSlot.3" },
+        { key: "@nameSlot:3",       labelKey: "controller.action.nameSlot.4" },
+        { key: "@nameSlot:4",       labelKey: "controller.action.nameSlot.5" },
+        { key: "@nameSlot:5",       labelKey: "controller.action.nameSlot.6" },
+        { key: "@nameSlot:6",       labelKey: "controller.action.nameSlot.7" },
+        { key: "@nameSlot:7",       labelKey: "controller.action.nameSlot.8" },
         { key: "@cursorHold",       labelKey: "controller.action.cursorHold" },
         { key: "@cursorToggle",     labelKey: "controller.action.cursorToggle" },
         { key: "@forwardHold",      labelKey: "controller.action.forwardHold" },
@@ -1785,13 +1842,15 @@ export function openConfigModal(
     let controllerLiveCleanup: (() => void) | null = null;
 
     /** "auto" bedeutet: erkannten Controller-Typ aus gamepad.id ableiten.
-     *  "ps"/"xbox" sind manuelle Overrides — bleiben ueber Connect/Disconnect
-     *  hinweg gesetzt, bis der User wieder umstellt. */
-    type ControllerStyle = "auto" | "ps" | "xbox";
-    /** Effektives Layout: "ps" oder "xbox". "generic" gibt es bewusst nicht —
-     *  wenn nichts erkennbar ist, faellt der Default auf "ps" zurueck (am
+     *  "ps"/"xbox"/"steamdeck" sind manuelle Overrides — bleiben ueber
+     *  Connect/Disconnect hinweg gesetzt, bis der User wieder umstellt.
+     *  Steam-Deck koppelt zusaetzlich die Default-Belegung (Paddles auf
+     *  Skill-Slots 4–7 statt undef). */
+    type ControllerStyle = "auto" | "ps" | "xbox" | "steamdeck";
+    /** Effektives Layout: "ps", "xbox" oder "steamdeck". "generic" gibt es bewusst
+     *  nicht — wenn nichts erkennbar ist, faellt der Default auf "ps" zurueck (am
      *  weitesten verbreitete Symbol-Belegung). */
-    type ControllerVisualStyle = "ps" | "xbox";
+    type ControllerVisualStyle = "ps" | "xbox" | "steamdeck";
 
     interface ControllerSvgRefs {
         wrap: HTMLDivElement;
@@ -1815,6 +1874,12 @@ export function openConfigModal(
     function detectControllerStyle(id: string | null | undefined): ControllerVisualStyle {
         if (!id) return "ps";
         const lower = id.toLowerCase();
+        // Steam Deck / Valve zuerst pruefen — der Deck meldet sich oft als
+        // "Steam Virtual Gamepad" oder mit Valve-Vendor-ID 28de, kann aber je
+        // nach Steam-Input-Modus parallel xinput-Strings tragen. Frueh raus.
+        if (lower.includes("steam") || lower.includes("valve") || lower.includes("28de")) {
+            return "steamdeck";
+        }
         if (lower.includes("xbox") || lower.includes("xinput") || lower.includes("microsoft") || lower.includes("045e")) {
             return "xbox";
         }
@@ -1964,13 +2029,95 @@ export function openConfigModal(
         `;
     }
 
+    /** Steam-Deck-Layout: breiter 16:10-Handheld-Body, Sticks oben (deck-typisch),
+     *  D-Pad unter linkem Stick, ABXY (Xbox-Schema) unter rechtem Stick, zwei
+     *  dekorative Trackpad-Kreise mittig, vier Back-Paddles als Pillen am
+     *  unteren Body-Rand neben den Griffen, mittig ein dezenter "STEAM DECK"-
+     *  Wordmark unter dem Display-Ausschnitt. Stick-Basis: L3=(160,118), R3=(440,118).
+     *  Trackpads sind rein dekorativ (kein data-stick — keine Live-Werte). */
+    function buildSvgSteamdeck(): string {
+        return `
+            <svg viewBox="0 0 600 360" class="ctrlSvg ctrlSvgStyleSteamdeck" role="img" aria-label="Steam Deck controller">
+                <rect data-button="l2" class="ctrlSvgBtn ctrlSvgTrigger" x="58" y="14" width="92" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="104" y="42">L2</text>
+                <rect data-button="r2" class="ctrlSvgBtn ctrlSvgTrigger" x="450" y="14" width="92" height="46" rx="16"/>
+                <text class="ctrlSvgLbl ctrlSvgLblTrigger" x="496" y="42">R2</text>
+
+                <rect data-button="l1" class="ctrlSvgBtn ctrlSvgShoulder" x="62" y="58" width="104" height="20" rx="10"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="114" y="71">L1</text>
+                <rect data-button="r1" class="ctrlSvgBtn ctrlSvgShoulder" x="434" y="58" width="104" height="20" rx="10"/>
+                <text class="ctrlSvgLbl ctrlSvgLblShoulder" x="486" y="71">R1</text>
+
+                <path class="ctrlSvgBody" d="M 80 82 L 520 82 C 548 84 568 102 572 132 C 576 168 568 210 552 248 C 538 280 516 302 488 314 C 456 326 422 326 396 318 C 376 310 360 302 348 296 C 338 292 330 290 326 290 L 274 290 C 270 290 262 292 252 296 C 240 302 224 310 204 318 C 178 326 144 326 112 314 C 84 302 62 280 48 248 C 32 210 24 168 28 132 C 32 102 52 84 80 82 Z"/>
+
+                <circle class="ctrlSvgStickWell"      cx="160" cy="118" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="160" cy="118" r="30"/>
+                <circle data-button="l3" class="ctrlSvgBtn ctrlSvgStick" cx="160" cy="118" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="160" cy="118" r="22"/>
+                <circle data-stick="l"  class="ctrlSvgStickDot" cx="160" cy="118" r="10"/>
+
+                <circle class="ctrlSvgStickWell"      cx="440" cy="118" r="36"/>
+                <circle class="ctrlSvgStickWellInner" cx="440" cy="118" r="30"/>
+                <circle data-button="r3" class="ctrlSvgBtn ctrlSvgStick" cx="440" cy="118" r="24"/>
+                <circle class="ctrlSvgStickRim"       cx="440" cy="118" r="22"/>
+                <circle data-stick="r"  class="ctrlSvgStickDot" cx="440" cy="118" r="10"/>
+
+                <rect class="ctrlSvgDpadCenter" x="151" y="200" width="18" height="18"/>
+                <rect data-button="dpadUp"    class="ctrlSvgBtn ctrlSvgDpad" x="151" y="175" width="18" height="25" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 155 191 L 160 183 L 165 191 Z"/>
+                <rect data-button="dpadDown"  class="ctrlSvgBtn ctrlSvgDpad" x="151" y="218" width="18" height="25" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 155 227 L 160 235 L 165 227 Z"/>
+                <rect data-button="dpadLeft"  class="ctrlSvgBtn ctrlSvgDpad" x="126" y="200" width="25" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 142 205 L 134 209 L 142 213 Z"/>
+                <rect data-button="dpadRight" class="ctrlSvgBtn ctrlSvgDpad" x="169" y="200" width="25" height="18" rx="3"/>
+                <path class="ctrlSvgDpadArrow" d="M 178 205 L 186 209 L 178 213 Z"/>
+
+                <circle data-button="y" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxY" cx="440" cy="180" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="440" y="185">Y</text>
+                <circle data-button="b" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxB" cx="472" cy="212" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="472" y="217">B</text>
+                <circle data-button="a" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxA" cx="440" cy="244" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="440" y="249">A</text>
+                <circle data-button="x" class="ctrlSvgBtn ctrlSvgFace ctrlSvgXboxX" cx="408" cy="212" r="14"/>
+                <text class="ctrlSvgLbl ctrlSvgLblFace" x="408" y="217">X</text>
+
+                <circle class="ctrlSvgTrackpad" cx="244" cy="216" r="26"/>
+                <circle class="ctrlSvgTrackpadInner" cx="244" cy="216" r="22"/>
+                <circle class="ctrlSvgTrackpad" cx="356" cy="216" r="26"/>
+                <circle class="ctrlSvgTrackpadInner" cx="356" cy="216" r="22"/>
+
+                <rect data-button="select" class="ctrlSvgBtn ctrlSvgPill" x="220" y="170" width="16" height="9" rx="4.5"/>
+                <rect data-button="start"  class="ctrlSvgBtn ctrlSvgPill" x="364" y="170" width="16" height="9" rx="4.5"/>
+
+                <circle class="ctrlSvgSteamButton" cx="300" cy="174" r="9"/>
+                <path class="ctrlSvgSteamLogo" d="M 296 174 a 4 4 0 1 0 8 0 a 4 4 0 1 0 -8 0 M 300 170 L 305 165"/>
+
+                <rect data-button="l4" class="ctrlSvgBtn ctrlSvgPaddle" x="84"  y="298" width="36" height="14" rx="7"/>
+                <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="102" y="309">L4</text>
+                <rect data-button="l5" class="ctrlSvgBtn ctrlSvgPaddle" x="124" y="298" width="36" height="14" rx="7"/>
+                <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="142" y="309">L5</text>
+                <rect data-button="r4" class="ctrlSvgBtn ctrlSvgPaddle" x="480" y="298" width="36" height="14" rx="7"/>
+                <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="498" y="309">R4</text>
+                <rect data-button="r5" class="ctrlSvgBtn ctrlSvgPaddle" x="440" y="298" width="36" height="14" rx="7"/>
+                <text class="ctrlSvgLbl ctrlSvgLblPaddle" x="458" y="309">R5</text>
+
+                <text class="ctrlSvgSteamWord" x="300" y="334">STEAM DECK</text>
+            </svg>
+        `;
+    }
+
     function svgMarkupFor(style: ControllerVisualStyle): string {
-        return style === "xbox" ? buildSvgXbox() : buildSvgPs();
+        if (style === "xbox") return buildSvgXbox();
+        if (style === "steamdeck") return buildSvgSteamdeck();
+        return buildSvgPs();
     }
 
     function stickBasesFor(style: ControllerVisualStyle): { l: { cx: number; cy: number }; r: { cx: number; cy: number } } {
         if (style === "xbox") {
             return { l: { cx: 180, cy: 160 }, r: { cx: 370, cy: 252 } };
+        }
+        if (style === "steamdeck") {
+            return { l: { cx: 160, cy: 118 }, r: { cx: 440, cy: 118 } };
         }
         return { l: { cx: 240, cy: 272 }, r: { cx: 360, cy: 272 } };
     }
@@ -2008,9 +2155,10 @@ export function openConfigModal(
         const styleSelectEl = document.createElement("select");
         styleSelectEl.className = "ctrlVisualStyleSelect";
         for (const [val, key] of [
-            ["auto", "controller.svg.style.auto"],
-            ["ps",   "controller.svg.style.ps"],
-            ["xbox", "controller.svg.style.xbox"],
+            ["auto",      "controller.svg.style.auto"],
+            ["ps",        "controller.svg.style.ps"],
+            ["xbox",      "controller.svg.style.xbox"],
+            ["steamdeck", "controller.svg.style.steamdeck"],
         ] as const) {
             const opt = document.createElement("option");
             opt.value = val;
@@ -2050,12 +2198,16 @@ export function openConfigModal(
         opts: {
             getUserStyle: () => ControllerStyle;
             onStyleSwapped: () => void;
+            /** Wird aufgerufen wenn sich die Menge der verbundenen Gamepad-IDs
+             *  aendert (Connect/Disconnect) — fuettert das Controller-Dropdown. */
+            onPadsChanged?: (ids: string[]) => void;
         },
     ): () => void {
         let cancelled = false;
         let rafId: number | null = null;
         let lastConnectedId: string | null = null;
         let lastStatusKey: string | null = null;
+        let lastPadIdsKey: string | null = null;
 
         const setStatus = (id: string | null, hint: string | null) => {
             const key = (id ?? "") + "|" + (hint ?? "");
@@ -2079,6 +2231,17 @@ export function openConfigModal(
                 : [];
             const gp = pads.find((p): p is Gamepad => !!p) ?? null;
 
+            // Verbundene Pad-IDs verfolgen — bei Aenderung das Controller-
+            // Dropdown neu fuellen (Connect/Disconnect + schon-verbundene Pads).
+            if (opts.onPadsChanged) {
+                const ids = pads.filter((p): p is Gamepad => !!p).map((p) => p.id);
+                const key = ids.join("");
+                if (key !== lastPadIdsKey) {
+                    lastPadIdsKey = key;
+                    opts.onPadsChanged(ids);
+                }
+            }
+
             // Auto-Style: erkenntes Layout aus gamepad.id ableiten und das SVG
             // tauschen — nur wenn der User keinen manuellen Override gesetzt hat.
             const userStyle = opts.getUserStyle();
@@ -2101,6 +2264,9 @@ export function openConfigModal(
                     { idx: 4, name: "l1" }, { idx: 5, name: "r1" }, { idx: 6, name: "l2" }, { idx: 7, name: "r2" },
                     { idx: 8, name: "select" }, { idx: 9, name: "start" }, { idx: 10, name: "l3" }, { idx: 11, name: "r3" },
                     { idx: 12, name: "dpadUp" }, { idx: 13, name: "dpadDown" }, { idx: 14, name: "dpadLeft" }, { idx: 15, name: "dpadRight" },
+                    // Steam-Deck Back-Paddles. gp.buttons[i] kann hier undefined sein,
+                    // dann wird's still uebersprungen (pressed-Check faellt auf false).
+                    { idx: 16, name: "l4" }, { idx: 17, name: "r4" }, { idx: 18, name: "l5" }, { idx: 19, name: "r5" },
                 ];
                 for (const { idx, name } of buttonIndices) {
                     const shape = refs.buttonShapes.get(name);
@@ -2167,6 +2333,12 @@ export function openConfigModal(
         // Initial-Layout: einmal aktuelle Pads abfragen, davon erstes Layout
         // ableiten. Spaeter kann der Live-Loop auto-swappen.
         let userStyle: ControllerStyle = "auto";
+        // Vom User gewaehlter Controller fuer das aktuelle Profil (gamepad.id),
+        // null = Automatik. Wird beim Save persistiert. `lastKnownPadIds` cacht
+        // die zuletzt vom Live-Loop gemeldeten verbundenen Pads, damit
+        // renderForProfile das Dropdown ohne eigene Pad-Abfrage neu fuellen kann.
+        let userGamepadId: string | null = null;
+        let lastKnownPadIds: string[] = [];
         const initialDetected: ControllerVisualStyle = (() => {
             const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
             const gp = pads.find((p): p is Gamepad => !!p) ?? null;
@@ -2209,9 +2381,22 @@ export function openConfigModal(
         };
         wireSvgListeners();
 
-        // Style-Dropdown: User kann Auto/PS/Xbox waehlen. Bei Auto erkennt der
-        // Live-Loop selbststaendig und tauscht; bei manueller Wahl wird sofort
-        // geswappt und die Auto-Erkennung pausiert.
+        // Paddle-Section-Visibility folgt dem effektiv gerenderten Style — nur
+        // bei "steamdeck" sichtbar. Bindings bleiben aber im Override stehen,
+        // auch wenn der User zwischenzeitlich auf PS/Xbox wechselt.
+        //
+        // `paddleSection` wird weiter unten erzeugt — wir muessen die Function
+        // hier aber schon referenzieren (Style-Dropdown-Handler unten + spaeter
+        // Live-Loop). JavaScript-Closure schaut die Bindung erst beim Aufruf
+        // nach, nicht beim Definieren — der `let` hier ist nur ein Forward-
+        // Reference-Slot. Initialer Sync passiert direkt nach `paddleSection`-
+        // Anlage (sonst TDZ-Error).
+        let syncPaddleVisibility: () => void = () => { /* noop bis paddleSection da ist */ };
+
+        // Style-Dropdown: User kann Auto/PS/Xbox/Steam-Deck waehlen. Bei Auto
+        // erkennt der Live-Loop selbststaendig und tauscht; bei manueller Wahl
+        // wird sofort geswappt und die Auto-Erkennung pausiert. Der gewaehlte
+        // Wert wird beim Save mit ins Profil persistiert (siehe Save-Btn).
         svgRefs.styleSelectEl.addEventListener("change", () => {
             userStyle = svgRefs.styleSelectEl.value as ControllerStyle;
             const target: ControllerVisualStyle = userStyle === "auto"
@@ -2224,13 +2409,17 @@ export function openConfigModal(
             if (applyControllerStyle(svgRefs, target)) {
                 wireSvgListeners();
             }
+            syncPaddleVisibility();
         });
 
         // Profile dropdown
         const profiles = (await window.api.profilesList?.()) as Array<{
             id: string;
             name: string;
-            controller?: { buttons?: ControllerButtonOverride };
+            controller?: {
+                buttons?: ControllerButtonOverride;
+                style?: ControllerStyle;
+            };
         }>;
         if (!profiles || profiles.length === 0) {
             controllerPane.append(el("div", "ctrlEmpty", t("controller.noProfiles" as TranslationKey)));
@@ -2322,7 +2511,142 @@ export function openConfigModal(
         bufferRow.append(bufferSelect);
         controllerPane.append(bufferRow);
 
+        // Controller-Auswahl: welcher physische Controller dieses Profil
+        // steuert. "" = Automatik (erster verbundener Pad). Sonst der
+        // gamepad.id-String. Wird beim Save mit ins Profil persistiert
+        // (analog zum Style-Dropdown). Use-Case: zweites Session-Fenster
+        // gezielt mit einem zweiten Controller bedienen.
+        const gamepadRow = el("div", "ctrlProfileRow");
+        gamepadRow.append(el("span", "ctrlProfileLabel", t("controller.gamepad.label" as TranslationKey)));
+        const gamepadSelect = document.createElement("select");
+        gamepadSelect.className = "ctrlProfileSelect";
+        const refreshGamepadOptions = (ids: string[]) => {
+            const prev = gamepadSelect.value;
+            gamepadSelect.innerHTML = "";
+            const autoOpt = document.createElement("option");
+            autoOpt.value = "";
+            autoOpt.textContent = t("controller.gamepad.auto" as TranslationKey);
+            gamepadSelect.append(autoOpt);
+            const seen = new Set<string>();
+            for (const id of ids) {
+                if (!id || seen.has(id)) continue;
+                seen.add(id);
+                const opt = document.createElement("option");
+                opt.value = id;
+                opt.textContent = id;
+                gamepadSelect.append(opt);
+            }
+            // Gewaehlter Controller nicht (mehr) verbunden? Trotzdem als Option
+            // zeigen, damit die Profil-Auswahl sichtbar erhalten bleibt.
+            if (userGamepadId && !seen.has(userGamepadId)) {
+                const opt = document.createElement("option");
+                opt.value = userGamepadId;
+                opt.textContent = `${userGamepadId} ${t("controller.gamepad.disconnected" as TranslationKey)}`;
+                gamepadSelect.append(opt);
+            }
+            gamepadSelect.value = userGamepadId ?? prev ?? "";
+        };
+        gamepadSelect.addEventListener("change", () => {
+            userGamepadId = gamepadSelect.value || null;
+        });
+        refreshGamepadOptions([]);
+        gamepadRow.append(gamepadSelect);
+        controllerPane.append(gamepadRow);
+        controllerPane.append(el("div", "ctrlGamepadHint muted", t("controller.gamepad.hint" as TranslationKey)));
+
         controllerPane.append(el("div", "ctrlCalibrateHint", t("controller.calibrateHint" as TranslationKey)));
+
+        // Name-Slot-Kalibrierung: 8 Card-Slots im Stil der Button-Bindings.
+        // Identische Klick-Mechanik wie Action-Pad, aber pro Slot eigener Anker
+        // + eigener Debounce. Status wird live aus dem geladenen Profil-Cache
+        // gezogen; nach Kalibrierung emittiert Main `controller:nameSlot:updated`,
+        // worauf wir das passende Card neu zeichnen.
+        const nameSlotSection = el("div", "ctrlSection ctrlNameSlotSection");
+        nameSlotSection.append(el("div", "ctrlSectionTitle", t("controller.nameSlot.title" as TranslationKey)));
+        nameSlotSection.append(el("div", "ctrlCalibrateHint", t("controller.nameSlot.hint" as TranslationKey)));
+        const nameSlotGrid = el("div", "ctrlNameSlotGrid");
+        type SlotAnchor = { hAnchor: string; vAnchor: string; offsetX: number; offsetY: number };
+        const slotCards: HTMLElement[] = [];
+        const slotStatuses: HTMLElement[] = [];
+        const fmtAnchor = (a: SlotAnchor): string =>
+            `${a.vAnchor}-${a.hAnchor} `
+            + `(${a.offsetX >= 0 ? "+" : ""}${Math.round(a.offsetX)}, `
+            + `${a.offsetY >= 0 ? "+" : ""}${Math.round(a.offsetY)})`;
+        const renderSlotStatus = (i: number, anchor: SlotAnchor | null) => {
+            const statusEl = slotStatuses[i];
+            const card = slotCards[i];
+            if (!statusEl || !card) return;
+            if (anchor) {
+                statusEl.textContent = fmtAnchor(anchor);
+                statusEl.className = "ctrlCardBinding override";
+                card.classList.add("ctrlCardCalibrated");
+            } else {
+                statusEl.textContent = t("controller.nameSlot.notCalibrated" as TranslationKey);
+                statusEl.className = "ctrlCardBinding unbound";
+                card.classList.remove("ctrlCardCalibrated");
+            }
+        };
+        for (let i = 0; i < 8; i++) {
+            const card = el("div", "ctrlCard ctrlNameSlotCard");
+            slotCards.push(card);
+
+            const symbol = el("div", "ctrlSymbol", String(i + 1));
+            const info = el("div", "ctrlCardInfo");
+            const name = el("div", "ctrlCardName", t(`controller.nameSlot.calibrate.${i + 1}` as TranslationKey));
+            const status = el("div", "ctrlCardBinding unbound", t("controller.nameSlot.notCalibrated" as TranslationKey));
+            slotStatuses.push(status);
+            info.append(name, status);
+
+            const actions = el("div", "ctrlCardActions");
+            const calBtn = el("button", "ctrlBtn ctrlNameSlotBtn", t("controller.nameSlot.calibrateAction" as TranslationKey));
+            (calBtn as HTMLButtonElement).type = "button";
+            calBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const ctrlApi = (window as unknown as {
+                    controllerApi?: { requestCalibrate?: (slot: number, profileId?: string) => void };
+                }).controllerApi;
+                if (!ctrlApi?.requestCalibrate) {
+                    showToast(t("controller.nameSlot.unavailable" as TranslationKey), "error");
+                    return;
+                }
+                if (!currentControllerProfileId) {
+                    showToast(t("controller.nameSlot.noProfile" as TranslationKey), "error");
+                    return;
+                }
+                ctrlApi.requestCalibrate(i, currentControllerProfileId);
+            });
+            actions.append(calBtn);
+
+            card.append(symbol, info, actions);
+            nameSlotGrid.append(card);
+        }
+        nameSlotSection.append(nameSlotGrid);
+        controllerPane.append(nameSlotSection);
+
+        /** Vom renderForProfile aufgerufen, wenn ein Profil ausgewaehlt wird:
+         *  liest dessen `nameSlots`-Array und aktualisiert alle 8 Slot-Cards. */
+        const refreshSlotStatuses = (slots: Array<SlotAnchor | null> | undefined): void => {
+            for (let i = 0; i < 8; i++) {
+                renderSlotStatus(i, slots?.[i] ?? null);
+            }
+        };
+        // Wird unten in renderForProfile aufgerufen — als Variable hier
+        // im Closure-Scope hochziehen, damit der Listener gleich Bescheid weiss.
+        let currentControllerNameSlots: Array<SlotAnchor | null> = [];
+
+        // Live-Update: nach Kalibrierung emittiert Main ein IPC-Event mit dem
+        // neuen Anker. Wir matchen das Profile und aktualisieren den Slot-Card.
+        const ctrlApiBoot = (window as unknown as {
+            controllerApi?: {
+                onNameSlotUpdated?: (handler: (data: { profileId: string; slot: number; anchor: SlotAnchor }) => void) => () => void;
+            };
+        }).controllerApi;
+        ctrlApiBoot?.onNameSlotUpdated?.((data) => {
+            if (data.profileId !== currentControllerProfileId) return;
+            while (currentControllerNameSlots.length <= data.slot) currentControllerNameSlots.push(null);
+            currentControllerNameSlots[data.slot] = data.anchor;
+            renderSlotStatus(data.slot, data.anchor);
+        });
 
         // Spatial-Layout: 3 Spalten — links D-Pad + L3, mitte (Top-Strip mit
         // Triggers/Shoulders/System + SVG-Diagramm), rechts Face-Buttons + R3.
@@ -2361,6 +2685,25 @@ export function openConfigModal(
         spatialLayout.append(leftCol, centerCol, rightCol);
         controllerPane.append(spatialLayout);
 
+        // Steam-Deck Back-Paddles in eigener Reihe unter dem Spatial-Layout.
+        // Wird nur bei Style "steamdeck" eingeblendet — Bindings bleiben aber
+        // auch bei Style-Wechsel im Profile-Override stehen (analog zur
+        // Modifier-Toggle-UX).
+        const paddleSection = el("div", "ctrlPaddleSection ctrlPaddleGroupHidden");
+        paddleSection.append(el("div", "ctrlSpatialGroupTitle", t("controller.section.paddles" as TranslationKey)));
+        paddleSection.append(el("div", "ctrlPaddleHint muted", t("controller.deck.paddlesOnly" as TranslationKey)));
+        const paddleGroupInner = el("div", "ctrlSpatialGroupInner ctrlPaddleGroupInner");
+        paddleSection.append(paddleGroupInner);
+        controllerPane.append(paddleSection);
+
+        // Echte Sync-Function jetzt einsetzen — paddleSection existiert ab hier.
+        // Initial-Sync direkt im Anschluss, damit Auto-Detect-Deck die Section
+        // sofort einblendet (wenn der User mit verbundenem Deck den Tab oeffnet).
+        syncPaddleVisibility = () => {
+            paddleSection.classList.toggle("ctrlPaddleGroupHidden", svgRefs.effectiveStyle !== "steamdeck");
+        };
+        syncPaddleVisibility();
+
         // Reihenfolge fuer das Top-Strip-Subgrid (CSS positioniert die einzelnen
         // Cards via [data-button="..."] in 2 Reihen). Hier reicht die DOM-Order
         // wie aufgelistet.
@@ -2381,8 +2724,15 @@ export function openConfigModal(
             { container: faceGroup,   button: "b" },
             { container: faceGroup,   button: "a" },
             { container: rstickGroup, button: "r3" },
+            // Steam-Deck Back-Paddles. Cards werden immer erzeugt (Bindings
+            // bleiben im Override), Sichtbarkeit ueber `ctrlPaddleGroupHidden`
+            // an paddleSection toggelt.
+            { container: paddleGroupInner, button: "l5" },
+            { container: paddleGroupInner, button: "l4" },
+            { container: paddleGroupInner, button: "r4" },
+            { container: paddleGroupInner, button: "r5" },
         ];
-        const groupContainers = [topStrip, dpadGroup, lstickGroup, faceGroup, rstickGroup];
+        const groupContainers = [topStrip, dpadGroup, lstickGroup, faceGroup, rstickGroup, paddleGroupInner];
 
         // ── Modifier-UI ──────────────────────────────────────────────────────
         // Toggle pro Schulter (L1/R1/L2/R2). Bei "on" wird die Binding-Reihe
@@ -2549,6 +2899,28 @@ export function openConfigModal(
         const renderForProfile = (profileId: string) => {
             const p = profiles.find((x) => x.id === profileId);
             currentControllerOverride = { ...(p?.controller?.buttons ?? {}) };
+            const rawSlots = (p as { controller?: { nameSlots?: Array<SlotAnchor | null> } } | undefined)?.controller?.nameSlots;
+            currentControllerNameSlots = Array.isArray(rawSlots) ? rawSlots.slice() : [];
+            refreshSlotStatuses(currentControllerNameSlots);
+            // Style aus dem Profil laden — Dropdown + SVG entsprechend setzen.
+            // Auto-Detect ueberschreibt das nur wenn der User explizit auto
+            // gewaehlt hat (Standard-Default).
+            const savedStyle = p?.controller?.style;
+            if (savedStyle === "auto" || savedStyle === "ps" || savedStyle === "xbox" || savedStyle === "steamdeck") {
+                userStyle = savedStyle;
+                svgRefs.styleSelectEl.value = savedStyle;
+                const target: ControllerVisualStyle = savedStyle === "auto"
+                    ? (() => {
+                        const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+                        const gp = pads.find((pad): pad is Gamepad => !!pad) ?? null;
+                        return gp ? detectControllerStyle(gp.id) : "ps";
+                    })()
+                    : savedStyle;
+                if (applyControllerStyle(svgRefs, target)) {
+                    wireSvgListeners();
+                }
+                syncPaddleVisibility();
+            }
             // Modifier deep-clonen damit die Bearbeitung nicht in den Profile-
             // List-Cache zurueckschlaegt. Beide Formate akzeptieren: das neue
             // { enabled, buttons } und das alte flache { y, b, ... }, falls
@@ -2580,6 +2952,9 @@ export function openConfigModal(
             }
             rebuildModifierPanel();
             refreshBufferOptions(profileId);
+            // Controller-Auswahl des Profils laden und Dropdown neu fuellen.
+            userGamepadId = (p as { controller?: { gamepadId?: string | null } } | undefined)?.controller?.gamepadId ?? null;
+            refreshGamepadOptions(lastKnownPadIds);
         };
 
         const buildButtonCard = (btnKey: ControllerButtonName): HTMLElement => {
@@ -2877,11 +3252,35 @@ export function openConfigModal(
             if (!currentControllerProfileId) return;
             saveBtn.disabled = true;
             try {
+                // Icons aus dem Profile-Cache mit in den Modifier-Save reinmergen
+                // — sonst killt der shallow-merge im Backend (store.ts:434)
+                // die zuvor via setIcon-IPC gesetzten modifier.<slot>.icons:
+                // patch.controller.modifiers ersetzt p.controller.modifiers
+                // wholesale. Wir bauen modifiers daher aus currentControllerModifiers
+                // (enabled+buttons) + Icons aus dem aktuellen Profil-Cache zusammen.
+                const cachedProfile = profiles.find((p) => p.id === currentControllerProfileId) as
+                    | { controller?: { icons?: Record<string, string>; modifiers?: Record<string, { icons?: Record<string, string> }> } }
+                    | undefined;
+                const modifiersWithIcons: Record<string, unknown> = {};
+                for (const slot of ["l1", "r1", "l2", "r2"] as const) {
+                    const layerState = currentControllerModifiers[slot];
+                    const cachedIcons = cachedProfile?.controller?.modifiers?.[slot]?.icons;
+                    if (!layerState && !cachedIcons) continue;
+                    const merged: Record<string, unknown> = { ...(layerState ?? {}) };
+                    if (cachedIcons && Object.keys(cachedIcons).length > 0) {
+                        merged.icons = cachedIcons;
+                    }
+                    modifiersWithIcons[slot] = merged;
+                }
+                const baseIcons = cachedProfile?.controller?.icons;
                 await window.api.profilesUpdate?.({
                     id: currentControllerProfileId,
                     controller: {
                         buttons: currentControllerOverride,
-                        modifiers: currentControllerModifiers,
+                        modifiers: modifiersWithIcons,
+                        ...(baseIcons && Object.keys(baseIcons).length > 0 ? { icons: baseIcons } : {}),
+                        style: userStyle,
+                        gamepadId: userGamepadId,
                     },
                 } as unknown as Parameters<NonNullable<typeof window.api.profilesUpdate>>[0]);
                 const ctrlApi = (window as unknown as { controllerApi?: { reloadMapping: (id: string) => void } }).controllerApi;
@@ -2937,7 +3336,16 @@ export function openConfigModal(
         // Hover-Listener neu binden.
         controllerLiveCleanup = startControllerLiveLoop(svgRefs, {
             getUserStyle: () => userStyle,
-            onStyleSwapped: () => wireSvgListeners(),
+            onStyleSwapped: () => {
+                wireSvgListeners();
+                // Auto-Detect kann auf "steamdeck" springen wenn Deck verbunden
+                // wird — Paddle-Section sofort einblenden.
+                syncPaddleVisibility();
+            },
+            onPadsChanged: (ids) => {
+                lastKnownPadIds = ids;
+                refreshGamepadOptions(ids);
+            },
         });
     }
 
@@ -3077,6 +3485,7 @@ export function openConfigModal(
             controllerLiveCleanup();
             controllerLiveCleanup = null;
         }
+        popScope(overlay);
         overlay.remove();
         document.removeEventListener("keydown", onKey);
         const currentHex = isTabActiveColorManual ? lastTabActiveHex : null;
@@ -3332,6 +3741,8 @@ export function openConfigModal(
         : "client.display";
     selectSidebarItem(initialSidebar);
     document.body.append(overlay);
+    // Controller-Navigation auf das Modal eingrenzen (Focus-Trap); ◯ schließt.
+    pushScope({ el: overlay, onBack: () => close() });
 
 
 }

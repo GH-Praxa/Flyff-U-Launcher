@@ -5,7 +5,7 @@
  * EXP-Tracker, Questlog, Buff-Wecker are loaded as plugins from userData/plugins/
  */
 
-import { app, BrowserWindow, Menu, session, ipcMain, globalShortcut, screen, webContents } from "electron";
+import { app, BrowserWindow, Menu, session, ipcMain, globalShortcut, screen, webContents, type WebContents } from "electron";
 import path from "path";
 import { execSync } from "child_process";
 import squirrelStartup from "electron-squirrel-startup";
@@ -50,10 +50,11 @@ import { registerMainIpc } from "./main/ipc/registerMainIpc";
 import type { ExtraWindowInfo, ExtraRowInfo } from "./main/ipc/handlers/memory";
 import { registerPluginHandlers } from "./main/ipc/handlers/plugins";
 import { registerControllerHandlers } from "./main/ipc/handlers/controller";
-import { createControllerInputRouter, DEFAULT_BUTTON_MAPPING, resolveButtonMapping, type ControllerButtonMapping, type ModifierSlot } from "./main/controller/inputRouter";
+import { createControllerInputRouter, DEFAULT_BUTTON_MAPPING, STEAMDECK_BUTTON_MAPPING, resolveButtonMapping, type ControllerButtonMapping, type ModifierSlot } from "./main/controller/inputRouter";
 import { createSafeHandler } from "./main/ipc/common";
 import { applyCSP, getCSPNonce } from "./main/security/harden";
-import { logInfo, logErr, logWarn, setLogListener } from "./shared/logger";
+import { logInfo, logErr, logWarn, setLogListener, initFileLogging } from "./shared/logger";
+import { startLinuxGamepadReader } from "./main/controller/linuxGamepadReader";
 import { createCoreServices } from "./main/coreServices";
 import { createClientSettingsStore } from "./main/clientSettings/store";
 import { createServiceRegistry } from "./main/plugin/serviceRegistry";
@@ -64,6 +65,8 @@ import { URLS, TIMINGS, LAYOUT } from "./shared/constants";
 import { createSidePanelButtonController } from "./main/windows/sidePanelButtonController";
 import { createRoiVisibilityStore } from "./main/roi/roiVisibilityStore";
 import { DEFAULT_LOCALE, type ClientSettings, type Locale } from "./shared/schemas";
+import { translate } from "./i18n/translations";
+import { injectToast } from "./main/ui/toastInjector";
 import { DEFAULT_HOTKEYS, normalizeHotkeySettings } from "./shared/hotkeys";
 import { loadDebugConfig, debugLog } from "./main/debugConfig";
 import { hasPendingMigrations, runMigrations } from "./main/migration/migrationRunner";
@@ -123,6 +126,17 @@ let launcherSize = normalizeLauncherSize();
 // ============================================================================
 
 app.whenReady().then(async () => {
+    // Persistente Logs: alles unter <userData>/launcher.log, frisch pro Start.
+    // Nuetzlich fuer Bug-Reports — User schickt das File statt Terminal copy/paste.
+    try {
+        const logPath = `${app.getPath("userData")}/launcher.log`;
+        initFileLogging(logPath);
+        logInfo(`File-Logging aktiv: ${logPath}`, "Main");
+    } catch (err) {
+        // Wenn File-Logging nicht startet, weiter ohne — kein Hard-Fail.
+        console.error("initFileLogging failed:", err);
+    }
+
     setLogListener((entry) => {
         for (const win of BrowserWindow.getAllWindows()) {
             if (!win.isDestroyed()) {
@@ -193,8 +207,34 @@ app.whenReady().then(async () => {
     // pro Frame).
     const webContentsToProfile = new Map<number, string>();
     const actionPadAnchors = new Map<string, import("./main/controller/inputRouter").ActionPadAnchor>();
+    /** Pro Profil ein Array fuer die 8 Name-Slot-Anker (Index = Slot 0..7).
+     *  `null` an Position = Slot nicht kalibriert. Wird beim Initial-Load und
+     *  beim Calibrate-IPC gepflegt. */
+    const nameSlotAnchors = new Map<string, Array<import("./main/controller/inputRouter").ActionPadAnchor | null>>();
 
     // Create core services
+    // Buffer-Forward-Ziele pro Profil — wird unten gefuellt. Vorgezogen,
+    // damit der `getInputActiveProfile`-Closure unten die Map referenzieren
+    // kann (Lazy-Lookup zur Call-Zeit).
+    const bufferTargets = new Map<string, string>();
+
+    /**
+     * Liefert das fuer Gamepad-Input "primaere" Profil. Aktuell einfach
+     * sessionActiveId durchreichen — der User soll explizit kontrollieren
+     * koennen, welcher Tab Gamepad-Input bekommt (per Tab-Switch oder Klick).
+     *
+     * Frueher: hier wurde Buffer-Target zu Source umgemappt, damit Klicks auf
+     * den RM-Tab den Forward-Workflow nicht zerstoeren. Das hat aber den
+     * legitimen Use-Case "User will RM direkt mit dem Gamepad steuern"
+     * unmoeglich gemacht. Spurious-Polling vom CDP-Attach-Focus-Event wird
+     * bereits durch das Preload-Polling-Gate (session:setActive) verhindert
+     * — nur der active Tab pollt. Diese hier zusaetzliche Schicht ist
+     * dadurch redundant.
+     */
+    const getInputActiveProfile = (sessionActiveId: string | null): string | null => {
+        return sessionActiveId;
+    };
+
     const services = createCoreServices({
         preloadPath,
         loadView,
@@ -209,33 +249,18 @@ app.whenReady().then(async () => {
         unregisterWebContentsProfile: (wcId) => {
             webContentsToProfile.delete(wcId);
         },
+        getInputActiveProfile,
     });
 
-    // Initial-Befuellung der Caches aus den persistenten Profilen — beim ersten
-    // Frame-Eingang sind Anker und Mapping dann sofort verfuegbar.
-    void services.profiles.list().then((profiles) => {
-        for (const p of profiles) {
-            // Cast via unknown — reloadModifierMappingsForProfile macht
-            // selber Format-Detection (alt vs. neuer Layer-Wrapper).
-            const c = (p as unknown as {
-                controller?: {
-                    actionPad?: {
-                        hAnchor: "left" | "center" | "right";
-                        vAnchor: "top" | "middle" | "bottom";
-                        offsetX: number;
-                        offsetY: number;
-                    } | null;
-                    buttons?: Record<string, string | null | undefined>;
-                    modifiers?: Record<string, unknown>;
-                };
-            }).controller;
-            if (c?.actionPad) actionPadAnchors.set(p.id, c.actionPad);
-            if (c?.buttons) reloadButtonMappingsForProfile(p.id, c.buttons);
-            if (c?.modifiers) reloadModifierMappingsForProfile(p.id, c.modifiers);
-            reloadIconsForProfile(p.id, c);
-            reloadBufferTargetForProfile(p.id, (c as { bufferTargetProfileId?: unknown } | undefined)?.bufferTargetProfileId);
-        }
-    }).catch(() => { /* ignore */ });
+    // ACHTUNG: Initial-Befuellung der Profile-Caches (actionPadAnchors,
+    // buttonMappings, modifierMappings, iconCache, bufferTargets) wurde nach
+    // unten verschoben — direkt nach den jeweiligen const-Definitionen.
+    // Frueher hatte das Promise hier eine TDZ-Race: wenn services.profiles.list()
+    // schneller resolved als der erste `await` weiter unten, lief der .then()-
+    // Callback BEVOR die `bufferTargets`-Map (und die reload*-Funktionen)
+    // ueberhaupt deklariert waren → ReferenceError → vom .catch() verschluckt
+    // → bufferTargets blieb leer bis zum ersten manuellen "Speichern" im
+    // Controller-Menue. Symptom: Ringmaster-Forward greift erst nach Save.
     const roiVisibilityStore = createRoiVisibilityStore();
 
     sessionWindowController = services.sessionWindow;
@@ -448,6 +473,31 @@ app.whenReady().then(async () => {
     // IPC: Side Panel toggle
     ipcMain.on("sidepanel:toggle", (_e, payload) => {
         void sidePanelMgr.toggle(payload as { focusTab?: string; profileId?: string });
+    });
+
+    // IPC: Launcher-Settings auf eine bestimmte Section oeffnen. Wird zB vom
+    // Controller-Button in der Session-Window-Tab-Leiste benutzt — der User
+    // ist im Game-Tab und will direkt zur Controller-Belegung.
+    ipcMain.on("launcher:openConfigSection", (_e, payload) => {
+        try {
+            const section = (payload as { section?: unknown })?.section;
+            const compact = (payload as { compact?: unknown })?.compact === true;
+            if (!launcherWindow || launcherWindow.isDestroyed()) {
+                logWarn("launcher:openConfigSection: launcherWindow nicht verfuegbar", "Main");
+                return;
+            }
+            // Launcher in den Vordergrund holen — sonst hat der User keine
+            // Sichtbarkeit auf das gerade geoeffnete Modal.
+            if (launcherWindow.isMinimized()) launcherWindow.restore();
+            launcherWindow.show();
+            launcherWindow.focus();
+            // WICHTIG: compact-Flag mit durchreichen — sonst oeffnet sich das
+            // volle Settings-Modal mit Sidebar statt einer fokussierten
+            // Controller-Ansicht.
+            launcherWindow.webContents.send("launcher:openConfigSection", { section, compact });
+        } catch (err) {
+            logErr(err, "launcher:openConfigSection");
+        }
     });
 
     // IPC: Hotkey pause/resume during recording
@@ -711,20 +761,71 @@ app.whenReady().then(async () => {
     // Injection am Chromium-Input-Layer DIREKT in der Sender-WebContents.
     // Pre2: pro-Profil-Action-Pad-Anker + Lehrmodus via Strg+Shift+F1.
     // ====================================================================
-    const controllerToast = (msg: string, tone: "info" | "success" | "error" = "info") => {
+    // Zeigt einen Toast auf ALLEN aktiven Fenstern an: Launcher, Session-Fenster
+    // und Instance-/Spiel-Fenster. Pro Fenster genau eine WebContents — bei
+    // Session-Fenstern der sichtbare aktive Tab (nicht jeder BrowserView).
+    // Side-Panel und transparente ROI-Overlays sind bewusst ausgenommen.
+    // Injektion via executeJavaScript, damit der Toast auch auf der
+    // Flyff-Spielseite erscheint, die keinen eigenen Renderer/Toast besitzt.
+    const broadcastToast = (msg: string, tone: "info" | "success" | "error" = "info") => {
+        const seen = new Set<number>();
+        const send = (wc: WebContents | null | undefined) => {
+            if (!wc || wc.isDestroyed() || seen.has(wc.id)) return;
+            seen.add(wc.id);
+            injectToast(wc, msg, tone, toastDurationMs);
+        };
+
+        // Launcher-Hauptfenster
+        if (launcherWindow && !launcherWindow.isDestroyed()) send(launcherWindow.webContents);
+
+        // Session-Fenster: aktiver Tab → genau 1× pro Fenster
+        const sessionWindowIds = new Set<number>();
+        const visitSession = (
+            win: BrowserWindow | null | undefined,
+            activeView: { webContents: WebContents } | null,
+        ) => {
+            if (!win || win.isDestroyed()) return;
+            sessionWindowIds.add(win.id);
+            if (activeView && !activeView.webContents.isDestroyed()) send(activeView.webContents);
+            else send(win.webContents);
+        };
         try {
-            launcherWindow?.webContents.send("toast:show", { message: msg, tone, ttlMs: toastDurationMs });
-        } catch { /* ignore */ }
+            visitSession(services.sessionWindow.get?.(), services.sessionTabs.getActiveView?.() ?? null);
+        } catch (err) { logErr(err, "broadcastToast.primarySession"); }
+        try {
+            for (const entry of services.sessionRegistry.list()) {
+                visitSession(entry.window, entry.tabsManager.getActiveView?.() ?? null);
+            }
+        } catch (err) { logErr(err, "broadcastToast.sessionRegistry"); }
+
+        // Uebrige Top-Level-Fenster = Instance-/Spiel-Fenster.
+        // Ausgeschlossen: Launcher, Session-Fenster, Side-Panel, ROI-Overlays.
+        const excluded = new Set<number>(sessionWindowIds);
+        if (launcherWindow && !launcherWindow.isDestroyed()) excluded.add(launcherWindow.id);
+        const spWin = sidePanelMgr?.state.window;
+        if (spWin && !spWin.isDestroyed()) excluded.add(spWin.id);
+        const roiOverlay = overlaysMgr.state.roiOverlayWindow;
+        if (roiOverlay && !roiOverlay.isDestroyed()) excluded.add(roiOverlay.id);
+        const roiSupportOverlay = overlaysMgr.state.roiSupportOverlayWindow;
+        if (roiSupportOverlay && !roiSupportOverlay.isDestroyed()) excluded.add(roiSupportOverlay.id);
+        for (const win of BrowserWindow.getAllWindows()) {
+            if (win.isDestroyed() || excluded.has(win.id)) continue;
+            send(win.webContents);
+        }
+    };
+
+    // Controller-Meldungen werden auf allen aktiven Fenstern angezeigt.
+    const controllerToast = (msg: string, tone: "info" | "success" | "error" = "info") => {
+        broadcastToast(msg, tone);
     };
     // Cache fuer Per-Profil-Button-Mapping (Override → vollstaendiges Mapping).
     // Wird beim Start aus den Profilen befuellt und bei jedem Profil-Update
     // aktualisiert.
     const buttonMappings = new Map<string, ControllerButtonMapping>();
 
-    // Buffer-Forward-Ziele pro Profil: profileId → Ziel-profileId. Wird vom
-    // Router via getBufferTarget(sender) konsumiert wenn @forwardHold aktiv.
-    // Update bei jedem Profil-Save analog zu buttonMappings.
-    const bufferTargets = new Map<string, string>();
+    // `bufferTargets` ist OBEN (vor createCoreServices) bereits deklariert,
+    // damit der `getInputActiveProfile`-Closure dort drauf zugreifen kann.
+    // Hier nur noch die Reload-Logik.
     const reloadBufferTargetForProfile = (profileId: string, targetId: unknown) => {
         if (typeof targetId === "string" && targetId.length > 0 && targetId !== profileId) {
             bufferTargets.set(profileId, targetId);
@@ -732,9 +833,36 @@ app.whenReady().then(async () => {
             bufferTargets.delete(profileId);
         }
     };
-    const reloadButtonMappingsForProfile = (profileId: string, override: unknown) => {
+
+    // Bevorzugter Controller pro Profil: profileId → gamepad.id. Wird im
+    // Overlay-Payload (`preferredGamepadId`) an den Preload gepusht, der dann
+    // gezielt diesen Pad pollt statt blind den ersten verbundenen. Leerer/
+    // fehlender Eintrag = Automatik (erster Pad). Update bei jedem Profil-Save.
+    const gamepadIds = new Map<string, string>();
+    const reloadGamepadIdForProfile = (profileId: string, gamepadId: unknown) => {
+        if (typeof gamepadId === "string" && gamepadId.length > 0) {
+            gamepadIds.set(profileId, gamepadId);
+        } else {
+            gamepadIds.delete(profileId);
+        }
+    };
+    /**
+     * Style bestimmt die Default-Belegung: "steamdeck" → STEAMDECK_BUTTON_MAPPING
+     * (Paddles auf Skill-Slots 4–7 vorbelegt), alles andere → DEFAULT_BUTTON_MAPPING.
+     * Ohne Override muss trotzdem ein Eintrag in buttonMappings stehen, damit
+     * Deck-User die Paddle-Defaults bekommen, auch wenn sie nichts manuell
+     * belegt haben.
+     */
+    const baseMappingForStyle = (style: unknown): ControllerButtonMapping => {
+        return style === "steamdeck" ? STEAMDECK_BUTTON_MAPPING : DEFAULT_BUTTON_MAPPING;
+    };
+    const reloadButtonMappingsForProfile = (profileId: string, override: unknown, style: unknown) => {
+        const base = baseMappingForStyle(style);
         if (override && typeof override === "object") {
-            buttonMappings.set(profileId, resolveButtonMapping(override as Record<string, string | null | undefined>));
+            buttonMappings.set(profileId, resolveButtonMapping(override as Record<string, string | null | undefined>, base));
+        }
+        else if (style === "steamdeck") {
+            buttonMappings.set(profileId, { ...base });
         }
         else {
             buttonMappings.delete(profileId);
@@ -799,6 +927,13 @@ app.whenReady().then(async () => {
             if (!profileId) return null;
             return actionPadAnchors.get(profileId) ?? null;
         },
+        getNameSlotAnchor: (sender, slot) => {
+            const profileId = webContentsToProfile.get(sender.id);
+            if (!profileId) return null;
+            const slots = nameSlotAnchors.get(profileId);
+            if (!slots) return null;
+            return slots[slot] ?? null;
+        },
         getButtonMapping: (sender) => {
             const profileId = webContentsToProfile.get(sender.id);
             if (!profileId) return DEFAULT_BUTTON_MAPPING;
@@ -809,6 +944,47 @@ app.whenReady().then(async () => {
             if (!profileId) return null;
             return modifierMappings.get(profileId)?.get(slot) ?? null;
         },
+        getViewportFor: (wc) => {
+            // Liefert die echte Viewport-Groesse einer WebContents (= die
+            // BrowserView-Bounds des entsprechenden Profils). Wird vom Router
+            // benoetigt damit Camera-Drag-Events an Forward-Target-Tabs mit
+            // korrekten Koordinaten dispatchen — sonst nutzt der Router die
+            // Frame-Viewport-Groesse des SENDERS, die in Split-Layouts vom
+            // Target abweichen kann.
+            const profileId = webContentsToProfile.get(wc.id);
+            if (!profileId) return null;
+            for (const entry of services.sessionRegistry.list()) {
+                const tm = entry.tabsManager as unknown as {
+                    hasLoadedProfile?: (id: string) => boolean;
+                    getBounds?: (id: string) => { width: number; height: number };
+                };
+                if (typeof tm.hasLoadedProfile === "function" && !tm.hasLoadedProfile(profileId)) continue;
+                if (typeof tm.getBounds !== "function") continue;
+                const bounds = tm.getBounds(profileId);
+                if (bounds && bounds.width > 0 && bounds.height > 0) {
+                    return { width: bounds.width, height: bounds.height };
+                }
+            }
+            return null;
+        },
+        isActiveSender: (sender) => {
+            // Frame-Filter: nur Frames vom input-active Profil akzeptieren.
+            // Wird via `getInputActiveProfile` aufgeloest — wenn sessionActiveId
+            // ein Buffer-Target ist (User-Klick auf RM in Multi-Layout o.ae.),
+            // mapped das auf den Source-Profile zurueck. Damit bleibt Main
+            // input-active auch wenn der User auf RM klickt.
+            const profileId = webContentsToProfile.get(sender.id);
+            if (!profileId) return false;
+            for (const entry of services.sessionRegistry.list()) {
+                const tm = entry.tabsManager as unknown as {
+                    getActiveId?: () => string | null;
+                };
+                if (typeof tm.getActiveId !== "function") continue;
+                const inputActive = getInputActiveProfile(tm.getActiveId() ?? null);
+                if (inputActive === profileId) return true;
+            }
+            return false;
+        },
         getBufferTarget: (sender) => {
             // Buffer-Forward-Ziel aufloesen: vom sender → Profil-ID →
             // Profil's `controller.bufferTargetProfileId` → Ziel-Profil-ID →
@@ -816,15 +992,25 @@ app.whenReady().then(async () => {
             // oder in einem anderen Window). Wenn nicht konfiguriert oder
             // Ziel nicht offen: null → Hold-Action no-op.
             const senderProfileId = webContentsToProfile.get(sender.id);
-            if (!senderProfileId) return null;
+            if (!senderProfileId) {
+                logWarn(`getBufferTarget: sender wcId=${sender.id} not in webContentsToProfile (registered=${webContentsToProfile.size})`, "Controller");
+                return null;
+            }
             const targetId = bufferTargets.get(senderProfileId);
-            if (!targetId) return null;
+            if (!targetId) {
+                logWarn(`getBufferTarget: profile ${senderProfileId} has no buffer target (cache size=${bufferTargets.size})`, "Controller");
+                return null;
+            }
             // Ziel-WebContents in der Reverse-Map suchen.
             for (const [wcId, profId] of webContentsToProfile.entries()) {
                 if (profId !== targetId) continue;
                 const wc = webContents.fromId(wcId);
-                if (wc && !wc.isDestroyed()) return wc;
+                if (wc && !wc.isDestroyed()) {
+                    logInfo(`getBufferTarget: ${senderProfileId} → ${targetId} (wcId=${wcId})`, "Controller");
+                    return wc;
+                }
             }
+            logWarn(`getBufferTarget: target profile ${targetId} has no live WebContents (registered=${webContentsToProfile.size})`, "Controller");
             return null;
         },
         onLauncherAction: (action, sender) => {
@@ -929,6 +1115,50 @@ app.whenReady().then(async () => {
         else modifierIcons.delete(profileId);
     };
 
+    // Initial-Befuellung der Profile-Caches — JETZT nach allen reload-Funktionen
+    // und Map-Definitionen (actionPadAnchors, buttonMappings, modifierMappings,
+    // controllerIcons, modifierIcons, bufferTargets). Frueher stand das Promise
+    // weiter oben → TDZ-Race wenn services.profiles.list() vor dem ersten
+    // await resolved → ReferenceError vom .catch() verschluckt → bufferTargets
+    // blieb leer bis "Speichern" im Controller-Menue → Ringmaster-Forward
+    // greift erst nach Save (Bug 1, v3.7.8 Fix).
+    void services.profiles.list().then((profiles) => {
+        logInfo(`Initial profile cache fill: ${profiles.length} profiles`, "Main");
+        for (const p of profiles) {
+            type AnchorShape = {
+                hAnchor: "left" | "center" | "right";
+                vAnchor: "top" | "middle" | "bottom";
+                offsetX: number;
+                offsetY: number;
+            };
+            const c = (p as unknown as {
+                controller?: {
+                    actionPad?: AnchorShape | null;
+                    nameSlots?: Array<AnchorShape | null>;
+                    buttons?: Record<string, string | null | undefined>;
+                    modifiers?: Record<string, unknown>;
+                    bufferTargetProfileId?: string | null;
+                    style?: string;
+                    gamepadId?: string | null;
+                };
+            }).controller;
+            if (c?.actionPad) actionPadAnchors.set(p.id, c.actionPad);
+            if (Array.isArray(c?.nameSlots) && c.nameSlots.length > 0) {
+                nameSlotAnchors.set(p.id, c.nameSlots.slice());
+            }
+            // Steam-Deck-Profile bekommen auch ohne expliziten Override ein
+            // Mapping (Paddle-Defaults). Daher unbedingt aufrufen, nicht nur
+            // wenn c?.buttons gesetzt ist.
+            reloadButtonMappingsForProfile(p.id, c?.buttons, c?.style);
+            if (c?.modifiers) reloadModifierMappingsForProfile(p.id, c.modifiers);
+            reloadIconsForProfile(p.id, c);
+            reloadBufferTargetForProfile(p.id, c?.bufferTargetProfileId);
+            reloadGamepadIdForProfile(p.id, c?.gamepadId);
+        }
+    }).catch((err) => {
+        logErr(err, "Profile cache init");
+    });
+
     const buildOverlayPayload = (profileId: string) => {
         const base = buttonMappings.get(profileId) ?? DEFAULT_BUTTON_MAPPING;
         const mod = modifierMappings.get(profileId);
@@ -936,6 +1166,10 @@ app.whenReady().then(async () => {
         const modIc = modifierIcons.get(profileId);
         return {
             enabled: true,
+            // Bevorzugter Controller fuer dieses Profil — der Preload-Polling-
+            // Loop waehlt gezielt den Pad mit diesem `gamepad.id`. null =
+            // Automatik (erster verbundener Pad).
+            preferredGamepadId: gamepadIds.get(profileId) ?? null,
             base: facesFromMapping(base),
             baseIcons: baseIc,
             modifiers: {
@@ -959,6 +1193,22 @@ app.whenReady().then(async () => {
             catch (err) { logErr(err, "controller:overlay:update"); }
         }
     };
+    // Overlay-Event-Relay: Mains Preload meldet Modifier-Wechsel und Face-
+    // Presses an Main. Bei aktivem Forward leiten wir das an die forwardTarget-
+    // WC weiter, damit RM's Overlay ebenfalls den Modifier-Layer zeigt und
+    // den gedrueckten Face-Slot blitzt — passend zu der Tatsache dass RM
+    // gerade die Inputs verarbeitet.
+    ipcMain.on("controller:overlayEvent", (event, payload) => {
+        try {
+            const target = controllerRouter.getActiveForwardTarget();
+            if (!target || target.isDestroyed()) return;
+            if (target.id === event.sender.id) return; // gleicher WC, kein Relay noetig
+            target.send("controller:overlayEvent:relay", payload);
+        } catch (err) {
+            logErr(err, "controller:overlayEvent");
+        }
+    });
+
     // Initial-Pull aus dem Preload (sendet sobald die WebContents laeuft).
     ipcMain.on("controller:overlay:request", (event) => {
         const profileId = webContentsToProfile.get(event.sender.id);
@@ -1194,19 +1444,31 @@ app.whenReady().then(async () => {
     // sofort beim Dropdown-Change — Cache ist innerhalb von ms aktualisiert,
     // kein Wartezeit auf den "Speichern"-Button.
     ipcMain.handle("controller:setBufferTarget", async (_event, payload: unknown): Promise<{ ok: boolean }> => {
-        if (!payload || typeof payload !== "object") return { ok: false };
+        if (!payload || typeof payload !== "object") {
+            logWarn("controller:setBufferTarget: invalid payload", "Main");
+            return { ok: false };
+        }
         const p = payload as Record<string, unknown>;
         const profileId = typeof p.profileId === "string" ? p.profileId : null;
         const targetId = typeof p.targetId === "string" && p.targetId.length > 0 ? p.targetId : null;
-        if (!profileId) return { ok: false };
+        if (!profileId) {
+            logWarn("controller:setBufferTarget: missing profileId", "Main");
+            return { ok: false };
+        }
         reloadBufferTargetForProfile(profileId, targetId);
+        logInfo(`controller:setBufferTarget profile=${profileId} target=${targetId ?? "null"} (cache size=${bufferTargets.size})`, "Main");
         return { ok: true };
     });
 
     registerControllerHandlers({
         router: controllerRouter,
         onControllerConnected: (info) => {
-            controllerToast(`Controller verbunden: ${info.id} (${info.mapping})`, "success");
+            controllerToast(
+                translate(clientLocale, "controller.toast.connected")
+                    .replace("{id}", info.id)
+                    .replace("{mapping}", info.mapping),
+                "success",
+            );
         },
         getProfileForWebContents: (wc) => webContentsToProfile.get(wc.id) ?? null,
         setActionPadAnchor: async (profileId, anchor) => {
@@ -1215,6 +1477,23 @@ app.whenReady().then(async () => {
                 id: profileId,
                 controller: { actionPad: anchor },
             } as Parameters<typeof services.profiles.update>[0]);
+        },
+        setNameSlotAnchor: async (profileId, slot, anchor) => {
+            const existing = nameSlotAnchors.get(profileId)?.slice() ?? [];
+            while (existing.length <= slot) existing.push(null);
+            existing[slot] = anchor;
+            nameSlotAnchors.set(profileId, existing);
+            await services.profiles.update({
+                id: profileId,
+                controller: { nameSlots: existing },
+            } as Parameters<typeof services.profiles.update>[0]);
+            // Renderer (Launcher + ggf. Session-Window) ueber den neuen Anker
+            // informieren, damit die Slot-Card-UI sofort aktualisiert.
+            try {
+                if (launcherWindow && !launcherWindow.isDestroyed()) {
+                    launcherWindow.webContents.send("controller:nameSlot:updated", { profileId, slot, anchor });
+                }
+            } catch { /* ignore */ }
         },
         reloadButtonMapping: async (profileId) => {
             const list = await services.profiles.list();
@@ -1225,18 +1504,71 @@ app.whenReady().then(async () => {
                     modifiers?: Record<string, unknown>;
                     icons?: unknown;
                     bufferTargetProfileId?: string | null;
+                    style?: string;
+                    gamepadId?: string | null;
                 };
             } | undefined)?.controller;
-            reloadButtonMappingsForProfile(profileId, c?.buttons);
+            reloadButtonMappingsForProfile(profileId, c?.buttons, c?.style);
             reloadModifierMappingsForProfile(profileId, c?.modifiers);
             reloadIconsForProfile(profileId, c);
             reloadBufferTargetForProfile(profileId, c?.bufferTargetProfileId);
+            reloadGamepadIdForProfile(profileId, c?.gamepadId);
             // Overlay aktualisieren — laufende Spiel-Views sehen die neuen
             // Bindings sofort, kein Reload noetig.
             pushOverlayToProfile(profileId);
         },
         notify: (msg, tone) => controllerToast(msg, tone),
     });
+
+    /**
+     * Trigger Action-Pad-/Name-Slot-Kalibrierung. Zwei Modi:
+     *   - `profileId === null`: an alle aktuell fokussierten Spiel-WCs (Global-
+     *     Shortcut-Pfad — User hat das Spiel im Vordergrund).
+     *   - `profileId` gesetzt: an alle Spiel-WCs, kein Fokus-Filter. Der
+     *     `profileId` wird im Start-Payload mitgeschickt; der Preload echot ihn
+     *     bei der erfassten Mauspositon zurueck. Damit ist es egal, in welcher
+     *     Profil-View der User klickt — Anker geht immer ans gewuenschte
+     *     Profil. Loest UX-Stolperfalle, wenn das Modal-Profil nicht das
+     *     gerade im Session-Window aktive Profil ist.
+     */
+    const dispatchCalibrate = (slot: number | null, profileId: string | null = null): number => {
+        if (webContentsToProfile.size === 0) {
+            controllerToast(
+                slot === null
+                    ? "Action-Pad-Lehrmodus: kein Spiel-Fenster offen"
+                    : `Slot-${slot + 1}-Lehrmodus: kein Spiel-Fenster offen`,
+                "error",
+            );
+            return 0;
+        }
+        let dispatched = 0;
+        for (const [wcId] of webContentsToProfile) {
+            const wc = webContents.fromId(wcId);
+            if (!wc || wc.isDestroyed()) continue;
+            if (profileId === null && !wc.isFocused()) continue;
+            const payload: Record<string, number | string> = {};
+            if (slot !== null) payload.slot = slot;
+            if (profileId !== null) payload.profileId = profileId;
+            wc.send("controller:calibrate:start", Object.keys(payload).length > 0 ? payload : undefined);
+            dispatched++;
+        }
+        if (dispatched === 0) {
+            controllerToast(
+                profileId !== null
+                    ? "Kalibrierung: kein Spiel-Fenster offen"
+                    : "Lehrmodus: bitte zuerst das Spiel-Fenster anklicken",
+                "error",
+            );
+            return 0;
+        }
+        controllerToast(
+            slot === null
+                ? "Lehrmodus aktiv — klicke auf das Action-Pad im Spiel (10 s)"
+                : `Lehrmodus aktiv — wechsle ins Spielfenster und klicke auf den Namen für Slot ${slot + 1} (10 s)`,
+            "info",
+        );
+        return dispatched;
+    };
 
     // Lehrmodus-Trigger: Strg+Shift+F1 schickt allen aktuell fokussierten
     // Flyff-WebContents ein controller:calibrate:start; der Preload fängt
@@ -1245,28 +1577,88 @@ app.whenReady().then(async () => {
     // keine, kommt eine Toast-Fehlermeldung.
     try {
         const ok = globalShortcut.register("Control+Shift+F1", () => {
-            if (webContentsToProfile.size === 0) {
-                controllerToast("Action-Pad-Lehrmodus: kein Spiel-Fenster offen", "error");
-                return;
-            }
-            let dispatched = 0;
-            for (const [wcId] of webContentsToProfile) {
-                const wc = webContents.fromId(wcId);
-                if (!wc || wc.isDestroyed()) continue;
-                if (!wc.isFocused()) continue;
-                wc.send("controller:calibrate:start");
-                dispatched++;
-            }
-            if (dispatched === 0) {
-                controllerToast("Lehrmodus: bitte zuerst das Spiel-Fenster anklicken", "error");
-                return;
-            }
-            controllerToast("Lehrmodus aktiv — klicke auf das Action-Pad im Spiel (10 s)", "info");
+            dispatchCalibrate(null);
         });
         if (!ok) logWarn("Failed to register Ctrl+Shift+F1 for action-pad calibration", "Controller");
     } catch (err) {
         logWarn(`globalShortcut.register failed: ${(err as Error).message}`, "Controller");
     }
+
+    // UI-Trigger fuer Slot-Kalibrierung (Renderer ruft per ipcRenderer.send).
+    // Payload: { slot?: 0..7, profileId?: string }.
+    // - `slot` fehlt = Action-Pad-Kalibrierung
+    // - `profileId` gesetzt = Ziel-WCs ueber Profil-Filter statt Fokus
+    // Linux-Native-Gamepad-Reader: liest `/dev/input/jsX` direkt im Main-
+    // Prozess, umgeht das Chromium-User-Activation-Gate fuer `navigator.
+    // getGamepads()`. Schon-gesteckte Controller sind dadurch sofort nach
+    // Launcher-Start verfuegbar, ohne Replug oder "Aufweck-Klick".
+    //
+    // Sender-WC-Strategie: jeder Frame braucht eine Ziel-WebContents. Wir
+    // nehmen den aktuell input-aktiven Session-Tab (wie bei Preload-Frames
+    // auch). Wenn kein Spiel-Tab offen ist → frame droppen.
+    if (process.platform === "linux") {
+        const findActiveSessionWc = (): Electron.WebContents | null => {
+            for (const entry of services.sessionRegistry.list()) {
+                const tm = entry.tabsManager as unknown as { getActiveId?: () => string | null };
+                if (typeof tm.getActiveId !== "function") continue;
+                const activeId = tm.getActiveId();
+                if (!activeId) continue;
+                for (const [wcId, pid] of webContentsToProfile) {
+                    if (pid !== activeId) continue;
+                    const wc = webContents.fromId(wcId);
+                    if (wc && !wc.isDestroyed()) return wc;
+                }
+            }
+            return null;
+        };
+        const stopReader = startLinuxGamepadReader({
+            onFrame: (frame) => {
+                const wc = findActiveSessionWc();
+                if (!wc) return; // kein Spiel-Tab → ignorieren
+                try {
+                    controllerRouter.handleFrame(frame, wc);
+                } catch (err) {
+                    logErr(err, "LinuxGamepad.handleFrame");
+                }
+            },
+            onConnected: (info) => {
+                controllerToast(
+                    translate(clientLocale, "controller.toast.connected")
+                        .replace("{id}", info.id)
+                        .replace("{mapping}", info.mapping),
+                    "success",
+                );
+            },
+            onDisconnected: () => {
+                logInfo("[LinuxGamepad] disconnected", "controller");
+            },
+            getViewportSize: () => {
+                // Router zieht die echten Bounds via getViewportFor, das hier
+                // ist nur Fallback. 1920×1080 ist ein vernuenftiger Default.
+                return { width: 1920, height: 1080 };
+            },
+        });
+        app.on("before-quit", () => { try { stopReader(); } catch { /* ignore */ } });
+    }
+
+    ipcMain.on("controller:requestCalibrate", (_event, payload) => {
+        try {
+            let slot: number | null = null;
+            let profileId: string | null = null;
+            if (payload && typeof payload === "object") {
+                const obj = payload as Record<string, unknown>;
+                if (typeof obj.slot === "number" && Number.isInteger(obj.slot) && obj.slot >= 0 && obj.slot < 8) {
+                    slot = obj.slot;
+                }
+                if (typeof obj.profileId === "string" && obj.profileId.length > 0) {
+                    profileId = obj.profileId;
+                }
+            }
+            dispatchCalibrate(slot, profileId);
+        } catch (err) {
+            logWarn(`controller:requestCalibrate failed: ${(err as Error).message}`, "Controller");
+        }
+    });
 
     // Initialize OCR system (load persisted timers, manual overrides)
     await ocrSystem.init();

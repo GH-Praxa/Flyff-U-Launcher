@@ -401,8 +401,6 @@
   box-shadow: 0 6px 18px rgba(0,0,0,0.28);
   margin-bottom: 8px;
   scroll-snap-align: none;
-  content-visibility: auto;
-  contain-intrinsic-size: 220px 100px;
 }
 
 
@@ -433,6 +431,7 @@
 
 .rowActions{
   display:flex;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
@@ -816,6 +815,64 @@
   height: 16px;
   border-radius: 4px;
   flex-shrink: 0;
+}
+
+.badge.serverBadge{
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.badge.launchModeBadge{
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #fff;
+}
+
+.badge.launchModeBadge.launchModeTabs{
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.badge.launchModeBadge.launchModeWindow{
+  background-color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.charListServerBadge{
+  font-size: 10px;
+  padding: 1px 6px;
+}
+
+.profileServerRow{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.profileServerLabel{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.serverSelect{
+  font-weight: 600;
+}
+
+.charServerSelect{
+  min-width: 110px;
 }
 
 .charListName{

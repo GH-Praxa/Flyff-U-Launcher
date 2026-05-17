@@ -298,13 +298,21 @@ function findMonsterByHp(maxHp, element, level) {
   // Narrow by level
   if (Number.isFinite(level) && level >= 1) {
     const lvlFiltered = candidates.filter((m) => m.level === level);
-    if (lvlFiltered.length > 0) return lvlFiltered[0];
+    if (lvlFiltered.length > 0 && new Set(lvlFiltered.map((m) => m.name)).size === 1) {
+      return lvlFiltered[0];
+    }
   }
 
-  // Still ambiguous → prefer exact HP match, then first by rank
+  // Still ambiguous → HP-Zwillinge wie Small Tigar / Captain Artrox haben
+  // identische HP UND Level — nur das Element trennt sie. Ohne verlaesslichen
+  // Element-Hint NICHT per Rang raten, sondern null liefern. Der Aufrufer
+  // faellt dann auf den vom Core aufgeloesten Monsternamen bzw. das zuletzt
+  // bekannte Monster zurueck.
   const exactHp = candidates.filter((m) => m.hp === maxHp);
-  if (exactHp.length > 0) return exactHp[0];
-  return candidates[0];
+  if (exactHp.length > 0 && new Set(exactHp.map((m) => m.name)).size === 1) {
+    return exactHp[0];
+  }
+  return null;
 }
 
 function loadMonsterDetails(monsterId) {
@@ -2385,7 +2393,12 @@ async function _handleOcrUpdateInner(payload) {
       }
       const expected = Number(meta.expectedExp);
       const min = expected * 0.1;
-      const max = expected * 10;
+      // Die Monster-EXP-Tabellenwerte sind ~7-10x kleiner als der echte
+      // EXP-Gewinn pro Kill (Server-EXP-Rate). Eine x10-Decke hatte praktisch
+      // null Reserve und verwarf legitime Kills, sobald ein Monster etwas mehr
+      // EXP gab. x40 laesst echte Kills durch und faengt grobe Ausreisser
+      // (Quest-Abgaben ~100x+) weiterhin ab; suspectThreshold greift zusaetzlich.
+      const max = expected * 40;
       return deltaExp >= min && deltaExp <= max;
     }
   );
@@ -2417,7 +2430,7 @@ async function _handleOcrUpdateInner(payload) {
       const within = await monsterExpValidator.isWithinAllowed(
         killEvent.monsterName || resolvedMonsterName || '',
         effectiveLvl,
-        killEvent.deltaExp
+        killEvent.deltaExp / Math.max(1, killEvent.killCount || 1)
       );
       if (within === false) {
         console.warn(`[Killfeed] KILL ROLLED BACK: monster=${killEvent.monsterName || resolvedMonsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);

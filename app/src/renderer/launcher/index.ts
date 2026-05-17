@@ -25,11 +25,13 @@ import {
     hideSessionViews,
     showSessionViews,
 } from "../settings";
-import { type Profile, el, clear, createJobIcon, decorateJobSelect, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
+import { type Profile, el, clear, createJobIcon, decorateJobSelect, createServerBadge, decorateServerSelect, createLaunchModeBadge, showToast, fetchTabLayouts, reorderIds } from "../dom-utils";
+import { SERVER_NAMES } from "../constants";
 import { openConfigModal as _openConfigModal } from "./config-modal";
 import { createNewsUI } from "./news";
 import { createAnnouncementsUI } from "./announcements";
 import { showWindowSelectorForProfile, layoutTooltips, generateCustomAscii } from "./profile-selectors";
+import { forceScrollRepaint, nearestScrollable, installCollapseRepaintGuard } from "./repaint";
 
 export let langMenuCloser: ((e: MouseEvent) => void) | null = null;
 
@@ -37,6 +39,7 @@ export async function renderLauncher(root: HTMLElement) {
 
     clear(root);
     root.className = "launcherRoot";
+    installCollapseRepaintGuard();
     const overlayDisabled = false;
     let overlayClearedOnce = false;
     if (langMenuCloser) {
@@ -93,6 +96,23 @@ export async function renderLauncher(root: HTMLElement) {
         decorateJobSelect(select);
     }
 
+    function renderServerOptions(select: HTMLSelectElement, selectedValue: string | null = null) {
+
+        select.innerHTML = "";
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = t("server.choose");
+        select.append(empty);
+        for (const name of SERVER_NAMES) {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            select.append(opt);
+        }
+        select.value = selectedValue ?? "";
+        decorateServerSelect(select);
+    }
+
     function snapshotThemeVars(): Record<string, string> {
 
         const colors = getActiveThemeColors();
@@ -142,8 +162,13 @@ export async function renderLauncher(root: HTMLElement) {
         }
     }
     // --- Config Modal (delegated to module) ---
-    function openConfigModal(defaultStyleTab: "theme" | "tabActive" = "theme", defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style") {
-        return _openConfigModal({ snapshotThemeVars, applyThemeToIframe }, defaultStyleTab, defaultTab);
+    function openConfigModal(
+        defaultStyleTab: "theme" | "tabActive" = "theme",
+        defaultTab: "style" | "plugins" | "client" | "patchnotes" | "docs" | "support" = "style",
+        initialSidebarId?: import("./config-modal").ConfigModalSidebarId,
+        compactMode: boolean = false,
+    ) {
+        return _openConfigModal({ snapshotThemeVars, applyThemeToIframe }, defaultStyleTab, defaultTab, initialSidebarId, compactMode);
     }
 
     // Controller-Launcher-Aktionen: nicht-Tab-Aktionen die nicht im Main
@@ -157,6 +182,26 @@ export async function renderLauncher(root: HTMLElement) {
         });
     }
     catch { /* ignore */ }
+
+    // Externer Einsprung: Session-Window (oder andere Renderer) kann via IPC
+    // den Launcher dazu bringen die Settings auf eine bestimmte Section zu
+    // oeffnen — zB der Controller-Button in der Tab-Leiste.
+    try {
+        const ipc = (window as unknown as {
+            ipc?: { on: (channel: string, handler: (payload: unknown) => void) => () => void };
+        }).ipc;
+        ipc?.on("launcher:openConfigSection", (payload) => {
+            try {
+                const section = (payload as { section?: unknown })?.section;
+                const compact = (payload as { compact?: unknown })?.compact === true;
+                if (typeof section === "string") {
+                    openConfigModal("theme", "style", section as import("./config-modal").ConfigModalSidebarId, compact);
+                } else {
+                    openConfigModal();
+                }
+            } catch { /* ignore */ }
+        });
+    } catch { /* ignore */ }
     const btnFlyffuniverse = el("button", "btn primary") as HTMLButtonElement;
     btnFlyffuniverse.title = "Flyffuniverse �ffnen";
     const flyffuniverseImg = document.createElement("img");
@@ -260,6 +305,8 @@ export async function renderLauncher(root: HTMLElement) {
     configIcon.setAttribute("aria-hidden", "true");
     configIcon.style.fontSize = "18px";
     btnConfig.append(configIcon);
+    // Controller: ☰ Options-Taste öffnet die Einstellungen.
+    btnConfig.setAttribute("data-cnav-menu", "");
     btnConfig.addEventListener("click", () => openConfigModal());
     header.append(btnGithub, btnConfig, updateNotice);
     const runtimeVersion = await window.api.appGetVersion().catch((): null => null);
@@ -914,7 +961,7 @@ export async function renderLauncher(root: HTMLElement) {
             };
             const nameBlock = el("div", "nameBlock");
             const nameRow = el("div", "nameRow");
-            nameRow.append(name, el("span", "badge subtle", p.launchMode === "tabs" ? t("profile.mode.tabs") : t("profile.mode.window")));
+            nameRow.append(name);
             nameBlock.append(nameRow);
             if (p.characters && p.characters.length > 0) {
                 const charList = el("div", "charList");
@@ -924,6 +971,9 @@ export async function renderLauncher(root: HTMLElement) {
                     const charJob = p.characterJobs?.[c];
                     const icon = createJobIcon(charJob, "charListJobIcon");
                     if (icon) charItem.append(icon);
+                    const charServer = p.characterServers?.[c];
+                    const charServerBadge = createServerBadge(charServer, "badge serverBadge charListServerBadge");
+                    if (charServerBadge) charItem.append(charServerBadge);
                     charList.append(charItem);
                 });
                 nameBlock.append(charList);
@@ -933,6 +983,10 @@ export async function renderLauncher(root: HTMLElement) {
                 await window.api.profilesDelete(p.id);
                 await reload();
             };
+            // Anordnung der rechten Karten-Elemente: Server – Modus – Config – Spielen
+            const profileServerBadge = createServerBadge(p.server, "badge serverBadge");
+            if (profileServerBadge) actions.append(profileServerBadge);
+            actions.append(createLaunchModeBadge(p.launchMode));
             if (!p.characters || p.characters.length === 0) {
                 const btnNoChars = el("button", "btnNoChars", "?");
                 btnNoChars.title = t("profile.characters.missing");
@@ -984,6 +1038,8 @@ export async function renderLauncher(root: HTMLElement) {
                     id: p.id,
                     name: nameInput.value.trim() || p.name,
                     characterJobs: Object.keys(localCharJobs).length > 0 ? localCharJobs : undefined,
+                    server: localProfileServer.length > 0 ? localProfileServer : undefined,
+                    characterServers: Object.keys(localCharServers).length > 0 ? localCharServers : undefined,
                     launchMode: modeCheck.checked ? "tabs" : "window",
                     characters: localChars.length > 0 ? localChars : undefined,
                 });
@@ -991,10 +1047,14 @@ export async function renderLauncher(root: HTMLElement) {
             };
             btnClone.onclick = () => {
                 clonePanel.classList.toggle("hidden");
+                forceScrollRepaint(nearestScrollable(card));
                 cloneInput.focus();
                 cloneInput.select();
             };
-            btnCloneCancel.onclick = () => clonePanel.classList.add("hidden");
+            btnCloneCancel.onclick = () => {
+                clonePanel.classList.add("hidden");
+                forceScrollRepaint(nearestScrollable(card));
+            };
             btnDoClone.onclick = async () => {
                 const newName = cloneInput.value.trim() || `${p.name} (Copy)`;
                 await window.api.profilesClone(p.id, newName);
@@ -1006,10 +1066,13 @@ export async function renderLauncher(root: HTMLElement) {
                 clonePanel.classList.add("hidden");
                 manage.classList.add("hidden");
                 card.classList.remove("editing");
+                forceScrollRepaint(nearestScrollable(card));
             };
-            // Character list with per-char job selection
+            // Character list with per-char job + server selection
             const localChars: string[] = [...(p.characters ?? [])];
             const localCharJobs: Record<string, string> = { ...(p.characterJobs ?? {}) };
+            const localCharServers: Record<string, string> = { ...(p.characterServers ?? {}) };
+            let localProfileServer: string = p.server ?? "";
             const charEditWrap = el("div", "charEditWrap");
             const charInput = document.createElement("input");
             charInput.className = "input charInlineInput";
@@ -1030,15 +1093,27 @@ export async function renderLauncher(root: HTMLElement) {
                             delete localCharJobs[name];
                         }
                     };
+                    const charServerSelect = document.createElement("select");
+                    charServerSelect.className = "select charServerSelect";
+                    renderServerOptions(charServerSelect, localCharServers[name] ?? "");
+                    charServerSelect.title = t("server.choose");
+                    charServerSelect.onchange = () => {
+                        if (charServerSelect.value) {
+                            localCharServers[name] = charServerSelect.value;
+                        } else {
+                            delete localCharServers[name];
+                        }
+                    };
                     const nameSpan = el("span", "charEditName", name);
                     const btnX = el("button", "charBadgeDel", "×");
                     btnX.title = t("profile.characters.remove");
                     btnX.onclick = () => {
                         localChars.splice(idx, 1);
                         delete localCharJobs[name];
+                        delete localCharServers[name];
                         renderCharEdits();
                     };
-                    row.append(charJobSelect, nameSpan, btnX);
+                    row.append(charJobSelect, charServerSelect, nameSpan, btnX);
                     charEditWrap.append(row);
                 });
             };
@@ -1056,7 +1131,16 @@ export async function renderLauncher(root: HTMLElement) {
             charAddBtn.onclick = () => { doAddChar(); charInput.focus(); };
             const charAddRow = el("div", "charRow");
             charAddRow.append(charInput, charAddBtn);
-            modeWrap.append(charEditWrap, charAddRow, modeLabel);
+            const profileServerRow = el("div", "profileServerRow");
+            const profileServerLabel = el("label", "profileServerLabel", t("server.choose"));
+            const profileServerSelect = document.createElement("select");
+            profileServerSelect.className = "select profileServerSelect";
+            renderServerOptions(profileServerSelect, localProfileServer);
+            profileServerSelect.onchange = () => {
+                localProfileServer = profileServerSelect.value;
+            };
+            profileServerRow.append(profileServerLabel, profileServerSelect);
+            modeWrap.append(profileServerRow, charEditWrap, charAddRow, modeLabel);
             const grid = el("div", "manageGrid");
             grid.append(nameInput, modeWrap);
             const actionBar = el("div", "manageActions");
@@ -1066,6 +1150,7 @@ export async function renderLauncher(root: HTMLElement) {
             btnManage.onclick = () => {
                 const opening = manage.classList.toggle("hidden");
                 card.classList.toggle("editing", !opening);
+                forceScrollRepaint(nearestScrollable(card));
             };
             card.addEventListener("dragover", (e) => {
                 e.preventDefault();

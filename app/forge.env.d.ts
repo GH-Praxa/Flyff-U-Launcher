@@ -10,6 +10,8 @@ type Profile = {
     name: string;
     createdAt: string;
     characterJobs?: Record<string, string>;
+    server?: string;
+    characterServers?: Record<string, string>;
     launchMode: "tabs" | "window";
     overlayTarget?: boolean;
     overlayIconKey?: string;

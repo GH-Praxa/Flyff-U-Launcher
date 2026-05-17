@@ -96,8 +96,10 @@ export function applyCSP(session: Session): void {
             callback({ responseHeaders: details.responseHeaders });
             return;
         }
-        // Skip CSP for temp HTML files (sidepanel, plugin windows — use inline styles/scripts, no user input)
-        if (url.startsWith("file://") && (url.includes("flyff-sidepanel.html") || url.includes("flyff-plugin-"))) {
+        // Skip CSP for temp HTML files (sidepanel, plugin windows, ROI calibrator —
+        // use inline styles/scripts, no user input). ROI calibrator templates land
+        // as /tmp/roi-calib-<ts>-<rand>.html and need their inline <style> block.
+        if (url.startsWith("file://") && (url.includes("flyff-sidepanel.html") || url.includes("flyff-plugin-") || url.includes("/roi-calib-"))) {
             callback({ responseHeaders: details.responseHeaders });
             return;
         }

@@ -8,7 +8,11 @@ const fs = require('fs/promises');
 let baseDir = null;
 let fileListPromise = null;
 let preloadPromise = null;
-const nameToId = new Map();   // lower-case name -> id
+// lower-case name -> Set<id>. Wichtig als Set, weil mehrere Monster den
+// gleichen lokalisierten Namen teilen koennen (z.B. drei "Tempelwächter"
+// mit IDs 4282/2567/16430 und stark unterschiedlichen EXP-Tabellen).
+// isWithinAllowed muss alle Homonyme pruefen.
+const nameToIds = new Map();
 const idToTable = new Map();  // id -> numeric array
 const missingNames = new Set();
 
@@ -44,9 +48,13 @@ async function loadTableById(id) {
     if (obj.name && typeof obj.name === 'object') {
       for (const val of Object.values(obj.name)) {
         const normalized = normalizeName(val);
-        if (normalized && !nameToId.has(normalized)) {
-          nameToId.set(normalized, id);
+        if (!normalized) continue;
+        let bucket = nameToIds.get(normalized);
+        if (!bucket) {
+          bucket = new Set();
+          nameToIds.set(normalized, bucket);
         }
+        bucket.add(id);
       }
     }
     return table;
@@ -75,26 +83,33 @@ async function preloadAll() {
   return preloadPromise;
 }
 
-async function findTableByName(monsterName) {
+/** Liefert alle Tabellen, deren lokalisierte Namen mit `monsterName`
+ *  uebereinstimmen (Homonym-bewusst). Bei z.B. drei "Tempelwächter"-Monstern
+ *  bekommt der Caller alle drei Tabellen und kann ueber Plausibilitaet
+ *  entscheiden. Returns [] when nothing matches.
+ *
+ *  Wichtig: preloadAll() wird IMMER abgewartet, weil sonst nameToIds nur
+ *  partiell befuellt waere (z.B. nur die zuerst per ID gesuchten Monster),
+ *  und Homonyme uebersehen wuerden. preloadAll cached den Promise, nach dem
+ *  ersten Lauf ist es ein No-Op. */
+async function findTablesByName(monsterName) {
   const normalized = normalizeName(monsterName);
-  if (!normalized || missingNames.has(normalized)) return null;
+  if (!normalized || missingNames.has(normalized)) return [];
 
-  // Fast path: already in cache
-  const knownId = nameToId.get(normalized);
-  if (knownId) {
-    return loadTableById(knownId);
-  }
-
-  // Slow path: bulk-load all remaining files in parallel (not one-by-one)
   await preloadAll();
 
-  const mappedId = nameToId.get(normalized);
-  if (mappedId) {
-    return idToTable.get(mappedId) || null;
+  const ids = nameToIds.get(normalized);
+  if (!ids || ids.size === 0) {
+    missingNames.add(normalized);
+    return [];
   }
 
-  missingNames.add(normalized);
-  return null;
+  const tables = [];
+  for (const id of ids) {
+    const t = idToTable.get(id);
+    if (t) tables.push(t);
+  }
+  return tables;
 }
 
 /**
@@ -107,14 +122,27 @@ async function findTableByName(monsterName) {
 async function isWithinAllowed(monsterName, level, deltaExp) {
   if (!baseDir) return null;
   if (!monsterName || !Number.isFinite(level) || !Number.isFinite(deltaExp)) return null;
-  const table = await findTableByName(monsterName);
-  if (!table) return null;
-  const idx = Math.max(0, Math.min(table.length - 1, Math.round(level) - 1));
-  const expected = table[idx];
-  if (!Number.isFinite(expected) || expected <= 0) return null;
+  const tables = await findTablesByName(monsterName);
+  if (!tables.length) return null;
 
-  // Accept up to 10x the table value; otherwise treat as outlier.
-  if (deltaExp <= expected * 10) return true;
+  const idx = Math.max(0, Math.min(199, Math.round(level) - 1));
+  // Akzeptiere, wenn deltaExp gegen IRGENDEINE der Homonym-Tabellen plausibel
+  // ist. Tempelwächter@Lvl133 hat 3 ID-Varianten mit expected ∈ {0.001, 0.286, 0}.
+  // Mit `findTableByName` (alt) bekamen wir nur die erste ID → 0.001 → 0.0319
+  // wurde geblockt obwohl der User die 0.286-Variante killte. Hier nehmen wir
+  // den MAX expected ueber alle gueltigen Tabellen, multipliziert mit Toleranz.
+  let bestExpected = 0;
+  for (const table of tables) {
+    const e = table[Math.min(idx, table.length - 1)];
+    if (Number.isFinite(e) && e > bestExpected) bestExpected = e;
+  }
+  if (bestExpected <= 0) return null; // keine Datenbasis → skip check
+
+  // Toleranzfaktor: Die Tabellenwerte sind ~7-10x kleiner als der echte
+  // EXP-Gewinn pro Kill (Server-EXP-Rate). x10 hatte keine Reserve und rollte
+  // legitime Kills zurueck. x40 deckt echte Kills ab, blockt grobe Ausreisser.
+  // Muss konsistent zur killValidator-Decke in main.js sein.
+  if (deltaExp <= bestExpected * 40) return true;
   return false;
 }
 

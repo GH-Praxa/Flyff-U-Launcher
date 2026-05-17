@@ -242,6 +242,165 @@ Alle Nutzerdaten liegen plattformabhängig in folgenden Verzeichnissen:
 
 :::
 
+## Controller
+
+Der Launcher lässt sich vollständig mit einem Gamepad steuern — sowohl das **Spiel** als auch die **Launcher-Oberfläche** selbst (Profilliste, Einstellungen, Tools). Im Spiel werden Buttons, Sticks, D-Pad und Trigger in Tastatureingaben übersetzt; diese Belegung wird **pro Profil** gespeichert, sodass jeder Charakter sein eigenes Layout haben kann.
+
+:::accordion[Controller verbinden]
+
+Unterstützt werden alle gängigen XInput-Gamepads:
+
+- **Xbox-Controller** (Xbox One / Series, kabelgebunden oder per Bluetooth)
+- **PlayStation-5-Controller** (DualSense)
+- **Steam Deck** (interne Bedienelemente)
+- weitere XInput-kompatible Pads (z. B. SCUF) funktionieren ebenfalls
+
+Schließe den Controller an, bevor du eine Spielsitzung startest. Sobald er erkannt wird, erscheint eine kurze Bestätigung. Im Tab **Einstellungen → Controller** zeigt das Diagramm oben „Kein Controller verbunden", solange kein Pad aktiv ist.
+
+:::
+
+:::accordion[Launcher-Oberfläche mit dem Controller bedienen]
+
+Nicht nur das Spiel, auch der **Launcher selbst** lässt sich mit dem Gamepad
+bedienen — Profilliste, Einstellungen, Tool-Popups (Upgrade-Rechner,
+FCoin-Rechner, Einkaufsliste) und der Layout-Editor.
+
+| Eingabe | Funktion |
+|---------|----------|
+| Linker Stick / D-Pad | Fokus-Rahmen bewegen |
+| ✕ | Aktivieren — Button klicken, Auswahl ändern, Textfeld öffnen |
+| ◯ | Zurück — aktuelles Fenster / Menü schließen |
+| ☰ Options | Einstellungen öffnen |
+| L1 / R1 | In den Einstellungen die Sektion wechseln |
+| Rechter Stick | Scrollen |
+
+Der hell umrandete Fokus-Rahmen zeigt, welches Element gerade ausgewählt ist.
+Maus und Controller lassen sich jederzeit gemischt benutzen.
+
+**Textfelder:** Wird ein Eingabefeld mit ✕ aktiviert, öffnet sich eine
+**virtuelle Tastatur**, die ebenfalls komplett per Controller bedient wird —
+Tasten mit Stick/D-Pad ansteuern, mit ✕ tippen, mit ✓ schließen. Eine
+angeschlossene physische Tastatur funktioniert parallel weiter.
+
+:::
+
+:::accordion[Belegung anpassen]
+
+Öffne **Einstellungen → Controller**.
+
+- Wähle oben unter **Profil** den Charakter, dessen Belegung du bearbeiten willst — die Belegung gilt nur für dieses Profil.
+- Die Buttons sind in Gruppen sortiert: **Face-Buttons**, **Schultern & Trigger**, **D-Pad** und **System & Sticks**.
+- Klicke bei einem Button auf **Taste setzen** und drücke anschließend die gewünschte Taste — sie wird als Ziel-Eingabe gespeichert.
+- **Frei lassen** entfernt eine Belegung, **Standard** setzt einen einzelnen Button zurück, **Alle zurücksetzen** das ganze Profil.
+- Im Controller-Diagramm kannst du einen Button anklicken oder mit der Maus überfahren, um direkt zu seiner Belegung zu springen.
+- Mit **Speichern** wird die Belegung übernommen.
+
+Die Sticks sind fest verdrahtet: **linker Stick = Bewegung**, **rechter Stick = Kamera**. Sie müssen nicht belegt werden.
+
+:::
+
+:::accordion[Standard-Belegung]
+
+Ohne eigene Anpassung gilt diese Belegung (synchron zur Android-App):
+
+| Button | Aktion |
+|--------|--------|
+| ✕ Cross / A | Leertaste (Springen / Aktion) |
+| ◯ Circle / B | Escape (Menü / Abbrechen) |
+| ☐ Square / X | Z (Angriff) |
+| △ Triangle / Y | Tab (nächstes Ziel) |
+| L1 | Skill-Slot 1 |
+| R1 | Skill-Slot 2 |
+| R2 | Skill-Slot 3 |
+| L2 | Maus-Modus (halten) |
+| L3 | I (Inventar) |
+| R3 | C (Charakter-Info) |
+| Options / Start | Enter (Chat) |
+| D-Pad ↑ / ↓ | Zoom + / − |
+| D-Pad ← / → | Voriger / Nächster Tab |
+| Share / Select | nicht belegt |
+
+**Steam Deck:** Zusätzlich sind die vier Back-Paddles mit den Skill-Slots 4–7 vorbelegt. Stelle dafür im Profil den Controller-Stil auf „Steam Deck".
+
+:::
+
+:::accordion[Spezial-Aktionen]
+
+Ein Button kann statt einer normalen Taste eine **Spezial-Aktion** auslösen. Wähle sie beim Belegen über die Spezial-Aktion-Auswahl:
+
+| Aktion | Wirkung |
+|--------|---------|
+| Action-Pad-Trigger | Klick auf die kalibrierte Stelle im Spiel-HUD |
+| Maus-Modus (halten) | Solange gehalten: rechter Stick steuert die Maus |
+| Maus-Modus (umschalten) | Tippen schaltet den Maus-Modus an / aus |
+| Zoom + / Zoom − | Hinein- / Herauszoomen |
+| Voriger / Nächster Tab | Wechselt zwischen offenen Profil-Tabs |
+| View neu laden | Lädt das aktuelle Spielfenster neu |
+| Vollbild umschalten | Schaltet das Launcher-Fenster auf Vollbild |
+| Einstellungen öffnen | Öffnet das Einstellungen-Fenster |
+| Ringmaster (Forward) | Leitet Eingaben an ein anderes Profil weiter (siehe unten) |
+
+:::
+
+:::accordion[Action-Pad]
+
+Das Action-Pad legt einen frei platzierbaren Klickpunkt im Spielfenster fest — praktisch für HUD-Buttons, die kein Tastenkürzel haben.
+
+**Schritt 1:** Belege einen Button (z. B. Select) mit der Spezial-Aktion **Action-Pad**.
+
+**Schritt 2:** Fokussiere das Spielfenster und drücke **Strg + Shift + F1**, um die Kalibrierung zu starten.
+
+**Schritt 3:** Der nächste Klick im Spiel legt den Anker für das Action-Pad fest.
+
+:::
+
+:::accordion[Modifier-Layer]
+
+Mit dem **Modifier-Layer** verdoppelst du die verfügbaren Aktionen: Solange eine Schultertaste gehalten wird, nutzen die Face-Buttons (△ ◯ ✕ ☐) eine alternative Belegung statt des Standards.
+
+- Öffne im Controller-Tab den Abschnitt **Modifier-Layer**.
+- Aktiviere eine Schulter als Modifier (Schalter auf **AN**).
+- Lege für jeden Face-Button die alternative Aktion fest. „(Default)" lässt weiterhin den Standard greifen.
+
+:::
+
+:::accordion[Maus-Modus]
+
+Der Maus-Modus steuert einen Mauszeiger per Stick — nützlich für Menüs und Fenster ohne Tastenbedienung.
+
+- Standardmäßig liegt der Maus-Modus auf **L2** (Aktion „Maus-Modus (halten)").
+- Solange L2 gehalten wird: rechter Stick bewegt den Cursor, **✕** ist ein Linksklick.
+- Alternativ legst du die Aktion **Maus-Modus (umschalten)** auf einen Button — dann wechselt ein einzelner Tastendruck zwischen Normal- und Maus-Modus.
+- Beide Aktionen sind frei belegbar. Wer L2 als Skill-Slot braucht, legt den Maus-Modus z. B. auf R2 oder L1.
+
+:::
+
+:::accordion[Ringmaster-Forward]
+
+Mit **Ringmaster-Forward** steuerst du einen Buffer-Charakter (z. B. Ringmaster) in einem Hintergrund-Tab, ohne das sichtbare Fenster zu wechseln — dein Main bleibt im Vordergrund spielbar.
+
+**Schritt 1:** Wähle im Controller-Tab oben unter **Ringmaster-Ziel** das Profil, das die weitergeleiteten Eingaben erhalten soll.
+
+**Schritt 2:** Lege die Spezial-Aktion **Ringmaster (Forward)** auf einen Button.
+
+**Schritt 3:** Halte im Spiel die Forward-Taste → alle Eingaben (Buttons + Sticks) gehen an das Ziel-Profil. Loslassen → die Eingaben gehen wieder an den Vordergrund.
+
+**Achtung:** Das Ziel-Profil muss geöffnet und eingeloggt sein. Ist es das nicht, laufen die weitergeleiteten Skills ins Leere.
+
+:::
+
+:::accordion[Skill-Icon-Picker]
+
+Damit du auf einen Blick siehst, welcher Skill auf welchem Face-Button liegt, kannst du jedem Button (✕ ◯ △ ☐) ein Icon zuweisen.
+
+- Klicke im Controller-Tab beim jeweiligen Button auf **Skill-Icon wählen**.
+- Suche im Picker nach dem Icon oder filtere über die Tabs **Alle / Skills / Items / Buffs**.
+- Ein Klick auf ein Icon übernimmt es; **Shift + Klick** auf den Button entfernt das Icon wieder.
+
+**Hinweis:** Der Icon-Picker greift auf den Icon-Cache zu. Installiere und starte dafür die Plugins **API-Fetch** und **CD-Timer**, damit der Cache befüllt ist.
+
+:::
+
 ## Plugins
 
 Plugins benötigen in der Regel Daten und Icons aus der API. Diese kannst du mit API-Fetch herunterladen.

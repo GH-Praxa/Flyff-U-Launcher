@@ -246,6 +246,7 @@ const allowedSend = new Set<string>([
     "sidepanel:toggle",
     "hudpanel:toggle",
     "hudpanel:setWidth",
+    "launcher:openConfigSection",
 ]);
 const allowedInvoke = new Set<string>([
     "sidepanel:toggle",
@@ -313,7 +314,7 @@ const allowedInvoke = new Set<string>([
     "memory:system",
     "memory:details",
 ]);
-const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new", "clientSettings:changed"]);
+const allowedOn = new Set<string>(["theme:update", "plugins:stateChanged", "toast:show", "logs:new", "clientSettings:changed", "launcher:openConfigSection"]);
 contextBridge.exposeInMainWorld("ipc", {
     send: (channel: string, payload?: unknown) => {
         if (!allowedSend.has(channel))
@@ -392,6 +393,18 @@ contextBridge.exposeInMainWorld("roiBridge", {
     let polling = false;
     const announced = new Set<number>();
 
+    // Vom User im Controller-Tab pro Profil gewaehlter Controller (gamepad.id).
+    // Main pusht den Wert im `controller:overlay:update`-Payload — derselbe
+    // Kanal, den auch das Belegungs-Overlay nutzt (mehrere `.on`-Listener pro
+    // WebContents sind erlaubt). null = Automatik: ersten verbundenen Pad nehmen.
+    let preferredGamepadId: string | null = null;
+    ipcRenderer.on("controller:overlay:update", (_e, p: unknown) => {
+        if (p && typeof p === "object") {
+            const v = (p as { preferredGamepadId?: unknown }).preferredGamepadId;
+            preferredGamepadId = typeof v === "string" && v.length > 0 ? v : null;
+        }
+    });
+
     const announceConnected = (gp: Gamepad) => {
         if (announced.has(gp.index)) return;
         announced.add(gp.index);
@@ -416,6 +429,10 @@ contextBridge.exposeInMainWorld("roiBridge", {
                 timestamp: gp.timestamp ?? performance.now(),
                 axes,
                 buttons,
+                // mapping pro Frame mitschicken: der Router leitet daraus das
+                // Achsen-Layout des rechten Sticks ab (Standard vs. Non-Standard
+                // wie beim Steam-Deck-Desktop-Controller). Siehe rightStickAxes.
+                mapping: gp.mapping,
                 viewportWidth: window.innerWidth,
                 viewportHeight: window.innerHeight,
             });
@@ -425,13 +442,57 @@ contextBridge.exposeInMainWorld("roiBridge", {
         }
     };
 
+    // Aktiv-State wird vom Main-Process pro Session-View gepushed
+    // (`session:setActive`). Initial undefined = "noch nichts gehoert" → fall-
+    // back auf `document.hasFocus()` (defensiv fuer ersten Frame nach Load).
+    // ACHTUNG: `document.hasFocus()` wird in jedem Session-View per
+    // Visibility-Override permanent auf `true` gezwungen (siehe
+    // sessionTabs/manager.ts:registerVisibilityOverride) — damit Flyff das
+    // Spiel nicht pausiert wenn die View im Hintergrund liegt. Folge:
+    // hasFocus() ist NICHT mehr ein zuverlaessiges "ist dieses Tab vorne?"-
+    // Signal, ALLE Tabs wuerden sonst pollen und Frames an den IPC-Router
+    // schicken (Buffer-Target-Tab wuerde dort sein lokales Mapping feuern und
+    // Forward-Routing zerlegen). Deswegen die Main-Process-autoritative
+    // Variante.
+    let mainActiveSignal: boolean | undefined = undefined;
+    ipcRenderer.on("session:setActive", (_e, active: boolean) => {
+        mainActiveSignal = !!active;
+        if (mainActiveSignal && !polling) start();
+        // Bei false bleibt polling=true, tick() droppt aber die Frame-
+        // Verarbeitung (saubereres State-Management als Stop/Restart bei
+        // schnellen Tab-Switches).
+    });
+
     const tick = () => {
         if (!polling) return;
+        // Polling-Gate: Main-Process-pushed Signal hat Vorrang. Wenn nichts
+        // empfangen wurde (alter Build, fehlerhafter Bootstrap), fallback auf
+        // hasFocus() — aber das ist mit Visibility-Override per Definition
+        // true, also poled das Tab. Defensiv: damit der erste Frame nicht
+        // verloren geht falls Main-Signal noch nicht da ist.
+        const shouldPoll = mainActiveSignal !== undefined
+            ? mainActiveSignal
+            : (typeof document !== "undefined" && typeof document.hasFocus === "function" && document.hasFocus());
+        if (!shouldPoll) {
+            requestAnimationFrame(tick);
+            return;
+        }
         const pads = navigator.getGamepads ? navigator.getGamepads() : [];
         let chosen: Gamepad | null = null;
-        for (let i = 0; i < pads.length; i++) {
-            const p = pads[i];
-            if (p) { chosen = p; break; }
+        // Bevorzugten Controller (per Profil im Controller-Tab gewaehlt) zuerst
+        // suchen. Nicht gefunden (nicht verbunden oder Automatik) → Fallback auf
+        // den ersten verbundenen Pad — so bleibt das alte Verhalten erhalten.
+        if (preferredGamepadId) {
+            for (let i = 0; i < pads.length; i++) {
+                const p = pads[i];
+                if (p && p.id === preferredGamepadId) { chosen = p; break; }
+            }
+        }
+        if (!chosen) {
+            for (let i = 0; i < pads.length; i++) {
+                const p = pads[i];
+                if (p) { chosen = p; break; }
+            }
         }
         if (chosen) {
             announceConnected(chosen);
@@ -458,6 +519,29 @@ contextBridge.exposeInMainWorld("roiBridge", {
                     heldL1 ? "l1" : heldR1 ? "r1" : heldL2 ? "l2" : heldR2 ? "r2" : null;
                 (window as unknown as { __flyffuSetActiveModifier?: (m: "l1" | "r1" | "l2" | "r2" | null) => void })
                     .__flyffuSetActiveModifier?.(newMod);
+                // Modifier-Wechsel auch dem Main-Process melden — bei aktivem
+                // Forward wird's dort an die forwardTarget-WC relayed, damit
+                // RM's Overlay ebenfalls den Modifier-Layer zeigt.
+                try { ipcRenderer.send("controller:overlayEvent", { type: "modifier", value: newMod }); }
+                catch { /* ignore */ }
+
+                // Click-Feedback: Face-Button-Edges (DOWN) ans Overlay melden,
+                // damit dort kurz eine Flash-Animation laeuft. Reine UI-
+                // Spielerei — bestaetigt visuell dass der Press registriert
+                // wurde, hilft beim Lernen welche Knopf-Belegung gerade aktiv
+                // ist.
+                const FACE_INDICES: ReadonlyArray<["y" | "b" | "a" | "x", number]> = [
+                    ["a", 0], ["b", 1], ["x", 2], ["y", 3],
+                ];
+                const flash = (window as unknown as { __flyffuFlashFace?: (f: "y" | "b" | "a" | "x") => void }).__flyffuFlashFace;
+                for (const [face, idx] of FACE_INDICES) {
+                    if (buttons[idx] === true && prevButtons[idx] !== true) {
+                        flash?.(face);
+                        // Press-Event ebenfalls relayfaehig melden (s.o.).
+                        try { ipcRenderer.send("controller:overlayEvent", { type: "facePress", face }); }
+                        catch { /* ignore */ }
+                    }
+                }
             }
         }
         requestAnimationFrame(tick);
@@ -495,8 +579,15 @@ contextBridge.exposeInMainWorld("roiBridge", {
             calibrationTimeout = null;
         }
     };
-    ipcRenderer.on("controller:calibrate:start", () => {
+    ipcRenderer.on("controller:calibrate:start", (_event, payload?: { slot?: number; profileId?: string }) => {
         cancelCalibration();
+        const slot = (payload && typeof payload === "object" && typeof payload.slot === "number"
+            && Number.isInteger(payload.slot) && payload.slot >= 0 && payload.slot < 8)
+            ? payload.slot
+            : undefined;
+        const profileId = (payload && typeof payload === "object" && typeof payload.profileId === "string" && payload.profileId.length > 0)
+            ? payload.profileId
+            : undefined;
         const handler = (e: MouseEvent) => {
             cancelCalibration();
             try {
@@ -505,6 +596,8 @@ contextBridge.exposeInMainWorld("roiBridge", {
                     y: e.clientY,
                     viewportWidth: window.innerWidth,
                     viewportHeight: window.innerHeight,
+                    ...(slot !== undefined ? { slot } : {}),
+                    ...(profileId !== undefined ? { profileId } : {}),
                 });
             }
             catch { /* ignore */ }
@@ -659,11 +752,12 @@ type OverlayPayload = {
     const OVERLAY_W = 160;
     const OVERLAY_H = 120;
 
-    type SlotEls = { sym: HTMLDivElement; lab: HTMLDivElement; img: HTMLImageElement };
+    type SlotEls = { sym: HTMLDivElement; lab: HTMLDivElement; img: HTMLImageElement; wrap: HTMLDivElement };
     let payload: OverlayPayload | null = null;
     let activeMod: "l1" | "r1" | "r2" | null = null;
     let overlayEl: HTMLDivElement | null = null;
     let slotEls: { y: SlotEls; b: SlotEls; a: SlotEls; x: SlotEls } | null = null;
+    let modBadgeEl: HTMLDivElement | null = null;
     let dragModeActive = false;
     let isDragging = false;
     let dragOffsetX = 0;
@@ -744,6 +838,10 @@ type OverlayPayload = {
                 "flex-direction:column",
                 "align-items:center",
                 "gap:2px",
+                "padding:2px 4px",
+                "border-radius:6px",
+                "transition:transform 120ms cubic-bezier(.16,1,.3,1), box-shadow 120ms ease",
+                "will-change:transform",
             ].join(";");
             const sym = document.createElement("div");
             sym.textContent = symbol;
@@ -769,7 +867,7 @@ type OverlayPayload = {
             slot.appendChild(lab);
             slot.appendChild(img);
             root.appendChild(slot);
-            return { sym, lab, img };
+            return { sym, lab, img, wrap: slot };
         };
 
         // Reihenfolge: y=oben, x=links, b=rechts, a=unten — so wie die Knoepfe
@@ -779,9 +877,51 @@ type OverlayPayload = {
         const bEl = mkSlot("○", "#ff6464", 2, 3, "end", "center");
         const aEl = mkSlot("✕", "#73a8ff", 3, 2, "center", "end");
 
+        // Modifier-Badge: kleine Pille oben-mittig die zeigt welche Schulter
+        // gerade als Modifier gehalten wird (L1/R1/R2). Erscheint NUR wenn
+        // activeMod gesetzt ist — sonst unsichtbar. Hilfreich auch wenn die
+        // Modifier-Bindings (noch) leer sind, damit der User merkt dass die
+        // Schulter "registriert" wurde.
+        const badge = document.createElement("div");
+        badge.style.cssText = [
+            "position:absolute",
+            "left:50%",
+            "top:-22px",
+            "transform:translateX(-50%)",
+            "padding:2px 9px",
+            "border-radius:999px",
+            "border:1px solid rgba(255,255,255,0.35)",
+            "background:rgba(0,0,0,0.55)",
+            "color:#fff",
+            "font-size:10px",
+            "font-weight:700",
+            "letter-spacing:0.08em",
+            "text-shadow:0 1px 2px rgba(0,0,0,0.6)",
+            "white-space:nowrap",
+            "display:none",
+            "pointer-events:none",
+        ].join(";");
+        root.appendChild(badge);
+
+        // Keyframes fuer das Click-Feedback per einmaligem Style-Inject.
+        // Scoped via Animation-Name — kein globaler Side-Effect.
+        if (!document.getElementById("flyffu-overlay-anim")) {
+            const styleTag = document.createElement("style");
+            styleTag.id = "flyffu-overlay-anim";
+            styleTag.textContent = `
+                @keyframes flyffuFacePress {
+                    0%   { transform: scale(1);    box-shadow: none; }
+                    25%  { transform: scale(1.22); box-shadow: 0 0 0 2px rgba(255,255,255,0.6), 0 0 14px rgba(255,255,255,0.4); }
+                    100% { transform: scale(1);    box-shadow: none; }
+                }
+            `;
+            document.head.appendChild(styleTag);
+        }
+
         document.body.appendChild(root);
         overlayEl = root;
         slotEls = { y: yEl, b: bEl, a: aEl, x: xEl };
+        modBadgeEl = badge;
 
         // Drag-Modus an/aus auf Ctrl+Shift. Der Modus aktiviert pointer-events
         // und zeigt eine gestrichelte Outline — sonst ist das Overlay komplett
@@ -865,6 +1005,16 @@ type OverlayPayload = {
         if (!overlayEl || !slotEls) return;
         overlayEl.style.display = "grid";
 
+        // Modifier-Badge oben anzeigen wenn ein Modifier aktiv ist.
+        if (modBadgeEl) {
+            if (activeMod) {
+                modBadgeEl.textContent = activeMod.toUpperCase();
+                modBadgeEl.style.display = "block";
+            } else {
+                modBadgeEl.style.display = "none";
+            }
+        }
+
         const base = payload.base;
         const baseIcons = payload.baseIcons ?? {};
         const layer = activeMod ? payload.modifiers[activeMod] : undefined;
@@ -874,8 +1024,13 @@ type OverlayPayload = {
             return base[face];
         };
         const pickIcon = (face: "y" | "b" | "a" | "x"): string | undefined => {
-            // Layer-Icon hat Vorrang, sonst Base-Icon, sonst undefined (= Text-Fallback).
-            return layerIcons?.[face] ?? baseIcons[face];
+            // Im Modifier-Layer NICHT auf Base-Icons zurueckfallen — sonst
+            // sieht der User dass das Base-Icon weiter angezeigt wird und
+            // glaubt der Modifier-Wechsel haette nicht funktioniert. Stattdessen
+            // wird das modifier-Label gerendert (apply() faellt auf Sym+Lab
+            // zurueck wenn icon === undefined).
+            if (activeMod) return layerIcons?.[face];
+            return baseIcons[face];
         };
 
         const apply = (face: "y" | "b" | "a" | "x", el: SlotEls) => {
@@ -909,6 +1064,27 @@ type OverlayPayload = {
         renderOverlay();
     });
 
+    // Wenn dieser Tab gerade Forward-Target ist (z.B. RM waehrend Mains L2-
+    // Hold), bekommt er Modifier-/Press-Events von Mains Preload via Main-
+    // Process relayed. Dann zeigt RM's eigenes Overlay den aktiven Modifier-
+    // Layer und blitzt den gedrueckten Face-Slot.
+    ipcRenderer.on("controller:overlayEvent:relay", (_e, raw: unknown) => {
+        if (!raw || typeof raw !== "object") return;
+        const ev = raw as { type?: string; value?: unknown; face?: unknown };
+        if (ev.type === "modifier") {
+            const v = ev.value;
+            const mod = (v === "l1" || v === "r1" || v === "r2") ? v : null;
+            (window as unknown as { __flyffuSetActiveModifier?: (m: "l1" | "r1" | "r2" | null) => void })
+                .__flyffuSetActiveModifier?.(mod);
+        } else if (ev.type === "facePress") {
+            const f = ev.face;
+            if (f === "y" || f === "b" || f === "a" || f === "x") {
+                (window as unknown as { __flyffuFlashFace?: (face: "y" | "b" | "a" | "x") => void })
+                    .__flyffuFlashFace?.(f);
+            }
+        }
+    });
+
     // Setter fuer den Polling-Loop (siehe oben). Aenderung loest Re-Render aus,
     // gleicher Wert wird ignoriert (kein DOM-Trash).
     (window as unknown as { __flyffuSetActiveModifier?: (m: "l1" | "r1" | "r2" | null) => void })
@@ -916,6 +1092,22 @@ type OverlayPayload = {
         if (mod === activeMod) return;
         activeMod = mod;
         renderOverlay();
+    };
+
+    // Click-Feedback: vom Polling-Loop pro Face-Button-DOWN aufgerufen.
+    // Triggert eine kurze Scale+Glow-Animation auf der entsprechenden Slot —
+    // visuelle Bestaetigung dass der Press gerade registriert wurde, hilft
+    // beim Erlernen welche Belegung gerade aktiv ist (Base vs. Modifier).
+    (window as unknown as { __flyffuFlashFace?: (f: "y" | "b" | "a" | "x") => void })
+        .__flyffuFlashFace = (face) => {
+        if (!slotEls) return;
+        const slot = slotEls[face]?.wrap;
+        if (!slot) return;
+        // Animation re-triggern: aktuelle entfernen, force-reflow, neu starten.
+        slot.style.animation = "none";
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        slot.offsetHeight; // reflow
+        slot.style.animation = "flyffuFacePress 220ms cubic-bezier(.16,1,.3,1)";
     };
 
     // Initial-Pull: sobald Preload laeuft, Mapping anfordern. Main antwortet
@@ -939,6 +1131,55 @@ contextBridge.exposeInMainWorld("controllerApi", {
     reloadMapping: (profileId: string) => {
         try { ipcRenderer.send("controller:reloadMapping", profileId); }
         catch { /* ignore */ }
+    },
+    /**
+     * Stoesst Action-Pad- oder Name-Slot-Kalibrierung an. `slot=undefined`
+     * (default) → Action-Pad-Anker; `slot=0..7` → Name-Slot-Anker im Profil.
+     * `profileId` zielt die Kalibrierung auf alle WebContents dieses Profils,
+     * statt auf das gerade fokussierte Spielfenster — wird vom Slot-UI
+     * benoetigt, weil dann das Profil-Modal den Fokus hat.
+     */
+    requestCalibrate: (slot?: number, profileId?: string) => {
+        try {
+            const payload: Record<string, unknown> = {};
+            if (typeof slot === "number" && Number.isInteger(slot) && slot >= 0 && slot < 8) {
+                payload.slot = slot;
+            }
+            if (typeof profileId === "string" && profileId.length > 0) {
+                payload.profileId = profileId;
+            }
+            ipcRenderer.send("controller:requestCalibrate", payload);
+        } catch { /* ignore */ }
+    },
+    /**
+     * Live-Update aus Main, wenn ein Name-Slot fertig kalibriert wurde.
+     * Renderer aktualisiert den Status-Indikator der Slot-Card.
+     */
+    onNameSlotUpdated: (handler: (data: { profileId: string; slot: number; anchor: { hAnchor: string; vAnchor: string; offsetX: number; offsetY: number } }) => void) => {
+        const listener = (_e: unknown, payload: unknown) => {
+            try {
+                if (!payload || typeof payload !== "object") return;
+                const obj = payload as Record<string, unknown>;
+                const profileId = typeof obj.profileId === "string" ? obj.profileId : null;
+                const slot = typeof obj.slot === "number" && Number.isInteger(obj.slot) ? obj.slot : null;
+                const anchorRaw = obj.anchor as Record<string, unknown> | undefined;
+                if (!profileId || slot === null || !anchorRaw) return;
+                if (typeof anchorRaw.hAnchor !== "string" || typeof anchorRaw.vAnchor !== "string"
+                    || typeof anchorRaw.offsetX !== "number" || typeof anchorRaw.offsetY !== "number") return;
+                handler({
+                    profileId,
+                    slot,
+                    anchor: {
+                        hAnchor: anchorRaw.hAnchor,
+                        vAnchor: anchorRaw.vAnchor,
+                        offsetX: anchorRaw.offsetX,
+                        offsetY: anchorRaw.offsetY,
+                    },
+                });
+            } catch { /* ignore */ }
+        };
+        ipcRenderer.on("controller:nameSlot:updated", listener);
+        return () => ipcRenderer.removeListener("controller:nameSlot:updated", listener);
     },
     onLauncherAction: (handler: (action: string) => void) => {
         const listener = (_e: unknown, payload: unknown) => {
