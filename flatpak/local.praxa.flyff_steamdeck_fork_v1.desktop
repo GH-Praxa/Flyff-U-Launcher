@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Flyff Steamdeck Fork v1
+Comment=Flyff Universe Launcher — Steam Deck Controller Fork
+Exec=flyff-steamdeck-fork-v1 %U
+Icon=local.praxa.flyff_steamdeck_fork_v1
+Terminal=false
+Categories=Game;RolePlaying;
+StartupWMClass=Flyff-U-Launcher
+StartupNotify=true

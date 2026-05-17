@@ -1,0 +1,50 @@
+app-id: local.praxa.flyff_steamdeck_fork_v1
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '25.08'
+command: flyff-steamdeck-fork-v1
+separate-locales: false
+
+# Fork-eigene Versionierung — startet bei "1", fortlaufend (1/2/3/...) ohne
+# Bindung an die Upstream-Launcher-Version. Upstream-Stand wird im metainfo
+# unter <releases> als Kontext gefuehrt.
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --device=all          # Gamepad-/Steam-Deck-Controller-Zugriff via /dev/input
+  - --filesystem=home
+  - --talk-name=org.freedesktop.Notifications
+  - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
+
+modules:
+  - name: flyff-steamdeck-fork-v1
+    buildsystem: simple
+    build-commands:
+      # Forge-Output wird vom build-flatpak.sh nach packaged/ kopiert (out-of-tree
+      # Build-Step ausserhalb von flatpak-builder, damit npm/electron-forge nicht
+      # noch ein zweites Mal aus dem Sandkasten heraus laufen muessen).
+      - install -d /app/lib/flyff-steamdeck-fork-v1
+      - cp -r packaged/. /app/lib/flyff-steamdeck-fork-v1/
+      - install -Dm755 launcher.sh /app/bin/flyff-steamdeck-fork-v1
+      - install -Dm644 local.praxa.flyff_steamdeck_fork_v1.desktop /app/share/applications/local.praxa.flyff_steamdeck_fork_v1.desktop
+      - install -Dm644 local.praxa.flyff_steamdeck_fork_v1.metainfo.xml /app/share/metainfo/local.praxa.flyff_steamdeck_fork_v1.metainfo.xml
+      - install -Dm644 icon-256.png /app/share/icons/hicolor/256x256/apps/local.praxa.flyff_steamdeck_fork_v1.png
+    sources:
+      - type: dir
+        path: ../app/out/Flyff-U-Launcher-linux-x64
+        dest: packaged
+      - type: file
+        path: launcher.sh
+      - type: file
+        path: local.praxa.flyff_steamdeck_fork_v1.desktop
+      - type: file
+        path: local.praxa.flyff_steamdeck_fork_v1.metainfo.xml
+      - type: file
+        path: icon-256.png
