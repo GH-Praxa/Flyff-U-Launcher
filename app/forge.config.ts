@@ -170,17 +170,19 @@ const config: ForgeConfig = {
                     continue;
                 }
 
-                // Linux: AppImage bevorzugt (electron-updater benötigt AppImage für Auto-Update),
-                // Fallback auf deb wenn kein AppImage vorhanden
+                // Linux: latest-linux.yml MUSS auf das AppImage zeigen. electron-updater
+                // nutzt unter Linux den AppImageUpdater, der per findFile() gezielt eine
+                // .AppImage-Datei in den Metadaten sucht (rpm/deb werden ausgeschlossen).
+                // Ein deb-/rpm-basiertes latest-linux.yml -> fileInfo undefined ->
+                // "Cannot read properties of undefined (reading 'info')" beim Update.
+                // Jeder Maker hat ein eigenes makeResult, daher NUR für das AppImage-Result
+                // schreiben — sonst entsteht zusätzlich eine deb-basierte latest-linux.yml.
                 const appImage = result.artifacts.find((a) => a.endsWith(".AppImage"));
-                const debArtifact = result.artifacts.find((a) => a.endsWith(".deb"));
-                const linuxArtifact = appImage ?? debArtifact;
-                // Nur einmal schreiben: AppImage überschreibt ggf. das deb-basierte latest-linux.yml
-                if (linuxArtifact) {
-                    const latestPath = writeLatestYml(linuxArtifact, version, "latest-linux.yml");
+                if (appImage) {
+                    const latestPath = writeLatestYml(appImage, version, "latest-linux.yml");
                     result.artifacts.push(latestPath);
-                    continue;
                 }
+                continue;
             }
         },
     },
