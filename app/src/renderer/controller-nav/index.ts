@@ -30,13 +30,17 @@ let viewKind = "launcher";
 let focused: HTMLElement | null = null;
 let ring: FocusRing | null = null;
 let windowFocused = true;
+let gamepadPresent = false;
 
 /**
- * Im Launcher-/Popup-Fenster ist die Nav immer aktiv (sobald das Fenster den
- * Fokus hat). In Spiel-Fenstern (session/instance) nur, wenn ein Overlay-Scope
- * offen ist — sonst gehört der Controller dem Spiel.
+ * Die Nav ist nur aktiv, wenn ein Gamepad verbunden ist — ohne Controller
+ * bleibt der Fokus-Ring unsichtbar, und Maus-Klicks lösen ihn nicht aus.
+ * Zusätzlich: Im Launcher-/Popup-Fenster aktiv, sobald das Fenster den Fokus
+ * hat; in Spiel-Fenstern (session/instance) nur, wenn ein Overlay-Scope offen
+ * ist — sonst gehört der Controller dem Spiel.
  */
 function computeEnabled(): boolean {
+    if (!gamepadPresent) return false;
     if (!windowFocused) return false;
     if (viewKind === "launcher" || viewKind === "popup") return true;
     return topScope() !== null;
@@ -171,7 +175,19 @@ export function initControllerNav(opts: InitOptions): void {
     ring = createFocusRing();
     initVirtualKeyboard({ setFocus });
 
-    const poller = createGamepadPoller({ onDirection, onButton, onScroll });
+    const poller = createGamepadPoller({
+        onDirection,
+        onButton,
+        onScroll,
+        onPadPresence: (present) => {
+            gamepadPresent = present;
+            // Ohne Controller den Fokus fallen lassen und den Ring sofort ausblenden.
+            if (!present) {
+                focused = null;
+                ring?.hide();
+            }
+        },
+    });
 
     windowFocused = document.hasFocus();
     window.addEventListener("focus", () => {

@@ -83,6 +83,10 @@ Frei belegbare Tastenkombinationen (2–3 Tasten) für:
 - CD-Timer zurücksetzen
 - FCoins-Rechner und Premium-Einkaufsliste öffnen
 
+### Controller
+- Launcher und Spiel vollständig per Gamepad steuerbar (Xbox, PS5, Steam Deck) — Belegung pro Profil
+- **Zwei Chars gleichzeitig**: Eingaben per Schultertasten-Modifier an den Ringmaster durchreichen
+
 ### Themes & Sprachen
 - Fertige Themes: Toffee, Zimt, Flyff Gold, Synthwave, Steel Ruby, Holz u.v.m.
 - Aktive Tabfarbe per Palette, Gradient oder Farbcode anpassen
@@ -341,6 +345,10 @@ Freely assignable key combinations (2–3 keys) for:
 - Save screenshot
 - Reset CD timer
 - Open FCoins calculator and premium shopping list
+
+### Controller
+- Full gamepad control for launcher and game (Xbox, PS5, Steam Deck) — bindings per profile
+- **Two characters at once**: pass inputs through to the Ringmaster via a shoulder-button modifier
 
 ### Themes & Languages
 - Built-in themes: Toffee, Cinnamon, Flyff Gold, Synthwave, Steel Ruby, Wood, and more

@@ -20,6 +20,8 @@ export interface PollerHandlers {
     onDirection(dir: NavDirection): void;
     onButton(btn: NavButton): void;
     onScroll(dx: number, dy: number): void;
+    /** Meldet Änderungen der Gamepad-Präsenz (verbunden / getrennt). */
+    onPadPresence(present: boolean): void;
 }
 
 // Standard-Gamepad-Layout (Chromium "standard mapping").
@@ -48,6 +50,7 @@ export interface GamepadPoller {
 export function createGamepadPoller(handlers: PollerHandlers): GamepadPoller {
     let running = false;
     let rafId = 0;
+    let padPresent = false;
     const prevButtons: boolean[] = [];
     let heldDir: NavDirection | null = null;
     let nextRepeatAt = 0;
@@ -87,6 +90,11 @@ export function createGamepadPoller(handlers: PollerHandlers): GamepadPoller {
         let gp: Gamepad | null = null;
         for (const p of pads) {
             if (p) { gp = p; break; }
+        }
+        const present = gp !== null;
+        if (present !== padPresent) {
+            padPresent = present;
+            handlers.onPadPresence(present);
         }
         if (gp) {
             if (edge(gp, BTN_A)) handlers.onButton("activate");
