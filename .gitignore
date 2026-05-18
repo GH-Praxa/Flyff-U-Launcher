@@ -40,6 +40,8 @@ nul
 /__tmp_patch_overlay.js
 /tmp_replace.py
 
+DEV-NOTES.md
+
 # Test images (not needed in production)
 /app/test/
 
