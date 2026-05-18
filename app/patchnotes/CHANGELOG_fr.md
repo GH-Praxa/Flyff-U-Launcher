@@ -1,7 +1,10 @@
 # 📦 Notes de patch
 
 ---
-## 🆕 Version 3.9.0
+## 🆕 Version 4.0.0
+
+### ✨ Nouvelles fonctionnalités
+- Les cartes de profil peuvent afficher des badges de serveur globaux et liés au personnage
 
 ### 🎮 Prise en charge des manettes
 - Manette Xbox

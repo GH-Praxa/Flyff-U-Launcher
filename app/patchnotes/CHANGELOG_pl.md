@@ -1,7 +1,10 @@
 # 📦 Patchnotes
 
 ---
-## 🆕 Wersja 3.9.0
+## 🆕 Wersja 4.0.0
+
+### ✨ Nowe funkcje
+- Karty profili mogą wyświetlać globalne i powiązane z postacią odznaki serwera
 
 ### 🎮 Obsługa kontrolera
 - Kontroler Xbox

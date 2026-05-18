@@ -1583,6 +1583,52 @@ export function openConfigModal(
             patchnotesContent.innerHTML = `<div class='muted'>Error loading patchnotes: ${String(err)}</div>`;
         }
     }
+    // Wrap each top-level topic (## heading) into a collapsible <details> block.
+    // Runs on the already-rendered HTML so accordion parsing stays untouched: a
+    // topic heading is a <h2> sitting at <details>-nesting depth 0. Headings
+    // inside accordions live at depth >= 1 and are left exactly as they are.
+    function wrapTopicSections(html: string): string {
+
+        const tokenRe = /<details\b|<\/details>|<h2>/g;
+        let depth = 0;
+        const topicStarts: number[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = tokenRe.exec(html))) {
+            if (m[0] === "<h2>") {
+                if (depth === 0) topicStarts.push(m.index);
+            } else if (m[0] === "</details>") {
+                if (depth > 0) depth--;
+            } else {
+                depth++;
+            }
+        }
+        // No top-level topics found - return unchanged so docs still render.
+        if (topicStarts.length === 0) return html;
+
+        let out = html.slice(0, topicStarts[0]);
+        for (let i = 0; i < topicStarts.length; i++) {
+            const start = topicStarts[i];
+            const end = i + 1 < topicStarts.length ? topicStarts[i + 1] : html.length;
+            const section = html.slice(start, end);
+            const titleMatch = section.match(/^<h2>([\s\S]*?)<\/h2>/);
+            const titleHtml = titleMatch ? titleMatch[1] : "";
+            const body = titleMatch ? section.slice(titleMatch[0].length) : section;
+            // Language-agnostic badge: first visible character of the title.
+            const titleText = titleHtml.replace(/<[^>]+>/g, "").trim();
+            const firstChar = titleText.match(/\S/);
+            const badge = (firstChar ? firstChar[0] : "•").toUpperCase();
+            const open = i === 0 ? " open" : "";
+            out += `<details class="docTopic"${open}>`
+                + `<summary class="docTopicHeader">`
+                + `<span class="docTopicBadge">${escapeHtml(badge)}</span>`
+                + `<span class="docTopicTitle">${titleHtml}</span>`
+                + `<span class="docTopicChevron">&#9654;</span>`
+                + `</summary>`
+                + `<div class="docTopicBody">${body}</div>`
+                + `</details>`;
+        }
+        return out;
+    }
     // Load documentation content
 
     async function loadDocumentation() {
@@ -1590,7 +1636,7 @@ export function openConfigModal(
         docsContent.innerHTML = "<div class='muted'>Loading...</div>";
         try {
             const { content, assetsPath } = await window.api.documentationGet(currentLocale);
-            docsContent.innerHTML = markdownToHtmlExtended(content, assetsPath);
+            docsContent.innerHTML = wrapTopicSections(markdownToHtmlExtended(content, assetsPath));
         } catch (err) {
             docsContent.innerHTML = `<div class='muted'>Error loading documentation: ${String(err)}</div>`;
         }

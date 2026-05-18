@@ -227,6 +227,118 @@ Tüm kullanıcı verileri varsayılan olarak `%APPDATA%/Flyff-U-Launcher/` için
 
 :::
 
+## Kumanda
+
+Launcher ve oyun, bir gamepad ile tamamen kontrol edilebilir.
+
+::youtube[fSYgnEh36-g]
+
+Atamalar **profil başına** kaydedilir; böylece her karakterin kendi düzeni olabilir.
+
+
+:::accordion[Tuş atamalarını özelleştir]
+
+**Ayarlar → Kumanda** bölümünü aç.
+
+- Üstte **Profil** açılır menüsünden düzenlemek istediğin karakteri seç.
+- Düğmeler gruplara ayrılmıştır: **Yüz düğmeleri**, **Omuzlar ve tetikler**, **D-Pad** ve **Sistem ve çubuklar**.
+- Bir düğmenin yanındaki **Tuş ayarla** butonuna tıkla, ardından istediğin tuşa bas — hedef giriş olarak kaydedilir.
+- **Bağı kaldır** bir atamayı siler, **Varsayılan** tek bir düğmeyi sıfırlar, **Tümünü sıfırla** ise tüm profili sıfırlar.
+- Kumanda şemasında bir düğmeye tıklayarak veya üzerine gelerek doğrudan o düğmenin atamasına atlayabilirsin.
+- **Kaydet** butonu ile atama uygulanır.
+
+Çubuklar sabit olarak bağlıdır: **sol çubuk = hareket**, **sağ çubuk = kamera**.
+:::
+
+
+:::accordion[Özel eylemler]
+
+Bir düğmeye normal tuş yerine **özel eylem** atanabilir.
+
+| Eylem | Etki |
+|-------|------|
+| Action-Pad tetikleyici | Oyun HUD'undaki Action-Pad düğmesine tıklar (saldırı/zıplama/etkileşim) |
+| Yakınlaştır / Uzaklaştır | Yakınlaştırır / uzaklaştırır |
+| Önceki sekme / Sonraki sekme | Açık profil sekmeleri arasında geçiş yapar |
+| Görünümü yenile | Geçerli oyun penceresini yeniler |
+| Tam ekrana geç | Launcher penceresini tam ekrana alır |
+| Ayarları aç | Ayarlar penceresini açar |
+| Ringmaster (yönlendir) | Girişler Ringmaster'a iletilir |
+| Slot 1 – 8 tıkla | Kalibre edilmiş parti üyesine tıklar (bkz. "Parti üyelerini hedefle") |
+
+:::
+
+:::accordion[Action-Pad]
+
+Saldırmak için D-Pad gereklidir.
+
+**Adım 1:** Oyunda etkinleştir: Menü → Seçenekler → Oyun → "Directional Pad" → **Action-Pad**.
+
+**Adım 2:** Bir düğmeye (örn. X) **Action-Pad** özel eylemini ata.
+
+**Adım 3:** Oyunda **Ctrl + Shift + F1** tuşlarına basarak kalibrasyonu başlat.
+
+**Adım 4:** Oyundaki bir sonraki tıklama Action-Pad ankrajını belirler. Action-Pad düğmesinin ortasına tıkla.
+
+**Sonuç:** Action-Pad görünür olduğu sürece, atanan düğme ile yakındaki bir canavar saldırılabilir.
+
+:::
+
+:::accordion[Modifier katmanları]
+
+**Modifier katmanları** ile daha fazla tuş atanabilir. Etkinleştirildiğinde, omuz tuşlarından birini basılı tutarak yüz tuşlarına (PlayStation'da: △ ◯ ✕ ☐) birden fazla atama yapılabilir.
+
+- Kumanda sekmesinde **Modifier katmanları** bölümünü aç.
+- Bir omuzu modifier olarak etkinleştir (anahtarı **AÇIK** konumuna getir).
+- Her yüz tuşu için alternatif eylemi belirle. "(varsayılan)" seçeneği varsayılan atamayı korur.
+
+:::
+
+
+
+:::accordion[Ringmaster yönlendirme]
+
+**Ringmaster yönlendirme** ile görünür pencereyi değiştirmeden arka plandaki sekmede Ringmaster kontrol edilebilir.
+
+**Adım 1:** Kumanda sekmesinde, ana ayarlar altındaki **Ringmaster hedefi** açılır menüsünden iletilen girişleri alacak profili seç.
+
+**Adım 2:** Bir düğmeye **Ringmaster (yönlendir)** özel eylemini ata.
+
+**Adım 3:** Oyunda yönlendirme tuşunu basılı tut → tüm girişler Ringmaster'a gider. Bırakınca → girişler tekrar ana karaktere gider.
+
+**Dikkat:** Hedef profil açık ve giriş yapmış olmalıdır. Değilse, iletilen yetenekler boşa gider.
+
+:::
+
+:::accordion[Parti üyelerini hedefle]
+
+**İsim slotu 1-8** ile parti üyelerini hedefleme bir düğmeye atanabilir.
+
+**Adım 1:** Kumanda sekmesinde, örneğin Ringmaster profilinde **Slot 1 kalibre et** seçeneğine tıkla.
+
+**Adım 2:** Oyunda parti penceresini aç (gerekirse kompakt sürüm) ve partideki ilk isme tıkla.
+
+**Adım 3:** Bir düğmeye "Slot 1 tıkla" özel eylemini ata.
+
+
+
+:::
+
+
+:::accordion[Yetenek simgesi seçici]
+
+Hangi yeteneğin hangi yüz tuşuna atandığını bir bakışta görmek için her düğmeye (✕ ◯ △ ☐) bir simge atayabilirsin.
+
+- Kumanda sekmesinde ilgili düğmenin yanındaki **Yetenek simgesi seç** butonuna (kamera simgesi) tıkla.
+- Seçici içinde simgeyi ara veya **Tümü / Yetenekler / Eşyalar / Buff'lar** sekmeleriyle filtrele.
+- Bir simgeye tıklayarak onu uygula; düğme üzerinde **Shift + tık** ile simgeyi kaldırabilirsin.
+
+**Not:** Simge seçici, simge önbelleğine erişir. Simgeler için **API-Fetch** (yetenekler, gerektiğinde eşyalar da) ve **CD-Timer** gereklidir.
+
+Yüz tuşu önizlemesi **Ctrl + Shift** ile taşınabilir.
+
+:::
+
 ## Pluginler
 
 Pluginlerin çoğu API verisi ve ikonlarına ihtiyaç duyar. Bunları API-Fetch ile indir.
@@ -588,6 +700,8 @@ Karşılaştırma modunda her iki koruma sistemi (S-Protect vs. S-Protect Low) y
 **Saklama:** Fiyatlar ve ayarlar otomatik olarak kaydedilir (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::
+
+## Diğer
 
 :::accordion[Duyurular]
 

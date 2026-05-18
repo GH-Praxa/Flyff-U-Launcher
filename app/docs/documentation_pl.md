@@ -227,6 +227,118 @@ Wszystkie dane użytkownika znajdują się domyślnie w `%APPDATA%/Flyff-U-Launc
 
 :::
 
+## Kontroler
+
+Launcher oraz gra mogą być w pełni obsługiwane za pomocą gamepada.
+
+::youtube[fSYgnEh36-g]
+
+Przypisania są zapisywane **per profil**, dzięki czemu każda postać może mieć własny układ.
+
+
+:::accordion[Dostosowywanie przypisań]
+
+Otwórz **Ustawienia → Kontroler**.
+
+- Wybierz u góry w sekcji **Profil** postać, której przypisania chcesz edytować.
+- Przyciski są pogrupowane: **Przyciski twarzy**, **Naramienne i spusty**, **Krzyżak** oraz **System i drążki**.
+- Kliknij przy przycisku **Ustaw klawisz**, a następnie naciśnij żądany klawisz — zostanie on zapisany jako docelowe wejście.
+- **Odepnij** usuwa przypisanie, **Domyślne** resetuje pojedynczy przycisk, **Resetuj wszystkie** resetuje cały profil.
+- Na schemacie kontrolera możesz kliknąć przycisk lub najechać na niego kursorem, aby przejść bezpośrednio do jego przypisania.
+- **Zapisz** zatwierdza przypisanie.
+
+Drążki są stałe: **lewy drążek = ruch**, **prawy drążek = kamera**.
+:::
+
+
+:::accordion[Akcje specjalne]
+
+Przyciskowi można przypisać zamiast zwykłego klawisza **akcję specjalną**.
+
+| Akcja | Działanie |
+|-------|-----------|
+| Wyzwalacz Action-Pad | Kliknięcie przycisku Action w HUD gry (atak/skok/interakcja) |
+| Powiększ / Pomniejsz | Przybliżenie / oddalenie kamery |
+| Poprzednia / Następna karta | Przełącza między otwartymi kartami profilu |
+| Przeładuj widok | Przeładowuje bieżące okno gry |
+| Przełącz pełny ekran | Przełącza okno launchera na pełny ekran |
+| Otwórz ustawienia | Otwiera okno ustawień |
+| Ringmaster (przekazanie) | Wejścia są przekazywane do Ringmastera |
+| Kliknij slot 1 – 8 | Kliknięcie skalibrowanego członka drużyny (zob. „Namierzanie członków drużyny") |
+
+:::
+
+:::accordion[Action-Pad]
+
+Do atakowania wymagany jest krzyżak (D-Pad).
+
+**Krok 1:** Włącz w grze: Menu → Opcje → Gra → „Directional Pad" **Action-Pad**.
+
+**Krok 2:** Przypisz przycisk (np. X) do akcji specjalnej **Action-Pad**.
+
+**Krok 3:** Naciśnij w grze **Ctrl + Shift + F1**, aby rozpocząć kalibrację.
+
+**Krok 4:** Następne kliknięcie w grze wyznacza kotwicę Action-Pad. Kliknij środek przycisku Action.
+
+**Wynik:** Gdy Action-Pad jest widoczny, przypisanym przyciskiem można zaatakować pobliskiego potwora.
+
+:::
+
+:::accordion[Warstwy modyfikatora]
+
+**Warstwy modyfikatora** umożliwiają obsługę większej liczby klawiszy. Gdy są aktywne, przytrzymanie odpowiednich przycisków naramiennych pozwala przypisać przyciski twarzy (przy PlayStation: △ ◯ ✕ ☐) wielokrotnie.
+
+- Otwórz w zakładce Kontroler sekcję **Warstwy modyfikatora**.
+- Aktywuj ramię jako modyfikator (przełącznik na **WŁ**).
+- Dla każdego przycisku twarzy ustaw alternatywną akcję. „(domyślnie)" pozostawia domyślne przypisanie.
+
+:::
+
+
+
+:::accordion[Ringmaster — przekazanie]
+
+**Ringmaster (przekazanie)** umożliwia sterowanie Ringmasterem w karcie działającej w tle bez przełączania widocznego okna.
+
+**Krok 1:** W zakładce Kontroler, w głównych ustawieniach, wybierz w sekcji **Cel Ringmaster** profil, który ma otrzymywać przekazywane wejścia.
+
+**Krok 2:** Przypisz akcję specjalną **Ringmaster (przekazanie)** do wybranego przycisku.
+
+**Krok 3:** Przytrzymaj w grze przycisk przekazania → wszystkie wejścia trafiają do Ringmastera. Puść → wejścia wracają do głównej postaci.
+
+**Uwaga:** Profil docelowy musi być otwarty i zalogowany. Jeśli tak nie jest, przekazane skille nie trafiają do celu.
+
+:::
+
+:::accordion[Namierzanie członków drużyny]
+
+**Kalibracja slotów imion (sloty 1–8)** pozwala przypisać namierzanie członków drużyny do przycisku.
+
+**Krok 1:** W zakładce Kontroler, np. na profilu Ringmastera, wybierz **Kalibruj slot 1**.
+
+**Krok 2:** Otwórz w grze okno drużyny (ewentualnie widok kompaktowy) i kliknij pierwsze imię w drużynie.
+
+**Krok 3:** Przypisz przyciskowi akcję specjalną „Kliknij slot 1".
+
+
+
+:::
+
+
+:::accordion[Wybór ikony umiejętności]
+
+Aby na pierwszy rzut oka widzieć, która umiejętność jest przypisana do którego przycisku twarzy, możesz przypisać każdemu przyciskowi (✕ ◯ △ ☐) ikonę.
+
+- Kliknij w zakładce Kontroler przy danym przycisku **Wybierz ikonę umiejętności** (ikona aparatu).
+- Wyszukaj ikonę w pickerze lub filtruj według zakładek **Wszystkie / Umiejętności / Przedmioty / Buffy**.
+- Kliknięcie ikony ją zatwierdza; **Shift + kliknięcie** na przycisk usuwa ikonę.
+
+**Uwaga:** Picker ikon korzysta z pamięci podręcznej ikon. Do wyświetlania ikon wymagane są **API-Fetch** (umiejętności, w razie potrzeby również przedmioty) oraz **CD-Timer**.
+
+Podgląd przycisków twarzy można przesuwać za pomocą **Ctrl + Shift**.
+
+:::
+
 ## Pluginy
 
 Pluginy zwykle potrzebują danych i ikon z API. Pobierz je poprzez API-Fetch.
@@ -588,6 +700,8 @@ W trybie porównania oba systemy ochrony (S-Protect vs. S-Protect Low) są wyśw
 **Zapisywanie:** Ceny i ustawienia są zapisywane automatycznie (`%APPDATA%/Flyff-U-Launcher/user/tools/upgrades/upgrade_cost_calc.json`).
 
 :::
+
+## Inne
 
 :::accordion[Ogłoszenia]
 

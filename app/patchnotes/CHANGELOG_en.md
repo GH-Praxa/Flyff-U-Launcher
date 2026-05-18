@@ -1,7 +1,10 @@
 # 📦 Patchnotes
 
 ---
-## 🆕 Version 3.9.0
+## 🆕 Version 4.0.0
+
+### ✨ New Features
+- Profile cards can show global and character-specific server badges
 
 ### 🎮 Controller Support
 - Xbox controller

@@ -1,7 +1,10 @@
 # 📦 Yama Notları
 
 ---
-## 🆕 Sürüm 3.9.0
+## 🆕 Sürüm 4.0.0
+
+### ✨ Yeni Özellikler
+- Profil kartları global ve karaktere özel sunucu rozetleri gösterebilir
 
 ### 🎮 Kumanda desteği
 - Xbox kumandası

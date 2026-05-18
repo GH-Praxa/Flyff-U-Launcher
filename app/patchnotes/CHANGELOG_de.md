@@ -1,12 +1,17 @@
 # 📦 Patchnotes
 
 ---
-## 🆕 Version 3.9.0
+## 🆕 Version 4.0.0
+
+### ✨ Neue Funktionen
+- Profilekarten können Globale und Char-bezogene Server-Badges erhalten
 
 ### 🎮 Controller-Support
 - Xbox Controller
 - Playstation 5 Controller
 - Steamdeck
+
+
 
 ### Neue Menüpunkte
 - Einstellungen → Controller

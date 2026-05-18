@@ -60,7 +60,8 @@ function buildCSP(nonce?: string): string {
         "img-src 'self' data: https: blob: file:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' https://universe.flyff.com https://*.flyff.com https://raw.githubusercontent.com",
-        "frame-src 'self' file: blob: data:",
+        // www.youtube.com is needed for ::youtube[] doc embeds
+        "frame-src 'self' file: blob: data: https://www.youtube.com",
         "object-src 'none'",
         // Allow file:// base-uri for plugin UI iframes
         "base-uri 'self' file:",

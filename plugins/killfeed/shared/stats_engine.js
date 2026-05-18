@@ -41,11 +41,13 @@ function createStatsEngine(config, initialState) {
   // Pending exp-drop candidate: distinguishes a single OCR down-jitter (keep
   // baseline) from a baseline that is genuinely too high (correct it down).
   let pendingExpDrop = null;
-  // Lump-Splitting: geschaetzte EXP pro Einzel-Kill + zuletzt geeichtes
-  // Monster. Dient dazu, einen bei OCR-Haengern zusammengefassten EXP-Sprung
-  // wieder in die echte Anzahl Kills aufzuteilen.
-  let unitExp = null;
+  // Lump-Splitting: Bei OCR-Haengern werden mehrere Kills zu EINEM EXP-Sprung
+  // zusammengefasst. `recentDeltas` haelt die letzten deltaExp-Proben des
+  // aktuellen Monsters; daraus wird robust die Einzel-Kill-EXP geschaetzt, um
+  // den Sprung wieder in die echte Anzahl Kills aufzuteilen. `lastUnitMonster`
+  // erkennt den Monsterwechsel (andere Einheit → Fenster zuruecksetzen).
   let lastUnitMonster = null;
+  let recentDeltas = [];
 
   /**
    * Update config
@@ -239,6 +241,10 @@ function createStatsEngine(config, initialState) {
       pendingSuspect = null;
       pendingLevelDrop = null;
       pendingExpDrop = null;
+      // Nach einem Level-up aendert sich die EXP-pro-Kill in Prozent (anderer
+      // EXP-Bedarf) → Lump-Splitting-Proben verwerfen, sonst splittet die
+      // veraltete Einheit falsch.
+      recentDeltas = [];
       state.lastLvl = lvl;
       state.lastExp = exp;
       return null;
@@ -294,6 +300,8 @@ function createStatsEngine(config, initialState) {
       if (isLevelUpWrap) {
         pendingLevelDrop = null;
         pendingExpDrop = null;
+        // Level-up (EXP-Umwicklung) → Lump-Splitting-Proben verwerfen.
+        recentDeltas = [];
         state.lastLvl = lvl;
         state.lastExp = exp;
         return null;
@@ -375,31 +383,73 @@ function createStatsEngine(config, initialState) {
   }
 
   /**
+   * Robuste Schaetzung der Einzel-Kill-EXP aus den letzten deltaExp-Proben.
+   * Einzelkills dominieren die Stichprobe; Lumps (ganzzahlige Vielfache) und
+   * OCR-Jitter (zu kleine Teil-Reads) sind selten — der Median ist gegen
+   * beide robust. Anschliessend wird der Mittelwert NUR ueber den
+   * Einzelkill-Cluster (~0,6x..1,6x Median) gebildet: Lumps (>=~1,7x) und
+   * Jitter (<0,6x) fallen heraus.
+   * @returns {number|null} geschaetzte Einheit, oder null bei zu wenig Daten
+   */
+  function estimateUnitExp(samples) {
+    if (!samples || samples.length < 4) return null;
+    const sorted = samples.slice().sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    if (!(median > 0)) return null;
+    const cluster = sorted.filter((v) => v >= median * 0.6 && v <= median * 1.6);
+    if (cluster.length === 0) return median;
+    return cluster.reduce((s, v) => s + v, 0) / cluster.length;
+  }
+
+  /**
    * Register a confirmed kill
    */
   function registerKill(deltaExp, monsterName, timestamp, monsterMeta) {
     const name = monsterName || 'Unknown';
     const rank = getMonsterRank(name, monsterMeta);
 
-    // Lump-Splitting: Bei OCR-Haengern (langsame/uebersprungene OCR) werden
-    // mehrere echte Kills zu EINEM EXP-Sprung zusammengefasst. Anhand der
-    // typischen Einzel-Kill-EXP (`unitExp`) schaetzen, wie viele Kills in
-    // diesem deltaExp stecken.
-    let killCount = 1;
-    if (unitExp === null || unitExp <= 0 || name !== lastUnitMonster) {
-      // Erstkill bzw. Monsterwechsel → neu eichen, konservativ als 1 zaehlen.
-      if (deltaExp > 0) unitExp = deltaExp;
+    // Lump-Splitting: Bei langsamer/uebersprungener OCR werden mehrere echte
+    // Kills zu EINEM EXP-Sprung zusammengefasst. Ueber eine robuste Schaetzung
+    // der Einzel-Kill-EXP wird ermittelt, wie viele Kills im deltaExp stecken.
+    //
+    // Monsterwechsel → Probenfenster zuruecksetzen (andere Einheit).
+    if (name !== lastUnitMonster) {
+      recentDeltas = [];
       lastUnitMonster = name;
-    } else {
-      killCount = Math.round(deltaExp / unitExp);
-      if (killCount < 1) killCount = 1;
-      if (killCount > 30) killCount = 30;
-      const impliedUnit = deltaExp / killCount;
-      // `unitExp` folgt dem kleinsten Einzel-Kill-Wert: schnell nach unten
-      // (ein Einzelkill enthuellt die echte Einheit; Lumps sind Vielfache),
-      // langsam nach oben (z. B. nach Level-up/leichtem Drift).
-      unitExp = impliedUnit < unitExp ? impliedUnit : unitExp * 0.9 + impliedUnit * 0.1;
     }
+    if (deltaExp > 0) {
+      recentDeltas.push(deltaExp);
+      if (recentDeltas.length > 21) recentDeltas.shift();
+    }
+
+    let killCount = 1;
+    // estimateUnitExp liefert erst ab 4 Proben einen Wert → die ersten 3 Kills
+    // nach einem Monsterwechsel werden bewusst als je 1 gezaehlt (zu wenig
+    // Daten zum Splitten; verhindert Ueberzaehlung beim Wechsel).
+    const estUnit = estimateUnitExp(recentDeltas);
+    if (estUnit && estUnit > 0) {
+      const ratio = deltaExp / estUnit;
+      const nearest = Math.round(ratio);
+      // Nur splitten, wenn das Verhaeltnis WIRKLICH nahe an einer ganzen Zahl
+      // liegt. Ein krummes Verhaeltnis (z. B. 1,75) bedeutet: die Einheit-
+      // Schaetzung passt (noch) nicht — NICHT, dass es Teil-Kills gibt.
+      // → dann konservativ als 1 zaehlen.
+      if (nearest >= 2 && Math.abs(ratio - nearest) <= 0.25) {
+        killCount = nearest;
+      }
+    }
+    // expectedExp (Monster-Tabelle) ist ein konservativer UNTERwert der echten
+    // Einzel-Kill-EXP. Die implizite Einheit (deltaExp/killCount) darf nie
+    // darunter fallen → oberer Sicherheits-Deckel gegen extreme Fehlschaetzung.
+    const expectedExp = monsterMeta && Number(monsterMeta.expectedExp);
+    if (Number.isFinite(expectedExp) && expectedExp > 0) {
+      const maxByExpected = Math.floor(deltaExp / expectedExp);
+      if (maxByExpected >= 1 && killCount > maxByExpected) {
+        killCount = maxByExpected;
+      }
+    }
+    if (killCount < 1) killCount = 1;
+    if (killCount > 30) killCount = 30;
 
     if (!state.sessionStartTime) {
       state.sessionStartTime = timestamp;

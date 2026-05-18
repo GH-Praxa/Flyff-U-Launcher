@@ -242,6 +242,118 @@ All user data is stored in platform-dependent directories:
 
 :::
 
+## Controller
+
+The launcher and the game can be fully controlled with a gamepad.
+
+::youtube[fSYgnEh36-g]
+
+Bindings are saved **per profile**, so each character can have its own layout.
+
+
+:::accordion[Customize bindings]
+
+Open **Settings → Controller**.
+
+- Select the character whose bindings you want to edit under **Profile** at the top.
+- Buttons are organized into groups: **Face buttons**, **Shoulders & Triggers**, **D-Pad**, and **System & Sticks**.
+- Click **Set key** on a button, then press the desired key — it will be saved as the target input.
+- **Unbind** removes a binding, **Default** resets a single button, **Reset all** resets the entire profile.
+- In the controller diagram you can click or hover over a button to jump directly to its binding.
+- Click **Save** to apply the binding.
+
+The sticks are hardwired: **left stick = movement**, **right stick = camera**.
+:::
+
+
+:::accordion[Special actions]
+
+A button can trigger a **special action** instead of a normal key press.
+
+| Action | Effect |
+|--------|--------|
+| Action-pad trigger | Click on the action button in the game HUD (attack/jump/interaction) |
+| Zoom in / Zoom out | Zoom in / zoom out |
+| Previous tab / Next tab | Switch between open profile tabs |
+| Reload view | Reload the current game window |
+| Toggle fullscreen | Toggle the launcher window to fullscreen |
+| Open settings | Open the settings window |
+| Ringmaster (forward) | Inputs are forwarded to the Ringmaster |
+| Click name slot 1–8 | Click on the calibrated party member (see "Target party members") |
+
+:::
+
+:::accordion[Action-Pad]
+
+The D-Pad is required for attacking.
+
+**Step 1:** Enable in-game: Menu → Options → Game → "Directional Pad" **Action-Pad**.
+
+**Step 2:** Bind a button (e.g. X) to the special action **Action-Pad**.
+
+**Step 3:** Press **Ctrl+Shift+F1** in-game to start calibration.
+
+**Step 4:** The next click in the game sets the anchor for the Action-Pad. Click the center of the action button.
+
+**Result:** As long as the Action-Pad is visible, you can attack a nearby monster with the assigned button.
+
+:::
+
+:::accordion[Modifier Layer]
+
+The **Modifier Layer** allows more keys to be used. When enabled, holding a shoulder button lets you assign additional actions to the face buttons (on PlayStation: △ ◯ ✕ ☐).
+
+- Open the **Modifier layers** section in the Controller tab.
+- Enable a shoulder as a modifier (toggle to **ON**).
+- Set the alternative action for each face button. "(default)" keeps the standard binding.
+
+:::
+
+
+
+:::accordion[Ringmaster Forward]
+
+**Ringmaster Forward** lets you control the Ringmaster in a background tab without switching the visible window.
+
+**Step 1:** In the Controller tab under the main settings, select the profile that should receive the forwarded inputs under **Ringmaster target**.
+
+**Step 2:** Assign the special action **Ringmaster (forward)** to a button.
+
+**Step 3:** Hold the forward button in-game → all inputs go to the Ringmaster. Release → inputs return to the main character.
+
+**Note:** The target profile must be open and logged in. If it is not, the forwarded skills will fire into the void.
+
+:::
+
+:::accordion[Target party members]
+
+**Name-slot 1–8** lets you assign targeting a party member to a button.
+
+**Step 1:** In the Controller tab on the Ringmaster profile, for example, click **Calibrate slot 1**.
+
+**Step 2:** Open the party window in-game (compact view if needed) and click the first name in the party.
+
+**Step 3:** Assign the special action "Click name slot 1" to a button.
+
+
+
+:::
+
+
+:::accordion[Skill Icon Picker]
+
+To see at a glance which skill is on which face button, you can assign an icon to each button (✕ ◯ △ ☐).
+
+- In the Controller tab, click **Pick skill icon** (camera icon) on the respective button.
+- In the picker, search for the icon or filter using the tabs **All / Skills / Items / Buffs**.
+- Clicking an icon applies it; **Shift+click** on the button removes the icon.
+
+**Note:** The icon picker uses the icon cache. **API-Fetch** (Skills, and Items as needed) and **CD-Timer** are required for the icons.
+
+The face button preview can be repositioned with **Ctrl+Shift**.
+
+:::
+
 ## Plugins
 
 Plugins usually need data and icons from the API. You can download them with API-Fetch.

@@ -242,6 +242,118 @@ Toutes les données utilisateur se trouvent dans les répertoires suivants selon
 
 :::
 
+## Manette
+
+Le launcher ainsi que le jeu peuvent être contrôlés entièrement avec une manette.
+
+::youtube[fSYgnEh36-g]
+
+Les affectations sont enregistrées **par profil**, de sorte que chaque personnage peut avoir son propre layout.
+
+
+:::accordion[Personnaliser les affectations]
+
+Ouvre **Paramètres → Manette**.
+
+- Sélectionne en haut sous **Profil** le personnage dont tu veux modifier les affectations.
+- Les boutons sont regroupés par catégories : **Face-Buttons**, **Gâchettes & boutons**, **Croix directionnelle** et **Système & sticks**.
+- Clique sur **Définir la touche** pour un bouton, puis appuie sur la touche souhaitée — elle sera enregistrée comme entrée cible.
+- **Désassigner** supprime une affectation, **Défaut** remet un bouton individuel à sa valeur par défaut, **Tout réinitialiser** réinitialise le profil entier.
+- Dans le schéma de la manette, tu peux cliquer sur un bouton ou le survoler avec la souris pour accéder directement à son affectation.
+- **Enregistrer** applique les affectations.
+
+Les sticks sont fixes : **stick gauche = déplacement**, **stick droit = caméra**.
+:::
+
+
+:::accordion[Actions spéciales]
+
+Un bouton peut déclencher une **action spéciale** au lieu d'une touche normale.
+
+| Action | Effet |
+|--------|-------|
+| Déclencheur Action-Pad | Clic sur le bouton Action dans le HUD du jeu (attaque/saut/interaction) |
+| Zoom + / Zoom − | Zoom avant / arrière |
+| Onglet précédent / Onglet suivant | Basculer entre les onglets de profil ouverts |
+| Recharger la vue | Recharge la fenêtre de jeu active |
+| Basculer plein écran | Passe la fenêtre du launcher en plein écran |
+| Ouvrir les paramètres | Ouvre la fenêtre des paramètres |
+| Ringmaster (transfert) | Les entrées sont transmises au Ringmaster |
+| Cliquer slot 1 – 8 | Clic sur le membre du groupe calibré (voir « Cibler des membres du groupe ») |
+
+:::
+
+:::accordion[Action-Pad]
+
+Pour attaquer, le D-Pad est nécessaire.
+
+**Étape 1 :** Active dans le jeu : Menu → Options → Jeu → « Directional Pad » **Action-Pad**.
+
+**Étape 2 :** Assigne un bouton (par ex. X) à l'action spéciale **Action-Pad**.
+
+**Étape 3 :** Appuie dans le jeu sur **Ctrl + Shift + F1** pour démarrer le calibrage.
+
+**Étape 4 :** Le prochain clic dans le jeu définit l'ancrage de l'Action-Pad. Clique au centre du bouton Action.
+
+**Résultat :** Tant que l'Action-Pad est visible, le bouton choisi permet d'attaquer un monstre à proximité.
+
+:::
+
+:::accordion[Modifier-Layer]
+
+Le **Modifier-Layer** permet d'accéder à davantage de touches. Lorsqu'il est activé, maintenir les gâchettes correspondantes rend les Face-Buttons (sur PlayStation : △ ◯ ✕ ☐) multi-assignables.
+
+- Ouvre dans l'onglet Manette la section **Couches modificatrices**.
+- Active une gâchette comme modificateur (interrupteur sur **ON**).
+- Définis pour chaque Face-Button l'action alternative. « (défaut) » laisse l'action par défaut s'appliquer.
+
+:::
+
+
+
+:::accordion[Ringmaster (transfert)]
+
+Le **Ringmaster (transfert)** permet de contrôler le Ringmaster dans un onglet en arrière-plan sans changer de fenêtre visible.
+
+**Étape 1 :** Dans l'onglet Manette, dans les paramètres principaux, sélectionne sous **Cible Ringmaster** le profil qui doit recevoir les entrées transmises.
+
+**Étape 2 :** Assigne l'action spéciale **Ringmaster (transfert)** à un bouton.
+
+**Étape 3 :** Maintiens dans le jeu la touche de transfert → toutes les entrées vont au Ringmaster. Relâche → les entrées retournent au Main.
+
+**Attention :** Le profil cible doit être ouvert et connecté. S'il ne l'est pas, les compétences transmises seront perdues dans le vide.
+
+:::
+
+:::accordion[Cibler des membres du groupe]
+
+**Cliquer slot 1-8** permet d'assigner le ciblage de membres du groupe à un bouton.
+
+**Étape 1 :** Dans l'onglet Manette, par exemple sur le profil Ringmaster, sélectionne **Calibrer slot 1**.
+
+**Étape 2 :** Ouvre dans le jeu le panneau du groupe (éventuellement en version compacte) et clique sur le premier nom dans le groupe.
+
+**Étape 3 :** Assigne à un bouton l'action spéciale « Cliquer slot 1 ».
+
+
+
+:::
+
+
+:::accordion[Sélecteur d'icônes de compétences]
+
+Pour voir d'un coup d'œil quelle compétence est assignée à quel Face-Button, tu peux attribuer une icône à chaque bouton (✕ ◯ △ ☐).
+
+- Clique dans l'onglet Manette sur le bouton concerné puis sur **Choisir l'icône** (symbole appareil photo).
+- Recherche l'icône dans le sélecteur ou filtre via les onglets **Toutes / Compétences / Objets / Buffs**.
+- Un clic sur une icône l'applique ; **Shift + clic** sur le bouton retire l'icône.
+
+**Remarque :** Le sélecteur d'icônes accède au cache d'icônes. Pour les icônes, **API-Fetch** (Compétences, et selon les besoins Objets) et **CD-Timer** sont nécessaires.
+
+L'aperçu des Face-Buttons peut être déplacé avec **Ctrl + Shift**.
+
+:::
+
 ## Plugins
 
 Les plugins nécessitent en général des données et icônes de l'API. Tu peux les télécharger avec API-Fetch.
