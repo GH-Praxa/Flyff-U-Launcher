@@ -76,11 +76,22 @@ export function parseExpPercent(text: string): number | null {
 
 /**
  * Parse level from OCR text (digits only, 1-999).
+ *
+ * Tesseract liest am ROI-Rand gelegentlich Artefakte als fuehrende Ziffer
+ * mit (z. B. das "v" von "Lv142" wird zu einer "1" → "1142" statt "142",
+ * oder ein Border-Stueck wird als "1" missinterpretiert). Wuerden wir
+ * solche >999-Werte ohne Korrektur als null abweisen, faellt der ocrLvl-
+ * Pipeline-Reaktor auf die Bright/White/Otsu-Methoden zurueck — die fuer
+ * cyan-farbene Ziffern fast leere Masken liefern und aus Bildrauschen
+ * dann ein einzelnes "2" oder "7" hallucinieren (live verifiziert
+ * 2026-05-21). Pragmatik: Flyff-Level sind dreistellig, also bei >3
+ * gelesenen Ziffern die letzten drei als wahre Lesung behandeln.
  */
 export function parseLevel(text: string): number | null {
     if (!text) return null;
-    const digits = text.replace(/[^0-9]/g, "");
+    let digits = text.replace(/[^0-9]/g, "");
     if (!digits) return null;
+    if (digits.length > 3) digits = digits.slice(-3);
     const val = parseInt(digits, 10);
     if (val >= 1 && val <= 999) return val;
     return null;

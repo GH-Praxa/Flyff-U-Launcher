@@ -167,6 +167,36 @@ export async function extractWhiteTextMask(bgr: RawImage, scale = 6.0): Promise<
 }
 
 /**
+ * Extract cyan text mask. Flyff UI verwendet cyan-tuerkis-Ziffern fuer das
+ * Level (z. B. "Lv142") auf dunkelblauem Hintergrund — Helligkeit ist
+ * ueber Background und Text vergleichbar, weshalb White/Bright-Mask und
+ * Otsu-Grayscale beide scheitern (live verifiziert 2026-05-21 via
+ * FLYFF_OCR_DEBUG=1: bright/white-Masken praktisch leer, gray_otsu
+ * liefert Zebra-Noise). Cyan-HSV-Extraktion trennt sauber:
+ *   - Cyan-Hue in OpenCV: ~90 (0-179 range), Toleranz +/- 20.
+ *   - Saturation hoch (~80+), damit Pastell/Background nicht reinrutscht.
+ *   - Value moderat (100+), damit dunkles UI nicht miterfasst wird.
+ */
+export async function extractCyanTextMask(bgr: RawImage, scale = 6.0): Promise<RawImage> {
+    // Pixel-Analyse der Flyff "Lv142"-ROI (input 64x27) ergab:
+    //   - Ziffer-Outline: azure ~(0, 138, 235) → HSV H≈100, S≈255, V≈235
+    //   - Ziffer-Fill   : olive/gelb ~(180, 185, 120) → HSV H≈33, S≈85, V≈185
+    //   - Border-Dashes : reines azure (gleicher Wert wie Outline)
+    // Cyan-only erwischt nur die duennen Outlines + die Border und liefert
+    // fragmentarische Ziffern. Olive-Fill OR cyan-Outline gibt komplette
+    // Ziffern-Koerper; die Border bleibt rein cyan und wird via clearBorder
+    // sauber rausgeschnitten.
+    const hsv = bgrToHsv(bgr);
+    const scaledHsv = await resizeHsv(hsv, scale);
+    const cyanMask = hsvInRange(scaledHsv, [70, 80, 100], [110, 255, 255]);
+    const goldMask = hsvInRange(scaledHsv, [15, 60, 100], [48, 255, 255]);
+    const combined = bitwiseOr(cyanMask, goldMask);
+    const closed = morphClose(combined, 2, 2, 1);
+    const border = Math.round(scale * 4);
+    return clearBorder(closed, border);
+}
+
+/**
  * Extract bright text mask (= Python _extract_bright_text_mask).
  */
 export async function extractBrightTextMask(bgr: RawImage, scale = 6.0): Promise<RawImage> {

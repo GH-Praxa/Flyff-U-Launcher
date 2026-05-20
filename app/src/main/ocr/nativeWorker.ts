@@ -18,6 +18,7 @@ import {
     extractGoldTextMaskWide,
     extractWhiteTextMask,
     extractBrightTextMask,
+    extractCyanTextMask,
     cropBgr,
     thresholdOtsu,
     thresholdBinary,
@@ -53,6 +54,20 @@ function resolveDebugDir(customDir?: string): string {
             : (process.env.XDG_CONFIG_HOME || path.join(process.env.HOME || "/tmp", ".config"));
         return path.join(fallback, "Flyff-U-Launcher", "ocr-debug");
     }
+}
+
+/**
+ * Anzahl Pixel != 0 in einer Single-Channel-Maske. Genutzt um „leere" Masken
+ * vor dem Tesseract-Aufruf zu erkennen — Halluzinatoren wie das weiß-inv
+ * Fallback liefern sonst aus reinem Border-Rauschen einzelne Ziffern.
+ */
+function countNonZeroPixels(mask: RawImage): number {
+    const d = mask.data;
+    let count = 0;
+    for (let i = 0; i < d.length; i++) {
+        if (d[i] !== 0) count++;
+    }
+    return count;
 }
 
 async function saveDebug(name: string, img: RawImage): Promise<void> {
@@ -450,6 +465,33 @@ export class NativeOcrWorker {
             const val = parseLevel(raw);
             return [val, raw];
         };
+
+        // Method 0: Cyan text extraction (Flyff "Lv142"-style cyan digits).
+        // Vor allen Helligkeits-basierten Methoden, weil Cyan-Text auf
+        // dunkelblauem Background luminanz-aehnlich ist und White/Bright/Otsu
+        // alle leere bzw. zebra-gestreifte Masken produzieren (diagnostiziert
+        // via FLYFF_OCR_DEBUG, 2026-05-21).
+        // Wir merken uns gleichzeitig die maximale Pixel-Menge ueber alle
+        // Cyan-Versuche. Wenn die <Threshold liegt, hatte die ROI faktisch
+        // keinen Cyan-Inhalt → die nachfolgenden Bright/White/Otsu-Methoden
+        // wuerden aus Border-Rauschen einzelne Ziffern hallucinieren (live
+        // gesehen: dashed ROI-Overlay liefert weiss_inv → "7"). In dem Fall
+        // gleich null zurueck statt einen erfundenen Wert zu produzieren.
+        let maxCyanPixels = 0;
+        for (const scale of [4.0, 6.0]) {
+            const cyanMask = await extractCyanTextMask(bgr, scale);
+            const px = countNonZeroPixels(cyanMask);
+            if (px > maxCyanPixels) maxCyanPixels = px;
+            let [val, raw] = await tryImg(cyanMask, `cyan_${scale}`);
+            if (val !== null) return [val, raw];
+            [val, raw] = await tryImg(invert(cyanMask), `cyan_${scale}_inv`);
+            if (val !== null) return [val, raw];
+        }
+        if (maxCyanPixels < 50) {
+            // ROI hat keinen relevanten Cyan-Inhalt → keine Ziffern → kein
+            // Sinn die Bright/White/Otsu-Halluzinatoren zu starten.
+            return [null, fallbackRaw];
+        }
 
         // Method 1: Bright text extraction
         for (const scale of [4.0, 6.0]) {
