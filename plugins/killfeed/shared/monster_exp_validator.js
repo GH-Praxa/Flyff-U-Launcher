@@ -138,11 +138,15 @@ async function isWithinAllowed(monsterName, level, deltaExp) {
   }
   if (bestExpected <= 0) return null; // keine Datenbasis → skip check
 
-  // Toleranzfaktor: Die Tabellenwerte sind ~7-10x kleiner als der echte
-  // EXP-Gewinn pro Kill (Server-EXP-Rate). x10 hatte keine Reserve und rollte
-  // legitime Kills zurueck. x40 deckt echte Kills ab, blockt grobe Ausreisser.
+  // Toleranzfaktor: Die Tabellenwerte sind deutlich kleiner als der echte
+  // EXP-Gewinn pro Kill (Server-EXP-Rate). Reale Messungen zeigen ~20-30x
+  // gegenueber der Tabelle (z. B. Small Tigar Tabelle 0,0031 % vs. real
+  // ~0,06-0,10 %). Plus Lump-Splitting ~10x. x40 cappte legitime Lumps und
+  // verursachte stille Kill-Verluste (siehe DEV-NOTES, exp_gain_no_kill-Bug).
+  // x400 deckt Server-Multiplikator + Lumps ab; grobe Ausreisser fallen
+  // weiter durch den engine-internen suspectThreshold (40 % deltaExp).
   // Muss konsistent zur killValidator-Decke in main.js sein.
-  if (deltaExp <= bestExpected * 40) return true;
+  if (deltaExp <= bestExpected * 400) return true;
   return false;
 }
 

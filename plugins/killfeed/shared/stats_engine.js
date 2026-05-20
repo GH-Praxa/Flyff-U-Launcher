@@ -241,6 +241,19 @@ function createStatsEngine(config, initialState) {
       pendingSuspect = null;
       pendingLevelDrop = null;
       pendingExpDrop = null;
+      // EXP-Wrap auf Session-/Tages-Summe addieren. Ohne diesen Schritt
+      // verlieren expSession/expTotal genau (100 − prevExp) + exp pro
+      // Level-Up: der EXP-Sprung wickelt über die 100-%-Grenze, registerKill
+      // sieht aber prevLvl/prevExp und newLvl/newExp und feuert hier ohne
+      // EXP-Buchung. Die wraparound-EXP ist real und gehoert in die Tages-/
+      // Session-Bilanz (auch wenn wir sie nicht zuverlaessig einem Monster
+      // zuordnen koennen – kein synthetischer Kill, nur Summen-Update).
+      const levelsBridged = Math.max(1, lvl - prevLvl);
+      const wrapDelta = (100 - prevExp) + (levelsBridged - 1) * 100 + exp;
+      if (wrapDelta > 0) {
+        state.expSession += wrapDelta;
+        state.expTotal += wrapDelta;
+      }
       // Nach einem Level-up aendert sich die EXP-pro-Kill in Prozent (anderer
       // EXP-Bedarf) → Lump-Splitting-Proben verwerfen, sonst splittet die
       // veraltete Einheit falsch.
@@ -300,6 +313,16 @@ function createStatsEngine(config, initialState) {
       if (isLevelUpWrap) {
         pendingLevelDrop = null;
         pendingExpDrop = null;
+        // EXP-Wrap auch hier auf Session-/Tages-Summe addieren (siehe
+        // ausfuehrlichen Kommentar im lvl>prevLvl-Zweig). Dieser Pfad greift,
+        // wenn das lvl-OCR den Levelwechsel verschlaeft — exp wickelt
+        // trotzdem ueber die 100-%-Grenze und die EXP-Bilanz wuerde sonst
+        // genau die wraparound-EXP unterschlagen.
+        const wrapDelta = (100 - prevExp) + exp;
+        if (wrapDelta > 0) {
+          state.expSession += wrapDelta;
+          state.expTotal += wrapDelta;
+        }
         // Level-up (EXP-Umwicklung) → Lump-Splitting-Proben verwerfen.
         recentDeltas = [];
         state.lastLvl = lvl;
@@ -594,9 +617,16 @@ function createStatsEngine(config, initialState) {
       : 0;
     const expPerMin = expPerHour / 60;
 
-    // EXP from last kill
+    // EXP from last kill — pro Einzel-Kill, nicht pro Lump. Bei lump_split
+    // (z. B. kc=4 Tigar-Lump mit deltaExp 0,08 %) ist die Lump-EXP die
+    // Summe der 4 Einzelkills. Anzeige als "EXP letzter Kill" muss das
+    // unitDelta liefern (0,02 %), sonst wird die per-Mob-EXP optisch
+    // ver-N-facht und wirkt, als gäbe das Monster mehr EXP als real.
     const expLastKill = state.last3Kills.length > 0
-      ? state.last3Kills[state.last3Kills.length - 1].deltaExp
+      ? (() => {
+          const last = state.last3Kills[state.last3Kills.length - 1];
+          return last.deltaExp / Math.max(1, last.killCount || 1);
+        })()
       : 0;
 
     // Average time per kill (from rolling window)
@@ -615,10 +645,14 @@ function createStatsEngine(config, initialState) {
       : 0;
 
     // Kills to level up calculation
+    // Wichtig: last3Kills.deltaExp ist bei lump_split die LUMP-EXP (mehrere
+    // Kills zusammen), nicht die Einzel-Kill-EXP. Auf den Lump-Wert zu mitteln
+    // laesst die Anzeige bei wechselnden kc (1/2/3) wild springen. Per-Kill-
+    // Einheit (deltaExp/killCount) ist stabil und identisch zu rollingKills.
     let killsToLevel = 0;
     if (state.last3Kills.length > 0 && state.lastExp !== null) {
-      const deltas = state.last3Kills.map(k => k.deltaExp);
-      const avgDelta = Math.max(median(deltas), cfg.minDelta);
+      const unitDeltas = state.last3Kills.map(k => k.deltaExp / Math.max(1, k.killCount || 1));
+      const avgDelta = Math.max(median(unitDeltas), cfg.minDelta);
       const remaining = 100.0 - state.lastExp;
       killsToLevel = Math.ceil(remaining / avgDelta);
     }
@@ -676,13 +710,22 @@ function createStatsEngine(config, initialState) {
       // Projection
       killsToLevel,
 
-      // Last 3 kills detail
-      last3Kills: state.last3Kills.map(k => ({
-        monsterName: k.monsterName,
-        deltaExp: k.deltaExp,
-        deltaExpFormatted: schema.formatExp(k.deltaExp),
-        timestamp: k.timestamp
-      })),
+      // Last 3 kills detail — `deltaExp` ist hier die PER-KILL-EXP. Bei
+      // lump_split (kc>1) wird die Lump-Summe durch killCount geteilt, damit
+      // die Anzeige nicht 4 zusammengefasste Tigar-Kills als „1 Kill mit
+      // 0,08 %" zeigt. `lumpDeltaExp` haelt die rohe Lump-Summe fuer Analysen.
+      last3Kills: state.last3Kills.map(k => {
+        const kc = Math.max(1, k.killCount || 1);
+        const unitDelta = k.deltaExp / kc;
+        return {
+          monsterName: k.monsterName,
+          deltaExp: unitDelta,
+          deltaExpFormatted: schema.formatExp(unitDelta),
+          killCount: kc,
+          lumpDeltaExp: k.deltaExp,
+          timestamp: k.timestamp
+        };
+      }),
 
       // Monster breakdown
       monstersByRank,

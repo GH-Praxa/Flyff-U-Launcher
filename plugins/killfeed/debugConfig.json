@@ -3,5 +3,16 @@
   "ocr": false,
   "lifecycle": false,
   "ipc": false,
-  "discord": false
+  "discord": false,
+  "recorder": true,
+  "recorderOptions": {
+    "scanSampleRate": 1,
+    "dedupeScans": true,
+    "flushIntervalMs": 4000,
+    "flushBatchSize": 400,
+    "maxRamEntries": 25000,
+    "maxFileBytes": 5242880,
+    "maxArchives": 10,
+    "hpHistoryLen": 12
+  }
 }

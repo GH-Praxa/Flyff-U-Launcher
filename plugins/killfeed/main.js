@@ -11,6 +11,11 @@ const schema = require('./shared/schema.js');
 const { createStatsEngine } = require('./shared/stats_engine.js');
 const { createLayoutManager } = require('./shared/layout.js');
 const monsterExpValidator = require('./shared/monster_exp_validator.js');
+const { createDebugRecorder } = require('./shared/debug_recorder.js');
+
+// Debug-Recorder (ressourcenschonendes Diagnose-Tool). Erst in init() erzeugt,
+// nur aktiv wenn debugConfig.recorder === true. Null = inaktiv.
+let debugRecorder = null;
 
 // Plugin directory - set in init() from context.pluginDir
 // IMPORTANT: __dirname is undefined because plugins are loaded via dynamic import()
@@ -22,7 +27,11 @@ let debugConfig = {
   ocr: false,
   lifecycle: false,
   ipc: false,
-  discord: false
+  discord: false,
+  // Debug-Recorder: schreibt Kill-/Scan-/Anomalie-Events als NDJSON.
+  // Unabhaengig von `enabled` (das gated nur die ctx.logger-Ausgaben).
+  recorder: false,
+  recorderOptions: {}
 };
 
 function loadDebugConfig() {
@@ -46,6 +55,48 @@ function debugLog(category, ...args) {
     ctx.logger.info(...args);
   } else {
     console.log('[Killfeed]', ...args);
+  }
+}
+
+/**
+ * Erzeugt den Debug-Recorder, falls `debugConfig.recorder` aktiv ist.
+ * Schreibt nach `<dataDir>/debug/`. Bei jedem Aufruf wird ein evtl. vorhandener
+ * Recorder zuerst sauber beendet (z.B. nach `cfg`-Reload).
+ */
+function initDebugRecorder() {
+  if (debugRecorder) {
+    try { debugRecorder.dispose(); } catch (_) {}
+    debugRecorder = null;
+  }
+  if (!debugConfig.recorder) return;
+  let dataDir = ctx && ctx.dataDir;
+  if (!dataDir) {
+    try { dataDir = path.join(app.getPath('userData'), 'user', 'plugin-data', 'killfeed'); } catch (_) {}
+  }
+  if (!dataDir) return;
+  const ro = (debugConfig.recorderOptions && typeof debugConfig.recorderOptions === 'object')
+    ? debugConfig.recorderOptions
+    : {};
+  try {
+    debugRecorder = createDebugRecorder({
+      enabled: true,
+      dir: path.join(dataDir, 'debug'),
+      epsilon: (config && Number.isFinite(config.epsilon)) ? config.epsilon : 0.001,
+      suspectThreshold: (config && Number.isFinite(config.suspectThreshold)) ? config.suspectThreshold : 40,
+      maxRamEntries: ro.maxRamEntries,
+      flushIntervalMs: ro.flushIntervalMs,
+      flushBatchSize: ro.flushBatchSize,
+      maxFileBytes: ro.maxFileBytes,
+      maxArchives: ro.maxArchives,
+      scanSampleRate: ro.scanSampleRate,
+      dedupeScans: ro.dedupeScans,
+      hpHistoryLen: ro.hpHistoryLen,
+      logger: (msg) => { try { console.warn('[Killfeed]', msg); } catch (_) {} },
+    });
+    console.log('[Killfeed] debug recorder active →', path.join(dataDir, 'debug'));
+  } catch (err) {
+    console.error('[Killfeed] debug recorder init failed:', err && err.message || err);
+    debugRecorder = null;
   }
 }
 
@@ -2393,12 +2444,18 @@ async function _handleOcrUpdateInner(payload) {
       }
       const expected = Number(meta.expectedExp);
       const min = expected * 0.1;
-      // Die Monster-EXP-Tabellenwerte sind ~7-10x kleiner als der echte
-      // EXP-Gewinn pro Kill (Server-EXP-Rate). Eine x10-Decke hatte praktisch
-      // null Reserve und verwarf legitime Kills, sobald ein Monster etwas mehr
-      // EXP gab. x40 laesst echte Kills durch und faengt grobe Ausreisser
-      // (Quest-Abgaben ~100x+) weiterhin ab; suspectThreshold greift zusaetzlich.
-      const max = expected * 40;
+      // Die Monster-EXP-Tabellenwerte sind deutlich kleiner als der echte
+      // EXP-Gewinn pro Kill (Server-EXP-Rate). Reale Messungen an Small Tigar
+      // (Tabelle 0,0031 %, real ~0,06-0,10 %) zeigen einen ~20-30x Multiplikator
+      // gegenueber der Tabelle. On top kommt Lump-Splitting (mehrere Kills pro
+      // OCR-Tick beim Schnell-Grinding) ueber Faktor ~10 dazu. Eine x40-Decke
+      // hat dadurch Lumps und Multi-Kill-EXP-Spruenge verworfen — die
+      // verworfenen Kills gehen ENDGUELTIG verloren (Baseline avanciert vor
+      // der Validator-Pruefung). x400 deckt den Server-Multiplikator + grosse
+      // Lumps ab; truly grobe Quest-Rewards bleiben weiter durch
+      // suspectThreshold (40 % deltaExp) gefiltert. Muss konsistent zur
+      // isWithinAllowed-Decke in monster_exp_validator.js bleiben.
+      const max = expected * 400;
       return deltaExp >= min && deltaExp <= max;
     }
   );
@@ -2434,6 +2491,24 @@ async function _handleOcrUpdateInner(payload) {
       );
       if (within === false) {
         console.warn(`[Killfeed] KILL ROLLED BACK: monster=${killEvent.monsterName || resolvedMonsterName || "?"} lvl=${effectiveLvl} deltaExp=${killEvent.deltaExp.toFixed?.(4) ?? killEvent.deltaExp}`);
+        if (debugRecorder) {
+          try {
+            debugRecorder.recordKillRollback({
+              profileId,
+              ts: killEvent.timestamp,
+              monsterName: killEvent.monsterName || resolvedMonsterName || 'Unknown',
+              monster: {
+                id: resolvedMonsterMeta?.id,
+                level: resolvedMonsterMeta?.level,
+                element: resolvedMonsterMeta?.element,
+              },
+              deltaExp: killEvent.deltaExp,
+              killCount: killEvent.killCount,
+              level: effectiveLvl,
+              reason: 'monster_exp_validator_rejected',
+            });
+          } catch (_) {}
+        }
         // Rollback the state mutation that registerKill() already performed
         engine.rollbackLastKill();
         killEvent = null;
@@ -2469,6 +2544,29 @@ async function _handleOcrUpdateInner(payload) {
     // Invalidate giant tracker cache on kill
     giantKillsCache.delete(profileId);
 
+    // Debug-Recorder: bestaetigten Kill aufzeichnen.
+    if (debugRecorder) {
+      try {
+        debugRecorder.recordKill({
+          profileId,
+          ts: killEvent.timestamp,
+          monsterName: killEvent.monsterName,
+          monster: {
+            id: resolvedMonsterMeta?.id,
+            level: resolvedMonsterMeta?.level,
+            element: resolvedMonsterMeta?.element,
+            rank: killEvent.rank,
+          },
+          deltaExp: killEvent.deltaExp,
+          killCount: killEvent.killCount,
+          expectedExp: resolvedMonsterMeta?.expectedExp,
+          level: effectiveLvl,
+          exp: expValue,
+          ttkMs: ttkMs,
+        });
+      } catch (_) {}
+    }
+
     ctx.eventBus.emit('kill-registered', {
       profileId,
       ...killEvent
@@ -2491,6 +2589,31 @@ async function _handleOcrUpdateInner(payload) {
         npcHpBarLastSeenAt.delete(profileId); // Duplikate verhindern
       }
     }
+  }
+
+  // Debug-Recorder: Live-OCR-Scan aufzeichnen (nach evtl. Kill, damit die
+  // Anomalie-Erkennung den Kill dieses Ticks bereits kennt).
+  if (debugRecorder) {
+    try {
+      let scanMonster = null;
+      if (resolvedMonsterName || resolvedMonsterMeta || parsedHp) {
+        scanMonster = {
+          id: resolvedMonsterMeta?.id || null,
+          name: (resolvedMonsterMeta && resolvedMonsterMeta.name) || resolvedMonsterName || null,
+          level: resolvedMonsterMeta?.level ?? null,
+          element: resolvedMonsterMeta?.element || null,
+          hp: parsedHp ? { current: parsedHp.current, max: parsedHp.max } : null,
+        };
+      }
+      debugRecorder.recordScan({
+        profileId,
+        ts: tickTime,
+        level: effectiveLvl,
+        exp: expValue,
+        rmExp: parsedRmExp !== null ? parsedRmExp : undefined,
+        monster: scanMonster,
+      });
+    } catch (_) {}
   }
 
   // Persist state in background (non-blocking for the OCR pipeline)
@@ -2523,6 +2646,10 @@ async function init(context) {
   const savedConfig = await ctx.services.storage.read(STORAGE_KEYS.CONFIG);
   config = schema.migrateConfig(savedConfig);
   await loadLeaderboardMessages();
+
+  // Debug-Recorder initialisieren (nach Config-Load, damit epsilon/
+  // suspectThreshold uebernommen werden). Nur aktiv bei debugConfig.recorder.
+  initDebugRecorder();
 
   debugLog('lifecycle', 'Killfeed plugin initializing...');
 
@@ -2845,6 +2972,42 @@ async function init(context) {
     };
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // DEBUG-RECORDER IPC HANDLERS (Diagnose-Tool / LLM-Live-Analyse)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Gefilterte Events aus dem RAM-Ringpuffer abrufen.
+  // filter: { kinds?, profileId?, sinceMs?, flaggedOnly?, flag?, limit? }
+  ctx.ipc.handle('debug:recorder:query', async (_event, filter) => {
+    if (!debugRecorder) return { active: false, events: [] };
+    return { active: true, events: debugRecorder.query(filter || {}) };
+  });
+
+  // Kompakte, LLM-freundliche Zusammenfassung (Zaehler, Anomalien, Monster).
+  ctx.ipc.handle('debug:recorder:summary', async () => {
+    if (!debugRecorder) return { active: false };
+    return { active: true, summary: debugRecorder.summary() };
+  });
+
+  // Statistischer Deep-Pass — findet auch un-geflaggte Fehler.
+  // payload: { minutes?, sinceMs?, full? }  (Default: letzte 60 Minuten)
+  ctx.ipc.handle('debug:recorder:analyze', async (_event, payload) => {
+    if (!debugRecorder) return { active: false };
+    return { active: true, analysis: debugRecorder.analyze(payload || {}) };
+  });
+
+  // Roh-Status (I/O-Statistik, Dateiname, Verzeichnis).
+  ctx.ipc.handle('debug:recorder:status', async () => {
+    if (!debugRecorder) return { active: false, enabled: !!debugConfig.recorder };
+    return { active: true, status: debugRecorder.getStats() };
+  });
+
+  // Offenen Puffer sofort auf die Platte schreiben.
+  ctx.ipc.handle('debug:recorder:flush', async () => {
+    if (!debugRecorder) return { active: false };
+    return { active: true, status: await debugRecorder.flush() };
+  });
+
   debugLog('lifecycle', 'Killfeed plugin initialized');
 }
 
@@ -2897,6 +3060,12 @@ async function stop() {
   if (unsubscribeOcr) {
     unsubscribeOcr();
     unsubscribeOcr = null;
+  }
+
+  // Debug-Recorder sauber beenden (schreibt offenen Puffer weg).
+  if (debugRecorder) {
+    try { await debugRecorder.dispose(); } catch (_) {}
+    debugRecorder = null;
   }
 
   // Save all profile states
