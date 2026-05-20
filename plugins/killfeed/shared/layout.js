@@ -188,6 +188,33 @@ function createLayoutManager(onSave) {
   }
 
   /**
+   * Display-Modus der Badges. "overlay" = floating-Window ueber dem Spiel
+   * (Standard, klassisches Verhalten). "bar" = horizontale Leiste direkt
+   * unter der Tab-Bar im Launcher; das Overlay-Window wird in dem Modus
+   * nicht gezeigt (mutually exclusive).
+   */
+  function getDisplayMode() {
+    const mode = layout.displayMode;
+    if (mode === schema.DISPLAY_MODES.BAR) return schema.DISPLAY_MODES.BAR;
+    return schema.DISPLAY_MODES.OVERLAY;
+  }
+
+  function setDisplayMode(mode) {
+    if (mode !== schema.DISPLAY_MODES.OVERLAY && mode !== schema.DISPLAY_MODES.BAR) return;
+    layout.displayMode = mode;
+    // Modes sind mutually exclusive: im "bar"-Mode soll das Overlay-Window
+    // nicht erscheinen. Wir kanalisieren das ueber das bestehende
+    // overlayVisible-Flag (das die Core-Overlay-Logik liest), damit kein
+    // App-seitiger Code geaendert werden muss.
+    if (mode === schema.DISPLAY_MODES.BAR) {
+      layout.overlayVisible = false;
+    } else {
+      layout.overlayVisible = true;
+    }
+    saveCallback(layout);
+  }
+
+  /**
    * Set custom position for a badge
    */
   function setBadgePosition(badgeKey, x, y) {
@@ -258,6 +285,8 @@ function createLayoutManager(onSave) {
     isOverlayVisible,
     setOverlayVisible,
     toggleOverlay,
+    getDisplayMode,
+    setDisplayMode,
     setBadgePosition,
     getBadgePosition,
     clearBadgePosition,

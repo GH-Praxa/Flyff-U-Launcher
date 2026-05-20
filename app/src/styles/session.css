@@ -26,6 +26,45 @@
   display: none;
 }
 
+/* Killfeed-Bar — horizontale Leiste direkt unter den Tabs.
+   Sichtbar nur wenn das Killfeed-Plugin displayMode = "bar" meldet
+   (Renderer toggelt `hidden`). */
+#app.sessionRoot .killfeedBar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--stroke);
+  background: rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 4;
+  font-size: 12px;
+  color: var(--text);
+  user-select: none;
+}
+#app.sessionRoot .killfeedBar[hidden] { display: none; }
+#app.sessionRoot .killfeedBar-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+#app.sessionRoot .killfeedBar-label {
+  color: var(--text-muted, rgba(255,255,255,0.55));
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+#app.sessionRoot .killfeedBar-value {
+  font-weight: 600;
+  color: var(--accent, var(--text));
+}
+
 .progressTab{
   cursor: default;
   pointer-events: none;

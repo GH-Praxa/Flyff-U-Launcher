@@ -190,7 +190,15 @@ export async function renderSession(root: HTMLElement) {
     conflictOverlayContainer.style.top = "0";
     conflictOverlayContainer.style.pointerEvents = "none";
     conflictOverlayContainer.style.zIndex = "10";
-    root.append(tabsBar, content, conflictOverlayContainer);
+
+    // Killfeed-Leiste direkt unter der Tab-Bar. Sichtbar nur wenn das
+    // Killfeed-Plugin `displayMode = "bar"` als Layout-Mode meldet — sonst
+    // hidden. Der Renderer pollt den Plugin-Snapshot via
+    // pluginsInvokeChannel("killfeed", "overlay:request:state").
+    const killfeedBar = el("div", "killfeedBar") as HTMLDivElement;
+    killfeedBar.hidden = true;
+
+    root.append(tabsBar, killfeedBar, content, conflictOverlayContainer);
     /** profileIds whose layout-cell shows a "jump to other window" overlay (no view loaded). */
     const conflictProfileIds = new Set<string>();
     /** profileId → overlay DIV currently mounted in conflictOverlayContainer. */
@@ -3706,6 +3714,101 @@ export async function renderSession(root: HTMLElement) {
     updateSplitButton();
     syncTabClasses();
     kickBounds();
+
+    // ── Killfeed-Bar: rendert die Plugin-Stats als horizontale Leiste unter
+    // den Tabs, wenn das Plugin auf `displayMode = "bar"` steht. Polling
+    // gegen den Snapshot ist „cheap" (in-memory). Schlaegt fehl, wenn das
+    // Plugin nicht installiert / deaktiviert ist → wir blenden die Leiste
+    // einfach aus und versuchen es nicht wieder.
+    {
+        const KILLFEED_BAR_BADGE_KEYS = [
+            "killsSession", "killsTotal", "killsPerHour", "killsPerMin",
+            "expLastKill", "expTotal", "expPerHour", "expPerMin",
+            "killsToLevel", "sessionDuration", "expSession", "currentExp",
+            "rmExp", "avgTimePerKill", "timeSinceLastKill",
+        ];
+        const KILLFEED_BAR_LABELS: Record<string, string> = {
+            killsSession: "Kills",
+            killsTotal: "Σ Kills",
+            killsPerHour: "K/h",
+            killsPerMin: "K/min",
+            expLastKill: "Last",
+            expTotal: "EXP",
+            expPerHour: "EXP/h",
+            expPerMin: "EXP/min",
+            killsToLevel: "→ Lvl",
+            sessionDuration: "Session",
+            expSession: "EXP (S)",
+            currentExp: "EXP %",
+            rmExp: "RM",
+            avgTimePerKill: "Ø T/K",
+            timeSinceLastKill: "Last K",
+        };
+
+        function formatKillfeedValue(key: string, stats: Record<string, unknown> | null | undefined): string {
+            if (!stats) return "—";
+            const fmt = stats[`${key}Formatted`];
+            if (typeof fmt === "string" && fmt) return fmt;
+            const raw = stats[key];
+            if (raw == null) return "—";
+            if (typeof raw === "number") return key.startsWith("exp") ? `${raw.toFixed(4)}%` : String(raw);
+            if (typeof raw === "string") return raw;
+            return "—";
+        }
+
+        function renderKillfeedBar(snapshot: Record<string, unknown> | null): void {
+            const layout = (snapshot?.layout || null) as Record<string, unknown> | null;
+            const mode = layout?.displayMode;
+            if (mode !== "bar") {
+                killfeedBar.hidden = true;
+                killfeedBar.replaceChildren();
+                return;
+            }
+            const visibility = (layout?.visibility || {}) as Record<string, unknown>;
+            const order = Array.isArray(layout?.order) ? (layout!.order as string[]) : KILLFEED_BAR_BADGE_KEYS;
+            const stats = (snapshot?.stats || null) as Record<string, unknown> | null;
+
+            const visibleKeys = order.filter((k) =>
+                KILLFEED_BAR_BADGE_KEYS.includes(k) && (visibility as Record<string, unknown>)[k] !== false
+            );
+
+            const children: HTMLElement[] = [];
+            for (const key of visibleKeys) {
+                const item = document.createElement("div");
+                item.className = "killfeedBar-item";
+                item.dataset.key = key;
+                const labelEl = document.createElement("span");
+                labelEl.className = "killfeedBar-label";
+                labelEl.textContent = KILLFEED_BAR_LABELS[key] || key;
+                const valueEl = document.createElement("span");
+                valueEl.className = "killfeedBar-value";
+                valueEl.textContent = formatKillfeedValue(key, stats);
+                item.append(labelEl, valueEl);
+                children.push(item);
+            }
+            killfeedBar.replaceChildren(...children);
+            killfeedBar.hidden = children.length === 0;
+        }
+
+        let killfeedPollTimer: ReturnType<typeof setInterval> | null = null;
+        let killfeedDisabled = false;
+        async function pollKillfeedBar(): Promise<void> {
+            if (killfeedDisabled || !activeProfileId) return;
+            try {
+                const result = await window.api.pluginsInvokeChannel("killfeed", "overlay:request:state", activeProfileId);
+                renderKillfeedBar(result as Record<string, unknown> | null);
+            } catch (err) {
+                killfeedDisabled = true;
+                killfeedBar.hidden = true;
+                killfeedBar.replaceChildren();
+                console.debug("[killfeedBar] disabled (plugin invoke failed)", err);
+            }
+        }
+        killfeedPollTimer = setInterval(() => { void pollKillfeedBar(); }, 1000);
+        window.addEventListener("beforeunload", () => {
+            if (killfeedPollTimer) clearInterval(killfeedPollTimer);
+        });
+    }
 
 }
 

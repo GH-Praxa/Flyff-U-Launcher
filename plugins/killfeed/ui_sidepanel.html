@@ -18,8 +18,16 @@
 
     <!-- Content -->
     <div class="panel-content">
-      <!-- Overlay Settings Card -->
-      <div class="overlay-settings">
+      <!-- Display Mode Switcher -->
+      <div class="display-mode-switch" role="tablist" aria-label="Display mode">
+        <button type="button" class="display-mode-tab is-active" id="displayModeOverlayTab"
+                data-mode="overlay" role="tab" aria-selected="true">Overlay</button>
+        <button type="button" class="display-mode-tab" id="displayModeBarTab"
+                data-mode="bar" role="tab" aria-selected="false">Leiste</button>
+      </div>
+
+      <!-- Overlay Mode Settings -->
+      <div class="overlay-settings" id="overlayModeSettings" role="tabpanel">
         <div class="overlay-text">
           <div class="label" id="overlaySettingsLabel">Overlay</div>
           <div class="muted" id="overlaySettingsHint">Position, size and rows of the badge overlay.</div>
@@ -49,6 +57,26 @@
           <label class="cols">
             <span id="rowsLabel">Rows</span>
             <input id="rowsInput" type="number" min="1" max="6" step="1" value="2" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Bar Mode Settings -->
+      <div class="bar-settings" id="barModeSettings" role="tabpanel" hidden>
+        <div class="overlay-text">
+          <div class="label" id="barSettingsLabel">Leiste</div>
+          <div class="muted" id="barSettingsHint">
+            Badges erscheinen in einer Leiste direkt unter den Tabs. Position und Reihen werden
+            automatisch belegt — die Reihenfolge und Sichtbarkeit der Badges unten regelt, was
+            angezeigt wird.
+          </div>
+        </div>
+        <div class="overlay-actions">
+          <label class="pos slider">
+            <span id="barScaleLabel">Scale</span>
+            <button type="button" class="step-btn" data-target="scaleInput" data-dir="-1">-</button>
+            <input id="barScaleInput" type="range" min="0.6" max="1.6" step="0.05" value="1" disabled />
+            <span id="barScaleValue" class="value">1.00</span>
           </label>
         </div>
       </div>

@@ -2916,6 +2916,9 @@ async function init(context) {
     if (layoutObj.overlayVisible !== undefined) {
       layoutMgr.setOverlayVisible(layoutObj.overlayVisible);
     }
+    if (layoutObj.displayMode !== undefined) {
+      layoutMgr.setDisplayMode(layoutObj.displayMode);
+    }
     if (layoutObj.rows !== undefined) {
       layoutMgr.setRows(layoutObj.rows);
     }

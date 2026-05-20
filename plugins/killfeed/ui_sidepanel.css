@@ -54,6 +54,52 @@ body {
   padding: 12px;
 }
 
+/* Display mode tab switcher (Overlay XOR Leiste) */
+.display-mode-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  background: var(--panel, #2d2d44);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.display-mode-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted, #888);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.display-mode-tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #e4e4e4);
+}
+.display-mode-tab.is-active {
+  background: var(--accent, #6c63ff);
+  color: var(--accent-fg, #fff);
+}
+
+/* Bar-mode settings card — gleiche optische Sprache wie .overlay-settings */
+.bar-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--panel, #2d2d44);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.bar-settings[hidden] { display: none !important; }
+.overlay-settings[hidden] { display: none !important; }
+
 /* Overlay settings card (CD timer style) */
 .overlay-settings {
   display: flex;

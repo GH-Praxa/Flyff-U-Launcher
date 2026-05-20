@@ -104,6 +104,12 @@ function getDefaultBadgeVisibility() {
   return visibility;
 }
 
+// Display modes for the badges. "overlay" = klassisches floating Window
+// ueber dem Spiel; "bar" = horizontale Leiste direkt unter der Tab-Bar im
+// Launcher (mutually exclusive — bei "bar" wird das Overlay-Fenster nicht
+// gezeigt).
+const DISPLAY_MODES = Object.freeze({ OVERLAY: 'overlay', BAR: 'bar' });
+
 // Default layout (badge order and positions)
 function getDefaultLayout() {
   return {
@@ -113,6 +119,7 @@ function getDefaultLayout() {
     positions: {}, // badgeKey -> {x, y} if custom positioned
     visibility: getDefaultBadgeVisibility(),
     overlayVisible: true,
+    displayMode: DISPLAY_MODES.OVERLAY,
     rows: 2,
     scale: 1,
     x: 0,
@@ -249,6 +256,10 @@ function validateLayout(layout) {
 
   if (typeof layout.overlayVisible !== 'boolean') {
     errors.push('overlayVisible must be a boolean');
+  }
+
+  if (layout.displayMode !== undefined && !Object.values(DISPLAY_MODES).includes(layout.displayMode)) {
+    errors.push(`displayMode must be one of: ${Object.values(DISPLAY_MODES).join(', ')}`);
   }
 
   if (layout.rows !== undefined && (typeof layout.rows !== 'number' || layout.rows <= 0)) {
@@ -407,6 +418,7 @@ if (typeof module !== 'undefined' && module.exports) {
     BADGE_LABELS,
     MONSTER_RANKS,
     PERSIST_MODES,
+    DISPLAY_MODES,
     getDefaultConfig,
     getDefaultBadgeVisibility,
     getDefaultLayout,

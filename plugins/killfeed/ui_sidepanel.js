@@ -31,6 +31,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "Position, size and rows of the badge overlay.",
+      displayModeOverlay: "Overlay",
+      displayModeBar: "Bar",
+      barLabel: "Bar",
+      barHint: "Badges appear in a row below the tabs. Visibility and order from the Badge Visibility section apply here too.",
       overlayPos: "Position",
       posX: "X (%)",
       posY: "Y (%)",
@@ -106,6 +110,10 @@
       scaleHint: "0,6x - 1,6x",
       overlayLabel: "Overlay",
       overlayHint: "Position, Größe und Reihen des Badge-Overlays.",
+      displayModeOverlay: "Overlay",
+      displayModeBar: "Leiste",
+      barLabel: "Leiste",
+      barHint: "Badges erscheinen in einer Leiste unter den Tabs. Sichtbarkeit und Reihenfolge aus dem Badge-Bereich gelten hier ebenfalls.",
       overlayPos: "Position",
       posX: "X (%)",
       posY: "Y (%)",
@@ -181,6 +189,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "Pozycja, rozmiar i wiersze nakładki.",
+      displayModeOverlay: "Nakładka",
+      displayModeBar: "Pasek",
+      barLabel: "Pasek",
+      barHint: "Odznaki pojawiają się w pasku pod kartami. Widoczność i kolejność z sekcji odznak obowiązują również tutaj.",
       overlayPos: "Pozycja",
       posX: "X (%)",
       posY: "Y (%)",
@@ -242,6 +254,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "Position, taille et lignes de l'overlay.",
+      displayModeOverlay: "Overlay",
+      displayModeBar: "Barre",
+      barLabel: "Barre",
+      barHint: "Les badges apparaissent dans une barre sous les onglets. La visibilité et l'ordre de la section badges s'appliquent ici aussi.",
       overlayPos: "Position",
       posX: "X (%)",
       posY: "Y (%)",
@@ -303,6 +319,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "Позиция, размер и ряды оверлея.",
+      displayModeOverlay: "Оверлей",
+      displayModeBar: "Панель",
+      barLabel: "Панель",
+      barHint: "Бейджи отображаются полосой под вкладками. Видимость и порядок берутся из раздела бейджей.",
       overlayPos: "Позиция",
       posX: "X (%)",
       posY: "Y (%)",
@@ -364,6 +384,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "Overlay konumu, boyutu ve satırları.",
+      displayModeOverlay: "Kaplama",
+      displayModeBar: "Çubuk",
+      barLabel: "Çubuk",
+      barHint: "Rozetler sekmelerin altındaki çubukta görünür. Görünürlük ve sıralama Rozet bölümünden alınır.",
       overlayPos: "Konum",
       posX: "X (%)",
       posY: "Y (%)",
@@ -425,6 +449,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "Overlay",
       overlayHint: "覆盖层的位置、大小和行数。",
+      displayModeOverlay: "覆盖层",
+      displayModeBar: "信息条",
+      barLabel: "信息条",
+      barHint: "徽章显示在标签下方的横条中。可见性和顺序与徽章区域设置一致。",
       overlayPos: "位置",
       posX: "X (%)",
       posY: "Y (%)",
@@ -486,6 +514,10 @@
       scaleHint: "0.6x - 1.6x",
       overlayLabel: "オーバーレイ",
       overlayHint: "オーバーレイの位置、サイズ、行数。",
+      displayModeOverlay: "オーバーレイ",
+      displayModeBar: "バー",
+      barLabel: "バー",
+      barHint: "バッジはタブ下のバーに表示されます。バッジ表示設定の表示順と可視性が反映されます。",
       overlayPos: "位置",
       posX: "X (%)",
       posY: "Y (%)",
@@ -614,6 +646,9 @@
   const posXVal = document.getElementById('posXVal');
   const posYVal = document.getElementById('posYVal');
   const stepButtons = Array.from(document.querySelectorAll('.step-btn'));
+  const displayModeTabs = Array.from(document.querySelectorAll('.display-mode-tab'));
+  const overlayModeSettings = document.getElementById('overlayModeSettings');
+  const barModeSettings = document.getElementById('barModeSettings');
   const charNameSelect = document.getElementById('charNameSelect');
   const charNameStatus = document.getElementById('charNameStatus');
   const killHistoryModal = document.getElementById('killHistoryModal');
@@ -704,6 +739,44 @@
     return nextStats;
   }
 
+  function getDisplayMode(layout) {
+    return layout?.displayMode === 'bar' ? 'bar' : 'overlay';
+  }
+
+  function applyDisplayModeUi(mode) {
+    const normalized = mode === 'bar' ? 'bar' : 'overlay';
+    displayModeTabs.forEach((tab) => {
+      const isActive = tab.dataset.mode === normalized;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    if (overlayModeSettings) {
+      overlayModeSettings.hidden = normalized !== 'overlay';
+    }
+    if (barModeSettings) {
+      barModeSettings.hidden = normalized !== 'bar';
+    }
+  }
+
+  async function setDisplayMode(mode) {
+    const normalized = mode === 'bar' ? 'bar' : 'overlay';
+    if (!currentProfileId) {
+      applyDisplayModeUi(normalized);
+      return;
+    }
+    try {
+      await ipcInvoke('layout:set', currentProfileId, { displayMode: normalized });
+      if (currentLayout) {
+        currentLayout.displayMode = normalized;
+        // setDisplayMode im Backend forciert overlayVisible passend, lokal mitziehen
+        currentLayout.overlayVisible = normalized === 'overlay';
+      }
+      applyDisplayModeUi(normalized);
+    } catch (err) {
+      console.error('[Killfeed] setDisplayMode failed', err);
+    }
+  }
+
   function applyIncomingState(data) {
     const normalizedStats = normalizeIncomingStats(data?.stats);
     if (normalizedStats) {
@@ -711,6 +784,7 @@
     }
     if (data?.layout) {
       currentLayout = data.layout;
+      applyDisplayModeUi(getDisplayMode(currentLayout));
     }
     if (charNameSelect) {
       if (Array.isArray(data?.characters)) {
@@ -735,11 +809,25 @@
     const profilePlaceholder = profileSelector?.querySelector("option[value='']");
     if (profilePlaceholder) profilePlaceholder.textContent = STR.selectProfile;
 
+    // Display-Mode-Switcher (Overlay / Leiste)
+    const dmOverlay = document.getElementById('displayModeOverlayTab');
+    if (dmOverlay) dmOverlay.textContent = STR.displayModeOverlay || 'Overlay';
+    const dmBar = document.getElementById('displayModeBarTab');
+    if (dmBar) dmBar.textContent = STR.displayModeBar || 'Leiste';
+
     // Overlay settings card
     const overlayLabel = document.getElementById('overlaySettingsLabel');
     if (overlayLabel) overlayLabel.textContent = STR.overlayLabel || 'Overlay';
     const overlayHint = document.getElementById('overlaySettingsHint');
     if (overlayHint) overlayHint.textContent = STR.overlayHint || '';
+
+    // Bar-Mode settings card
+    const barLabel = document.getElementById('barSettingsLabel');
+    if (barLabel) barLabel.textContent = STR.barLabel || STR.displayModeBar || 'Leiste';
+    const barHint = document.getElementById('barSettingsHint');
+    if (barHint) barHint.textContent = STR.barHint || '';
+    const barScaleLabel = document.getElementById('barScaleLabel');
+    if (barScaleLabel) barScaleLabel.textContent = STR.scale || 'Scale';
     const posXLabel = posXInput?.parentElement?.querySelector('span');
     if (posXLabel) posXLabel.textContent = STR.posX || 'X (%)';
     const posYLabel = posYInput?.parentElement?.querySelector('span');
@@ -1617,6 +1705,12 @@
         }
       });
     });
+    displayModeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        void setDisplayMode(tab.dataset.mode);
+      });
+    });
+
     if (charNameSelect) {
       charNameSelect.addEventListener('change', () => {
         void saveCharName();
