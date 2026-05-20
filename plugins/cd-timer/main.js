@@ -848,20 +848,64 @@ async function setAllEnabled(enabled) {
   return changed;
 }
 
-async function loadBuffIconListFromApiFetch() {
-  const baseDir = path.join(app.getPath("userData"), "user", "cache", "item");
-  const mappedPath = path.join(baseDir, "buff_icon_buffname.json");
-  const sourcePath = path.join(baseDir, "item_parameter.json");
-
-  const normalizeName = (name) => {
-    if (!name) return "";
-    if (typeof name === "string") return name;
-    if (typeof name === "object") {
-      return name.en || Object.values(name)[0] || "";
+// Liest alle per-ID-JSONs in einem Verzeichnis (api-fetch v2+ Layout) und
+// gibt die geparsten Objekte zurueck. Einzelne kaputte Dateien werden
+// geskippt — analog zu loadParametersDir in app/src/main/ipc/handlers/
+// gameIcons.ts (das vom Controller-Tab genutzt wird).
+async function loadParametersDir(dir) {
+  let entries = [];
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch (_err) {
+    return [];
+  }
+  const out = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    try {
+      const raw = await fs.readFile(path.join(dir, entry.name), "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") out.push(parsed);
+    } catch (_err) {
+      // skip corrupt file
     }
-    return String(name);
-  };
+  }
+  return out;
+}
 
+function normalizeIconName(name) {
+  if (!name) return "";
+  if (typeof name === "string") return name;
+  if (typeof name === "object") {
+    return name.en || Object.values(name)[0] || "";
+  }
+  return String(name);
+}
+
+async function loadBuffIconListFromApiFetch() {
+  // api-fetch v2+ schreibt pro ID eine eigene JSON; die monolithische
+  // item_parameter.json ist im neuen Layout oft abgeschnitten. Der
+  // Controller-Tab (gameIcons.ts) nutzt deshalb das per-ID-Verzeichnis,
+  // der cd-timer muss das gleichermassen tun. Die alte Mapping-Datei
+  // skipping_icon_buffname.json wird im neuen Layout nicht mehr erzeugt.
+  const baseDir = path.join(app.getPath("userData"), "user", "cache", "item");
+  const perIdDir = path.join(baseDir, "item_parameter");
+  const mappedPath = path.join(baseDir, "buff_icon_buffname.json");
+  const monolithicPath = path.join(baseDir, "item_parameter.json");
+
+  // Pfad 1: per-ID-JSONs (api-fetch v2+, primaerer Pfad).
+  const perIdItems = await loadParametersDir(perIdDir);
+  if (perIdItems.length) {
+    return perIdItems
+      .filter((item) => item?.category === "buff" && item.icon)
+      .map((item) => ({
+        iconname: item.icon,
+        buffname: normalizeIconName(item.name),
+      }))
+      .filter((item) => item.iconname && item.buffname);
+  }
+
+  // Pfad 2: aggregierte buff_icon_buffname.json (Legacy-Cache).
   try {
     const raw = await fs.readFile(mappedPath, "utf8");
     const parsed = JSON.parse(raw);
@@ -869,32 +913,26 @@ async function loadBuffIconListFromApiFetch() {
       return parsed
         .map((item) => ({
           iconname: item.iconname || item.icon || item.iconName,
-          buffname: item.buffname || normalizeName(item.name),
+          buffname: item.buffname || normalizeIconName(item.name),
         }))
         .filter((item) => item.iconname && item.buffname);
     }
   } catch (_err) {
-    // Fallback to live parsing of item_parameter.json
+    // Fallback to monolithic item_parameter.json
   }
 
+  // Pfad 3: monolithische item_parameter.json (Legacy-Layout, evtl. truncated).
   try {
-    const raw = await fs.readFile(sourcePath, "utf8");
+    const raw = await fs.readFile(monolithicPath, "utf8");
     const data = JSON.parse(raw);
     if (!Array.isArray(data)) return [];
-    const buffs = data
+    return data
       .filter((item) => item?.category === "buff" && item.icon)
       .map((item) => ({
         iconname: item.icon,
-        buffname: normalizeName(item.name),
+        buffname: normalizeIconName(item.name),
       }))
       .filter((item) => item.iconname && item.buffname);
-
-    try {
-      await fs.writeFile(mappedPath, JSON.stringify(buffs, null, 2), "utf8");
-    } catch (err) {
-      warn("Could not cache buff_icon_buffname.json", err?.message || err);
-    }
-    return buffs;
   } catch (err) {
     warn("Failed to build buff icon list from cache", err?.message || err);
     return [];
@@ -927,25 +965,36 @@ async function listApiFetchIcons() {
 }
 
 async function listSkillIcons() {
+  // Skill-Icons im api-fetch v2+ Layout: pro Skill-ID eine JSON in
+  // user/cache/skill/skill_parameter/. Die aggregierte Mapping-Datei
+  // skill_icon_skillname.json wird in dem Layout nicht mehr geschrieben
+  // (Controller-Tab nutzt deshalb auch das per-ID-Verzeichnis via
+  // app/src/main/ipc/handlers/gameIcons.ts).
   const userData = app.getPath("userData");
   const root = path.join(userData, "user", "cache", "skill");
-  const mappingPath = path.join(root, "skill_icon_skillname.json");
+  const perIdDir = path.join(root, "skill_parameter");
 
-  let entries = [];
-  try {
-    const raw = await fs.readFile(mappingPath, "utf8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      entries = parsed;
+  let entries = await loadParametersDir(perIdDir);
+
+  // Legacy-Fallback auf die alte Mapping-Datei, falls per-ID-Layout fehlt.
+  if (!entries.length) {
+    const mappingPath = path.join(root, "skill_icon_skillname.json");
+    try {
+      const raw = await fs.readFile(mappingPath, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        entries = parsed;
+      }
+    } catch (_err) {
+      return [];
     }
-  } catch (_err) {
-    return [];
   }
 
   const icons = [];
+  const seen = new Set();
   for (const entry of entries) {
-    const iconFile = entry?.iconname || entry?.icon || null;
-    const name = entry?.skillname || entry?.name || iconFile || "";
+    const iconFile = entry?.icon || entry?.iconname || null;
+    const name = entry?.skillname || normalizeIconName(entry?.name) || iconFile || "";
     if (!iconFile || !name) continue;
 
     const relCandidates = [
@@ -953,7 +1002,7 @@ async function listSkillIcons() {
       path.join("user", "cache", "skill", "icons", "old", iconFile).replace(/\\/g, "/"),
     ];
 
-    let relPath = relCandidates[0];
+    let relPath = null;
     for (const candidate of relCandidates) {
       const abs = path.join(userData, candidate);
       if (fsSync.existsSync(abs)) {
@@ -961,6 +1010,9 @@ async function listSkillIcons() {
         break;
       }
     }
+    if (!relPath) continue;
+    if (seen.has(relPath)) continue;
+    seen.add(relPath);
 
     icons.push({
       id: `skill:${relPath}`,
