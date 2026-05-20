@@ -18,6 +18,23 @@ function createStatsEngine(config, initialState) {
   let state = JSON.parse(JSON.stringify(initialState || schema.getDefaultProfileState()));
   let cfg = config || schema.getDefaultConfig();
 
+  // Restart-Baseline-Warmup: Wenn die Engine mit einem persistierten lastLvl/
+  // lastExp aus der state-Datei initialisiert wird, ist die OCR im neuen
+  // Prozess noch im Warmup. Erste Reads koennen Ziffern falsch lesen oder
+  // einen Frame mid-Animation erwischen. Beobachtet am 2026-05-20 Runde 2:
+  // gespeichert lastExp=57,9959 → erster OCR-Scan exp=71 → Engine bucht
+  // 13,0041 % als Kill auf Monster=Unknown (killValidator returnt fuer
+  // null-expectedExp pauschal true). Konsequenz: ein zufaelliger Restart
+  // pumpt mehrere % in `expTotal`/Sessionzaehler.
+  // Loesung: bis zum ersten plausibel kleinen Delta gilt die geladene
+  // Baseline als „untrusted". Ein erster grosser Delta-Sprung wird NICHT
+  // als Kill verbucht, sondern korrigiert die Baseline still — danach lebt
+  // die Engine ganz normal weiter.
+  let baselineUntrusted = !!(initialState
+    && initialState.lastLvl !== null && initialState.lastLvl !== undefined
+    && initialState.lastExp !== null && initialState.lastExp !== undefined);
+  const RESTART_REBASE_THRESHOLD_PERCENT = 5;
+
   function getDayKey(ts) {
     const d = new Date(ts);
     const y = d.getFullYear();
@@ -71,6 +88,10 @@ function createStatsEngine(config, initialState) {
     pendingSuspect = null;
     pendingLevelDrop = null;
     pendingExpDrop = null;
+    // Wiederherstellung aus Storage = Baseline ist wieder „untrusted" (s. o.).
+    baselineUntrusted = !!(state
+      && state.lastLvl !== null && state.lastLvl !== undefined
+      && state.lastExp !== null && state.lastExp !== undefined);
   }
 
   /**
@@ -229,7 +250,35 @@ function createStatsEngine(config, initialState) {
       state.lastExp = exp;
       pendingLevelDrop = null;
       pendingExpDrop = null;
+      baselineUntrusted = false;
       return null;
+    }
+
+    // Restart-Warmup-Gate (siehe Kommentar bei `baselineUntrusted`): Beim
+    // ersten Tick nach State-Reload duerfen grosse Spruenge NICHT als Kill
+    // verbucht werden. Echte Wraps (lvl steigt ODER prevExp >= 80 && exp < 20)
+    // sind davon ausgenommen — die werden weiter unten korrekt behandelt.
+    if (baselineUntrusted) {
+      const sameLvl = (lvl === prevLvl);
+      const looksLikeWrap = prevExp >= 80 && exp < 20;
+      const restartDelta = exp - prevExp;
+      if (sameLvl && !looksLikeWrap && Math.abs(restartDelta) > RESTART_REBASE_THRESHOLD_PERCENT) {
+        // OCR-Warmup-Misread oder veraltete Disk-Baseline → still
+        // re-baselinen, kein Kill. Pending-State und recentDeltas mit
+        // resetten, damit der erste echte Kill frisch geeicht wird.
+        state.lastLvl = lvl;
+        state.lastExp = exp;
+        pendingSuspect = null;
+        pendingLevelDrop = null;
+        pendingExpDrop = null;
+        recentDeltas = [];
+        baselineUntrusted = false;
+        return null;
+      }
+      // Plausibler erster Tick (kleines Delta oder echter Wrap) →
+      // Baseline ist offenbar in Ordnung, Warmup beenden und normal
+      // weiterlaufen lassen.
+      baselineUntrusted = false;
     }
 
     let killEvent = null;
@@ -248,11 +297,23 @@ function createStatsEngine(config, initialState) {
       // EXP-Buchung. Die wraparound-EXP ist real und gehoert in die Tages-/
       // Session-Bilanz (auch wenn wir sie nicht zuverlaessig einem Monster
       // zuordnen koennen – kein synthetischer Kill, nur Summen-Update).
-      const levelsBridged = Math.max(1, lvl - prevLvl);
-      const wrapDelta = (100 - prevExp) + (levelsBridged - 1) * 100 + exp;
-      if (wrapDelta > 0) {
-        state.expSession += wrapDelta;
-        state.expTotal += wrapDelta;
+      //
+      // WICHTIG — Gate gegen OCR-Misreads: Wenn der lvl-OCR fuer einen Tick
+      // halluziniert (z. B. „2" statt „142" → Sprung 2 → 142), wuerden wir
+      // ohne Filter (142−2−1)*100 ≈ 13900 % auf die Summe addieren. Beobachtet
+      // am 2026-05-20 in der zweiten Debug-Runde (seq 3, „14000 %"-Bug).
+      // Echtes Flyff-Ding wickelt EXP IMMER ueber 100 → 0 ab, der OCR-Lvl-
+      // Sprung kommt ohne Wrap. Daher nur dann buchen, wenn auch die EXP eine
+      // Wrap-Signatur zeigt (prevExp hoch, exp niedrig). Und auch dann
+      // levelsBridged hart auf 3 deckeln — niemand levelt 4× in einem Tick.
+      const expLooksLikeWrap = prevExp >= 80 && exp < 20;
+      if (expLooksLikeWrap) {
+        const levelsBridged = Math.min(3, Math.max(1, lvl - prevLvl));
+        const wrapDelta = (100 - prevExp) + (levelsBridged - 1) * 100 + exp;
+        if (wrapDelta > 0 && wrapDelta < 400) {
+          state.expSession += wrapDelta;
+          state.expTotal += wrapDelta;
+        }
       }
       // Nach einem Level-up aendert sich die EXP-pro-Kill in Prozent (anderer
       // EXP-Bedarf) → Lump-Splitting-Proben verwerfen, sonst splittet die
