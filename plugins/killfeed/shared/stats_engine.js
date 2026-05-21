@@ -59,12 +59,19 @@ function createStatsEngine(config, initialState) {
   // baseline) from a baseline that is genuinely too high (correct it down).
   let pendingExpDrop = null;
   // Lump-Splitting: Bei OCR-Haengern werden mehrere Kills zu EINEM EXP-Sprung
-  // zusammengefasst. `recentDeltas` haelt die letzten deltaExp-Proben des
-  // aktuellen Monsters; daraus wird robust die Einzel-Kill-EXP geschaetzt, um
-  // den Sprung wieder in die echte Anzahl Kills aufzuteilen. `lastUnitMonster`
-  // erkennt den Monsterwechsel (andere Einheit → Fenster zuruecksetzen).
-  let lastUnitMonster = null;
-  let recentDeltas = [];
+  // zusammengefasst. Pro Monstertyp werden die letzten deltaExp-Proben gehalten;
+  // daraus wird robust die Einzel-Kill-EXP geschaetzt, um den Sprung wieder in
+  // die echte Anzahl Kills aufzuteilen.
+  //
+  // Wichtig: pro-Monster-Map statt globalem Array. Auf Maps mit vielen
+  // Monstertypen (Tigar + Captain Tigar + Small Tigar + Merel + ...) wurde sonst
+  // das Sample-Fenster bei jedem Monsterwechsel geleert; die ersten 3 Kills nach
+  // dem Wechsel zaehlten dann immer als kc=1, selbst bei Lump-deltas mit dem
+  // mehrfachen der Einheit. Inflated unitDeltas im last3Kills-Median liessen
+  // dann die K2L-Anzeige zwischen ~4400 und ~1100 springen. Mit per-Monster-
+  // Historie bleibt fuer jeden bereits-bekannten Mob die Einheit verfuegbar.
+  /** @type {Map<string, number[]>} */
+  let recentDeltasByMonster = new Map();
 
   /**
    * Update config
@@ -264,14 +271,14 @@ function createStatsEngine(config, initialState) {
       const restartDelta = exp - prevExp;
       if (sameLvl && !looksLikeWrap && Math.abs(restartDelta) > RESTART_REBASE_THRESHOLD_PERCENT) {
         // OCR-Warmup-Misread oder veraltete Disk-Baseline → still
-        // re-baselinen, kein Kill. Pending-State und recentDeltas mit
+        // re-baselinen, kein Kill. Pending-State und Lump-Sample-Map
         // resetten, damit der erste echte Kill frisch geeicht wird.
         state.lastLvl = lvl;
         state.lastExp = exp;
         pendingSuspect = null;
         pendingLevelDrop = null;
         pendingExpDrop = null;
-        recentDeltas = [];
+        recentDeltasByMonster.clear();
         baselineUntrusted = false;
         return null;
       }
@@ -316,9 +323,9 @@ function createStatsEngine(config, initialState) {
         }
       }
       // Nach einem Level-up aendert sich die EXP-pro-Kill in Prozent (anderer
-      // EXP-Bedarf) → Lump-Splitting-Proben verwerfen, sonst splittet die
-      // veraltete Einheit falsch.
-      recentDeltas = [];
+      // EXP-Bedarf) → Lump-Splitting-Proben fuer ALLE Monster verwerfen, sonst
+      // splittet die veraltete Einheit falsch.
+      recentDeltasByMonster.clear();
       state.lastLvl = lvl;
       state.lastExp = exp;
       return null;
@@ -384,8 +391,9 @@ function createStatsEngine(config, initialState) {
           state.expSession += wrapDelta;
           state.expTotal += wrapDelta;
         }
-        // Level-up (EXP-Umwicklung) → Lump-Splitting-Proben verwerfen.
-        recentDeltas = [];
+        // Level-up (EXP-Umwicklung) → Lump-Splitting-Proben fuer ALLE Monster
+        // verwerfen.
+        recentDeltasByMonster.clear();
         state.lastLvl = lvl;
         state.lastExp = exp;
         return null;
@@ -496,10 +504,14 @@ function createStatsEngine(config, initialState) {
     // Kills zu EINEM EXP-Sprung zusammengefasst. Ueber eine robuste Schaetzung
     // der Einzel-Kill-EXP wird ermittelt, wie viele Kills im deltaExp stecken.
     //
-    // Monsterwechsel → Probenfenster zuruecksetzen (andere Einheit).
-    if (name !== lastUnitMonster) {
+    // Samples werden pro Monstertyp gehalten — der Wechsel zu einem anderen
+    // Mob laesst die Tigar-Historie unangetastet, sodass der NAECHSTE Tigar-
+    // Lump sofort korrekt gesplittet werden kann (statt wieder 3 Kills lang auf
+    // kc=1 zurueckzufallen, weil das globale Fenster gerade frisch geleert war).
+    let recentDeltas = recentDeltasByMonster.get(name);
+    if (!recentDeltas) {
       recentDeltas = [];
-      lastUnitMonster = name;
+      recentDeltasByMonster.set(name, recentDeltas);
     }
     if (deltaExp > 0) {
       recentDeltas.push(deltaExp);
@@ -508,8 +520,8 @@ function createStatsEngine(config, initialState) {
 
     let killCount = 1;
     // estimateUnitExp liefert erst ab 4 Proben einen Wert → die ersten 3 Kills
-    // nach einem Monsterwechsel werden bewusst als je 1 gezaehlt (zu wenig
-    // Daten zum Splitten; verhindert Ueberzaehlung beim Wechsel).
+    // eines neuen Monstertyps werden bewusst als je 1 gezaehlt (zu wenig Daten
+    // zum Splitten; verhindert Ueberzaehlung bei einem neu auftauchenden Mob).
     const estUnit = estimateUnitExp(recentDeltas);
     if (estUnit && estUnit > 0) {
       const ratio = deltaExp / estUnit;

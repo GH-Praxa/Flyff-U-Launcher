@@ -166,6 +166,24 @@ const TTK_GRACE_MS = 10000;    // 10s grace period (pause tolerance)
 // name was cleared from the OCR cache can still be attributed correctly.
 const lastKnownMonster = new Map(); // profileId -> { name, meta, timestamp }
 
+// Boss-rank HP-Lookup-Confirmation:
+// `findMonsterByHp` kann auch ohne Element/Level-Hint (z. B. wenn der OCR-Layer
+// schon einen sauberen Namen wie "Iren" geliefert hat → `parseMonsterToken`
+// liefert null) treffen. Bei 141 dokumentierten HP-Kollisionen zwischen Giants
+// und normalen Monstern (z. B. Iren 39 295 HP ↔ Giant Demian 39 177 HP, beide
+// in 3 %-Toleranz) wird so fälschlich ein Boss-Rang gesetzt.
+// Boss-Kämpfe (giant/violet/boss/worldboss) dauern jedoch *zig* OCR-Ticks
+// (Default 2 s pro Tick → typischer Giant > 30 s). Daher ein einzelner HP-Tick
+// auf einen Boss-Eintrag wird NICHT übernommen — erst nach
+// MIN_BOSS_HP_CONFIRM_TICKS aufeinanderfolgenden gleichen HP/Name-Treffern
+// wird der Boss-Rang akzeptiert. Während der Wartezeit fällt der Killfeed auf
+// `findMonsterByLevelElement` bzw. `findMonsterByName(monsterToken)` zurück,
+// wodurch HP-Kollisions-Fehltreffer (kurzlebige Normal-Mob-Kills) den Boss-
+// Rang nicht mehr erreichen.
+const MIN_BOSS_HP_CONFIRM_TICKS = 5;
+const BOSS_HP_CONFIRM_GRACE_MS = 6000;
+const bossHpConfirm = new Map(); // profileId -> { hp, name, count, lastSeenAt }
+
 // Track the most recently active profile (last OCR event)
 let lastActiveProfileId = null;
 const sessionActiveProfiles = new Set(); // profiles that received OCR in this session
@@ -2299,13 +2317,39 @@ async function _handleOcrUpdateInner(payload) {
       parsedMonster ? parsedMonster.level : null
     );
     if (hpRef) {
-      monsterCandidate = {
-        id: hpRef.id,
-        name: hpRef.name,
-        element: hpRef.element,
-        level: hpRef.level,
-        rank: hpRef.rank || null
-      };
+      // Boss-Rang-Confirmation: HP-Kollisionen zwischen Giant/Violet/Boss
+      // und Normal-Mobs werden gefiltert, indem ein Boss-Treffer erst nach
+      // MIN_BOSS_HP_CONFIRM_TICKS gleichen HP/Name-Ticks akzeptiert wird.
+      // Echte Boss-Kämpfe dauern weit länger als 5 Ticks → kein Verlust;
+      // kurze Normal-Mob-Targets mit kollidierender HP fallen zurück auf
+      // den Namens-/Level-Element-Lookup unten.
+      const rawRank = String(hpRef.rank || '').toLowerCase();
+      const isBossLike = rawRank === 'giant' || rawRank === 'violet' || rawRank === 'boss' || rawRank === 'worldboss';
+      let acceptHpRef = true;
+      if (isBossLike) {
+        const prev = bossHpConfirm.get(profileId);
+        const sameTarget = !!prev
+          && prev.hp === parsedHp.max
+          && prev.name === hpRef.name
+          && (tickTime - prev.lastSeenAt) <= BOSS_HP_CONFIRM_GRACE_MS;
+        const count = sameTarget ? prev.count + 1 : 1;
+        bossHpConfirm.set(profileId, { hp: parsedHp.max, name: hpRef.name, count, lastSeenAt: tickTime });
+        if (count < MIN_BOSS_HP_CONFIRM_TICKS) {
+          acceptHpRef = false;
+          debugLog('ocr', `[Killfeed] Boss-Confirm pending: ${hpRef.name} (${rawRank}) tick ${count}/${MIN_BOSS_HP_CONFIRM_TICKS} hp=${parsedHp.max} — fallback to name/lvl-element lookup`);
+        }
+      } else {
+        bossHpConfirm.delete(profileId);
+      }
+      if (acceptHpRef) {
+        monsterCandidate = {
+          id: hpRef.id,
+          name: hpRef.name,
+          element: hpRef.element,
+          level: hpRef.level,
+          rank: hpRef.rank || null
+        };
+      }
     }
   }
 
@@ -3090,6 +3134,7 @@ async function stop() {
   pendingBroadcast.clear();
   ocrLocks.clear();
   lastKnownMonster.clear();
+  bossHpConfirm.clear();
   monsterDetailsCache.clear();
   monsterReference.length = 0;
   enemyHpSeenAt.clear();

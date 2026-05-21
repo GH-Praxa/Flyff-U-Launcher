@@ -641,6 +641,8 @@
   const sessionInfoEl = document.getElementById('sessionInfo');
   const scaleInput = document.getElementById('scaleInput');
   const scaleValue = document.getElementById('scaleValue');
+  const barScaleInput = document.getElementById('barScaleInput');
+  const barScaleValue = document.getElementById('barScaleValue');
   const posXInput = document.getElementById('posXInput');
   const posYInput = document.getElementById('posYInput');
   const posXVal = document.getElementById('posXVal');
@@ -994,17 +996,71 @@
   }
 
   /**
-   * Render monster accordions
+   * Render monster accordions.
+   *
+   * Strategy: zwei Render-Pfade, um Scroll-Hakeln zu vermeiden:
+   *   1) In-place-Update — gleiche Struktur (gleiche Monster, gleiche
+   *      Reihenfolge, gleicher Accordion-Open-State): nur Text-Knoten
+   *      (Counts, Debug-Info) werden geändert. DOM-Struktur unangetastet
+   *      → Scroll-Position des `.accordion-content` bleibt erhalten, ohne
+   *      restore.
+   *   2) Full-Rebuild — Struktur unterscheidet sich (neuer Mob-Typ, Order-
+   *      Change durch Sort-by-Count, Accordion zu/auf): innerHTML wird neu
+   *      gesetzt mit Scroll-Save/Restore.
+   *
+   * Während aktiver OCR-Sessions ändern sich i. d. R. nur Counts → Pfad 1
+   * → Scroll bleibt buttery smooth. Order-Switches (z. B. Mob B überholt A)
+   * fallen in Pfad 2, sind aber selten.
    */
   function renderMonsters() {
     const monstersByRank = currentStats?.monstersByRank || {};
-
-    // Debug info - shows current profile and data state
     const totalMonsters = Object.values(monstersByRank).reduce((sum, arr) => sum + (arr?.length || 0), 0);
-    const debugInfo = `<div style="font-size:10px;color:#888;padding:2px 4px;">P: ${currentProfileId || 'none'} | M: ${totalMonsters} | ${_debugLastRaw || 'no-poll'}</div>`;
+    const debugInfoText = `P: ${currentProfileId || 'none'} | M: ${totalMonsters} | ${_debugLastRaw || 'no-poll'}`;
 
     const ranks = ['normal', 'giant', 'violet', 'boss', 'unknown'];
 
+    // Struktur-Signatur: alles was nicht-in-place updatebar ist (Reihen-
+    // folge der Mob-Namen pro Rank + Open-State). Debug-Text und Counts
+    // sind NICHT Teil der Signatur — die werden in-place gesetzt.
+    const structureSig = ranks.map((rank) => {
+      const monsters = monstersByRank[rank] || [];
+      const isOpen = accordionUserState.has(rank) ? accordionUserState.get(rank) : monsters.length > 0;
+      const names = monsters.map((m) => m.name).join('');
+      return `${rank}|${isOpen ? 1 : 0}|${names}`;
+    }).join('');
+
+    const prevSig = monstersContainer.__structureSig;
+
+    if (prevSig === structureSig && monstersContainer.firstElementChild) {
+      // PFAD 1: In-place — DOM-Struktur unverändert, nur Werte updaten.
+      const debugEl = monstersContainer.querySelector('.monsters-debuginfo');
+      if (debugEl && debugEl.textContent !== debugInfoText) {
+        debugEl.textContent = debugInfoText;
+      }
+      monstersContainer.querySelectorAll('.accordion[data-rank]').forEach((acc) => {
+        const rank = acc.getAttribute('data-rank');
+        const monsters = monstersByRank[rank] || [];
+        const headerCount = acc.querySelector('.accordion-header .count');
+        if (headerCount) {
+          const txt = String(monsters.length);
+          if (headerCount.textContent !== txt) headerCount.textContent = txt;
+        }
+        const items = acc.querySelectorAll('.monster-list .monster-item');
+        for (let i = 0; i < monsters.length; i++) {
+          const item = items[i];
+          if (!item) break;
+          const kc = item.querySelector('.kill-count');
+          if (kc) {
+            const txt = String(monsters[i].count);
+            if (kc.textContent !== txt) kc.textContent = txt;
+          }
+        }
+      });
+      return;
+    }
+
+    // PFAD 2: Full-Rebuild — Struktur hat sich geändert (neuer Mob, Order-
+    // Switch durch Sort-by-Count, oder Accordion auf/zu).
     const RANK_ICONS = {
       normal:  '⬜',
       giant:   '⭐',
@@ -1013,15 +1069,16 @@
       unknown: '❓',
     };
 
+    const debugInfo = `<div class="monsters-debuginfo" style="font-size:10px;color:#888;padding:2px 4px;">${debugInfoText}</div>`;
     const trackerBtnHtml = `<button class="giant-tracker-btn" onclick="openGiantTracker()">Giant Tracker</button>`;
 
-    monstersContainer.innerHTML = debugInfo + trackerBtnHtml + ranks.map(rank => {
+    const nextHtml = debugInfo + trackerBtnHtml + ranks.map((rank) => {
       const monsters = monstersByRank[rank] || [];
       const count = monsters.length;
       const isOpen = accordionUserState.has(rank) ? accordionUserState.get(rank) : count > 0;
 
       const monsterListHtml = monsters.length > 0
-        ? monsters.map(m => `
+        ? monsters.map((m) => `
             <div class="monster-item">
               <span class="name" title="${m.name}">${m.name}</span>
               <span class="kill-count">${m.count}</span>
@@ -1050,6 +1107,31 @@
         </div>
       `;
     }).join('');
+
+    // Scroll-Position pro Accordion sichern (echter Scroll-Container ist
+    // `.accordion-content`, NICHT `.monster-list`).
+    const savedScroll = new Map();
+    monstersContainer.querySelectorAll('.accordion[data-rank]').forEach((acc) => {
+      const rank = acc.getAttribute('data-rank');
+      const content = acc.querySelector('.accordion-content');
+      if (rank && content && content.scrollTop > 0) {
+        savedScroll.set(rank, content.scrollTop);
+      }
+    });
+
+    monstersContainer.innerHTML = nextHtml;
+    monstersContainer.__structureSig = structureSig;
+
+    if (savedScroll.size > 0) {
+      monstersContainer.querySelectorAll('.accordion[data-rank]').forEach((acc) => {
+        const rank = acc.getAttribute('data-rank');
+        const content = acc.querySelector('.accordion-content');
+        const top = rank ? savedScroll.get(rank) : undefined;
+        if (content && typeof top === 'number') {
+          content.scrollTop = top;
+        }
+      });
+    }
   }
 
   function escapeHtml(value) {
@@ -1432,6 +1514,9 @@
     const scale = clampScale(currentLayout?.scale ?? 1);
     if (scaleInput) scaleInput.value = String(scale);
     if (scaleValue) scaleValue.textContent = scale.toFixed(2);
+    // Bar-Mode-Slider spiegelt denselben Wert (eine Source of Truth).
+    if (barScaleInput) barScaleInput.value = String(scale);
+    if (barScaleValue) barScaleValue.textContent = scale.toFixed(2);
   }
 
   function updatePositionInputs() {
@@ -1636,9 +1721,13 @@
   /**
    * Persist scale setting from slider
    */
-  async function setScaleFromInput() {
-    if (!currentProfileId || !scaleInput) return;
-    const scale = clampScale(scaleInput.value);
+  async function setScaleFromInput(sourceEl) {
+    if (!currentProfileId) return;
+    // Quelle ist der zuletzt veränderte Slider (overlay oder bar). Beide
+    // teilen sich denselben `layout.scale`-Wert.
+    const src = sourceEl || scaleInput;
+    if (!src) return;
+    const scale = clampScale(src.value);
     try {
       unwrap(await ipcInvoke('layout:set', currentProfileId, { scale }));
       if (currentLayout) {
@@ -1647,7 +1736,12 @@
     } catch (err) {
       console.error('Failed to set scale:', err);
     } finally {
-      if (scaleValue) scaleValue.textContent = scale.toFixed(2);
+      // Beide Slider + Anzeigen synchronisieren.
+      const txt = scale.toFixed(2);
+      if (scaleInput) scaleInput.value = String(scale);
+      if (scaleValue) scaleValue.textContent = txt;
+      if (barScaleInput) barScaleInput.value = String(scale);
+      if (barScaleValue) barScaleValue.textContent = txt;
     }
   }
 
@@ -1666,8 +1760,21 @@
       scaleInput.addEventListener('input', () => {
         const scale = clampScale(scaleInput.value);
         if (scaleValue) scaleValue.textContent = scale.toFixed(2);
+        // Bar-Slider live mitziehen, damit er gleich aussieht wenn der User
+        // in den Bar-Tab wechselt.
+        if (barScaleInput) barScaleInput.value = String(scale);
+        if (barScaleValue) barScaleValue.textContent = scale.toFixed(2);
       });
-      scaleInput.addEventListener('change', setScaleFromInput);
+      scaleInput.addEventListener('change', () => { void setScaleFromInput(scaleInput); });
+    }
+    if (barScaleInput) {
+      barScaleInput.addEventListener('input', () => {
+        const scale = clampScale(barScaleInput.value);
+        if (barScaleValue) barScaleValue.textContent = scale.toFixed(2);
+        if (scaleInput) scaleInput.value = String(scale);
+        if (scaleValue) scaleValue.textContent = scale.toFixed(2);
+      });
+      barScaleInput.addEventListener('change', () => { void setScaleFromInput(barScaleInput); });
     }
     if (posXInput) {
       posXInput.addEventListener('input', () => {
@@ -1689,12 +1796,17 @@
         if (!targetId || !dir) return;
         const input = document.getElementById(targetId);
         if (!input) return;
-        if (targetId === 'scaleInput') {
+        if (targetId === 'scaleInput' || targetId === 'barScaleInput') {
           const current = clampScale(input.value);
           const next = clampScale(current + dir * 0.05);
+          const txt = next.toFixed(2);
           input.value = String(next);
-          if (scaleValue) scaleValue.textContent = next.toFixed(2);
-          void setScaleFromInput();
+          // Beide Slider/Anzeigen syncen (eine Source of Truth).
+          if (scaleInput && scaleInput !== input) scaleInput.value = String(next);
+          if (scaleValue) scaleValue.textContent = txt;
+          if (barScaleInput && barScaleInput !== input) barScaleInput.value = String(next);
+          if (barScaleValue) barScaleValue.textContent = txt;
+          void setScaleFromInput(input);
         } else {
           const current = clampPercent(input.value);
           const next = clampPercent(current + dir);
