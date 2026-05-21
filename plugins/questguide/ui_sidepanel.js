@@ -1567,9 +1567,7 @@
             node.addEventListener('click', function() {
                 var chainQuestId = parseInt(this.dataset.chainId);
                 if (chainQuestId && chainQuestId !== questId) {
-                    state.expandedQuestId = null;
-                    state.detailCache = {};
-                    toggleAccordion(chainQuestId);
+                    navigateToQuest(chainQuestId);
                 }
             });
         });
@@ -1579,13 +1577,57 @@
         followups.forEach(function(item) {
             item.addEventListener('click', function() {
                 var fuId = parseInt(this.dataset.followupId);
-                if (fuId) {
-                    state.expandedQuestId = null;
-                    state.detailCache = {};
-                    toggleAccordion(fuId);
+                if (fuId && fuId !== questId) {
+                    navigateToQuest(fuId);
                 }
             });
         });
+    }
+
+    // Navigate from chain/follow-up links to a target quest, even when that
+    // quest is currently filtered out of state.quests (different level range,
+    // type, subcategory, search, etc.). In that case fetch its detail and
+    // inject a synthetic list entry so the accordion can render against it.
+    async function navigateToQuest(targetId) {
+        var existsInList = state.quests.some(function(q) { return q.id === targetId; });
+
+        if (!existsInList) {
+            try {
+                var playerLevel = getPlayerLevel();
+                var result = await ipc('quest:detail', {
+                    questId: targetId,
+                    profileId: state.profileId,
+                    playerLevel: playerLevel
+                });
+                if (!result || !result.detail) {
+                    console.warn('[QuestGuide] navigate target not found:', targetId);
+                    return;
+                }
+                var d = result.detail;
+                state.quests.unshift({
+                    id: d.id,
+                    name: d.name,
+                    completed: !!d.completed,
+                    available: true,
+                    minLevel: d.minLevel,
+                    maxLevel: d.maxLevel,
+                    type: d.type,
+                    beginNPCName: d.beginNPC ? d.beginNPC.name : '',
+                    chainInfo: { isChain: true }
+                });
+                state.detailCache[targetId] = d;
+            } catch (err) {
+                console.error('[QuestGuide] navigateToQuest error:', err);
+                return;
+            }
+        } else {
+            // Quest is in the list — drop its cached detail so chain progress
+            // and completion flags are refreshed on the next open.
+            delete state.detailCache[targetId];
+        }
+
+        state.expandedQuestId = null;
+        toggleAccordion(targetId);
     }
 
     // ─── Progress ───────────────────────────────────────────────────────────
