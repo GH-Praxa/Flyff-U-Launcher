@@ -31,7 +31,11 @@ const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     collapsibleOpenProfiles: true,
     showRamUsage: false,
     checkForUpdatesOnStart: true,
+    exitWarningEnabled: false,
+    exitWarningMessage: "",
 };
+
+const EXIT_WARNING_MAX_LEN = 500;
 
 function clampDelaySeconds(input: unknown): number {
     const n = Number(input);
@@ -153,6 +157,14 @@ function normalize(raw: unknown): NormalizedSettingsResult {
                 typeof obj.checkForUpdatesOnStart === "boolean"
                     ? obj.checkForUpdatesOnStart
                     : DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart,
+            exitWarningEnabled:
+                typeof obj.exitWarningEnabled === "boolean"
+                    ? obj.exitWarningEnabled
+                    : DEFAULT_CLIENT_SETTINGS.exitWarningEnabled,
+            exitWarningMessage:
+                typeof obj.exitWarningMessage === "string"
+                    ? obj.exitWarningMessage.slice(0, EXIT_WARNING_MAX_LEN)
+                    : DEFAULT_CLIENT_SETTINGS.exitWarningMessage,
         },
     };
 }
@@ -252,6 +264,12 @@ export function createClientSettingsStore() {
             }
             if (typeof patch.checkForUpdatesOnStart === "boolean") {
                 next.checkForUpdatesOnStart = patch.checkForUpdatesOnStart;
+            }
+            if (typeof patch.exitWarningEnabled === "boolean") {
+                next.exitWarningEnabled = patch.exitWarningEnabled;
+            }
+            if (typeof patch.exitWarningMessage === "string") {
+                next.exitWarningMessage = patch.exitWarningMessage.slice(0, EXIT_WARNING_MAX_LEN);
             }
             await writeSettings(next);
             // Re-read to ensure we return the exact persisted state (normalizes any FS or serialization quirks)

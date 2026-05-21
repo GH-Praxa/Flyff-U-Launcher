@@ -28,41 +28,60 @@
 
 /* Killfeed-Bar — horizontale Leiste direkt unter den Tabs.
    Sichtbar nur wenn das Killfeed-Plugin displayMode = "bar" meldet
-   (Renderer toggelt `hidden`). */
+   (Renderer toggelt `hidden`). Skaliert mit `--kf-scale` (0.6-1.6) aus
+   dem Layout-Slider im Sidepanel. */
 #app.sessionRoot .killfeedBar {
+  --kf-scale: 1;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: calc(4px * var(--kf-scale));
+  padding: calc(8px * var(--kf-scale)) calc(10px * var(--kf-scale));
+  min-height: calc(32px * var(--kf-scale));
   border-bottom: 1px solid var(--stroke);
   background: rgba(0, 0, 0, 0.35);
   position: relative;
   z-index: 4;
-  font-size: 12px;
+  font-size: calc(12px * var(--kf-scale));
+  line-height: 1.5;
   color: var(--text);
   user-select: none;
+  overflow: visible;
 }
 #app.sessionRoot .killfeedBar[hidden] { display: none; }
 #app.sessionRoot .killfeedBar-item {
   display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  padding: 2px 8px;
+  align-items: center;
+  gap: calc(4px * var(--kf-scale));
+  padding: calc(4px * var(--kf-scale)) calc(8px * var(--kf-scale));
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: calc(6px * var(--kf-scale));
   white-space: nowrap;
+  line-height: 1.5;
 }
 #app.sessionRoot .killfeedBar-label {
   color: var(--text-muted, rgba(255,255,255,0.55));
-  font-size: 11px;
+  font-size: calc(11px * var(--kf-scale));
   letter-spacing: 0.02em;
 }
 #app.sessionRoot .killfeedBar-value {
   font-weight: 600;
   color: var(--accent, var(--text));
+}
+#app.sessionRoot button.killfeedBar-item.killfeedBar-action {
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  font-weight: 600;
+}
+#app.sessionRoot button.killfeedBar-item.killfeedBar-action:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+#app.sessionRoot button.killfeedBar-item.killfeedBar-action:active {
+  background: rgba(var(--accent-rgb), 0.28);
 }
 
 .progressTab{

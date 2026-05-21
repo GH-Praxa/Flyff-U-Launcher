@@ -77,6 +77,10 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
 
     checkForUpdatesOnStart: true,
 
+    exitWarningEnabled: false,
+
+    exitWarningMessage: "",
+
 };
 
 // ── Clamping Helpers ─────────────────────────────────────────────────
@@ -416,6 +420,10 @@ export async function loadClientSettings(): Promise<ClientSettings> {
             showRamUsage: typeof settings.showRamUsage === "boolean" ? settings.showRamUsage : false,
 
             checkForUpdatesOnStart: typeof settings.checkForUpdatesOnStart === "boolean" ? settings.checkForUpdatesOnStart : true,
+
+            exitWarningEnabled: typeof settings.exitWarningEnabled === "boolean" ? settings.exitWarningEnabled : false,
+
+            exitWarningMessage: typeof settings.exitWarningMessage === "string" ? settings.exitWarningMessage : "",
 
         };
 

@@ -2182,9 +2182,44 @@ export async function renderSession(root: HTMLElement) {
         }, 50);
     }
 
+    // Cache the last NON-ZERO heights of the launcher chrome. When the
+    // BrowserView gets focus, the launcher renderer goes into background and
+    // Chromium can collapse layout boxes to 0×0 in `getBoundingClientRect()`
+    // even when the elements are still in the DOM. Falling back to the cached
+    // values keeps the BrowserView from creeping upward and visually erasing
+    // the chrome (tabs row + killfeed bar) during that window.
+    let lastNonZeroTabsH = 0;
+    let lastNonZeroBarH = 0;
+    // Tracks whether the killfeed bar is currently in "bar" display mode and
+    // must therefore reserve space at the top of the chrome, irrespective of
+    // what getBoundingClientRect or the `hidden` flag reports.
+    // Updated by the killfeed-bar render code further down. Read here so that
+    // every bounds push reserves at least KILLFEED_BAR_MIN_PX while the bar
+    // is meant to be visible.
+    let killfeedBarShouldShow = false;
+    const KILLFEED_BAR_MIN_PX = 32;
+
     function pushBoundsInternal(force = false) {
 
-        const y = Math.round(tabsBar.getBoundingClientRect().height);
+        const tabsMeasured = Math.round(tabsBar.getBoundingClientRect().height);
+        let tabsH: number;
+        if (tabsMeasured > 0) {
+            tabsH = tabsMeasured;
+            lastNonZeroTabsH = tabsMeasured;
+        } else {
+            tabsH = lastNonZeroTabsH;
+        }
+        let barH = 0;
+        if (killfeedBarShouldShow) {
+            const measured = killfeedBar.hidden
+                ? 0
+                : Math.round(killfeedBar.getBoundingClientRect().height);
+            if (measured > 0) {
+                lastNonZeroBarH = measured;
+            }
+            barH = Math.max(KILLFEED_BAR_MIN_PX, lastNonZeroBarH);
+        }
+        const y = tabsH + barH;
         const width = Math.round(window.innerWidth);
         const height = Math.max(1, Math.round(window.innerHeight - y));
         const next = { x: 0, y, width, height };
@@ -2233,6 +2268,11 @@ export async function renderSession(root: HTMLElement) {
     }
     window.addEventListener("resize", kickBounds);
     new ResizeObserver(kickBounds).observe(tabsBar);
+    // Intentionally NOT observing killfeedBar: when the renderer goes into
+    // background (game BrowserView focused), Chromium may report a spurious
+    // 0×0 resize on the bar element which would push the BrowserView upward
+    // and visually hide the bar. Bar-driven bound updates are triggered
+    // explicitly from renderKillfeedBar instead.
 
     function clearConflictOverlays(): void {
         for (const [, el] of conflictOverlays) el.remove();
@@ -2695,6 +2735,50 @@ export async function renderSession(root: HTMLElement) {
         });
     }
 
+    async function promptExitWarning(message: string): Promise<boolean> {
+        return await new Promise<boolean>((resolve) => {
+            const overlay = el("div", "modalOverlay");
+            const modal = el("div", "modal");
+            const header = el("div", "modalHeader");
+            const headerTitle = el("span", "", t("exitWarning.title" as TranslationKey));
+            const headerClose = el("button", "modalCloseBtn", "×") as HTMLButtonElement;
+            headerClose.type = "button";
+            const body = el("div", "modalBody");
+            const messageEl = el("div", "modalHint");
+            messageEl.style.whiteSpace = "pre-wrap";
+            messageEl.textContent = message;
+            const actions = el("div", "manageActions");
+            const btnYes = el("button", "btn danger", t("exitWarning.confirmYes" as TranslationKey)) as HTMLButtonElement;
+            const btnNo = el("button", "btn", t("exitWarning.confirmNo" as TranslationKey)) as HTMLButtonElement;
+            let done = false;
+            const finish = (value: boolean) => {
+                if (done) return;
+                done = true;
+                overlay.remove();
+                window.removeEventListener("keydown", onKey);
+                resolve(value);
+            };
+            const onKey = (e: KeyboardEvent) => {
+                if (e.key === "Escape") finish(false);
+                else if (e.key === "Enter") finish(true);
+            };
+            window.addEventListener("keydown", onKey);
+            headerClose.onclick = () => finish(false);
+            btnYes.onclick = () => finish(true);
+            btnNo.onclick = () => finish(false);
+            header.append(headerTitle, headerClose);
+            actions.append(btnNo, btnYes);
+            body.append(messageEl, actions);
+            modal.append(header, body);
+            overlay.append(modal);
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) finish(false);
+            });
+            document.body.append(overlay);
+            btnNo.focus();
+        });
+    }
+
     async function closeTab(profileId: string) {
 
         pendingSplitAnchor = pendingSplitAnchor === profileId ? null : pendingSplitAnchor;
@@ -2816,8 +2900,26 @@ export async function renderSession(root: HTMLElement) {
                 await window.api.sessionWindowClose();
             }
             else if (choice === "app") {
-                restoreTabs = false;
-                await window.api.appQuit();
+                let confirmed = true;
+                try {
+                    const settings = await loadClientSettings();
+                    if (settings?.exitWarningEnabled) {
+                        const msg = (settings.exitWarningMessage ?? "").trim();
+                        if (msg.length > 0) {
+                            confirmed = await promptExitWarning(msg);
+                        }
+                    }
+                }
+                catch (err) {
+                    logErr(err, "renderer");
+                }
+                if (confirmed) {
+                    restoreTabs = false;
+                    await window.api.appQuit();
+                }
+                else {
+                    restoreTabs = true;
+                }
             }
         }
         catch (err) {
@@ -3726,6 +3828,7 @@ export async function renderSession(root: HTMLElement) {
             "expLastKill", "expTotal", "expPerHour", "expPerMin",
             "killsToLevel", "sessionDuration", "expSession", "currentExp",
             "rmExp", "avgTimePerKill", "timeSinceLastKill",
+            "resetSession",
         ];
         const KILLFEED_BAR_LABELS: Record<string, string> = {
             killsSession: "Kills",
@@ -3743,7 +3846,17 @@ export async function renderSession(root: HTMLElement) {
             rmExp: "RM",
             avgTimePerKill: "Ø T/K",
             timeSinceLastKill: "Last K",
+            resetSession: "↻ Reset",
         };
+        // Action-Keys werden nicht als Stat gerendert, sondern als anklickbarer
+        // Button. Aktuell nur `resetSession` → ruft `session:reset` IPC im
+        // Killfeed-Plugin für das gerade gepollte Profil auf.
+        const KILLFEED_BAR_ACTION_KEYS = new Set<string>(["resetSession"]);
+        let lastPolledProfileId: string | null = null;
+        // Skalierung der Bar (Slider im Sidepanel, 0.6-1.6). Wenn sich der
+        // Wert ändert, müssen die BrowserView-Bounds neu berechnet werden,
+        // weil die Bar-Höhe sich mit-skaliert.
+        let lastBarScale = 1;
 
         function formatKillfeedValue(key: string, stats: Record<string, unknown> | null | undefined): string {
             if (!stats) return "—";
@@ -3756,17 +3869,98 @@ export async function renderSession(root: HTMLElement) {
             return "—";
         }
 
+        // Last-confirmed display mode. The bar's `hidden` state ONLY flips
+        // when a poll reports a new mode — never on transient IPC errors or
+        // empty snapshots. The launcher window can briefly drop IPC throughput
+        // on blur (background-throttling, IPC queue stalls), and we don't
+        // want those moments to remove a bar the user deliberately enabled.
+        //
+        // ZUSÄTZLICH (Mode-Change-Confirmation): User-Report 2026-05-21 — die
+        // Bar wurde beim Verlassen der BrowserView fälschlich ausgeblendet,
+        // jedes Mal mit BrowserView-Shift. Wurzelursache ungeklärt
+        // (ein Poll meldete sporadisch mode != "bar" obwohl Storage "bar"
+        // hält). Defensiv: Mode-Wechsel werden erst nach N aufeinander-
+        // folgenden gleichen Polls akzeptiert. Der allererste Poll bleibt
+        // sofort vertrauenswürdig, damit die Bar beim Start nicht erst nach
+        // mehreren Sekunden erscheint.
+        const MIN_MODE_CONFIRMATION_TICKS = 3;
+        let lastBarMode: string | null = null;
+        let pendingBarMode: string | null = null;
+        let pendingBarModeCount = 0;
+
         function renderKillfeedBar(snapshot: Record<string, unknown> | null): void {
+            // Defensive: a falsy/incomplete snapshot is treated as "no change"
+            // — keep the bar as-is. We only react to a snapshot that clearly
+            // carries a layout object with a known displayMode.
             const layout = (snapshot?.layout || null) as Record<string, unknown> | null;
-            const mode = layout?.displayMode;
+            if (!layout) return;
+            const polledMode = typeof layout.displayMode === "string" ? layout.displayMode : "overlay";
+
+            // Mode-Confirmation: ein einzelner abweichender Poll darf die
+            // Bar nicht togglen. Erst N aufeinanderfolgende Polls mit dem
+            // neuen Mode bestätigen einen echten User-Switch.
+            let mode: string;
+            if (lastBarMode === null) {
+                // Erster Poll überhaupt — sofort vertrauen.
+                mode = polledMode;
+            } else if (polledMode === lastBarMode) {
+                // Mode unverändert — Pending-Counter zurücksetzen.
+                pendingBarMode = null;
+                pendingBarModeCount = 0;
+                mode = lastBarMode;
+            } else {
+                // Mode weicht ab — N Bestätigungen sammeln.
+                if (pendingBarMode === polledMode) {
+                    pendingBarModeCount += 1;
+                } else {
+                    pendingBarMode = polledMode;
+                    pendingBarModeCount = 1;
+                }
+                if (pendingBarModeCount >= MIN_MODE_CONFIRMATION_TICKS) {
+                    pendingBarMode = null;
+                    pendingBarModeCount = 0;
+                    mode = polledMode;
+                } else {
+                    // Noch unbestätigt — alte Mode beibehalten.
+                    mode = lastBarMode;
+                }
+            }
+
             if (mode !== "bar") {
-                killfeedBar.hidden = true;
-                killfeedBar.replaceChildren();
+                if (lastBarMode !== mode) {
+                    lastBarMode = mode;
+                    killfeedBarShouldShow = false;
+                    killfeedBar.hidden = true;
+                    killfeedBar.replaceChildren();
+                    // Bar just hidden — recompute BrowserView bounds so it
+                    // claims the bar's former slot.
+                    pushBoundsInternal(true);
+                }
                 return;
             }
-            const visibility = (layout?.visibility || {}) as Record<string, unknown>;
-            const order = Array.isArray(layout?.order) ? (layout!.order as string[]) : KILLFEED_BAR_BADGE_KEYS;
+            const wasVisible = lastBarMode === "bar" && killfeedBarShouldShow;
+            lastBarMode = mode;
+            killfeedBarShouldShow = true;
+
+            const visibility = (layout.visibility || {}) as Record<string, unknown>;
+            const order = Array.isArray(layout.order) ? (layout.order as string[]) : KILLFEED_BAR_BADGE_KEYS;
             const stats = (snapshot?.stats || null) as Record<string, unknown> | null;
+
+            // CSS-Skalierungs-Variable aus layout.scale anwenden (0.6-1.6).
+            // Bei Wechsel neu measuren, damit BrowserView-Bounds nachziehen.
+            const rawScale = layout.scale;
+            const scaleNum = typeof rawScale === "number" && Number.isFinite(rawScale)
+                ? Math.max(0.5, Math.min(2, rawScale))
+                : 1;
+            killfeedBar.style.setProperty("--kf-scale", String(scaleNum));
+            const scaleChanged = Math.abs(scaleNum - lastBarScale) > 0.001;
+            if (scaleChanged) {
+                lastBarScale = scaleNum;
+                // Höhe wurde via CSS-Variable neu berechnet → Cache leeren
+                // und Bounds force-push, damit der Game-View nicht von der
+                // Bar überdeckt wird bzw. keine Lücke entsteht.
+                lastNonZeroBarH = 0;
+            }
 
             const visibleKeys = order.filter((k) =>
                 KILLFEED_BAR_BADGE_KEYS.includes(k) && (visibility as Record<string, unknown>)[k] !== false
@@ -3774,6 +3968,27 @@ export async function renderSession(root: HTMLElement) {
 
             const children: HTMLElement[] = [];
             for (const key of visibleKeys) {
+                if (KILLFEED_BAR_ACTION_KEYS.has(key)) {
+                    // Action-Buttons (z. B. Session-Reset). Onclick ruft das
+                    // entsprechende Plugin-IPC auf — für das aktuell gepollte
+                    // Profil (Overlay-Target), nicht für das fokussierte Tab.
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "killfeedBar-item killfeedBar-action";
+                    btn.dataset.key = key;
+                    btn.textContent = KILLFEED_BAR_LABELS[key] || key;
+                    if (key === "resetSession") {
+                        btn.title = KILLFEED_BAR_LABELS[key] || "Reset Session";
+                        btn.addEventListener("click", () => {
+                            const pid = lastPolledProfileId;
+                            if (!pid) return;
+                            window.api.pluginsInvokeChannel("killfeed", "session:reset", pid)
+                                .catch((err) => console.debug("[killfeedBar] session:reset failed", err));
+                        });
+                    }
+                    children.push(btn);
+                    continue;
+                }
                 const item = document.createElement("div");
                 item.className = "killfeedBar-item";
                 item.dataset.key = key;
@@ -3786,27 +4001,80 @@ export async function renderSession(root: HTMLElement) {
                 item.append(labelEl, valueEl);
                 children.push(item);
             }
+            // DOM immer aktualisieren — auch bei leerem `visibleKeys` (User
+            // hat „alle aus" geklickt). Andernfalls würden die zuletzt
+            // gerenderten Badges sichtbar bleiben. Eine leere Bar bleibt
+            // sichtbar (min-height 32px reserviert Platz); das Wegklicken
+            // einzelner Badges muss visuell sofort wirken.
             killfeedBar.replaceChildren(...children);
-            killfeedBar.hidden = children.length === 0;
-        }
-
-        let killfeedPollTimer: ReturnType<typeof setInterval> | null = null;
-        let killfeedDisabled = false;
-        async function pollKillfeedBar(): Promise<void> {
-            if (killfeedDisabled || !activeProfileId) return;
-            try {
-                const result = await window.api.pluginsInvokeChannel("killfeed", "overlay:request:state", activeProfileId);
-                renderKillfeedBar(result as Record<string, unknown> | null);
-            } catch (err) {
-                killfeedDisabled = true;
-                killfeedBar.hidden = true;
-                killfeedBar.replaceChildren();
-                console.debug("[killfeedBar] disabled (plugin invoke failed)", err);
+            killfeedBar.hidden = false;
+            if (!wasVisible || scaleChanged) {
+                // Bar just became visible OR der CSS-Scale hat sich geändert
+                // (neue Höhe) — force-recompute BrowserView bounds.
+                // requestAnimationFrame, damit das Layout vor dem Measure
+                // einmal durchgelaufen ist (sonst liefert
+                // `getBoundingClientRect().height` noch den alten Wert).
+                requestAnimationFrame(() => pushBoundsInternal(true));
             }
         }
-        killfeedPollTimer = setInterval(() => { void pollKillfeedBar(); }, 1000);
+
+        // Chained setTimeout instead of setInterval: at most one IPC roundtrip
+        // in flight at any time. If a poll hangs or errors, the next tick still
+        // fires — but errors do NOT touch the bar so user-visible state is
+        // preserved across blur, background-throttling, and other transient
+        // IPC failures.
+        let killfeedPollTimer: ReturnType<typeof setTimeout> | null = null;
+        let killfeedStopped = false;
+        // Die Bar folgt dem konfigurierten Killfeed-Hauptprofil
+        // (`profilesGetOverlayTargetId`), NICHT dem aktuell sichtbaren Tab.
+        // Andernfalls würden beim Tab-Wechsel andere Badges/Stats angezeigt
+        // bzw. die Bar ausgeblendet, wenn das fokussierte Profil keinen
+        // Bar-Mode hat. Nur wenn kein Overlay-Target gesetzt ist, fällt der
+        // Poll auf das aktive Profil zurück.
+        async function pollKillfeedBar(): Promise<void> {
+            if (killfeedStopped) return;
+            let pollProfileId: string | null = null;
+            try {
+                pollProfileId = await window.api.profilesGetOverlayTargetId() as string | null;
+            } catch (err) {
+                console.debug("[killfeedBar] overlay target lookup failed", err);
+            }
+            if (!pollProfileId) {
+                pollProfileId = activeProfileId;
+            }
+            if (!pollProfileId) {
+                scheduleNextKillfeedPoll();
+                return;
+            }
+            try {
+                const result = await window.api.pluginsInvokeChannel("killfeed", "overlay:request:state", pollProfileId);
+                if (killfeedStopped) return;
+                lastPolledProfileId = pollProfileId;
+                renderKillfeedBar(result as Record<string, unknown> | null);
+            } catch (err) {
+                // Keep the bar as-is. Don't permanently disable polling — the
+                // killfeed plugin may simply have been busy for one tick.
+                console.debug("[killfeedBar] poll failed (kept previous state)", err);
+            }
+            scheduleNextKillfeedPoll();
+        }
+        function scheduleNextKillfeedPoll(): void {
+            if (killfeedStopped) return;
+            killfeedPollTimer = setTimeout(() => { void pollKillfeedBar(); }, 1000);
+        }
+        scheduleNextKillfeedPoll();
+
+        // Re-poll immediately when the launcher window regains focus so the
+        // bar contents catch up after any background-throttling pause.
+        window.addEventListener("focus", () => {
+            if (killfeedStopped) return;
+            if (killfeedPollTimer) clearTimeout(killfeedPollTimer);
+            void pollKillfeedBar();
+        });
+
         window.addEventListener("beforeunload", () => {
-            if (killfeedPollTimer) clearInterval(killfeedPollTimer);
+            killfeedStopped = true;
+            if (killfeedPollTimer) clearTimeout(killfeedPollTimer);
         });
     }
 

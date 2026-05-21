@@ -569,6 +569,18 @@ export function openConfigModal(
         get: () => updateCheckbox.checked,
         set: (val: boolean) => { updateCheckbox.checked = !!val; },
     };
+    const exitWarningCheckbox = document.createElement("input");
+    const exitWarningToggle = {
+        get: () => exitWarningCheckbox.checked,
+        set: (val: boolean) => { exitWarningCheckbox.checked = !!val; },
+    };
+    const exitWarningTextarea = document.createElement("textarea");
+    exitWarningTextarea.className = "input";
+    exitWarningTextarea.rows = 2;
+    exitWarningTextarea.maxLength = 500;
+    exitWarningTextarea.style.width = "100%";
+    exitWarningTextarea.style.marginTop = "8px";
+    exitWarningTextarea.style.resize = "vertical";
     const toastInput = document.createElement("input");
     toastInput.type = "range";
     toastInput.min = "1";
@@ -768,6 +780,18 @@ export function openConfigModal(
     });
     updateBtnCard.append(updateBtnInfo, checkUpdateBtn);
     behaviorGrid.append(updateBtnCard);
+
+    // ── Exit-Warning card (toggle + custom message) ─────────────────
+    const exitWarningCard = el("div", "settingCard sliderCard") as HTMLDivElement;
+    const exitWarningHeader = el("div", "sliderHeader");
+    const exitWarningInfo = el("div", "settingInfo");
+    exitWarningInfo.append(el("div", "settingLabel", t("config.client.exitWarning" as TranslationKey)));
+    exitWarningInfo.append(el("div", "settingHint", t("config.client.exitWarning.hint" as TranslationKey)));
+    const exitWarningSwitch = createToggleSwitch(exitWarningCheckbox);
+    exitWarningHeader.append(exitWarningInfo, exitWarningSwitch);
+    exitWarningTextarea.placeholder = t("config.client.exitWarning.placeholder" as TranslationKey);
+    exitWarningCard.append(exitWarningHeader, exitWarningTextarea);
+    behaviorGrid.append(exitWarningCard);
 
     // ── Version rollback card ────────────────────────────────────────
     const rollbackCard = el("div", "settingCard sliderCard") as HTMLDivElement;
@@ -1155,6 +1179,8 @@ export function openConfigModal(
         telemetryToggle.set(settings.sendTelemetry ?? DEFAULT_CLIENT_SETTINGS.sendTelemetry);
         ramToggle.set(settings.showRamUsage ?? DEFAULT_CLIENT_SETTINGS.showRamUsage);
         updateToggle.set(settings.checkForUpdatesOnStart ?? DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart);
+        exitWarningToggle.set(settings.exitWarningEnabled ?? DEFAULT_CLIENT_SETTINGS.exitWarningEnabled ?? false);
+        exitWarningTextarea.value = settings.exitWarningMessage ?? DEFAULT_CLIENT_SETTINGS.exitWarningMessage ?? "";
         syncFontSelectFromValue(settings.gameFont ?? null);
         const savedFontSize = settings.launcherFontSize ?? LAUNCHER_FONT_SIZE_DEFAULT;
         fontSizeInput.value = String(clampFontSize(savedFontSize));
@@ -1317,6 +1343,41 @@ export function openConfigModal(
             const current = await loadClientSettings();
             updateToggle.set(current?.checkForUpdatesOnStart ?? DEFAULT_CLIENT_SETTINGS.checkForUpdatesOnStart);
         }
+    });
+    exitWarningCheckbox.addEventListener("change", async () => {
+        const next = !!exitWarningCheckbox.checked;
+        try {
+            await patchClientSettings({ exitWarningEnabled: next });
+            showToast(t("config.client.exitWarning.saved" as TranslationKey), "success");
+        }
+        catch (err) {
+            showToast(String(err), "error");
+            const current = await loadClientSettings();
+            exitWarningToggle.set(current?.exitWarningEnabled ?? DEFAULT_CLIENT_SETTINGS.exitWarningEnabled ?? false);
+        }
+    });
+    let exitWarningSaveTimer: ReturnType<typeof setTimeout> | null = null;
+    const persistExitWarningMessage = () => {
+        if (exitWarningSaveTimer) clearTimeout(exitWarningSaveTimer);
+        exitWarningSaveTimer = setTimeout(async () => {
+            const next = exitWarningTextarea.value.slice(0, 500);
+            try {
+                await patchClientSettings({ exitWarningMessage: next });
+            }
+            catch (err) {
+                showToast(String(err), "error");
+                const current = await loadClientSettings();
+                exitWarningTextarea.value = current?.exitWarningMessage ?? DEFAULT_CLIENT_SETTINGS.exitWarningMessage ?? "";
+            }
+        }, 500);
+    };
+    exitWarningTextarea.addEventListener("input", persistExitWarningMessage);
+    exitWarningTextarea.addEventListener("blur", () => {
+        if (exitWarningSaveTimer) {
+            clearTimeout(exitWarningSaveTimer);
+            exitWarningSaveTimer = null;
+        }
+        persistExitWarningMessage();
     });
     ramCheckbox.addEventListener("change", async () => {
         const next = !!ramCheckbox.checked;

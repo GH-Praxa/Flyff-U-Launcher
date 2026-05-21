@@ -178,6 +178,10 @@ export const ClientSettingsSchema = z.object({
     showRamUsage: z.boolean(),
     /** Check for updates automatically on app startup. Default: true. */
     checkForUpdatesOnStart: z.boolean(),
+    /** Show a warning confirmation dialog before quitting the entire program. Default: false. */
+    exitWarningEnabled: z.boolean().optional(),
+    /** Message displayed in the exit warning dialog (e.g. reminder to pick up buff NPCs). */
+    exitWarningMessage: z.string().optional(),
     /**
      * Controller-Support: aktiviert das Polling und Event-Routing. Action-Pad-
      * Position wird pro Profil gespeichert (siehe Profile.controller). Default
